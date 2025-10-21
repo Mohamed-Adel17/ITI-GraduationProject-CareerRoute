@@ -1,0 +1,24 @@
+using Microsoft.Extensions.DependencyInjection;
+
+namespace CareerRoute.Core;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddCore(this IServiceCollection services)
+    {
+        // Business Logic Services Registration
+        // Uncomment and add as you create services
+        // services.AddScoped<IUserService, UserService>();
+        // services.AddScoped<IMentorService, MentorService>();
+        // services.AddScoped<ISessionService, SessionService>();
+        // services.AddScoped<IAuthService, AuthService>();
+
+        // AutoMapper (when you add it)
+        // services.AddAutoMapper(typeof(DependencyInjection).Assembly);
+
+        // FluentValidation (when you add it)
+        // services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+
+        return services;
+    }
+}
