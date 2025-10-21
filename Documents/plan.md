@@ -46,7 +46,7 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 ```
 CareerRoute/
 ├── Backend/
-│   ├── CareerRoute.API/                    # Main Web API project
+│   ├── CareerRoute.API/                    # UI/Presentation Layer
 │   │   ├── Controllers/                    # API endpoints
 │   │   │   ├── AuthController.cs
 │   │   │   ├── UsersController.cs
@@ -66,59 +66,125 @@ CareerRoute/
 │   │   ├── appsettings.json
 │   │   └── appsettings.Development.json
 │   │
-│   ├── CareerRoute.Core/                   # Domain layer
-│   │   ├── Entities/                       # Domain models
-│   │   │   ├── User.cs
-│   │   │   ├── Mentor.cs
-│   │   │   ├── Session.cs
-│   │   │   ├── Payment.cs
-│   │   │   ├── Category.cs
-│   │   │   ├── Review.cs
-│   │   │   ├── ChatMessage.cs
-│   │   │   ├── Dispute.cs
-│   │   │   └── AdminLog.cs
-│   │   ├── Enums/                          # Shared enumerations
-│   │   ├── Interfaces/                     # Repository & service contracts
-│   │   │   ├── IUserRepository.cs
-│   │   │   ├── IMentorRepository.cs
-│   │   │   ├── ISessionRepository.cs
-│   │   │   ├── IPaymentService.cs
-│   │   │   ├── IVideoConferenceService.cs
-│   │   │   ├── IEmailService.cs
-│   │   │   └── IStorageService.cs
-│   │   └── DTOs/                           # Data transfer objects
-│   │       ├── Auth/
-│   │       ├── Users/
-│   │       ├── Mentors/
-│   │       ├── Sessions/
-│   │       └── Payments/
+│   ├── CareerRoute.Core/                   # Core Layer (Application + Domain)
+│   │   ├── Domain/                         # Domain subfolder
+│   │   │   ├── Entities/                   # Domain models
+│   │   │   │   ├── User.cs
+│   │   │   │   ├── Mentor.cs
+│   │   │   │   ├── Session.cs
+│   │   │   │   ├── Payment.cs
+│   │   │   │   ├── Category.cs
+│   │   │   │   ├── Review.cs
+│   │   │   │   ├── ChatMessage.cs
+│   │   │   │   ├── Dispute.cs
+│   │   │   │   └── AdminLog.cs
+│   │   │   ├── Enums/                      # Shared enumerations
+│   │   │   │   ├── UserRole.cs
+│   │   │   │   ├── SessionStatus.cs
+│   │   │   │   ├── PaymentStatus.cs
+│   │   │   │   └── DisputeStatus.cs
+│   │   │   └── Interfaces/                 # Repository contracts
+│   │   │       └── Repositories/
+│   │   │           ├── IUserRepository.cs
+│   │   │           ├── IMentorRepository.cs
+│   │   │           ├── ISessionRepository.cs
+│   │   │           ├── IPaymentRepository.cs
+│   │   │           ├── ICategoryRepository.cs
+│   │   │           ├── IReviewRepository.cs
+│   │   │           └── IChatMessageRepository.cs
+│   │   │
+│   │   ├── DTOs/                           # Data Transfer Objects
+│   │   │   ├── Auth/
+│   │   │   │   ├── LoginRequestDto.cs
+│   │   │   │   ├── RegisterRequestDto.cs
+│   │   │   │   └── TokenResponseDto.cs
+│   │   │   ├── Users/
+│   │   │   │   ├── UserDto.cs
+│   │   │   │   ├── CreateUserDto.cs
+│   │   │   │   └── UpdateUserDto.cs
+│   │   │   ├── Mentors/
+│   │   │   │   ├── MentorDto.cs
+│   │   │   │   ├── CreateMentorProfileDto.cs
+│   │   │   │   └── MentorSearchResultDto.cs
+│   │   │   ├── Sessions/
+│   │   │   │   ├── SessionDto.cs
+│   │   │   │   ├── CreateSessionDto.cs
+│   │   │   │   └── SessionDetailsDto.cs
+│   │   │   └── Payments/
+│   │   │       ├── PaymentDto.cs
+│   │   │       └── ProcessPaymentDto.cs
+│   │   │
+│   │   ├── Services/                       # Business logic services
+│   │   │   ├── Interfaces/                 # Service contracts
+│   │   │   │   ├── IUserService.cs
+│   │   │   │   ├── IMentorService.cs
+│   │   │   │   ├── ISessionBookingService.cs
+│   │   │   │   ├── IPaymentProcessingService.cs
+│   │   │   │   ├── ISearchService.cs
+│   │   │   │   ├── IReviewService.cs
+│   │   │   │   ├── IAdminService.cs
+│   │   │   │   ├── IPaymentService.cs      # Infrastructure service interface
+│   │   │   │   ├── IVideoConferenceService.cs  # Infrastructure service interface
+│   │   │   │   ├── IEmailService.cs        # Infrastructure service interface
+│   │   │   │   └── IStorageService.cs      # Infrastructure service interface
+│   │   │   └── Implementations/            # Service implementations
+│   │   │       ├── UserService.cs
+│   │   │       ├── MentorService.cs
+│   │   │       ├── SessionBookingService.cs
+│   │   │       ├── PaymentProcessingService.cs
+│   │   │       ├── SearchService.cs
+│   │   │       ├── ReviewService.cs
+│   │   │       └── AdminService.cs
+│   │   │
+│   │   ├── Validators/                     # FluentValidation validators
+│   │   │   ├── Auth/
+│   │   │   │   ├── LoginRequestValidator.cs
+│   │   │   │   └── RegisterRequestValidator.cs
+│   │   │   ├── Users/
+│   │   │   │   ├── CreateUserValidator.cs
+│   │   │   │   └── UpdateUserValidator.cs
+│   │   │   ├── Sessions/
+│   │   │   │   └── CreateSessionValidator.cs
+│   │   │   └── Mentors/
+│   │   │       └── CreateMentorProfileValidator.cs
+│   │   │
+│   │   ├── Mappings/                       # AutoMapper profiles
+│   │   │   ├── UserProfile.cs
+│   │   │   ├── MentorProfile.cs
+│   │   │   ├── SessionProfile.cs
+│   │   │   └── PaymentProfile.cs
+│   │   │
+│   │   └── Exceptions/                     # All exceptions
+│   │       ├── BusinessException.cs
+│   │       ├── NotFoundException.cs
+│   │       ├── ValidationException.cs
+│   │       └── UnauthorizedException.cs
 │   │
-│   ├── CareerRoute.Infrastructure/         # Infrastructure layer
+│   ├── CareerRoute.Infrastructure/         # Infrastructure Layer
 │   │   ├── Data/                           # EF Core context
 │   │   │   ├── ApplicationDbContext.cs
 │   │   │   ├── Configurations/             # Entity configurations
+│   │   │   │   ├── UserConfiguration.cs
+│   │   │   │   ├── MentorConfiguration.cs
+│   │   │   │   ├── SessionConfiguration.cs
+│   │   │   │   └── PaymentConfiguration.cs
 │   │   │   └── Migrations/
 │   │   ├── Repositories/                   # Repository implementations
-│   │   ├── Services/                       # External service integrations
-│   │   │   ├── StripePaymentService.cs
-│   │   │   ├── PaymobPaymentService.cs
-│   │   │   ├── ZoomVideoService.cs
-│   │   │   ├── SendGridEmailService.cs
-│   │   │   └── AzureBlobStorageService.cs
+│   │   │   ├── UserRepository.cs
+│   │   │   ├── MentorRepository.cs
+│   │   │   ├── SessionRepository.cs
+│   │   │   ├── PaymentRepository.cs
+│   │   │   ├── CategoryRepository.cs
+│   │   │   ├── ReviewRepository.cs
+│   │   │   └── ChatMessageRepository.cs
+│   │   ├── Services/                       # External service implementations
+│   │   │   ├── StripePaymentService.cs     # Implements Core/Services/Interfaces/IPaymentService
+│   │   │   ├── PaymobPaymentService.cs     # Implements Core/Services/Interfaces/IPaymentService
+│   │   │   ├── ZoomVideoService.cs         # Implements Core/Services/Interfaces/IVideoConferenceService
+│   │   │   ├── SendGridEmailService.cs     # Implements Core/Services/Interfaces/IEmailService
+│   │   │   └── AzureBlobStorageService.cs  # Implements Core/Services/Interfaces/IStorageService
 │   │   └── Identity/                       # ASP.NET Identity configuration
-│   │
-│   ├── CareerRoute.Application/            # Application layer (business logic)
-│   │   ├── Services/                       # Business logic services
-│   │   │   ├── UserService.cs
-│   │   │   ├── MentorService.cs
-│   │   │   ├── SessionBookingService.cs
-│   │   │   ├── PaymentProcessingService.cs
-│   │   │   ├── SearchService.cs
-│   │   │   ├── ReviewService.cs
-│   │   │   └── AdminService.cs
-│   │   ├── Validators/                     # FluentValidation validators
-│   │   ├── Mappings/                       # AutoMapper profiles
-│   │   └── Exceptions/                     # Custom exceptions
+│   │       └── IdentityConfiguration.cs
 │   │
 │   └── CareerRoute.Tests/
 │       ├── Unit/                           # Unit tests (xUnit)
@@ -194,6 +260,11 @@ CareerRoute/
         └── frontend-ci.yml
 ```
 
-**Structure Decision**: This is a full-stack web application with clear separation between backend (.NET) and frontend (Angular). The backend follows Clean Architecture principles with Core (domain), Infrastructure (data/external services), Application (business logic), and API (presentation) layers. The frontend follows Angular best practices with feature-based modules, shared components, and core services. This structure supports the 6-person team by enabling parallel development across layers and features.
+**Structure Decision**: This is a full-stack web application with clear separation between backend (.NET) and frontend (Angular). The backend follows Clean Architecture principles with a **3-layer approach**: 
+- **API Layer** (presentation/UI)
+- **Core Layer** (combines Application + Domain concerns)
+- **Infrastructure Layer** (data access and external services)
 
-**No violations detected** - Architecture follows standard industry patterns for full-stack web applications with appropriate separation of concerns.
+The Core layer is organized with a Domain subfolder for pure domain logic (entities, enums, repository interfaces), while application concerns (DTOs, Services, Validators, Mappings, Exceptions) sit alongside. This **pragmatic 3-layer structure** provides clean separation of concerns with less ceremony than strict 4-layer DDD implementations, making it ideal for the team's learning curve and 12-week MVP timeline. The frontend follows Angular best practices with feature-based modules, shared components, and core services. This structure supports the 6-person team by enabling parallel development across layers and features.
+
+**No violations detected** - Architecture follows industry-standard clean architecture patterns optimized for team size, complexity, and timeline.
