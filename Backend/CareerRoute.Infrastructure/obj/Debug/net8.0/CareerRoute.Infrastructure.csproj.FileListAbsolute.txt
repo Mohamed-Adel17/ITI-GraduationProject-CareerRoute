@@ -1,0 +1,14 @@
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\bin\Debug\net8.0\CareerRoute.Infrastructure.deps.json
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\bin\Debug\net8.0\CareerRoute.Infrastructure.runtimeconfig.json
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\bin\Debug\net8.0\CareerRoute.Infrastructure.dll
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\bin\Debug\net8.0\CareerRoute.Infrastructure.pdb
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.csproj.AssemblyReference.cache
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.AssemblyInfoInputs.cache
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.AssemblyInfo.cs
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.csproj.CoreCompileInputs.cache
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.dll
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\refint\CareerRoute.Infrastructure.dll
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.pdb
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\CareerRoute.Infrastructure.genruntimeconfig.cache
+F:\ITI\Graduation Project\WorkSpace\Test-Branch\ITI-GraduationProject-CareerRoute-feature-init-backend\Backend\CareerRoute.Infrastructure\obj\Debug\net8.0\ref\CareerRoute.Infrastructure.dll
