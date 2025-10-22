@@ -10,9 +10,10 @@ main (production-ready)
   │   ├── feature/frontend/<feature-name>
   │   ├── feature/auth-system
   │   ├── feature/session-booking
-  │   └── feature/payment-integration
-  │
-  ├── bugfix/<bug-description>
+  │   ├── feature/payment-integration
+  |   |
+  │   └── bugfix/<bug-description>
+  |
   └── release/<version>
 ```
 
