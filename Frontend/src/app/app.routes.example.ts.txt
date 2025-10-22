@@ -1,0 +1,306 @@
+/**
+ * Example Routes Configuration for Career Route Application
+ *
+ * This file demonstrates how to use the authentication guards with your routes.
+ * Copy the relevant sections to your app.routes.ts file and adjust as needed.
+ *
+ * NOTE: This is an EXAMPLE file. The actual app.routes.ts should be configured
+ * based on your components and requirements.
+ */
+
+import { Routes } from '@angular/router';
+import { authGuard, guestGuard, mentorGuard, adminGuard, roleGuard } from './core/guards/auth.guard';
+
+export const routes: Routes = [
+  // ==================== PUBLIC ROUTES ====================
+  // No authentication required
+  {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full'
+  },
+  {
+    path: 'home',
+    loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent)
+  },
+  {
+    path: 'about',
+    loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent)
+  },
+  {
+    path: 'mentors',
+    loadComponent: () => import('./pages/mentors/mentors-list.component').then(m => m.MentorsListComponent)
+  },
+  {
+    path: 'mentors/:id',
+    loadComponent: () => import('./pages/mentors/mentor-profile.component').then(m => m.MentorProfileComponent)
+  },
+
+  // ==================== GUEST-ONLY ROUTES ====================
+  // Redirect to dashboard if already authenticated
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent),
+    canActivate: [guestGuard]
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./pages/auth/register/register.component').then(m => m.RegisterComponent),
+    canActivate: [guestGuard]
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: () => import('./pages/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),
+    canActivate: [guestGuard]
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () => import('./pages/auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
+    canActivate: [guestGuard]
+  },
+
+  // ==================== AUTHENTICATED USER ROUTES ====================
+  // Requires authentication (any role)
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'profile/edit',
+    loadComponent: () => import('./pages/profile/edit-profile.component').then(m => m.EditProfileComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'bookings',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/bookings/bookings-list.component').then(m => m.BookingsListComponent)
+      },
+      {
+        path: 'create/:mentorId',
+        loadComponent: () => import('./pages/bookings/create-booking.component').then(m => m.CreateBookingComponent)
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./pages/bookings/booking-details.component').then(m => m.BookingDetailsComponent)
+      }
+    ]
+  },
+  {
+    path: 'sessions',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/sessions/sessions-list.component').then(m => m.SessionsListComponent)
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./pages/sessions/session-room.component').then(m => m.SessionRoomComponent)
+      }
+    ]
+  },
+  {
+    path: 'payments',
+    loadComponent: () => import('./pages/payments/payment-history.component').then(m => m.PaymentHistoryComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'reviews/create/:sessionId',
+    loadComponent: () => import('./pages/reviews/create-review.component').then(m => m.CreateReviewComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'messages',
+    loadComponent: () => import('./pages/messages/messages.component').then(m => m.MessagesComponent),
+    canActivate: [authGuard]
+  },
+
+  // ==================== MENTOR-ONLY ROUTES ====================
+  // Requires Mentor role
+  {
+    path: 'mentor',
+    canActivate: [mentorGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./pages/mentor/dashboard/mentor-dashboard.component').then(m => m.MentorDashboardComponent)
+      },
+      {
+        path: 'profile',
+        loadComponent: () => import('./pages/mentor/profile/mentor-profile-edit.component').then(m => m.MentorProfileEditComponent)
+      },
+      {
+        path: 'sessions',
+        loadComponent: () => import('./pages/mentor/sessions/mentor-sessions.component').then(m => m.MentorSessionsComponent)
+      },
+      {
+        path: 'bookings',
+        loadComponent: () => import('./pages/mentor/bookings/mentor-bookings.component').then(m => m.MentorBookingsComponent)
+      },
+      {
+        path: 'availability',
+        loadComponent: () => import('./pages/mentor/availability/set-availability.component').then(m => m.SetAvailabilityComponent)
+      },
+      {
+        path: 'earnings',
+        loadComponent: () => import('./pages/mentor/earnings/earnings.component').then(m => m.EarningsComponent)
+      },
+      {
+        path: 'reviews',
+        loadComponent: () => import('./pages/mentor/reviews/mentor-reviews.component').then(m => m.MentorReviewsComponent)
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./pages/mentor/settings/mentor-settings.component').then(m => m.MentorSettingsComponent)
+      }
+    ]
+  },
+
+  // ==================== ADMIN-ONLY ROUTES ====================
+  // Requires Admin role
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./pages/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./pages/admin/users/users-management.component').then(m => m.UsersManagementComponent)
+      },
+      {
+        path: 'mentors',
+        loadComponent: () => import('./pages/admin/mentors/mentors-management.component').then(m => m.MentorsManagementComponent)
+      },
+      {
+        path: 'sessions',
+        loadComponent: () => import('./pages/admin/sessions/sessions-management.component').then(m => m.SessionsManagementComponent)
+      },
+      {
+        path: 'categories',
+        loadComponent: () => import('./pages/admin/categories/categories-management.component').then(m => m.CategoriesManagementComponent)
+      },
+      {
+        path: 'payments',
+        loadComponent: () => import('./pages/admin/payments/payments-management.component').then(m => m.PaymentsManagementComponent)
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('./pages/admin/reports/reports.component').then(m => m.ReportsComponent)
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./pages/admin/settings/platform-settings.component').then(m => m.PlatformSettingsComponent)
+      }
+    ]
+  },
+
+  // ==================== CUSTOM ROLE COMBINATIONS ====================
+  // Routes accessible by multiple specific roles
+  {
+    path: 'support',
+    loadComponent: () => import('./pages/support/support-dashboard.component').then(m => m.SupportDashboardComponent),
+    canActivate: [roleGuard(['Admin', 'Support'])]
+  },
+  {
+    path: 'moderation',
+    loadComponent: () => import('./pages/moderation/moderation-panel.component').then(m => m.ModerationPanelComponent),
+    canActivate: [roleGuard(['Admin', 'Moderator'])]
+  },
+
+  // ==================== ERROR ROUTES ====================
+  {
+    path: 'unauthorized',
+    loadComponent: () => import('./pages/errors/unauthorized/unauthorized.component').then(m => m.UnauthorizedComponent)
+  },
+  {
+    path: 'not-found',
+    loadComponent: () => import('./pages/errors/not-found/not-found.component').then(m => m.NotFoundComponent)
+  },
+
+  // ==================== WILDCARD ROUTE ====================
+  // Must be last
+  {
+    path: '**',
+    redirectTo: 'not-found'
+  }
+];
+
+/**
+ * Alternative approach: Using lazy-loaded feature modules
+ *
+ * This is useful for larger applications with many routes
+ */
+
+export const alternativeRoutes: Routes = [
+  // Public routes
+  {
+    path: '',
+    loadChildren: () => import('./features/public/public.routes').then(m => m.PUBLIC_ROUTES)
+  },
+
+  // Authenticated user feature module
+  {
+    path: 'user',
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/user/user.routes').then(m => m.USER_ROUTES)
+  },
+
+  // Mentor feature module
+  {
+    path: 'mentor',
+    canActivate: [mentorGuard],
+    loadChildren: () => import('./features/mentor/mentor.routes').then(m => m.MENTOR_ROUTES)
+  },
+
+  // Admin feature module
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
+  },
+
+  // Error routes
+  {
+    path: '**',
+    redirectTo: 'not-found'
+  }
+];
+
+/**
+ * Feature module route examples:
+ *
+ * // features/mentor/mentor.routes.ts
+ * export const MENTOR_ROUTES: Routes = [
+ *   {
+ *     path: '',
+ *     component: MentorLayoutComponent,
+ *     children: [
+ *       { path: 'dashboard', component: MentorDashboardComponent },
+ *       { path: 'sessions', component: MentorSessionsComponent },
+ *       // ... other mentor routes
+ *     ]
+ *   }
+ * ];
+ */
