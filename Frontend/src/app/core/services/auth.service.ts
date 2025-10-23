@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment.development';
 
 /**
  * Service for managing authentication tokens and user session
@@ -7,8 +8,8 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly TOKEN_KEY = 'access_token';
-  private readonly REFRESH_TOKEN_KEY = 'refresh_token';
+  private readonly TOKEN_KEY = environment.auth.tokenKey;
+  private readonly REFRESH_TOKEN_KEY = environment.auth.refreshTokenKey;
 
   /**
    * Get the JWT access token from localStorage

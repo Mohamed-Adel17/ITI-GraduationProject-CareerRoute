@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment.development';
 
 /**
  * Example service demonstrating how to use the auth interceptor
@@ -11,8 +12,7 @@ import { AuthService } from './auth.service';
   providedIn: 'root'
 })
 export class ExampleApiService {
-  // TODO: Replace with environment.apiUrl in production
-  private readonly apiUrl = 'http://localhost:5000/api';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(
     private http: HttpClient,
