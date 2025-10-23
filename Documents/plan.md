@@ -6,8 +6,8 @@ Career Route is a mentorship platform connecting students, graduates, and early 
 
 ## Technical Context
 
-**Language/Version**: C# 12 / .NET 8.0 LTS (backend), TypeScript 5.x / Angular 17+ (frontend)  
-**Primary Dependencies**: ASP.NET Core 8.0, Entity Framework Core 8.0, Angular 17, Bootstrap 5, ASP.NET Identity (auth), SignalR (real-time)  
+**Language/Version**: C# 12 / .NET 8.0 LTS (backend), TypeScript 5.x / Angular 20.3.0 (frontend)
+**Primary Dependencies**: ASP.NET Core 8.0, Entity Framework Core 8.0, Angular 20, Bootstrap 5, ASP.NET Identity (auth), SignalR (real-time)  
 **Storage**: SQL Server 2022 (primary database), Azure Blob Storage or local file system (session recordings, attachments)  
 **Testing**: xUnit + Moq (backend unit tests), Jasmine + Karma (Angular unit tests), Playwright (E2E tests)  
 **Target Platform**: Cross-platform deployment (Windows Server / Linux containers), modern browsers (Chrome, Firefox, Edge, Safari)
@@ -260,11 +260,21 @@ CareerRoute/
         └── frontend-ci.yml
 ```
 
-**Structure Decision**: This is a full-stack web application with clear separation between backend (.NET) and frontend (Angular). The backend follows Clean Architecture principles with a **3-layer approach**: 
+**Structure Decision (OFFICIAL - Approved 2025-10-23)**: This is a full-stack web application with clear separation between backend (.NET) and frontend (Angular). The backend follows Clean Architecture principles with a **3-layer pragmatic approach**:
 - **API Layer** (presentation/UI)
 - **Core Layer** (combines Application + Domain concerns)
 - **Infrastructure Layer** (data access and external services)
 
-The Core layer is organized with a Domain subfolder for pure domain logic (entities, enums, repository interfaces), while application concerns (DTOs, Services, Validators, Mappings, Exceptions) sit alongside. This **pragmatic 3-layer structure** provides clean separation of concerns with less ceremony than strict 4-layer DDD implementations, making it ideal for the team's learning curve and 12-week MVP timeline. The frontend follows Angular best practices with feature-based modules, shared components, and core services. This structure supports the 6-person team by enabling parallel development across layers and features.
+**Core Layer Organization:**
+- `Domain/` subfolder: Pure domain logic (Entities, Enums, Repository Interfaces)
+- Application concerns: DTOs, Services, Validators, Mappings, Exceptions (sit alongside Domain)
+- Infrastructure service interfaces (IPaymentService, IEmailService, etc.) are in `Core/Services/Interfaces/` for simplicity
 
-**No violations detected** - Architecture follows industry-standard clean architecture patterns optimized for team size, complexity, and timeline.
+**Rationale**: This **pragmatic 3-layer structure** provides clean separation of concerns with less ceremony than strict 4-layer DDD implementations, making it ideal for the team's learning curve and 12-week MVP timeline. While purist Clean Architecture places DTOs and infrastructure interfaces in a separate Application layer, we accept this pragmatic compromise for:
+1. Reduced project complexity (3 projects vs 4)
+2. Faster onboarding for junior developers
+3. Sufficient separation for graduation project scope
+
+The frontend uses **Angular 20** following best practices with feature-based modules, shared components, and core services. This structure supports the 6-person team by enabling parallel development across layers and features.
+
+**Architecture Status**: ✅ APPROVED - This structure is the official architecture for the Career Route project.

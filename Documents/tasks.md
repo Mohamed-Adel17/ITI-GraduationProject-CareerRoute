@@ -2,11 +2,20 @@
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
+## Architecture Note (IMPORTANT)
+
+**3-Layer Structure Approved (2025-10-23):**
+- CareerRoute.API (Presentation)
+- CareerRoute.Core (Domain + Application combined)
+- CareerRoute.Infrastructure (Data + External Services)
+
+**File paths in this document** reference `Backend/CareerRoute.Application/` for historical reasons, but should be interpreted as `Backend/CareerRoute.Core/` since we use the 3-layer approach. Application-layer concerns (DTOs, Services, Validators, Mappings, Exceptions) are located in the Core project alongside Domain entities.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- File paths follow Backend/Frontend structure from plan.md
+- File paths follow Backend/Frontend structure from plan.md (3-layer architecture)
 
 ---
 
@@ -14,8 +23,8 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 [P] Create Backend solution structure: CareerRoute.API, CareerRoute.Core, CareerRoute.Infrastructure, CareerRoute.Application, CareerRoute.Tests
-- [ ] T002 [P] Create Frontend Angular 17 project with routing and Bootstrap 5
+- [ ] T001 [P] Create Backend solution structure: CareerRoute.API, CareerRoute.Core, CareerRoute.Infrastructure, CareerRoute.Tests (3-layer architecture - no separate Application project)
+- [ ] T002 [P] Create Frontend Angular 20 project with routing and Bootstrap 5
 - [ ] T003 [P] Setup .NET 8.0 dependencies: ASP.NET Core, Entity Framework Core, ASP.NET Identity
 - [ ] T004 [P] Setup Frontend dependencies: Angular Material or ng-bootstrap, RxJS, HttpClient
 - [ ] T005 [P] Create Database/Scripts folder with initial SQL scripts structure
