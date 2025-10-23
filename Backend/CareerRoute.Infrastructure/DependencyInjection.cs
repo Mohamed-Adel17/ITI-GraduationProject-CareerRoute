@@ -1,3 +1,4 @@
+using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Interface.IRepositories;
 using CareerRoute.Core.Setting;
 using CareerRoute.Infrastructure.Data;
@@ -36,6 +37,8 @@ public static class DependencyInjection
         // services.AddScoped<IUserRepository, UserRepository>();
         // services.AddScoped<IMentorRepository, MentorRepository>();
         // services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
+
 
         // Infrastructure Service Registration
         // Uncomment and add as you create services

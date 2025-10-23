@@ -1,3 +1,4 @@
+using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,4 +27,6 @@ public static class DependencyInjection
 
         return services;
     }
+
+
 }
