@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { authGuard, mentorGuard, adminGuard } from './core/guards/auth.guard';
+import { authGuard } from './core/guards/auth.guard';
+import { mentorRoleGuard, adminRoleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -13,12 +14,12 @@ export const routes: Routes = [
   },
   {
     path: 'mentor',
-    canActivate: [mentorGuard],
+    canActivate: [mentorRoleGuard],
     loadChildren: () => import('./features/mentor/mentor.routes').then(m => m.MENTOR_ROUTES)
   },
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [adminRoleGuard],
     loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
   },
   {
