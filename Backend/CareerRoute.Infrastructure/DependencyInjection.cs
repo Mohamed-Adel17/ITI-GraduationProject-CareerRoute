@@ -1,4 +1,4 @@
-using CareerRoute.Core.Interface.IRepositories;
+using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Setting;
 using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
