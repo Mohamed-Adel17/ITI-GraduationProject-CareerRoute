@@ -65,87 +65,26 @@ export const routes: Routes = [
 ];
 ```
 
-### 3. `roleGuard()` - Role-Based Authorization Guard Factory
+## Role-Based Guards
 
-Creates a guard that checks if user has specific role(s). Supports single or multiple roles.
+For role-based authorization, see the **enhanced role guards** in `role.guard.ts`:
 
-**Features:**
-- Checks if user has required role(s)
-- Supports single role or array of allowed roles
-- Redirects to `/unauthorized` if user lacks required role
-- Redirects to `/login` if not authenticated
-- Handles both standard and ASP.NET Core role claim formats
-- Supports single role (string) or multiple roles (array) in token
+- `mentorRoleGuard` - Mentor-only routes
+- `adminRoleGuard` - Admin-only routes
+- `userRoleGuard` - User-only routes
+- `createRoleGuard()` - Custom role configurations
+- `requireAnyRole()` - User needs at least one role
+- `requireAllRoles()` - User needs all specified roles
+- `denyRoles()` - User must not have specified roles
 
-**Usage:**
-
-```typescript
-import { Routes } from '@angular/router';
-import { roleGuard } from './core/guards/auth.guard';
-import { AdminPanelComponent } from './pages/admin/admin-panel.component';
-
-export const routes: Routes = [
-  // Single role requirement
-  {
-    path: 'admin',
-    component: AdminPanelComponent,
-    canActivate: [roleGuard(['Admin'])]
-  },
-
-  // Multiple roles allowed (user needs at least one)
-  {
-    path: 'moderation',
-    component: ModerationComponent,
-    canActivate: [roleGuard(['Admin', 'Moderator'])]
-  }
-];
-```
-
-### 4. `mentorGuard` - Mentor-Specific Guard
-
-Pre-configured guard for mentor-only routes. Shorthand for `roleGuard(['Mentor'])`.
-
-**Usage:**
-
-```typescript
-import { Routes } from '@angular/router';
-import { mentorGuard } from './core/guards/auth.guard';
-import { MentorDashboardComponent } from './pages/mentor/dashboard.component';
-
-export const routes: Routes = [
-  {
-    path: 'mentor/dashboard',
-    component: MentorDashboardComponent,
-    canActivate: [mentorGuard]
-  }
-];
-```
-
-### 5. `adminGuard` - Admin-Specific Guard
-
-Pre-configured guard for admin-only routes. Shorthand for `roleGuard(['Admin'])`.
-
-**Usage:**
-
-```typescript
-import { Routes } from '@angular/router';
-import { adminGuard } from './core/guards/auth.guard';
-import { AdminSettingsComponent } from './pages/admin/settings.component';
-
-export const routes: Routes = [
-  {
-    path: 'admin/settings',
-    component: AdminSettingsComponent,
-    canActivate: [adminGuard]
-  }
-];
-```
+**See `role-guard-usage-example.md` for complete role guard documentation.**
 
 ## Complete Route Configuration Example
 
 ```typescript
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, mentorGuard, adminGuard, roleGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { mentorRoleGuard, adminRoleGuard } from './core/guards/role.guard';
 
 // Import components
 import { HomeComponent } from './pages/home/home.component';
@@ -206,7 +145,7 @@ export const routes: Routes = [
   // Mentor-only routes
   {
     path: 'mentor',
-    canActivate: [mentorGuard],
+    canActivate: [mentorRoleGuard],
     children: [
       {
         path: 'dashboard',
@@ -226,7 +165,7 @@ export const routes: Routes = [
   // Admin-only routes
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [adminRoleGuard],
     children: [
       {
         path: 'dashboard',
@@ -241,13 +180,6 @@ export const routes: Routes = [
         component: AdminSettingsComponent
       }
     ]
-  },
-
-  // Custom role-based routes
-  {
-    path: 'moderation',
-    component: ModerationComponent,
-    canActivate: [roleGuard(['Admin', 'Moderator'])]
   },
 
   // Error routes
@@ -270,12 +202,12 @@ Guards work seamlessly with lazy-loaded modules:
 export const routes: Routes = [
   {
     path: 'mentor',
-    canActivate: [mentorGuard],
+    canActivate: [mentorRoleGuard],
     loadChildren: () => import('./features/mentor/mentor.routes').then(m => m.MENTOR_ROUTES)
   },
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [adminRoleGuard],
     loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
   }
 ];
@@ -328,59 +260,9 @@ export class LoginComponent implements OnInit {
 }
 ```
 
-## Role Claim Configuration
+## Role Configuration
 
-The `roleGuard` supports different JWT role claim formats:
-
-### Standard Role Claim
-
-```json
-{
-  "role": "Admin"
-}
-```
-
-### Multiple Roles (Array)
-
-```json
-{
-  "role": ["User", "Mentor"]
-}
-```
-
-### ASP.NET Core Identity Role Claim
-
-```json
-{
-  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role": "Admin"
-}
-```
-
-The guard automatically handles all these formats.
-
-## Backend JWT Configuration
-
-For ASP.NET Core, configure JWT to include role claims:
-
-```csharp
-// In your token generation service
-var claims = new List<Claim>
-{
-    new Claim(ClaimTypes.NameIdentifier, user.Id),
-    new Claim(ClaimTypes.Email, user.Email),
-    new Claim(ClaimTypes.Role, user.Role), // This becomes the role claim
-    // Or use custom claim name:
-    new Claim("role", user.Role)
-};
-
-var token = new JwtSecurityToken(
-    issuer: _configuration["JwtSettings:Issuer"],
-    audience: _configuration["JwtSettings:Audience"],
-    claims: claims,
-    expires: DateTime.UtcNow.AddHours(1),
-    signingCredentials: credentials
-);
-```
+For role claim configuration and advanced role-based authorization, see `role-guard-usage-example.md`.
 
 ## Combining Multiple Guards
 
@@ -391,7 +273,7 @@ export const routes: Routes = [
   {
     path: 'mentor/premium',
     component: PremiumMentorComponent,
-    canActivate: [authGuard, mentorGuard, premiumSubscriptionGuard]
+    canActivate: [authGuard, mentorRoleGuard, premiumSubscriptionGuard]
   }
 ];
 ```
@@ -454,7 +336,7 @@ export class UnauthorizedComponent {
 ## Best Practices
 
 1. **Always use guards for protected routes** - Don't rely on hiding UI elements alone
-2. **Combine authGuard with role guards** - For role-specific routes, use `mentorGuard` or `adminGuard` (they include auth check)
+2. **Combine authGuard with role guards** - For role-specific routes, use `mentorRoleGuard` or `adminRoleGuard` (they include auth check)
 3. **Create meaningful unauthorized pages** - Help users understand why they can't access a route
 4. **Handle return URLs** - Always preserve the user's intended destination
 5. **Test guards thoroughly** - Ensure all edge cases are covered
@@ -497,7 +379,7 @@ describe('Protected Component', () => {
 
 ### Scenario 2: User with 'User' role tries to access admin route
 1. `authGuard` passes (user is authenticated)
-2. `adminGuard` checks role
+2. `adminRoleGuard` checks role
 3. User has 'User' role, not 'Admin'
 4. Redirects to `/unauthorized`
 
