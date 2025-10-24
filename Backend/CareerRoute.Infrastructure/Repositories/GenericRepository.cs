@@ -10,7 +10,7 @@ namespace CareerRoute.Infrastructure.Repositories
 {
     public class GenericRepository<T> : IBaseRepository<T> where T : class
     {
-        DbContext dbContext; 
+        private readonly DbContext dbContext; 
 
         public GenericRepository(DbContext dbContext)
         {

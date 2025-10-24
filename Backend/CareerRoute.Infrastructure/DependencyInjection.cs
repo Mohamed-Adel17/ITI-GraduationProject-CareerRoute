@@ -26,7 +26,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // Database Configuration
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<DbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
         );
 
