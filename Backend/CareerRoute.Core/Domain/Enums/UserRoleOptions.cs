@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Domain.Enums
 {
-    internal class UserRole
+    public enum UserRoleOptions
     {
     }
 }
