@@ -1,8 +1,10 @@
 using CareerRoute.Core;
+using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Setting;
 using CareerRoute.Infrastructure;
 using CareerRoute.Infrastructure.Data;
+using CareerRoute.Infrastructure.Data.SeedData;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +60,21 @@ builder.Services.AddAuthentication(
     );
 
 
+//Adding Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AppPolicies.RequireUserRole, 
+        policy=> policy.RequireRole(AppRoles.User));
+    options.AddPolicy(AppPolicies.RequireAdminRole, 
+        policy => policy.RequireRole(AppRoles.Admin));
+    options.AddPolicy(AppPolicies.RequireMentorRole,
+        policy => policy.RequireRole(AppRoles.Mentor));
+    options.AddPolicy(AppPolicies.RequireMentorOrAdminRole, 
+        policy => policy.RequireRole(AppRoles.Mentor, AppRoles.Admin));
+    options.AddPolicy(AppPolicies.RequireAnyRole, 
+        policy => policy.RequireRole(AppRoles.User, AppRoles.Admin, AppRoles.Mentor));
+});
+
 
 // API Layer Services
 builder.Services.AddControllers();
@@ -76,8 +93,30 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+//Authentication then Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+
+
+//seed roles on application startup
+using(var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        await RoleSeeder.SeedRolesAsync(roleManager, logger);
+    }
+    catch(Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error happened while seeding roles");
+    }
+}
 
 app.Run();
