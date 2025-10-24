@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+
 namespace CareerRoute.Infrastructure;
 
 public static class DependencyInjection
@@ -36,6 +37,8 @@ public static class DependencyInjection
         // services.AddScoped<IUserRepository, UserRepository>();
         // services.AddScoped<IMentorRepository, MentorRepository>();
         // services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
+
 
         // Infrastructure Service Registration
         // Uncomment and add as you create services
