@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+
 namespace CareerRoute.Infrastructure;
 
 public static class DependencyInjection
@@ -25,7 +26,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // Database Configuration
-        services.AddDbContext<DbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
         );
 

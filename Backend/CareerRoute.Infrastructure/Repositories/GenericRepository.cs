@@ -5,31 +5,31 @@ using System.Text;
 using System.Threading.Tasks;
 using CareerRoute.Core.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
-
+using CareerRoute.Infrastructure.Data;
 namespace CareerRoute.Infrastructure.Repositories
 {
     public class GenericRepository<T> : IBaseRepository<T> where T : class
     {
-        private readonly DbContext dbContext; 
+        private readonly ApplicationDbContext dbContext;
 
-        public GenericRepository(DbContext dbContext)
+        public GenericRepository(ApplicationDbContext dbContext)
         {
             this.dbContext = dbContext;
         }
 
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            return await dbContext.Set<T>().ToListAsync(); 
+            return await dbContext.Set<T>().ToListAsync();
         }
 
-        public async  Task<T?> GetByIdAsync(int id)
+        public async Task<T?> GetByIdAsync(int id)
         {
             return await dbContext.Set<T>().FindAsync(id);
         }
 
         public async Task AddAsync(T entity)
         {
-             await dbContext.Set<T>().AddAsync(entity);
+            await dbContext.Set<T>().AddAsync(entity);
             //not saved in DB yet
         }
 
