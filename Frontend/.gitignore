@@ -41,3 +41,13 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Environment files
+# NOTE: We're keeping environment files in the repo for this project
+# but you may want to gitignore them if they contain sensitive secrets
+# Uncomment the lines below to exclude environment files:
+# /src/environments/environment.ts
+# /src/environments/environment.development.ts
+# /src/environments/environment.*.ts
+# Always keep the template file tracked
+# !/src/environments/environment.TEMPLATE.ts
