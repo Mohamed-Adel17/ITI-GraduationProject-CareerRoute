@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Domain.Enums
 {
-    public enum PaymentStatus
+    public enum PaymentStatusOptions
     {
     }
 }
