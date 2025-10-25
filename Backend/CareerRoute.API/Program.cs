@@ -107,16 +107,21 @@ app.UseGlobalExceptionHandler();
 
 app.UseCors("AllowFrontend");
 
+app.UseMiddleware<RequestLoggingMiddleware>();
+
 //Authentication then Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.MapControllers();
 
 
 
+
+
 //seed roles on application startup
-using(var scope = app.Services.CreateScope())
+using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
