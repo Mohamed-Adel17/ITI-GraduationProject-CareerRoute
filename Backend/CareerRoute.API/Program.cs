@@ -14,13 +14,23 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+//CORS Configuration
+var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:4200";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(frontendUrl).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+    });
+});
+
 // Add services to the container.
 // Clean Architecture Layers
 builder.Services.AddCore();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddConfigurationInfrastructure(builder.Configuration);
-
-
 
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -92,6 +102,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend");
 
 //Authentication then Authorization
 app.UseAuthentication();
