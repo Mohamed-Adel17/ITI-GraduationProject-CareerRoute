@@ -1,3 +1,4 @@
+using CareerRoute.API.Middleware;
 using CareerRoute.Core;
 using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
@@ -92,6 +93,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseGlobalExceptionHandler();
 
 //Authentication then Authorization
 app.UseAuthentication();
