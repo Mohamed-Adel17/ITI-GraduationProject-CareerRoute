@@ -6,10 +6,18 @@
  *
  * NOTE: This is an EXAMPLE file. The actual app.routes.ts should be configured
  * based on your components and requirements.
+ *
+ * GUARD USAGE:
+ * - Authentication guards (authGuard, guestGuard) are in ./core/guards/auth.guard
+ * - Role-based guards (mentorRoleGuard, adminRoleGuard, etc.) are in ./core/guards/role.guard
+ * - For custom role combinations, use requireAnyRole, requireAllRoles, or createRoleGuard
+ *
+ * See role-guard-usage-example.md for complete role guard documentation.
  */
 
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, mentorGuard, adminGuard, roleGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { mentorRoleGuard, adminRoleGuard, requireAnyRole } from './core/guards/role.guard';
 
 export const routes: Routes = [
   // ==================== PUBLIC ROUTES ====================
@@ -128,7 +136,7 @@ export const routes: Routes = [
   // Requires Mentor role
   {
     path: 'mentor',
-    canActivate: [mentorGuard],
+    canActivate: [mentorRoleGuard],
     children: [
       {
         path: '',
@@ -174,7 +182,7 @@ export const routes: Routes = [
   // Requires Admin role
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [adminRoleGuard],
     children: [
       {
         path: '',
@@ -221,12 +229,12 @@ export const routes: Routes = [
   {
     path: 'support',
     loadComponent: () => import('./pages/support/support-dashboard.component').then(m => m.SupportDashboardComponent),
-    canActivate: [roleGuard(['Admin', 'Support'])]
+    canActivate: [requireAnyRole(['Admin', 'Support'])]
   },
   {
     path: 'moderation',
     loadComponent: () => import('./pages/moderation/moderation-panel.component').then(m => m.ModerationPanelComponent),
-    canActivate: [roleGuard(['Admin', 'Moderator'])]
+    canActivate: [requireAnyRole(['Admin', 'Moderator'])]
   },
 
   // ==================== ERROR ROUTES ====================
@@ -270,14 +278,14 @@ export const alternativeRoutes: Routes = [
   // Mentor feature module
   {
     path: 'mentor',
-    canActivate: [mentorGuard],
+    canActivate: [mentorRoleGuard],
     loadChildren: () => import('./features/mentor/mentor.routes').then(m => m.MENTOR_ROUTES)
   },
 
   // Admin feature module
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [adminRoleGuard],
     loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
   },
 

@@ -252,7 +252,7 @@ Users can rate and review mentors after sessions, helping others make informed d
 - **FR-052**: Video sessions MUST support screen sharing, audio/video controls, and real-time communication
 - **FR-053**: System MUST enforce session time limits according to booked duration (30min or 60min) with countdown timers
 - **FR-054**: Optional session recordings MUST require explicit consent from all participants before recording starts
-- **FR-055**: Recorded sessions MUST be stored securely with token-based, stream-only access (no direct download) and auto-expire after 3 days to align with post-session chat window and minimize storage costs while preserving privacy
+- **FR-055**: Recorded sessions MUST be stored securely with token-based, stream-only access (no direct download) and auto-expire **3 days from session completion time** to align with post-session chat window and minimize storage costs while preserving privacy
 
 ### Key Entities
 

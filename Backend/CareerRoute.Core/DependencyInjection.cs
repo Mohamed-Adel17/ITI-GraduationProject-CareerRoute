@@ -1,3 +1,6 @@
+using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.Services.Implementations;
+using CareerRoute.Core.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CareerRoute.Core;
@@ -8,6 +11,9 @@ public static class DependencyInjection
     {
         // Business Logic Services Registration
         // Uncomment and add as you create services
+
+
+        services.AddScoped<ITokenService, TokenService>();
         // services.AddScoped<IUserService, UserService>();
         // services.AddScoped<IMentorService, MentorService>();
         // services.AddScoped<ISessionService, SessionService>();
@@ -21,4 +27,6 @@ public static class DependencyInjection
 
         return services;
     }
+
+
 }

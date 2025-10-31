@@ -1,0 +1,469 @@
+<!-- Register Page Container -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col lg:flex-row">
+  <!-- Left Side - Registration Form -->
+  <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-12">
+    <div class="w-full max-w-md space-y-8">
+      <!-- Header -->
+      <div>
+        <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+          Create your account
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+          Join our community of experts and learners.
+        </p>
+      </div>
+
+      <!-- Error Message Display -->
+      <div
+        *ngIf="errorMessage"
+        class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+        role="alert"
+      >
+        <div class="flex items-start">
+          <svg
+            class="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <p class="text-sm text-red-700 dark:text-red-400">
+            {{ errorMessage }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Registration Form -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <!-- Email Field -->
+        <div>
+          <label
+            for="email"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            (input)="clearError()"
+            class="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border transition-colors"
+            [class.border-red-500]="email.invalid && email.touched"
+            [class.border-gray-300]="!(email.invalid && email.touched)"
+            [class.dark:border-gray-700]="!(email.invalid && email.touched)"
+            placeholder="you@example.com"
+          />
+          <!-- Email Validation Messages -->
+          <div *ngIf="email.invalid && email.touched" class="mt-1">
+            <p *ngIf="email.errors?.['required']" class="text-sm text-red-600 dark:text-red-400">
+              Email is required
+            </p>
+            <p *ngIf="email.errors?.['email']" class="text-sm text-red-600 dark:text-red-400">
+              Please enter a valid email address
+            </p>
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div>
+          <label
+            for="password"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Password
+          </label>
+          <div class="relative">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+              (input)="clearError()"
+              class="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border transition-colors pr-12"
+              [class.border-red-500]="password.invalid && password.touched"
+              [class.border-gray-300]="!(password.invalid && password.touched)"
+              [class.dark:border-gray-700]="!(password.invalid && password.touched)"
+              placeholder="Enter your password"
+            />
+            <!-- Password Visibility Toggle -->
+            <button
+              type="button"
+              (click)="togglePasswordVisibility()"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <!-- Eye Icon (Show) -->
+              <svg
+                *ngIf="!showPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              <!-- Eye Off Icon (Hide) -->
+              <svg
+                *ngIf="showPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411"
+                />
+              </svg>
+            </button>
+          </div>
+          <!-- Password Validation Messages -->
+          <div *ngIf="password.invalid && password.touched" class="mt-1">
+            <p *ngIf="password.errors?.['required']" class="text-sm text-red-600 dark:text-red-400">
+              Password is required
+            </p>
+            <p *ngIf="password.errors?.['minlength']" class="text-sm text-red-600 dark:text-red-400">
+              Password must be at least 8 characters long
+            </p>
+          </div>
+        </div>
+
+        <!-- Confirm Password Field -->
+        <div>
+          <label
+            for="confirmPassword"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Confirm Password
+          </label>
+          <div class="relative">
+            <input
+              id="confirmPassword"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              autocomplete="new-password"
+              (input)="clearError()"
+              class="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border transition-colors pr-12"
+              [class.border-red-500]="confirmPassword.invalid && confirmPassword.touched"
+              [class.border-gray-300]="!(confirmPassword.invalid && confirmPassword.touched)"
+              [class.dark:border-gray-700]="!(confirmPassword.invalid && confirmPassword.touched)"
+              placeholder="Confirm your password"
+            />
+            <!-- Confirm Password Visibility Toggle -->
+            <button
+              type="button"
+              (click)="toggleConfirmPasswordVisibility()"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              [attr.aria-label]="showConfirmPassword ? 'Hide password' : 'Show password'"
+            >
+              <!-- Eye Icon (Show) -->
+              <svg
+                *ngIf="!showConfirmPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              <!-- Eye Off Icon (Hide) -->
+              <svg
+                *ngIf="showConfirmPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411"
+                />
+              </svg>
+            </button>
+          </div>
+          <!-- Confirm Password Validation Messages -->
+          <div *ngIf="confirmPassword.invalid && confirmPassword.touched" class="mt-1">
+            <p *ngIf="confirmPassword.errors?.['required']" class="text-sm text-red-600 dark:text-red-400">
+              Please confirm your password
+            </p>
+          </div>
+        </div>
+
+        <!-- User Type Selection (I am a...) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            I am a...
+          </label>
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Mentor Option -->
+            <label
+              class="flex items-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer transition-all"
+              [class.border-blue-600]="userType.value === 'mentor'"
+              [class.bg-blue-50]="userType.value === 'mentor'"
+              [class.dark:bg-blue-900/20]="userType.value === 'mentor'"
+              for="mentor"
+            >
+              <input
+                class="h-5 w-5 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                id="mentor"
+                formControlName="userType"
+                type="radio"
+                value="mentor"
+              />
+              <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                Mentor
+              </span>
+            </label>
+
+            <!-- Client Option -->
+            <label
+              class="flex items-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer transition-all"
+              [class.border-blue-600]="userType.value === 'client'"
+              [class.bg-blue-50]="userType.value === 'client'"
+              [class.dark:bg-blue-900/20]="userType.value === 'client'"
+              for="client"
+            >
+              <input
+                class="h-5 w-5 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                id="client"
+                formControlName="userType"
+                type="radio"
+                value="client"
+                checked
+              />
+              <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                Client
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div>
+          <button
+            type="submit"
+            [disabled]="loading || registerForm.invalid"
+            class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <!-- Loading Spinner -->
+            <svg
+              *ngIf="loading"
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span>{{ loading ? 'Creating account...' : 'Sign up' }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Login Link -->
+      <div class="text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Already have an account?
+          <a
+            routerLink="/auth/login"
+            class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Log in
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side - Features/Services -->
+  <div
+    class="w-full lg:w-1/2 flex flex-col items-center lg:items-start justify-center bg-blue-50 dark:bg-blue-900/10 p-8 lg:p-12"
+  >
+    <div class="w-full max-w-lg text-center lg:text-left">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        Explore Our Services
+      </h2>
+
+      <div class="space-y-4">
+        <!-- Feature 1: Group Sessions -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 8.646 4 4 0 010-8.646M9 9H5m14 0h-4m0 0v5m0-5v-3m-4 16v-3m0 3h4m0 0h4m-13-3v3m0-3H9"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Group Sessions</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Collaborate and learn with peers.
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 2: Recorded Sessions Library -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Recorded Sessions Library</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Access expert advice anytime.
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 3: Interview Preparation Sessions -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Interview Preparation</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Ace your next interview with expert coaching.
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 4: Session Follow-up Chat -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M8 16h8a2 2 0 002-2V8a2 2 0 00-2-2H8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Session Follow-up Chat</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Stay connected with your mentor after sessions.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

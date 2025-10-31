@@ -1,0 +1,117 @@
+/* Register Component Styles */
+
+/* Form Input Focus States */
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Radio Button Focus */
+input[type='radio']:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+/* Password Toggle Button Hover Effect */
+button[type='button']:hover svg {
+  transform: scale(1.1);
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Submit Button Loading State */
+button[type='submit']:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button[type='submit']:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Error Message Animation */
+div[role='alert'] {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form Validation Error Border Animation */
+input.border-red-500 {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Loading Spinner Animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Link Hover Effects */
+a {
+  transition: color 0.2s ease-in-out;
+}
+
+/* Feature Card Hover Effect */
+div:has(> svg.w-10):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Dark Mode Specific Adjustments */
+@media (prefers-color-scheme: dark) {
+  input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Accessibility: Focus Visible */
+*:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Form Container Max Width */
+.max-w-md {
+  max-width: 28rem;
+}
+
+.max-w-lg {
+  max-width: 32rem;
+}
