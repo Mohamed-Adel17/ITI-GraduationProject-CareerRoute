@@ -1,0 +1,354 @@
+<!-- Login Page Container -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col lg:flex-row">
+  <!-- Left Side - Login Form -->
+  <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-12">
+    <div class="w-full max-w-md space-y-8">
+      <!-- Header -->
+      <div>
+        <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+          Welcome back
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+          Sign in to your account to continue
+        </p>
+      </div>
+
+      <!-- Error Message Display -->
+      <div
+        *ngIf="errorMessage"
+        class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+        role="alert"
+      >
+        <div class="flex items-start">
+          <svg
+            class="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <p class="text-sm text-red-700 dark:text-red-400">
+            {{ errorMessage }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <!-- Email Field -->
+        <div>
+          <label
+            for="email"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            (input)="clearError()"
+            class="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border transition-colors"
+            [class.border-red-500]="email.invalid && email.touched"
+            [class.border-gray-300]="!(email.invalid && email.touched)"
+            [class.dark:border-gray-700]="!(email.invalid && email.touched)"
+            [class.focus:ring-blue-500]="!(email.invalid && email.touched)"
+            [class.focus:border-blue-500]="!(email.invalid && email.touched)"
+            placeholder="you@example.com"
+          />
+          <!-- Email Validation Messages -->
+          <div *ngIf="email.invalid && email.touched" class="mt-1">
+            <p *ngIf="email.errors?.['required']" class="text-sm text-red-600 dark:text-red-400">
+              Email is required
+            </p>
+            <p *ngIf="email.errors?.['email']" class="text-sm text-red-600 dark:text-red-400">
+              Please enter a valid email address
+            </p>
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label
+              for="password"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Password
+            </label>
+            <a
+              routerLink="/auth/forgot-password"
+              class="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Forgot password?
+            </a>
+          </div>
+          <div class="relative">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+              (input)="clearError()"
+              class="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border transition-colors pr-12"
+              [class.border-red-500]="password.invalid && password.touched"
+              [class.border-gray-300]="!(password.invalid && password.touched)"
+              [class.dark:border-gray-700]="!(password.invalid && password.touched)"
+              [class.focus:ring-blue-500]="!(password.invalid && password.touched)"
+              [class.focus:border-blue-500]="!(password.invalid && password.touched)"
+              placeholder="Enter your password"
+            />
+            <!-- Password Visibility Toggle -->
+            <button
+              type="button"
+              (click)="togglePasswordVisibility()"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <!-- Eye Icon (Show) -->
+              <svg
+                *ngIf="!showPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              <!-- Eye Off Icon (Hide) -->
+              <svg
+                *ngIf="showPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                />
+              </svg>
+            </button>
+          </div>
+          <!-- Password Validation Messages -->
+          <div *ngIf="password.invalid && password.touched" class="mt-1">
+            <p *ngIf="password.errors?.['required']" class="text-sm text-red-600 dark:text-red-400">
+              Password is required
+            </p>
+            <p *ngIf="password.errors?.['minlength']" class="text-sm text-red-600 dark:text-red-400">
+              Password must be at least 8 characters long
+            </p>
+          </div>
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div class="flex items-center">
+          <input
+            id="rememberMe"
+            type="checkbox"
+            formControlName="rememberMe"
+            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label for="rememberMe" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+            Remember me
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <div>
+          <button
+            type="submit"
+            [disabled]="loading || loginForm.invalid"
+            class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <!-- Loading Spinner -->
+            <svg
+              *ngIf="loading"
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span>{{ loading ? 'Signing in...' : 'Sign in' }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Register Link -->
+      <div class="text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Don't have an account?
+          <a
+            routerLink="/auth/register"
+            class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Sign up
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side - Features/Services -->
+  <div
+    class="w-full lg:w-1/2 flex flex-col items-center lg:items-start justify-center bg-blue-50 dark:bg-blue-900/10 p-8 lg:p-12"
+  >
+    <div class="w-full max-w-lg text-center lg:text-left">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        Welcome to CareerRoute
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-8">
+        Connect with expert mentors and accelerate your career growth.
+      </p>
+
+      <div class="space-y-4">
+        <!-- Feature 1: One-on-One Sessions -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Expert Mentors</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Connect with industry professionals
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 2: Group Sessions -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Group Sessions</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Collaborate and learn with peers
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 3: Session Follow-up -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Session Follow-up</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Stay connected with your mentor
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 4: Interview Prep -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Interview Preparation</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Ace your next interview with expert coaching
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
