@@ -1525,8 +1525,117 @@ GET http://localhost:5000/api/categories/1/mentors?page=1&pageSize=10&sortBy=rat
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** 2025-10-29
-**Frontend Tasks Completed:** T061, T062, T063, T064
+**Document Version:** 2.2
+**Last Updated:** 2025-10-30
+**Frontend Tasks Completed:** T061, T062, T063, T064, T065 (UserService)
+**Frontend Tasks In Progress:** T066 (MentorService - Partial)
 **Backend Tasks Covered:** T057, T058, T059, T085
-**Next Frontend Tasks:** T065 (UserService), T066 (MentorService)
+**Next Frontend Tasks:** T066 (MentorService - Complete), T067 (Category Service)
+
+---
+
+## 22. Frontend Implementation Status
+
+### T061 - T064: Auth Service & Infrastructure (Completed)
+- ✅ AuthService with full authentication flows (login, register, logout, token refresh)
+- ✅ Email verification and password reset flows
+- ✅ Auth guards for route protection (authGuard, guestGuard, role-based guards)
+- ✅ HTTP interceptors (authInterceptor for token attachment, errorInterceptor for global error handling)
+- ✅ NotificationService for user feedback
+
+### T065: UserService (Completed ✅)
+- ✅ `getUserProfile(userId)`: Retrieve user profile by ID
+- ✅ `getCurrentUserProfile()`: Get authenticated user's profile
+- ✅ `updateUserProfile(userId, profileUpdate)`: Update user profile
+- ✅ `updateCurrentUserProfile(profileUpdate)`: Update current user's profile
+- ✅ Profile caching for performance optimization
+- ✅ Cached access methods: `getCachedUserProfile()`, `getCachedCurrentUserProfile()`
+- ✅ Profile refresh: `refreshCurrentUserProfile()`
+- ✅ Helper methods: `formatUserFullName()`, `getUserInitials()`, `userHasRole()`, `currentUserIsMentor()`
+- ✅ Observable streams: `currentUserProfile$` for reactive UI updates
+- ✅ Error handling with automatic notifications
+- ✅ Integration with AuthService and NotificationService
+
+**Implementation Location:** `Frontend/src/app/core/services/user.service.ts`
+**Documentation:** `Frontend/src/app/core/services/README.md`
+
+### T066: MentorService (In Progress 🔄)
+- ✅ `applyToBecomeMentor(application)`: Submit mentor application
+- ✅ `getMentorProfile(mentorId)`: Get mentor profile by ID
+- ✅ `getCurrentMentorProfile()`: Get authenticated user's mentor profile
+- ✅ `updateMentorProfile(mentorId, profileUpdate)`: Update mentor profile
+- ✅ `updateCurrentMentorProfile(profileUpdate)`: Update current user's profile
+- ✅ Profile caching for performance optimization
+- ✅ Cached access methods: `getCachedMentorProfile()`, `getCachedCurrentMentorProfile()`
+- ✅ Application status tracking: `getMentorApplicationStatusObs()`
+- ✅ Status checking methods: `isCurrentUserApprovedMentor()`, `hasCurrentUserPendingApplication()`
+- ✅ Helper methods: `calculateProfileCompletionPercentage()`, `hasAppliedToBecomeMentor()`
+- ✅ Observable streams: `currentMentorProfile$`, `mentorApplication$` for reactive UI
+- ✅ Error handling with automatic notifications
+- ✅ Integration with AuthService and NotificationService
+
+**Implementation Location:** `Frontend/src/app/core/services/mentor.service.ts`
+**Documentation:** `Frontend/src/app/core/services/README.md`
+
+**Partial Implementation Covers:**
+- Apply to become mentor (POST /api/mentors)
+- Get mentor profile (GET /api/mentors/{id})
+- Update mentor profile (PUT /api/mentors/{id})
+
+**Not Yet Implemented (T066 Future):**
+- Mentor search and filtering
+- Mentor listing by category
+- Category endpoints
+- Mentor statistics and analytics
+
+---
+
+## 23. Frontend Service Architecture
+
+### Authentication Flow
+```
+Login → AuthService stores tokens → Guards verify token →
+AuthInterceptor adds token to requests → Protected endpoints accessible
+```
+
+### User Profile Flow
+```
+Component → UserService.getCurrentUserProfile() → API: GET /api/users/{id} →
+Response cached → currentUserProfile$ updates → UI renders with async pipe
+```
+
+### Error Handling Flow
+```
+API Error → ErrorInterceptor catches → NotificationService displays error →
+User sees feedback toast → Error details logged for debugging
+```
+
+---
+
+## 24. Frontend Service Dependencies
+
+### HttpClient
+- Automatically injected by Angular
+- Used by all API services
+- Interceptors modify requests/responses
+
+### AuthService
+- Used by UserService to get current user ID
+- Provides current user information
+- Manages authentication state
+- Used by guards for route protection
+
+### NotificationService
+- Used by UserService for user feedback
+- Shows success/error/warning messages
+- Auto-dismisses notifications
+- Integrates with error interceptor
+
+### RxJS Operators
+- `map()`: Transform API responses
+- `tap()`: Side effects (caching, notifications)
+- `catchError()`: Error handling
+- `switchMap()`: Chaining observables
+- `finalize()`: Cleanup operations
+
+---
