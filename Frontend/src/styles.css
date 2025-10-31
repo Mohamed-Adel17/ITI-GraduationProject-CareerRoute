@@ -1,1 +1,17 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Tailwind CSS v3 Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Styles for Career Route Application */
+@layer base {
+  body {
+    @apply font-sans antialiased;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+}
