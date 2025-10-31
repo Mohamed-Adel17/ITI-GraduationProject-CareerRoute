@@ -1,12 +1,52 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Domain.Entities
 {
-    internal class Mentor
+    public class Mentor
     {
+        //Primary Key
+        [Key]
+        [ForeignKey(nameof(User))]
+        public string Id { get; set; } = string.Empty;
+        //================================================
+        //Navigation Property
+        public virtual ApplicationUser User { get; set; } = null!;
+        //================================================
+        //Profile Information
+        [MaxLength(2000)]
+        public string? Bio { get; set; }
+        [MaxLength(500)]
+        public string? ExpertiseTags { get; set; }
+        public int? YearsOfExperience { get; set; }
+        [MaxLength(1000)]
+        public string? Certifications { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Rate30Min { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Rate60Min { get; set; }
+        [Column(TypeName = "decimal(3,2")]
+        public decimal AverageRating { get; set; } = 0;
+        public int TotalReviews { get; set; } = 0;
+        public int TotalSessionsCompleted { get; set; } = 0;
+        //================================================
+        //Approval Status
+        public bool IsVerified { get; set; } = false;
+        [MaxLength(20)]
+        public string ApprovalStatus { get; set; } = "Pending";
+        //================================================
+        //Timestamps
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
+        //================================================
+        //TO-DO: Navigation Property
+        //public virtual ICollection<Session> Sessions { get; set; }
+        //public virtual ICollection<Review> Reviews { get; set; }
+        //public virtual ICollection<MentorCategory> MentorCategories { get; set; }
     }
 }
