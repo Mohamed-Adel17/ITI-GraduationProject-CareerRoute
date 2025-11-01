@@ -58,7 +58,11 @@ namespace CareerRoute.API.Middleware
                     response = ApiResponse.Error(unauthorizedEx.Message, 403);
                     _logger.LogWarning(unauthorizedEx, "Unauthorized access: {Message}", unauthorizedEx.Message);
                     break;
-                    
+                case SendEmailException emailException:
+                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    response.Message = emailException.Message;
+                    _logger.LogWarning(emailException, $"Send Email exception: {emailException.Message}");
+                    break;
                 default:
                     var message = _environment.IsDevelopment()
                         ? exception.Message
