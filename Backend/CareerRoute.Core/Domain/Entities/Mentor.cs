@@ -44,6 +44,8 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         //================================================
+        public bool IsAvailable { get; set; } = true;
+        //================================================
         //TO-DO: Navigation Property
         //public virtual ICollection<Session> Sessions { get; set; }
         //public virtual ICollection<Review> Reviews { get; set; }
