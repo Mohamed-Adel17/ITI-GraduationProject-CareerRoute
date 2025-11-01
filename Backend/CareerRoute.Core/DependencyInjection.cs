@@ -2,6 +2,8 @@ using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
+using CareerRoute.Core.Validators;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CareerRoute.Core;
@@ -25,10 +27,9 @@ public static class DependencyInjection
         {
             options.AddProfile<MentorMappingProfile>();
         });
-        // services.AddAutoMapper(typeof(DependencyInjection).Assembly);
 
-        // FluentValidation (when you add it)
-        // services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+        // ============ FLUENTVALIDATION ============
+        services.AddValidatorsFromAssemblyContaining<UpdateMentorProfileValidator>();
 
         return services;
     }
