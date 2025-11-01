@@ -33,6 +33,6 @@ namespace CareerRoute.Core.Services.Interfaces
         Task RejectMentorAsync(string mentorId, string reason);
 
         // Check if a user is already a mentor (prevents duplicate applications)
-        Task<bool> IsMentorAsync(string userId);
+        Task<bool> IsMentorAsync(string id);
     }
 }

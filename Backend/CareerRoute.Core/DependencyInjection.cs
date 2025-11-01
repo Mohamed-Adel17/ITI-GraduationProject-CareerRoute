@@ -1,4 +1,5 @@
 using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,12 +15,16 @@ public static class DependencyInjection
 
 
         services.AddScoped<ITokenService, TokenService>();
-        // services.AddScoped<IUserService, UserService>();
-        // services.AddScoped<IMentorService, MentorService>();
+
+        //services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IMentorService, MentorService>();
         // services.AddScoped<ISessionService, SessionService>();
         // services.AddScoped<IAuthService, AuthService>();
 
-        // AutoMapper (when you add it)
+        services.AddAutoMapper(options =>
+        {
+            options.AddProfile<MentorMappingProfile>();
+        });
         // services.AddAutoMapper(typeof(DependencyInjection).Assembly);
 
         // FluentValidation (when you add it)
