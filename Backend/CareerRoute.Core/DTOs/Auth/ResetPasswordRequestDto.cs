@@ -8,12 +8,18 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.DTOs.Auth
 {
-    public class LoginRequestDto
+    public class ResetPasswordRequestDto
     {
-        [Required]
         [RegularExpression(AppRegex.EmailPattern, ErrorMessage = AppErrorMessages.InvalidEmailFormat)]
         public required string Email { get; set; }
+
         [Required]
-        public required string Password { get; set; }
+        public required string Token { get; set; }
+        [Required]
+        public required string NewPassword { get; set; }
+    
+        [Required]
+        [Compare(nameof(NewPassword), ErrorMessage = AppErrorMessages.PasswordsNotMatch)]
+        public required string ConfirmPassword { get; set; }
     }
 }

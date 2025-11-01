@@ -8,12 +8,9 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.DTOs.Auth
 {
-    public class LoginRequestDto
+    public class EmailRequestDto
     {
-        [Required]
         [RegularExpression(AppRegex.EmailPattern, ErrorMessage = AppErrorMessages.InvalidEmailFormat)]
         public required string Email { get; set; }
-        [Required]
-        public required string Password { get; set; }
     }
 }
