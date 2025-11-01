@@ -19,7 +19,7 @@ namespace CareerRoute.Core.Domain.Interfaces
 
         // Get all mentors pending admin approval.
         // Used in admin dashboard to review new applications.
-        Task<IEnumerable<Mentor>> GetPendingMentorAsync();
+        Task<IEnumerable<Mentor>> GetPendingMentorsAsync();
 
         // Search mentors by expertise tags or bio keywords.
         // Supports full-text search for better user experience.
