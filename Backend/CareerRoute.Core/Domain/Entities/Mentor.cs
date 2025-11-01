@@ -30,7 +30,7 @@ namespace CareerRoute.Core.Domain.Entities
         public decimal Rate30Min { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal Rate60Min { get; set; }
-        [Column(TypeName = "decimal(3,2")]
+        [Column(TypeName = "decimal(3,2)")]
         public decimal AverageRating { get; set; } = 0;
         public int TotalReviews { get; set; } = 0;
         public int TotalSessionsCompleted { get; set; } = 0;
