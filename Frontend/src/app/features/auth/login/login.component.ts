@@ -86,7 +86,15 @@ export class LoginComponent implements OnInit {
 
   /**
    * Handles form submission
-   * Calls AuthService.login() and navigates to dashboard or returnUrl on success
+   * Orchestrates the login flow with notifications and navigation
+   *
+   * Responsibilities:
+   * - Validate form input
+   * - Call AuthService.login()
+   * - Show success notification and navigate on success
+   * - Handle and display errors via NotificationService
+   * - Clear password field on error for security
+   * - Manage loading state
    */
   onSubmit(): void {
     // Clear previous error messages
@@ -112,22 +120,31 @@ export class LoginComponent implements OnInit {
     // Call AuthService to login
     this.authService.login(loginRequest).subscribe({
       next: (response) => {
-        // Login successful
-        // AuthService already stored token and updated currentUser$
+        // Login successful - AuthService has stored tokens and updated auth state
         console.log('Login successful:', response);
+
+        // Show success notification
+        this.notificationService.success(
+          `Welcome back, ${response.user.firstName}!`,
+          'Login Successful'
+        );
 
         // Navigate to returnUrl or dashboard
         this.router.navigate([this.returnUrl]);
       },
       error: (error) => {
         // Login failed
-        // ErrorInterceptor already handled 401 and logged out if needed
+        // ErrorInterceptor has already transformed the error
         console.error('Login failed:', error);
 
-        // Display error message
-        this.errorMessage = error.message || 'Login failed. Please check your credentials and try again.';
+        // Display error message via notification
+        const errorMessage = error.message || 'Login failed. Please check your credentials and try again.';
+        this.notificationService.error(errorMessage, 'Login Error');
 
-        // Clear password field on error
+        // Also display error in component for accessibility
+        this.errorMessage = errorMessage;
+
+        // Clear password field on error for security
         this.loginForm.patchValue({ password: '' });
 
         this.loading = false;

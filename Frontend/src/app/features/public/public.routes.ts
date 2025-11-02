@@ -27,15 +27,22 @@ export const PUBLIC_ROUTES: Routes = [
     loadComponent: () => import('../auth/register/register.component').then(m => m.RegisterComponent),
     title: 'Register - CareerRoute'
   },
-  // TODO: Add more auth routes as components are created:
-  // {
-  //   path: 'auth/forgot-password',
-  //   loadComponent: () => import('../auth/password-reset/password-reset.component').then(m => m.PasswordResetComponent),
-  //   title: 'Forgot Password - CareerRoute'
-  // },
-  // {
-  //   path: 'auth/verify-email',
-  //   loadComponent: () => import('../auth/email-verification/email-verification.component').then(m => m.EmailVerificationComponent),
-  //   title: 'Verify Email - CareerRoute'
-  // },
+  {
+    path: 'auth/forgot-password',
+    canActivate: [guestGuard],
+    loadComponent: () => import('../auth/password-reset/password-reset.component').then(m => m.PasswordResetComponent),
+    title: 'Forgot Password - CareerRoute'
+  },
+  {
+    path: 'auth/reset-password',
+    canActivate: [guestGuard],
+    loadComponent: () => import('../auth/password-reset/password-reset.component').then(m => m.PasswordResetComponent),
+    title: 'Reset Password - CareerRoute'
+  },
+  {
+    path: 'auth/verify-email',
+    canActivate: [guestGuard],
+    loadComponent: () => import('../auth/email-verification/email-verification.component').then(m => m.EmailVerificationComponent),
+    title: 'Verify Email - CareerRoute'
+  },
 ];
