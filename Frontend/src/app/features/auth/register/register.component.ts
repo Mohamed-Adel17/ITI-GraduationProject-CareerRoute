@@ -98,7 +98,16 @@ export class RegisterComponent implements OnInit {
 
   /**
    * Handles form submission
-   * Calls AuthService.register() and navigates to appropriate dashboard
+   * Calls AuthService.register() and handles navigation based on verification requirements
+   *
+   * Responsibilities:
+   * - Validate form input
+   * - Call AuthService.register()
+   * - Show success notification
+   * - Navigate to email verification page or dashboard based on requiresEmailVerification
+   * - Handle and display errors via NotificationService
+   * - Clear password field on error for security
+   * - Manage loading state
    */
   onSubmit(): void {
     // Clear previous error messages
@@ -127,29 +136,47 @@ export class RegisterComponent implements OnInit {
     // Call AuthService to register
     this.authService.register(registerRequest).subscribe({
       next: (response) => {
-        // Registration successful
+        // Registration successful - AuthService has handled auth state updates
         console.log('Registration successful:', response);
 
         // Show success notification
         this.notificationService.success(
-          'Account created successfully! Please check your email to verify your account.',
+          response.message || 'Account created successfully! Please check your email to verify your account.',
           'Welcome!'
         );
 
-        // Navigate based on role
-        const redirectUrl = registerRequest.registerAsMentor
-          ? '/mentor/profile-setup'
-          : '/user/dashboard';
-        this.router.navigate([redirectUrl]);
+        // Navigate based on email verification requirement
+        if (response.requiresEmailVerification) {
+          // Email verification required - user should check their email for verification link
+          // The verification token is sent via email, not returned in the response for security
+          // Show info notification and stay on registration page or redirect to a "check email" page
+          this.notificationService.info(
+            `A verification email has been sent to ${response.email || 'your email'}. Please check your inbox and click the verification link to activate your account.`,
+            'Verify Your Email',
+            10000 // Show for 10 seconds
+          );
+
+          // Navigate to verify-email page without token (it will show instructions to check email)
+          // Or navigate to home page
+          this.router.navigate(['/']);
+        } else {
+          // Email verification not required, user can log in immediately
+          this.router.navigate(['/auth/login']);
+        }
       },
       error: (error) => {
         // Registration failed
+        // ErrorInterceptor has already transformed the error
         console.error('Registration failed:', error);
 
-        // Display error message
-        this.errorMessage = error.message || 'Registration failed. Please try again.';
+        // Display error message via notification
+        const errorMessage = error.message || 'Registration failed. Please try again.';
+        this.notificationService.error(errorMessage, 'Registration Error');
 
-        // Clear password field on error
+        // Also display error in component for accessibility
+        this.errorMessage = errorMessage;
+
+        // Clear password field on error for security
         this.registerForm.patchValue({ password: '' });
 
         this.loading = false;
