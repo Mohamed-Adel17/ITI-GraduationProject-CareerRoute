@@ -6,7 +6,7 @@ namespace CareerRoute.Core.Services.Interfaces
     public interface IMentorService
     {
         // Get a mentor's complete profile by ID
-        Task<MentorProfileDto?> GetMentorProfileAsync(string mentorId);
+        Task<MentorProfileDto> GetMentorProfileAsync(string mentorId);
 
         // Get all approved mentors (for public listing)
         Task<IEnumerable<MentorProfileDto>> GetAllApprovedMentorsAsync();

@@ -1,5 +1,6 @@
 ﻿using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.Exceptions;
 using CareerRoute.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -57,7 +58,7 @@ namespace CareerRoute.Infrastructure.Repositories
             var mentor = await _context.Mentors.FindAsync(mentorId);
             if (mentor == null)
             {
-                throw new KeyNotFoundException($"Mentor with ID {mentorId} not found");
+                throw new NotFoundException("Mentor", mentorId);
             }
             mentor.TotalSessionsCompleted++;
             mentor.UpdatedAt = DateTime.UtcNow;
@@ -76,13 +77,19 @@ namespace CareerRoute.Infrastructure.Repositories
                 return await GetApprovedMentorsAsync();
             }
 
+            // Escape SQL LIKE wildcards to prevent SQL wildcard injection
+            var escapedTerm = searchTerm
+                .Replace("[", "[[]")
+                .Replace("%", "[%]")
+                .Replace("_", "[_]");
+
             return await _context.Mentors
                 .Include(m => m.User)
                 .Where(m => m.ApprovalStatus == "Approved" && m.IsVerified &&
-                       (EF.Functions.Like(m.Bio, $"%{searchTerm}%") ||
-                        EF.Functions.Like(m.ExpertiseTags, $"%{searchTerm}%") ||
-                        EF.Functions.Like(m.User.FirstName, $"%{searchTerm}%") ||
-                        EF.Functions.Like(m.User.LastName, $"%{searchTerm}%")))
+                       (EF.Functions.Like(m.Bio, $"%{escapedTerm}%") ||
+                        EF.Functions.Like(m.ExpertiseTags, $"%{escapedTerm}%") ||
+                        EF.Functions.Like(m.User.FirstName, $"%{escapedTerm}%") ||
+                        EF.Functions.Like(m.User.LastName, $"%{escapedTerm}%")))
                 .OrderByDescending(m => m.AverageRating)
                 .ToListAsync();
         }
@@ -91,12 +98,15 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             if(newAverageRating < 0 || newAverageRating > 5)
             {
-                throw new ArgumentOutOfRangeException(nameof(newAverageRating), "Average rating must be between 0 and 5.");
+                throw new ValidationException(new Dictionary<string, string[]>
+                {
+                    ["AverageRating"] = new[] { "Average rating must be between 0 and 5" }
+                });
             }
             var mentor =  await _context.Mentors.FindAsync(mentorId);
             if (mentor == null)
             {
-                throw new KeyNotFoundException($"Mentor with ID {mentorId} not found");
+                throw new NotFoundException("Mentor", mentorId);
             }
             mentor.AverageRating = newAverageRating;
             mentor.TotalReviews = totalReviews;
