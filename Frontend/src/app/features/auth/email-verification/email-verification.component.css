@@ -1,0 +1,177 @@
+/* Email Verification Component Styles */
+
+/* Loading Spinner Animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Success Checkmark Animation */
+.animate-checkmark {
+  animation: checkmark 0.6s ease-in-out;
+}
+
+@keyframes checkmark {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* State Container Fade In */
+.space-y-8 > div {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success/Error Icon Circle Pulse */
+.w-24.h-24.rounded-full {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Stop pulse animation on success state */
+div[class*="bg-green-100"] {
+  animation: none;
+}
+
+/* Button Hover Effects */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Feature Card Hover Effect (Right Panel) */
+.lg\:flex .space-y-4 > div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Countdown Number Emphasis */
+.font-bold {
+  color: inherit;
+  font-size: 1.125em;
+}
+
+/* Alert Box Animation */
+div[role='alert'],
+.p-4.rounded-lg {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design Adjustments */
+@media (max-width: 1024px) {
+  /* Stack layout on smaller screens */
+  .min-h-screen {
+    flex-direction: column;
+  }
+
+  /* Adjust icon size on mobile */
+  .w-24.h-24 {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .w-16.h-16 {
+    width: 4rem;
+    height: 4rem;
+  }
+}
+
+/* Dark Mode Specific Adjustments */
+@media (prefers-color-scheme: dark) {
+  button:focus-visible {
+    outline-color: #3b82f6;
+  }
+}
+
+/* Accessibility: Focus Visible */
+*:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Suggestion List Items */
+ul li {
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Container Max Width */
+.max-w-md {
+  max-width: 28rem;
+}
+
+.max-w-lg {
+  max-width: 32rem;
+}
+
+/* Icon Circle Background Gradient (Optional Enhancement) */
+.bg-blue-100,
+.bg-green-100,
+.bg-red-100 {
+  background: linear-gradient(135deg, currentColor 0%, currentColor 100%);
+  background-blend-mode: soft-light;
+}
+
+/* Smooth State Transitions */
+.text-center > * {
+  transition: opacity 0.3s ease-in-out;
+}
