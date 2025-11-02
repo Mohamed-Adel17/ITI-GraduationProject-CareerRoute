@@ -52,35 +52,77 @@ apiUrl: 'http://localhost:5000/api'
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": "Software Development, AI",
-  "careerGoals": "Become a senior developer",
+  "careerInterests": "Software Development, Cloud Computing",
+  "careerGoals": "Become a Solutions Architect",
   "registerAsMentor": false
 }
 ```
 
-**Response (Success):**
+**Field Requirements:**
+- `email` (string, required): Valid email format
+- `password` (string, required): Minimum 8 characters, at least one uppercase, one lowercase, one number
+- `confirmPassword` (string, required): Must match password
+- `firstName` (string, optional): User's first name (can be empty, defaults to empty string)
+- `lastName` (string, optional): User's last name (can be empty, defaults to empty string)
+- `phoneNumber` (string, optional): User's phone number
+- `careerInterests` (string, optional): User's career interests
+- `careerGoals` (string, optional): User's career goals
+- `registerAsMentor` (boolean, optional): Whether user wants to register as a mentor (default: false)
+
+**Response (Success - 201 Created):**
 ```json
 {
   "success": true,
   "message": "Registration successful! Please check your email to verify your account.",
-  "userId": "guid-string",
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
   "email": "user@example.com",
   "requiresEmailVerification": true
 }
 ```
 
-**Response (Error - 400):**
+**Response (Error - 400 Validation Failed):**
 ```json
 {
   "success": false,
-  "message": "Email already exists",
+  "message": "Validation failed",
   "errors": {
-    "email": ["Email is already registered"],
-    "password": ["Password must contain at least one uppercase letter"]
+    "Email": ["Email is required", "Email format is invalid"],
+    "Password": ["Password must be at least 8 characters", "Password must contain at least one uppercase letter"],
+    "ConfirmPassword": ["Passwords do not match"]
   },
   "statusCode": 400
 }
 ```
+
+**Response (Error - 409 Conflict - Email Already Exists):**
+```json
+{
+  "success": false,
+  "message": "Email already registered",
+  "errors": {
+    "Email": ["Email is already in use"]
+  },
+  "statusCode": 409
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/register`
+- Backend should:
+  - Validate all required fields (email, password, confirmPassword)
+  - Check if email already exists in database (return 409 if exists)
+  - Validate password strength (min 8 chars, uppercase, lowercase, number)
+  - Validate password and confirmPassword match
+  - Hash the password before storing
+  - Create new user record with provided information
+  - Set `emailConfirmed` to `false` initially
+  - Generate unique email verification token
+  - Store verification token with expiration (recommend 24-48 hours)
+  - Send verification email with link: `/auth/verify-email?userId={userId}&token={verificationToken}`
+  - Return success response with userId and email
+  - Do NOT send verification token in response (security - only via email)
+
+**Note:** The frontend currently sends minimal data (email, password, registerAsMentor) as firstName and lastName are commented out in the component. Backend should handle both cases - with or without firstName/lastName.
 
 ---
 
@@ -96,6 +138,11 @@ apiUrl: 'http://localhost:5000/api'
 }
 ```
 
+**Field Requirements:**
+- `email` (string, required): User's email address
+- `password` (string, required): User's password
+- `rememberMe` (boolean, optional): Extend token expiration if true (default: false)
+
 **Response (Success - 200):**
 ```json
 {
@@ -105,7 +152,7 @@ apiUrl: 'http://localhost:5000/api'
   "expiresIn": 3600,
   "tokenType": "Bearer",
   "user": {
-    "id": "user-guid",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
     "email": "user@example.com",
     "firstName": "John",
     "lastName": "Doe",
@@ -118,14 +165,60 @@ apiUrl: 'http://localhost:5000/api'
 }
 ```
 
-**Response (Error - 401):**
+**Response (Error - 401 Unauthorized - Invalid Credentials):**
 ```json
 {
   "success": false,
-  "message": "Invalid credentials",
+  "message": "Invalid email or password",
   "statusCode": 401
 }
 ```
+
+**Response (Error - 403 Forbidden - Email Not Verified):**
+```json
+{
+  "success": false,
+  "message": "Please verify your email address before logging in. Check your inbox for the verification link.",
+  "statusCode": 403,
+  "errors": {
+    "EmailConfirmed": ["Email address not verified"]
+  }
+}
+```
+
+**Response (Error - 403 Forbidden - Account Locked/Disabled):**
+```json
+{
+  "success": false,
+  "message": "Your account has been disabled. Please contact support.",
+  "statusCode": 403
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/login`
+- Backend should:
+  - Validate email and password are provided
+  - Find user by email in database
+  - Verify password hash matches
+  - **Check if email is verified (`emailConfirmed === true`):**
+    - If not verified, return 403 with appropriate message
+    - Include option to resend verification email
+  - Check if account is active/not disabled
+  - Generate JWT access token with all required claims (see Section 5)
+  - Generate refresh token for token rotation
+  - Set token expiration based on `rememberMe`:
+    - `rememberMe: true` → Longer expiration (e.g., 7 days)
+    - `rememberMe: false` → Standard expiration (e.g., 1 hour)
+  - Update user's `lastLoginDate` in database
+  - Return tokens and user data
+  - Log successful login for security auditing
+
+**Security Considerations:**
+- Use generic error message for invalid credentials (don't reveal if email exists)
+- Implement rate limiting to prevent brute force attacks
+- Consider implementing account lockout after N failed attempts
+- Log failed login attempts for security monitoring
 
 ---
 
@@ -140,15 +233,65 @@ apiUrl: 'http://localhost:5000/api'
 }
 ```
 
+**Field Requirements:**
+- `token` (string, required): Current JWT access token (can be expired)
+- `refreshToken` (string, required): Current refresh token (must be valid)
+
 **Response (Success - 200):**
 ```json
 {
   "success": true,
-  "token": "new-access-token",
-  "refreshToken": "new-refresh-token",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new-token...",
+  "refreshToken": "new-refresh-token-string",
   "expiresIn": 3600
 }
 ```
+
+**Response (Error - 401 Unauthorized - Invalid Refresh Token):**
+```json
+{
+  "success": false,
+  "message": "Invalid or expired refresh token. Please log in again.",
+  "statusCode": 401
+}
+```
+
+**Response (Error - 401 Unauthorized - Token Mismatch):**
+```json
+{
+  "success": false,
+  "message": "Token validation failed",
+  "statusCode": 401
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/refresh`
+- Backend should:
+  - **Accept expired access tokens** (frontend refreshes before/after expiration)
+  - Validate refresh token exists and is not expired
+  - Validate refresh token matches the user from access token
+  - Verify refresh token hasn't been revoked/used (if implementing token rotation)
+  - Extract user ID from the old access token
+  - Fetch latest user data from database (roles may have changed)
+  - Generate new JWT access token with updated user data
+  - Generate new refresh token (implement refresh token rotation)
+  - **Invalidate old refresh token** (mark as used/revoked)
+  - Store new refresh token in database with expiration
+  - Return new tokens with expiration time
+  - Log token refresh for security auditing
+
+**Token Rotation Security:**
+- Implement refresh token rotation (one-time use tokens)
+- Revoke old refresh token when new one is issued
+- Detect refresh token reuse attacks (if old token used again, revoke all user's tokens)
+- Store refresh tokens in database with expiration timestamps
+- Clean up expired tokens periodically
+
+**Frontend Auto-Refresh:**
+- Frontend automatically refreshes tokens **5 minutes before expiration**
+- Frontend uses timer based on `expiresIn` value from login/refresh response
+- If refresh fails (401), frontend logs user out automatically
 
 ---
 
@@ -163,15 +306,65 @@ apiUrl: 'http://localhost:5000/api'
 }
 ```
 
-**Response (Success - 200):**
+**Response (Success - 200, Auto-Login Enabled):**
 ```json
 {
   "success": true,
-  "message": "Email verified successfully!",
-  "autoLogin": false,
-  "loginToken": null
+  "message": "Email verified successfully! Logging you in...",
+  "autoLogin": true,
+  "loginToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "refresh-token-string",
+  "user": {
+    "id": "user-guid",
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "emailConfirmed": true,
+    "roles": ["User"],
+    "isMentor": false
+  }
 }
 ```
+
+**Response (Success - 200, Auto-Login Disabled):**
+```json
+{
+  "success": true,
+  "message": "Email verified successfully! You can now log in.",
+  "autoLogin": false,
+  "loginToken": null,
+  "refreshToken": null,
+  "user": null
+}
+```
+
+**Response (Error - 400 Invalid/Expired Token):**
+```json
+{
+  "success": false,
+  "message": "Invalid or expired verification link",
+  "statusCode": 400
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/verify-email`
+- Request body: `{ "userId": "user-guid", "token": "verification-token" }`
+- Backend should:
+  - Validate token exists and is not expired
+  - Validate token matches the userId
+  - Update user's `emailConfirmed` field to `true`
+  - Invalidate the verification token (mark as used/delete)
+  - **Option 1 - Auto-Login (Recommended):**
+    - Generate JWT access token and refresh token
+    - Return `autoLogin: true` with tokens and user data
+    - Frontend automatically logs user in after verification
+  - **Option 2 - Manual Login:**
+    - Return `autoLogin: false` with null tokens
+    - User must manually navigate to login page
+  - Return appropriate success/error response
+
+**Note:** The `autoLogin` feature provides better UX by automatically logging the user in after email verification, eliminating the need for them to manually enter credentials again.
 
 ---
 
@@ -185,13 +378,51 @@ apiUrl: 'http://localhost:5000/api'
 }
 ```
 
+**Field Requirements:**
+- `email` (string, required): User's email address
+
 **Response (Success - 200):**
 ```json
 {
   "success": true,
-  "message": "Verification email has been sent"
+  "message": "Verification email has been sent. Please check your inbox."
 }
 ```
+
+**Response (Error - 400 Email Already Verified):**
+```json
+{
+  "success": false,
+  "message": "Email address is already verified",
+  "statusCode": 400
+}
+```
+
+**Response (Error - 429 Too Many Requests):**
+```json
+{
+  "success": false,
+  "message": "Please wait before requesting another verification email",
+  "statusCode": 429
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/resend-verification`
+- Backend should:
+  - Find user by email
+  - Check if email is already verified (return 400 if already verified)
+  - Check rate limiting (e.g., max 1 request per 5 minutes per email)
+  - Invalidate previous verification token
+  - Generate new verification token with expiration
+  - Send new verification email with link
+  - Return success response **even if email doesn't exist** (security best practice)
+  - Log resend attempts for monitoring
+
+**Rate Limiting:**
+- Limit to 1 resend per 5 minutes per email address
+- Prevent spam and abuse
+- Return 429 status code if rate limit exceeded
 
 ---
 
@@ -205,13 +436,62 @@ apiUrl: 'http://localhost:5000/api'
 }
 ```
 
+**Field Requirements:**
+- `email` (string, required): User's email address
+
 **Response (Success - 200):**
 ```json
 {
   "success": true,
-  "message": "Password reset email has been sent. Please check your inbox."
+  "message": "If an account with that email exists, a password reset link has been sent. Please check your inbox."
 }
 ```
+
+**Response (Error - 400 Validation Failed):**
+```json
+{
+  "success": false,
+  "message": "Invalid email format",
+  "errors": {
+    "Email": ["Please enter a valid email address"]
+  },
+  "statusCode": 400
+}
+```
+
+**Response (Error - 429 Too Many Requests):**
+```json
+{
+  "success": false,
+  "message": "Too many password reset requests. Please try again later.",
+  "statusCode": 429
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/forgot-password`
+- Request body: `{ "email": "user@example.com" }`
+- Backend should:
+  - Validate email format
+  - Check rate limiting (e.g., max 3 requests per hour per IP/email)
+  - Find user by email in database
+  - **If user exists:**
+    - Generate unique, time-limited reset token (recommend 1-2 hour expiration)
+    - Store token in database with email association and expiration timestamp
+    - Invalidate any previous unused reset tokens for this email
+    - Send email containing reset link: `/auth/reset-password?email=user@example.com&token=abc123xyz`
+  - **If user doesn't exist:**
+    - Do nothing (don't send email)
+  - Return **same success response regardless** (security best practice to prevent email enumeration)
+  - Log reset attempts for security monitoring
+
+**Security Considerations:**
+- Always return the same success message (don't reveal if email exists)
+- Implement rate limiting to prevent abuse
+- Use cryptographically secure random tokens
+- Set short expiration time (1-2 hours maximum)
+- Invalidate token after successful password reset
+- Log all reset attempts with timestamp and IP address
 
 ---
 
@@ -228,13 +508,84 @@ apiUrl: 'http://localhost:5000/api'
 }
 ```
 
+**Field Requirements:**
+- `email` (string, required): User's email address from reset link
+- `token` (string, required): Password reset token from email link
+- `newPassword` (string, required): New password (min 8 chars, uppercase, lowercase, number)
+- `confirmPassword` (string, required): Must match newPassword
+
 **Response (Success - 200):**
 ```json
 {
   "success": true,
-  "message": "Password has been reset successfully!"
+  "message": "Your password has been reset successfully. You can now log in with your new password."
 }
 ```
+
+**Response (Error - 400 Invalid/Expired Token):**
+```json
+{
+  "success": false,
+  "message": "Invalid or expired password reset link. Please request a new password reset.",
+  "statusCode": 400
+}
+```
+
+**Response (Error - 400 Validation Failed):**
+```json
+{
+  "success": false,
+  "message": "Password validation failed",
+  "errors": {
+    "NewPassword": ["Password must be at least 8 characters", "Password must contain at least one uppercase letter"],
+    "ConfirmPassword": ["Passwords do not match"]
+  },
+  "statusCode": 400
+}
+```
+
+**Response (Error - 400 Token/Email Mismatch):**
+```json
+{
+  "success": false,
+  "message": "Invalid password reset request",
+  "statusCode": 400
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/reset-password`
+- Request body:
+  ```json
+  {
+    "email": "user@example.com",
+    "token": "abc123xyz",
+    "newPassword": "NewSecurePass123!",
+    "confirmPassword": "NewSecurePass123!"
+  }
+  ```
+- Backend should:
+  - Validate all required fields are provided
+  - Find reset token in database by token and email
+  - Validate token exists and is not expired (check expiration timestamp)
+  - Validate token matches the email
+  - Validate newPassword meets security requirements (min 8 chars, complexity)
+  - Validate newPassword === confirmPassword
+  - Prevent password reuse (optional: check against previous N passwords)
+  - Hash the new password using strong hashing algorithm
+  - Update user's password in database
+  - **Invalidate the reset token** (mark as used or delete)
+  - Invalidate all existing refresh tokens for this user (force re-login)
+  - Log successful password reset for security auditing
+  - Optionally send confirmation email to user
+  - Return success response
+
+**Security Considerations:**
+- Use same error message for all validation failures (don't reveal specific issues)
+- Invalidate token immediately after use (one-time use)
+- Consider invalidating all active sessions after password reset
+- Log password reset completion with timestamp and IP
+- Optionally notify user via email that password was changed
 
 ---
 
@@ -255,13 +606,90 @@ Authorization: Bearer {access-token}
 }
 ```
 
+**Field Requirements:**
+- `currentPassword` (string, required): User's current password for verification
+- `newPassword` (string, required): New password (min 8 chars, uppercase, lowercase, number)
+- `confirmPassword` (string, required): Must match newPassword
+
 **Response (Success - 200):**
 ```json
 {
   "success": true,
-  "message": "Password changed successfully!"
+  "message": "Your password has been changed successfully."
 }
 ```
+
+**Response (Error - 400 Current Password Incorrect):**
+```json
+{
+  "success": false,
+  "message": "Current password is incorrect",
+  "errors": {
+    "CurrentPassword": ["The current password you entered is incorrect"]
+  },
+  "statusCode": 400
+}
+```
+
+**Response (Error - 400 Validation Failed):**
+```json
+{
+  "success": false,
+  "message": "Password validation failed",
+  "errors": {
+    "NewPassword": ["Password must be at least 8 characters", "Password must contain at least one number"],
+    "ConfirmPassword": ["Passwords do not match"]
+  },
+  "statusCode": 400
+}
+```
+
+**Response (Error - 400 Same as Current Password):**
+```json
+{
+  "success": false,
+  "message": "New password must be different from current password",
+  "errors": {
+    "NewPassword": ["New password cannot be the same as current password"]
+  },
+  "statusCode": 400
+}
+```
+
+**Response (Error - 401 Unauthorized):**
+```json
+{
+  "success": false,
+  "message": "Unauthorized access",
+  "statusCode": 401
+}
+```
+
+**Expected Backend Behavior:**
+- Endpoint: `POST /api/auth/change-password`
+- **Requires Authentication:** Extract user ID from JWT token
+- Backend should:
+  - Validate access token and extract user ID
+  - Find user in database by ID
+  - Verify currentPassword matches user's stored password hash
+  - Validate newPassword meets security requirements
+  - Validate newPassword === confirmPassword
+  - Ensure newPassword is different from currentPassword
+  - Prevent password reuse (optional: check against previous N passwords)
+  - Hash the new password
+  - Update user's password in database
+  - Invalidate all existing refresh tokens except current one (optional)
+  - Log password change for security auditing
+  - Optionally send confirmation email to user
+  - Return success response
+
+**Security Considerations:**
+- Require current password to prevent unauthorized changes if device is left unlocked
+- Implement rate limiting (e.g., max 5 attempts per hour)
+- Log all password change attempts (successful and failed)
+- Notify user via email that password was changed
+- Consider requiring re-authentication after password change
+- Optionally invalidate all other sessions (force re-login on other devices)
 
 ---
 
