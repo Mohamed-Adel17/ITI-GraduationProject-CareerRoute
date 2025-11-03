@@ -145,7 +145,7 @@ namespace CareerRoute.API.Controllers
             string id,
             [FromBody] RejectMentorDto rejectDto)
         {
-            await _mentorService.RejectMentorAsync(id, rejectDto.Reason);
+            await _mentorService.RejectMentorAsync(id, rejectDto);
 
             return Ok(new ApiResponse { Message = "Mentor application rejected" });
         }
