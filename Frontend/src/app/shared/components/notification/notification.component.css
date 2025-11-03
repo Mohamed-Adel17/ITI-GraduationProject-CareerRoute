@@ -1,0 +1,241 @@
+/* Notification Container Positioning */
+.notification-container {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+/* Top Right (default) */
+.notification-container-top-right {
+  top: 0;
+  right: 0;
+}
+
+/* Top Left */
+.notification-container-top-left {
+  top: 0;
+  left: 0;
+}
+
+/* Top Center */
+.notification-container-top-center {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Bottom Right */
+.notification-container-bottom-right {
+  bottom: 0;
+  right: 0;
+}
+
+/* Bottom Left */
+.notification-container-bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+/* Bottom Center */
+.notification-container-bottom-center {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Individual Notification */
+.notification {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  max-width: 400px;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: #ffffff;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* Notification Icon */
+.notification-icon {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Notification Message */
+.notification-message {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.notification-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.notification-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #6c757d;
+}
+
+/* Close Button */
+.notification-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6c757d;
+  transition: color 0.2s;
+  font-size: 0.875rem;
+}
+
+.notification-close:hover {
+  color: #212529;
+}
+
+/* Progress Bar (auto-dismiss indicator) */
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.notification-progress-bar {
+  height: 100%;
+  background-color: currentColor;
+  animation: progress linear forwards;
+  transform-origin: left;
+}
+
+@keyframes progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Notification Type Styles */
+
+/* Success */
+.notification-success {
+  border-left: 4px solid #198754;
+}
+
+.notification-success .notification-icon {
+  color: #198754;
+}
+
+.notification-success .notification-progress-bar {
+  background-color: #198754;
+}
+
+/* Error */
+.notification-error {
+  border-left: 4px solid #dc3545;
+}
+
+.notification-error .notification-icon {
+  color: #dc3545;
+}
+
+.notification-error .notification-progress-bar {
+  background-color: #dc3545;
+}
+
+/* Warning */
+.notification-warning {
+  border-left: 4px solid #ffc107;
+}
+
+.notification-warning .notification-icon {
+  color: #ffc107;
+}
+
+.notification-warning .notification-progress-bar {
+  background-color: #ffc107;
+}
+
+/* Info */
+.notification-info {
+  border-left: 4px solid #0dcaf0;
+}
+
+.notification-info .notification-icon {
+  color: #0dcaf0;
+}
+
+.notification-info .notification-progress-bar {
+  background-color: #0dcaf0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .notification-container {
+    max-width: 100%;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    padding: 0.5rem;
+  }
+
+  .notification {
+    min-width: auto;
+    max-width: 100%;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .notification {
+    background-color: #212529;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .notification-title {
+    color: #f8f9fa;
+  }
+
+  .notification-text {
+    color: #adb5bd;
+  }
+
+  .notification-close {
+    color: #adb5bd;
+  }
+
+  .notification-close:hover {
+    color: #f8f9fa;
+  }
+}

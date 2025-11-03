@@ -1,0 +1,52 @@
+<!-- Notification Container -->
+<!-- Render notifications grouped by position -->
+@for (entry of getNotificationsByPosition() | keyvalue; track entry.key) {
+  <div [ngClass]="getPositionClass(entry.key)" class="notification-container">
+    @for (notification of entry.value; track notification.id) {
+      <div
+        [@notificationAnimation]
+        [ngClass]="getNotificationClass(notification.type)"
+        class="notification"
+        role="alert"
+        [attr.aria-live]="notification.type === NotificationType.Error ? 'assertive' : 'polite'"
+      >
+        <div class="notification-content">
+          <!-- Icon -->
+          <div class="notification-icon">
+            <i [ngClass]="getNotificationIcon(notification.type)"></i>
+          </div>
+
+          <!-- Message -->
+          <div class="notification-message">
+            @if (notification.title) {
+              <div class="notification-title">{{ notification.title }}</div>
+            }
+            <div class="notification-text">{{ notification.message }}</div>
+          </div>
+
+          <!-- Close Button -->
+          @if (notification.dismissible !== false) {
+            <button
+              type="button"
+              class="notification-close"
+              (click)="dismiss(notification.id)"
+              aria-label="Close notification"
+            >
+              <i class="bi bi-x-lg"></i>
+            </button>
+          }
+        </div>
+
+        <!-- Optional Progress Bar for Auto-dismiss -->
+        @if (notification.duration && notification.duration > 0) {
+          <div class="notification-progress">
+            <div
+              class="notification-progress-bar"
+              [style.animation-duration.ms]="notification.duration"
+            ></div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
