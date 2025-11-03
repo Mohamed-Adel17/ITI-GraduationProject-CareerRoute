@@ -1,7 +1,5 @@
 ﻿using CareerRoute.API.Models;
 using CareerRoute.Core.Exceptions;
-using System.Net;
-using System.Text.Json;
 
 
 namespace CareerRoute.API.Middleware
@@ -36,47 +34,43 @@ namespace CareerRoute.API.Middleware
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-            var response = new ErrorResponse() { Path = context.Request.Path};
+            
+            ApiResponse response;
+            
             switch (exception)
             {
                 case NotFoundException notFoundEx:
-                    response.StatusCode = (int)HttpStatusCode.NotFound;
-                    response.Message = notFoundEx.Message;
-                    _logger.LogWarning(notFoundEx, $"Resource not found: {notFoundEx.Message}");
+                    response = ApiResponse.Error(notFoundEx.Message, 404);
+                    _logger.LogWarning(notFoundEx, "Resource not found: {Message}", notFoundEx.Message);
                     break;
+                    
                 case BusinessException businessEx:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    response.Message = businessEx.Message;
-                    _logger.LogWarning(businessEx, $"Business rule violation: {businessEx.Message}");
+                    response = ApiResponse.Error(businessEx.Message, 400);
+                    _logger.LogWarning(businessEx, "Business rule violation: {Message}", businessEx.Message);
                     break;
+                    
                 case ValidationException validationEx:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    response.Message = validationEx.Message;
-                    response.Errors = validationEx.Errors;
-                    _logger.LogWarning(validationEx, $"Validation exception: {validationEx.Message}");
+                    response = ApiResponse.Error(validationEx.Message, 400, validationEx.Errors);
+                    _logger.LogWarning(validationEx, "Validation exception: {Message}", validationEx.Message);
                     break;
+                    
                 case UnauthorizedException unauthorizedEx:
-                    response.StatusCode = (int)HttpStatusCode.Forbidden;
-                    response.Message = unauthorizedEx.Message;
-                    _logger.LogWarning(unauthorizedEx, $"Unauthorized access exception: {unauthorizedEx.Message}");
+                    response = ApiResponse.Error(unauthorizedEx.Message, 403);
+                    _logger.LogWarning(unauthorizedEx, "Unauthorized access: {Message}", unauthorizedEx.Message);
                     break;
+                    
                 default:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    response.Message = _environment.IsDevelopment() ?
-                        exception.Message : "An internal server error occurred. Please try again later.";
-                    response.Details = _environment.IsDevelopment() ? exception.StackTrace : null;
-                    _logger.LogError(exception, $"Unhandled exception: {exception.Message}");
+                    var message = _environment.IsDevelopment()
+                        ? exception.Message
+                        : "An internal server error occurred. Please try again later.";
+                    response = ApiResponse.Error(message, 500);
+                    _logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
                     break;
             }
-            context.Response.StatusCode = response.StatusCode;
+            
+            context.Response.StatusCode = response.StatusCode ?? 500;
 
-            var jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = _environment.IsDevelopment()
-            };
-
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response, jsonOptions));
+            await context.Response.WriteAsJsonAsync(response);
         }
     }
     public static class ExceptionHandlerMiddlewareExtensions

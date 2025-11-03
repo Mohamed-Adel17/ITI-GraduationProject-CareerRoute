@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CareerRoute.Core.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Domain.Interfaces
 {
-    internal interface IUserRepository
+    public interface IUserRepository : IBaseRepository<ApplicationUser>
     {
     }
 }
