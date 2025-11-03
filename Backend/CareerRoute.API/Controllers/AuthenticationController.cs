@@ -1,4 +1,5 @@
-﻿using CareerRoute.Core.DTOs.Auth;
+﻿using CareerRoute.API.Models;
+using CareerRoute.Core.DTOs.Auth;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,14 +14,11 @@ namespace CareerRoute.API.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthenticationService _authenticationService;
-        private readonly ILogger<AuthenticationController> _logger;
 
         public AuthenticationController(
-            IAuthenticationService authenticationService,
-            ILogger<AuthenticationController> logger)
+            IAuthenticationService authenticationService)
         {
             _authenticationService = authenticationService;
-            _logger = logger;
         }
 
         /// <summary>
@@ -31,13 +29,12 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Registration successful</response>
         /// <response code="400">Invalid input or user already exists</response>
         [HttpPost("register")]
-        [ProducesResponseType(typeof(RegisterResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<RegisterResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerRequest)
         {
             var response = await _authenticationService.Register(registerRequest);
-            _logger.LogInformation("User registered successfully: {Email}", registerRequest.Email);
-            return Ok(response);
+            return Ok(new ApiResponse<RegisterResponseDto>(response));
         }
 
         /// <summary>
@@ -48,13 +45,12 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Login successful</response>
         /// <response code="401">Invalid credentials or account issues</response>
         [HttpPost("login")]
-        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
             var response = await _authenticationService.Login(loginRequest);
-            _logger.LogInformation("User logged in successfully: {Email}", loginRequest.Email);
-            return Ok(response);
+            return Ok(new ApiResponse<AuthResponseDto>(response));
         }
 
         /// <summary>
@@ -65,13 +61,12 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Token refresh successful</response>
         /// <response code="401">Invalid or expired refresh token</response>
         [HttpPost("refresh-token")]
-        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> RefreshToken([FromBody] TokenRequestDto tokenRequest)
         {
             var response = await _authenticationService.RefreshToken(tokenRequest);
-            _logger.LogInformation("Token refreshed successfully");
-            return Ok(response);
+            return Ok(new ApiResponse<AuthResponseDto>(response));
         }
 
         /// <summary>
@@ -83,14 +78,13 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Email verified successfully</response>
         /// <response code="400">Invalid token or email already verified</response>
         [HttpGet("verify-email")]
-        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto verifyRequest)
         {
 
             var response = await _authenticationService.VerifyEmail(verifyRequest);
-            _logger.LogInformation("Email verified successfully: {Email}", verifyRequest.Email);
-            return Ok(response);
+            return Ok(new ApiResponse<AuthResponseDto>(response));
 
         }
 
@@ -102,13 +96,12 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Verification email sent</response>
         /// <response code="400">Email already verified or invalid</response>
         [HttpPost("request-verify-email")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> RequestVerifyEmail([FromBody] EmailRequestDto emailRequest)
         {
             await _authenticationService.RequestVerifyEmail(emailRequest);
-            _logger.LogInformation("Verification email requested: {Email}", emailRequest.Email);
-            return Ok(new { message = "Verification email sent. Please check your inbox." });
+            return Ok(new ApiResponse { Message = "Verification email sent. Please check your inbox." });
         }
 
         /// <summary>
@@ -119,15 +112,14 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Password reset email sent</response>
         /// <response code="400">Invalid request</response>
         [HttpPost("forgot-password")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ForgotPassword([FromBody] EmailRequestDto emailRequest)
         {
 
             await _authenticationService.ForgotPassword(emailRequest);
-            _logger.LogInformation("Password reset requested for: {Email}", emailRequest.Email);
             // Always return success to prevent email enumeration
-            return Ok(new { message = "If an account exists with this email, a password reset link has been sent." });
+            return Ok(new ApiResponse { Message = "If an account exists with this email, a password reset link has been sent." });
         }
 
         /// <summary>
@@ -138,7 +130,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Password reset successful</response>
         /// <response code="400">Invalid token or password</response>
         [HttpPost("reset-password")]
-        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto resetPasswordRequest)
         {
@@ -157,7 +149,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">User not authenticated</response>
         [HttpPost("change-password")]
         [Authorize]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto changePasswordRequest)
@@ -170,8 +162,7 @@ namespace CareerRoute.API.Controllers
             }
 
             await _authenticationService.ChangePassword(userId, changePasswordRequest);
-            _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
-            return Ok(new { message = "Password changed successfully. Please login again with your new password." });
+            return Ok(new ApiResponse { Message = "Password changed successfully. Please login again with your new password." });
 
         }
 
@@ -183,7 +174,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">User not authenticated</response>
         [HttpPost("logout")]
         [Authorize]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Logout()
         {
@@ -195,40 +186,8 @@ namespace CareerRoute.API.Controllers
             }
 
             await _authenticationService.Logout(userId);
-            _logger.LogInformation("User logged out successfully: {UserId}", userId);
-            return Ok(new { message = "Logged out successfully" });
-
+            return Ok(new ApiResponse { Message = "Logged out successfully" });
         }
 
-        /// <summary>
-        /// Get current authenticated user information
-        /// </summary>
-        /// <returns>Current user details</returns>
-        /// <response code="200">User information retrieved</response>
-        /// <response code="401">User not authenticated</response>
-        [HttpGet("me")]
-        [Authorize]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-        public IActionResult GetCurrentUser()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            var name = User.FindFirstValue(ClaimTypes.Name);
-            var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            return Ok(new
-            {
-                userId,
-                email,
-                name,
-                roles
-            });
-        }
     }
 }
