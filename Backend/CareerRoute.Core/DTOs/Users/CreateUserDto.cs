@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.DTOs.Users
 {
-    internal class CreateUserDto
+    public class CreateUserDto
     {
         
         public string UserName { get; set; }
