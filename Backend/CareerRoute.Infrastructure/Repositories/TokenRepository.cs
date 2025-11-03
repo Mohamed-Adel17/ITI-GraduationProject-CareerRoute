@@ -26,7 +26,7 @@ namespace CareerRoute.Infrastructure.Repositories
         public async Task RevokeAllUserTokensAsync(string userId)
         {
             await _dbContext.RefreshTokens.
-                Include(rt=>rt.User)
+                Include(rt => rt.User)
                 .Where(rt => rt.UserId == userId && !rt.RevokedAt.HasValue && rt.ExpiredDate > DateTime.UtcNow)
                 .ExecuteUpdateAsync(rt => rt
                     .SetProperty(r => r.RevokedAt, DateTime.UtcNow)
@@ -38,6 +38,10 @@ namespace CareerRoute.Infrastructure.Repositories
             var refreshToken = await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
             if (refreshToken is null) return;
             refreshToken.RevokedAt = DateTime.UtcNow;
+        }
+        public async Task<int> SaveChangesAsync()
+        {
+            return await _dbContext.SaveChangesAsync();
         }
     }
 }
