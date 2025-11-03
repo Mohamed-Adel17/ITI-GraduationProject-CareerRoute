@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CareerRoute.Core.DTOs.Users;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,5 +9,6 @@ namespace CareerRoute.Core.Services.Interfaces
 {
     internal interface IUserService
     {
+        Task<RetriveUserDto>CreateUserWithRoleAsync(CreateUserDto cuDto);
     }
 }

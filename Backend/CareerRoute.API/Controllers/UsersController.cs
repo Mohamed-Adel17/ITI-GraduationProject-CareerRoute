@@ -10,5 +10,9 @@ namespace CareerRoute.API.Controllers
     //[AuthorizeRole(AppRoles.Admin)]
     public class UsersController : ControllerBase
     {
+
+        public UsersController() { 
+
+        }
     }
 }

@@ -52,6 +52,10 @@ namespace CareerRoute.Core.Validators.Users
                .NotEmpty().WithMessage("Career Interst is required")
              .MaximumLength(200).WithMessage("Career Goal must not exceed 200 char long");
 
+            RuleFor(cuDto => cuDto.Role)
+                .NotEmpty().WithMessage("Role is required");
+
+
         }
 
     }
