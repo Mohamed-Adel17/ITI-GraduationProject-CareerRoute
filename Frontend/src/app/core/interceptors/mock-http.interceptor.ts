@@ -16,7 +16,7 @@ function getMockUsers(): any[] {
   if (stored) {
     return JSON.parse(stored);
   }
-  // Default user if no stored users
+  // Default user if no stored users - complete profile structure
   const defaultUsers = [
     {
       id: '1',
@@ -24,6 +24,13 @@ function getMockUsers(): any[] {
       password: 'Test1234!',
       firstName: 'John',
       lastName: 'Doe',
+      phoneNumber: '+1 (555) 123-4567',
+      profilePictureUrl: 'https://i.pravatar.cc/150?img=12',
+      careerInterests: ['Software Development', 'Data Science', 'Machine Learning'],
+      careerGoals: 'Become a senior software engineer specializing in AI and machine learning within the next 2 years.',
+      registrationDate: new Date('2024-01-15').toISOString(),
+      lastLoginDate: new Date().toISOString(),
+      isActive: true,
       roles: ['User'],
       isMentor: false,
       emailConfirmed: true
@@ -39,19 +46,42 @@ function saveMockUsers(users: any[]): void {
 
 let mockUsers = getMockUsers();
 
-const mockTokens = new Map<string, { userId: string; email: string; expiration: number }>();
+// Store tokens in localStorage for persistence across page refreshes
+const MOCK_TOKENS_KEY = 'mockTokens';
+
+function getMockTokens(): Map<string, { userId: string; email: string; expiration: number }> {
+  const stored = MOCK_STORAGE.getItem(MOCK_TOKENS_KEY);
+  if (stored) {
+    try {
+      const tokensArray = JSON.parse(stored);
+      return new Map(tokensArray);
+    } catch (e) {
+      return new Map();
+    }
+  }
+  return new Map();
+}
+
+function saveMockTokens(tokens: Map<string, { userId: string; email: string; expiration: number }>): void {
+  const tokensArray = Array.from(tokens.entries());
+  MOCK_STORAGE.setItem(MOCK_TOKENS_KEY, JSON.stringify(tokensArray));
+}
+
+const mockTokens = getMockTokens();
 
 let initialized = false;
 
 export const mockHttpInterceptor: HttpInterceptorFn = (req, next) => {
   if (!initialized) {
-    console.log('[MOCK HTTP INTERCEPTOR] Initialized - Ready to mock auth endpoints');
+    console.log('[MOCK HTTP INTERCEPTOR] Initialized - Ready to mock auth and user endpoints');
     console.log('[MOCK HTTP INTERCEPTOR] Test credentials: test@example.com / Test1234!');
     initialized = true;
   }
 
-  // Only mock auth endpoints, let others pass through
-  if (!req.url.includes('/auth/')) {
+  // Mock auth and user endpoints
+  const shouldMock = req.url.includes('/auth/') || req.url.includes('/api/users');
+
+  if (!shouldMock) {
     return next(req);
   }
 
@@ -78,6 +108,14 @@ export const mockHttpInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (req.url.includes('/refresh') && req.method === 'POST') {
     return mockRefreshToken(req);
+  }
+
+  // User profile endpoints - matches /api/users/{userId}
+  if (req.url.match(/\/api\/users\/[^/]+$/) && req.method === 'GET') {
+    return mockGetUserProfile(req);
+  }
+  if (req.url.match(/\/api\/users\/[^/]+$/) && req.method === 'PUT') {
+    return mockUpdateUserProfile(req);
   }
 
   // Default: pass through
@@ -108,11 +146,18 @@ function mockLogin(req: any): Observable<any> {
   const mockToken = generateMockJWT(user);
   const mockRefreshToken = 'refresh_token_' + Math.random().toString(36).substring(7);
 
+  console.log('[MOCK LOGIN] Generated token:', mockToken.substring(0, 50) + '...');
+
   mockTokens.set(mockToken, {
     userId: user.id,
     email: user.email,
     expiration: Date.now() + 3600000
   });
+  saveMockTokens(mockTokens); // Persist tokens
+
+  console.log('[MOCK LOGIN] Saved token to mockTokens map');
+  console.log('[MOCK LOGIN] Total tokens in map:', mockTokens.size);
+  console.log('[MOCK LOGIN] Saved to localStorage:', MOCK_TOKENS_KEY);
 
   const response = {
     success: true,
@@ -361,6 +406,14 @@ function mockVerifyEmail(req: any): Observable<any> {
   const loginToken = generateMockJWT(user);
   const refreshToken = 'refresh_token_' + Math.random().toString(36).substring(7);
 
+  // Store token for auto-login
+  mockTokens.set(loginToken, {
+    userId: user.id,
+    email: user.email,
+    expiration: Date.now() + 3600000
+  });
+  saveMockTokens(mockTokens);
+
   const response = {
     success: true,
     message: 'Email verified successfully',
@@ -437,6 +490,14 @@ function mockRefreshToken(req: any): Observable<any> {
   const newToken = generateMockJWT(user);
   const newRefreshToken = 'refresh_token_' + Math.random().toString(36).substring(7);
 
+  // Store new token
+  mockTokens.set(newToken, {
+    userId: user.id,
+    email: user.email,
+    expiration: Date.now() + 3600000
+  });
+  saveMockTokens(mockTokens);
+
   const response = {
     success: true,
     token: newToken,
@@ -449,6 +510,153 @@ function mockRefreshToken(req: any): Observable<any> {
     status: 200,
     body: response
   })).pipe(delay(300));
+}
+
+// ===================== USER PROFILE ENDPOINTS =====================
+
+function mockGetUserProfile(req: any): Observable<any> {
+  const urlParts = req.url.split('/');
+  const userId = urlParts[urlParts.length - 1];
+
+  console.log('[MOCK GET USER PROFILE] Request for userId:', userId);
+  console.log('[MOCK GET USER PROFILE] Request URL:', req.url);
+
+  // Extract token from Authorization header
+  const authHeader = req.headers.get('Authorization');
+  console.log('[MOCK GET USER PROFILE] Authorization header:', authHeader);
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[MOCK GET USER PROFILE] No valid authorization header');
+    return throwHttpError(401, 'Unauthorized', null);
+  }
+
+  const token = authHeader.substring(7);
+  console.log('[MOCK GET USER PROFILE] Token extracted:', token.substring(0, 50) + '...');
+  console.log('[MOCK GET USER PROFILE] Available tokens in map:', mockTokens.size);
+  console.log('[MOCK GET USER PROFILE] Token keys:', Array.from(mockTokens.keys()).map(k => k.substring(0, 50) + '...'));
+
+  const tokenData = mockTokens.get(token);
+  console.log('[MOCK GET USER PROFILE] Token data found:', tokenData);
+
+  if (!tokenData) {
+    console.log('[MOCK GET USER PROFILE] Invalid token - not found in mockTokens map');
+    console.log('[MOCK GET USER PROFILE] Checking localStorage for mockTokens...');
+    const storedTokens = localStorage.getItem(MOCK_TOKENS_KEY);
+    console.log('[MOCK GET USER PROFILE] Stored tokens:', storedTokens ? 'exists' : 'not found');
+    return throwHttpError(401, 'Invalid or expired token', null);
+  }
+
+  // Reload users to get latest data
+  mockUsers = getMockUsers();
+
+  const user = mockUsers.find(u => u.id === userId);
+  if (!user) {
+    console.log('[MOCK GET USER PROFILE] User not found:', userId);
+    return throwHttpError(404, 'User not found', null);
+  }
+
+  // Check if requesting user matches the profile (users can only view their own profile)
+  if (tokenData.userId !== userId) {
+    console.log('[MOCK GET USER PROFILE] Unauthorized access attempt');
+    return throwHttpError(403, 'You can only view your own profile', null);
+  }
+
+  // Return complete user profile (excluding password)
+  const { password, ...userProfile } = user;
+
+  const response = {
+    success: true,
+    data: userProfile
+  };
+
+  console.log('[MOCK GET USER PROFILE] Success for userId:', userId);
+
+  return of(new HttpResponse({
+    status: 200,
+    body: response
+  })).pipe(delay(400));
+}
+
+function mockUpdateUserProfile(req: any): Observable<any> {
+  const urlParts = req.url.split('/');
+  const userId = urlParts[urlParts.length - 1];
+  const updateData = req.body;
+
+  console.log('[MOCK UPDATE USER PROFILE] Request for userId:', userId);
+  console.log('[MOCK UPDATE USER PROFILE] Update data:', updateData);
+
+  // Extract token from Authorization header
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[MOCK UPDATE USER PROFILE] No valid authorization header');
+    return throwHttpError(401, 'Unauthorized', null);
+  }
+
+  const token = authHeader.substring(7);
+  const tokenData = mockTokens.get(token);
+
+  if (!tokenData) {
+    console.log('[MOCK UPDATE USER PROFILE] Invalid token');
+    return throwHttpError(401, 'Invalid or expired token', null);
+  }
+
+  // Reload users to get latest data
+  mockUsers = getMockUsers();
+
+  const userIndex = mockUsers.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    console.log('[MOCK UPDATE USER PROFILE] User not found:', userId);
+    return throwHttpError(404, 'User not found', null);
+  }
+
+  // Check if requesting user matches the profile
+  if (tokenData.userId !== userId) {
+    console.log('[MOCK UPDATE USER PROFILE] Unauthorized access attempt');
+    return throwHttpError(403, 'You can only update your own profile', null);
+  }
+
+  // Validate required fields
+  if (!updateData.firstName || updateData.firstName.trim().length < 2) {
+    return throwHttpError(400, 'Validation failed', {
+      firstName: ['First name must be at least 2 characters']
+    });
+  }
+
+  if (!updateData.lastName || updateData.lastName.trim().length < 2) {
+    return throwHttpError(400, 'Validation failed', {
+      lastName: ['Last name must be at least 2 characters']
+    });
+  }
+
+  // Update user profile
+  const updatedUser = {
+    ...mockUsers[userIndex],
+    firstName: updateData.firstName,
+    lastName: updateData.lastName,
+    phoneNumber: updateData.phoneNumber || mockUsers[userIndex].phoneNumber,
+    profilePictureUrl: updateData.profilePictureUrl || mockUsers[userIndex].profilePictureUrl,
+    careerInterests: updateData.careerInterests || mockUsers[userIndex].careerInterests,
+    careerGoals: updateData.careerGoals || mockUsers[userIndex].careerGoals
+  };
+
+  mockUsers[userIndex] = updatedUser;
+  saveMockUsers(mockUsers);
+
+  // Return updated profile (excluding password)
+  const { password, ...userProfile } = updatedUser;
+
+  const response = {
+    success: true,
+    message: 'Profile updated successfully',
+    data: userProfile
+  };
+
+  console.log('[MOCK UPDATE USER PROFILE] Success for userId:', userId);
+
+  return of(new HttpResponse({
+    status: 200,
+    body: response
+  })).pipe(delay(600));
 }
 
 // ===================== UTILITIES =====================
