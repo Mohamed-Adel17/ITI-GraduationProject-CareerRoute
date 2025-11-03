@@ -82,70 +82,90 @@ export class NotificationComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Get CSS classes for notification type
+   * Get CSS classes for notification type (Tailwind border-left color)
    * @param type Notification type
    * @returns CSS class string
    */
   getNotificationClass(type: NotificationType): string {
     switch (type) {
       case NotificationType.Success:
-        return 'notification-success';
+        return 'border-l-4 border-green-600 dark:border-green-500';
       case NotificationType.Error:
-        return 'notification-error';
+        return 'border-l-4 border-red-600 dark:border-red-500';
       case NotificationType.Warning:
-        return 'notification-warning';
+        return 'border-l-4 border-yellow-500 dark:border-yellow-400';
       case NotificationType.Info:
-        return 'notification-info';
+        return 'border-l-4 border-cyan-500 dark:border-cyan-400';
       default:
-        return 'notification-info';
+        return 'border-l-4 border-cyan-500 dark:border-cyan-400';
     }
   }
 
   /**
-   * Get icon for notification type
+   * Get Tailwind color class for notification icon
    * @param type Notification type
-   * @returns Bootstrap icon class
+   * @returns Tailwind color class
    */
-  getNotificationIcon(type: NotificationType): string {
+  getIconColorClass(type: NotificationType): string {
     switch (type) {
       case NotificationType.Success:
-        return 'bi bi-check-circle-fill';
+        return 'text-green-600 dark:text-green-500';
       case NotificationType.Error:
-        return 'bi bi-exclamation-circle-fill';
+        return 'text-red-600 dark:text-red-500';
       case NotificationType.Warning:
-        return 'bi bi-exclamation-triangle-fill';
+        return 'text-yellow-500 dark:text-yellow-400';
       case NotificationType.Info:
-        return 'bi bi-info-circle-fill';
+        return 'text-cyan-500 dark:text-cyan-400';
       default:
-        return 'bi bi-info-circle-fill';
+        return 'text-cyan-500 dark:text-cyan-400';
     }
   }
 
   /**
-   * Get CSS class for notification position
+   * Get Tailwind color class for progress bar
+   * @param type Notification type
+   * @returns Tailwind background color class
+   */
+  getProgressBarClass(type: NotificationType): string {
+    switch (type) {
+      case NotificationType.Success:
+        return 'bg-green-600 dark:bg-green-500';
+      case NotificationType.Error:
+        return 'bg-red-600 dark:bg-red-500';
+      case NotificationType.Warning:
+        return 'bg-yellow-500 dark:bg-yellow-400';
+      case NotificationType.Info:
+        return 'bg-cyan-500 dark:bg-cyan-400';
+      default:
+        return 'bg-cyan-500 dark:bg-cyan-400';
+    }
+  }
+
+  /**
+   * Get Tailwind position classes for notification container
    * @param position Notification position
-   * @returns CSS class string
+   * @returns Tailwind positioning class string
    */
   getPositionClass(position?: NotificationPosition): string {
     if (!position) {
-      return 'notification-container-top-right';
+      return 'top-0 right-0';
     }
 
     switch (position) {
       case NotificationPosition.TopRight:
-        return 'notification-container-top-right';
+        return 'top-0 right-0';
       case NotificationPosition.TopLeft:
-        return 'notification-container-top-left';
+        return 'top-0 left-0';
       case NotificationPosition.TopCenter:
-        return 'notification-container-top-center';
+        return 'top-0 left-1/2 -translate-x-1/2';
       case NotificationPosition.BottomRight:
-        return 'notification-container-bottom-right';
+        return 'bottom-0 right-0';
       case NotificationPosition.BottomLeft:
-        return 'notification-container-bottom-left';
+        return 'bottom-0 left-0';
       case NotificationPosition.BottomCenter:
-        return 'notification-container-bottom-center';
+        return 'bottom-0 left-1/2 -translate-x-1/2';
       default:
-        return 'notification-container-top-right';
+        return 'top-0 right-0';
     }
   }
 

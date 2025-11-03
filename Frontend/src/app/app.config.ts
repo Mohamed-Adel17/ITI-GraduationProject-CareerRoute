@@ -16,10 +16,11 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(), // Enable animations for notification component
     provideHttpClient(
       withInterceptors([
+        // Auth Interceptor - KEEP THIS (attaches JWT token to requests)
+        // IMPORTANT: Must run BEFORE mockHttpInterceptor so token is attached
+        authInterceptor,
         // Mock HTTP Interceptor - REMOVE THIS LINE ONLY when backend is ready
         mockHttpInterceptor,
-        // Auth Interceptor - KEEP THIS (attaches JWT token to requests)
-        authInterceptor,
         // Error Interceptor - KEEP THIS (handles HTTP errors globally)
         errorInterceptor
       ])
