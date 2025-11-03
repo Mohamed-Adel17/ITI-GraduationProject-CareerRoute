@@ -197,8 +197,8 @@ export class UserService {
    * - Returns 400 if validation fails
    * - Returns 403 if trying to update another user's profile (non-admin)
    * - Returns 404 if user not found
-   * - Automatically shows success notification on completion
    * - Updates currentUserProfile$ if updating current user
+   * - Component should handle success notification for context-specific messaging
    *
    * @example
    * ```typescript
@@ -206,14 +206,15 @@ export class UserService {
    *   firstName: 'John',
    *   lastName: 'Doe',
    *   phoneNumber: '+1234567890',
-   *   careerInterests: 'Software Development, AI',
+   *   careerInterests: ['Software Development', 'AI'],
    *   careerGoals: 'Become a senior developer'
    * };
    *
    * this.userService.updateUserProfile(userId, updates).subscribe(
    *   (updatedUser) => {
    *     // Profile updated successfully
-   *     // Notification shown automatically
+   *     // Show notification in component
+   *     this.notificationService.success('Profile updated!', 'Success');
    *   }
    * );
    * ```
@@ -243,11 +244,8 @@ export class UserService {
           // AuthService will handle syncing with its own observables
         }
 
-        // Show success notification
-        this.notificationService.success(
-          'Profile updated successfully',
-          'Success'
-        );
+        // Note: Success notification should be shown by the calling component
+        // for context-specific messaging
       }),
       catchError(error => this.handleError('Failed to update user profile', error))
     );
@@ -409,16 +407,18 @@ export class UserService {
   // ==================== Error Handling ====================
 
   /**
-   * Handle API errors with logging and user feedback
+   * Handle API errors with logging
    *
-   * @param defaultMessage - Default message to show if error message is not available
+   * @param defaultMessage - Default message to use if error message is not available
    * @param error - The error object
    * @returns Throwable error for upstream handling
    *
    * @remarks
-   * - Shows notification to user
-   * - Logs error details
-   * - Handles various error types (validation, auth, server, etc.)
+   * - Extracts error message from various error formats
+   * - Logs error details for debugging
+   * - Returns formatted error to calling component
+   * - Component should handle error notification for context-specific messaging
+   * - Error interceptor handles global errors (401, network errors, etc.)
    */
   private handleError(defaultMessage: string, error: any): Observable<never> {
     let errorMessage = defaultMessage;
@@ -435,8 +435,15 @@ export class UserService {
       errorMessage = error.message;
     }
 
-    this.notificationService.error(errorMessage, 'Error');
+    // Log error for debugging
+    console.error('[UserService] Error:', errorMessage, error);
 
-    return throwError(() => error);
+    // Note: Error notification should be shown by the calling component
+    // for context-specific messaging
+
+    return throwError(() => ({
+      ...error,
+      message: errorMessage
+    }));
   }
 }

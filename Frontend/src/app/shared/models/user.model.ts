@@ -44,8 +44,8 @@ export interface User {
   /** URL to user's profile picture (optional) */
   profilePictureUrl?: string;
 
-  /** User's career interests (e.g., "Software Development, Data Science") */
-  careerInterests?: string;
+  /** User's career interests as an array (e.g., ["Software Development", "Data Science", "Machine Learning"]) */
+  careerInterests?: string[];
 
   /** User's career goals (e.g., "Become a senior developer within 2 years") */
   careerGoals?: string;
@@ -89,27 +89,16 @@ export interface UserProfileUpdate {
   lastName: string;
   phoneNumber?: string;
   profilePictureUrl?: string;
-  careerInterests?: string;
+  careerInterests?: string[];
   careerGoals?: string;
-}
-
-/**
- * User registration data
- */
-export interface UserRegistration {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  careerInterests?: string;
-  careerGoals?: string;
-  registerAsMentor?: boolean;
 }
 
 /**
  * User authentication context (stored in auth state)
+ *
+ * @remarks
+ * For user registration data, use RegisterRequest from auth.model.ts
+ * as registration is an authentication operation.
  */
 export interface AuthenticatedUser {
   id: string;

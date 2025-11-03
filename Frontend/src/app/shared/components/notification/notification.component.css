@@ -1,0 +1,38 @@
+/* Notification Component Styles - Tailwind CSS */
+
+/*
+ * NOTE: Most styles have been migrated to Tailwind utility classes in the HTML template.
+ * This file only contains the progress bar animation that cannot be achieved with Tailwind alone.
+ */
+
+/* Progress Bar Animation (auto-dismiss indicator) */
+.notification-progress-bar {
+  animation: progress linear forwards;
+  transform-origin: left;
+}
+
+@keyframes progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* Override positioning for mobile to be full-width */
+  .fixed.z-\[9999\] {
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    padding: 0.5rem;
+  }
+
+  /* Make notifications full-width on mobile */
+  .fixed.z-\[9999\] > div {
+    min-width: auto;
+    max-width: 100%;
+  }
+}

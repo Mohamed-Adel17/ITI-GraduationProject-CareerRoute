@@ -1,6 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
@@ -12,12 +13,14 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
+    provideAnimations(), // Enable animations for notification component
     provideHttpClient(
       withInterceptors([
+        // Auth Interceptor - KEEP THIS (attaches JWT token to requests)
+        // IMPORTANT: Must run BEFORE mockHttpInterceptor so token is attached
+        authInterceptor,
         // Mock HTTP Interceptor - REMOVE THIS LINE ONLY when backend is ready
         mockHttpInterceptor,
-        // Auth Interceptor - KEEP THIS (attaches JWT token to requests)
-        authInterceptor,
         // Error Interceptor - KEEP THIS (handles HTTP errors globally)
         errorInterceptor
       ])
