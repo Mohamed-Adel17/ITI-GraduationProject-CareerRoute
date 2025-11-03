@@ -70,7 +70,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<RegisterResponseDto> Register(RegisterRequestDto registerRequest)
         {
             // Validate request
-            await _registerValidator.ValidateAsync(registerRequest);
+            await _registerValidator.ValidateAndThrowAsync(registerRequest);
 
             // Check if user already exists
             var existingUser = await _userManager.FindByEmailAsync(registerRequest.Email);
@@ -135,7 +135,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<AuthResponseDto> Login(LoginRequestDto loginRequest)
         {
             // Validate request
-            await _loginValidator.ValidateAsync(loginRequest);
+            await _loginValidator.ValidateAndThrowAsync(loginRequest);
 
             var user = await _userManager.FindByEmailAsync(loginRequest.Email);
 
@@ -201,7 +201,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<AuthResponseDto> RefreshToken(TokenRequestDto tokenRequest)
         {
             // Validate request
-            await _tokenValidator.ValidateAsync(tokenRequest);
+            await _tokenValidator.ValidateAndThrowAsync(tokenRequest);
 
             var refreshToken = await _tokenRepository.GetByTokenAsync(tokenRequest.RefreshToken);
 
@@ -253,7 +253,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task ForgotPassword(EmailRequestDto emailRequest)
         {
             // Validate request
-            await _emailValidator.ValidateAsync(emailRequest);
+            await _emailValidator.ValidateAndThrowAsync(emailRequest);
 
             var user = await _userManager.FindByEmailAsync(emailRequest.Email);
 
@@ -292,7 +292,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<AuthResponseDto> ResetPassword(ResetPasswordRequestDto resetPasswordRequest)
         {
             // Validate request
-            await _resetPasswordValidator.ValidateAsync(resetPasswordRequest);
+            await _resetPasswordValidator.ValidateAndThrowAsync(resetPasswordRequest);
 
             var user = await _userManager.FindByEmailAsync(resetPasswordRequest.Email);
 
@@ -344,7 +344,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task ChangePassword(string userId, ChangePasswordRequestDto changePasswordRequest)
         {
             // Validate request
-            await _changePasswordValidator.ValidateAsync(changePasswordRequest);
+            await _changePasswordValidator.ValidateAndThrowAsync(changePasswordRequest);
 
             var user = await _userManager.FindByIdAsync(userId);
 
@@ -383,7 +383,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task RequestVerifyEmail(EmailRequestDto emailRequest)
         {
             // Validate request
-            await _emailValidator.ValidateAsync(emailRequest);
+            await _emailValidator.ValidateAndThrowAsync(emailRequest);
 
             var user = await _userManager.FindByEmailAsync(emailRequest.Email);
 
@@ -422,7 +422,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<AuthResponseDto> VerifyEmail(VerifyEmailRequestDto verifyEmailRequest)
         {
             // Validate request
-            await _verifyEmailValidator.ValidateAsync(verifyEmailRequest);
+            await _verifyEmailValidator.ValidateAndThrowAsync(verifyEmailRequest);
 
             var user = await _userManager.FindByEmailAsync(verifyEmailRequest.Email);
 
@@ -476,7 +476,7 @@ namespace CareerRoute.Core.Services.Implementations
         {
             var encodedEmail = Uri.EscapeDataString(email);
             var encodedToken = Uri.EscapeDataString(token);
-            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
+            var baseUrl = _configuration["FrontendUrl"] ?? "https://localhost:4200";
             return $"{baseUrl}/api/auth/verify-email?email={encodedEmail}&token={encodedToken}";
         }
 
@@ -484,7 +484,7 @@ namespace CareerRoute.Core.Services.Implementations
         {
             var encodedEmail = Uri.EscapeDataString(email);
             var encodedToken = Uri.EscapeDataString(token);
-            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
+            var baseUrl = _configuration["FrontendUrl"] ?? "https://localhost:4200";
             return $"{baseUrl}/api/auth/reset-password?email={encodedEmail}&token={encodedToken}";
         }
     }
