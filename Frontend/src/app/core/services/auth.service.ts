@@ -148,6 +148,15 @@ export class AuthService {
    * Register a new user
    * @param data User registration data
    * @returns Observable of registration response
+   *
+   * @remarks
+   * This method handles only authentication logic (API call, loading state).
+   * UI concerns (notifications, navigation) are delegated to the calling component.
+   * The component should:
+   * - Show success notification on successful registration
+   * - Navigate to email verification page if requiresEmailVerification is true
+   * - Navigate to login page if email verification is not required
+   * - Handle and display errors from the observable
    */
   register(data: RegisterRequest): Observable<RegisterResponse> {
     this.setLoading(true);
@@ -155,23 +164,25 @@ export class AuthService {
     return this.http.post<RegisterResponse>(`${this.AUTH_URL}/register`, data).pipe(
       tap(response => {
         if (response.success) {
-          this.notificationService.success(
-            response.message || 'Registration successful! Please check your email to verify your account.',
-            'Welcome to Career Route'
-          );
-
-          // If email verification is required, navigate to verification page
-          if (response.requiresEmailVerification) {
-            this.router.navigate(['/auth/email-verification'], {
-              queryParams: { email: data.email }
-            });
-          } else {
-            // Auto-login if email verification is not required
-            this.router.navigate(['/auth/login']);
-          }
+          // Just update loading state, component handles notifications and navigation
+          this.authStateSubject.next({
+            ...this.authStateSubject.value,
+            loading: false,
+            error: null
+          });
         }
       }),
-      catchError(error => this.handleAuthError(error, 'Registration failed')),
+      catchError(error => {
+        // Error interceptor has already processed the error
+        // Component will handle error display and notifications
+        const currentState = this.authStateSubject.value;
+        this.authStateSubject.next({
+          ...currentState,
+          loading: false,
+          error: error.message || 'Registration failed'
+        });
+        return throwError(() => error);
+      }),
       finalize(() => this.setLoading(false))
     );
   }
@@ -182,6 +193,20 @@ export class AuthService {
    * Login user with email and password
    * @param data Login credentials
    * @returns Observable of login response
+   *
+   * @remarks
+   * This method handles only authentication logic:
+   * - Token storage and retrieval
+   * - Auth state management
+   * - Token refresh timer setup
+   *
+   * UI concerns (notifications, navigation, error display) are delegated to the calling component.
+   * The errorInterceptor handles error transformation and status-specific handling (e.g., 401 logout).
+   *
+   * Component responsibilities:
+   * - Display success notification
+   * - Navigate to returnUrl after successful login
+   * - Handle and display error messages from the interceptor
    */
   login(data: LoginRequest): Observable<LoginResponse> {
     this.setLoading(true);
@@ -207,19 +232,19 @@ export class AuthService {
 
           // Start token refresh timer
           this.startTokenRefreshTimer();
-
-          // Show success notification
-          this.notificationService.success(
-            `Welcome back, ${response.user.firstName}!`,
-            'Login Successful'
-          );
-
-          // Navigate to dashboard or intended route
-          const returnUrl = this.router.routerState.snapshot.root.queryParams['returnUrl'] || '/dashboard';
-          this.router.navigate([returnUrl]);
         }
       }),
-      catchError(error => this.handleAuthError(error, 'Login failed')),
+      catchError(error => {
+        // Error interceptor has already processed and transformed the error
+        // Just update auth state with error and re-throw for component handling
+        const currentState = this.authStateSubject.value;
+        this.authStateSubject.next({
+          ...currentState,
+          loading: false,
+          error: error.message || 'Login failed'
+        });
+        return throwError(() => error);
+      }),
       finalize(() => this.setLoading(false))
     );
   }
@@ -400,30 +425,64 @@ export class AuthService {
    * Verify email address with token
    * @param request Email verification request
    * @returns Observable of verification response
+   *
+   * @remarks
+   * This method does NOT handle navigation or notifications.
+   * The EmailVerificationComponent is responsible for:
+   * - Displaying success/error messages
+   * - Storing the auto-login token if provided
+   * - Handling navigation with countdown timer
    */
   verifyEmail(request: EmailVerificationRequest): Observable<EmailVerificationResponse> {
     return this.http.post<EmailVerificationResponse>(`${this.AUTH_URL}/verify-email`, request).pipe(
       tap(response => {
-        if (response.success) {
-          this.notificationService.success(
-            response.message || 'Email verified successfully!',
-            'Email Verified'
-          );
+        // If auto-login is enabled and token is provided, update auth state
+        if (response.success && response.autoLogin && response.loginToken) {
+          // Decode token to get user info
+          const tokenPayload = decodeToken(response.loginToken);
+          if (tokenPayload) {
+            const user: AuthUser = {
+              id: tokenPayload.sub,
+              email: tokenPayload.email,
+              firstName: tokenPayload.given_name || '',
+              lastName: tokenPayload.family_name || '',
+              emailConfirmed: true, // Email is now verified
+              roles: getRolesFromToken(tokenPayload),
+              isMentor: tokenPayload.is_mentor || false,
+              mentorId: tokenPayload.mentor_id,
+              profilePictureUrl: tokenPayload.picture
+            };
 
-          // If auto-login token is provided, use it to log in
-          if (response.autoLogin && response.loginToken) {
-            // Handle auto-login (would need to implement this endpoint)
-            this.router.navigate(['/auth/login'], {
-              queryParams: { verified: 'true' }
+            // Store tokens in localStorage
+            this.setToken(response.loginToken);
+            if (response.refreshToken) {
+              this.setRefreshToken(response.refreshToken);
+            }
+
+            console.log('[AUTH SERVICE] Auto-login after email verification - tokens stored');
+            console.log('[AUTH SERVICE] User authenticated:', user.email);
+
+            // Update auth state
+            this.authStateSubject.next({
+              isAuthenticated: true,
+              user,
+              token: response.loginToken,
+              refreshToken: response.refreshToken || '',
+              tokenExpiration: tokenPayload.exp,
+              loading: false,
+              error: null
             });
-          } else {
-            this.router.navigate(['/auth/login'], {
-              queryParams: { verified: 'true' }
-            });
+
+            // Start token refresh timer
+            this.startTokenRefreshTimer();
           }
         }
       }),
-      catchError(error => this.handleAuthError(error, 'Email verification failed'))
+      catchError(error => {
+        // Don't use handleAuthError as it shows notification
+        // Component will handle error display
+        return throwError(() => error);
+      })
     );
   }
 
@@ -431,6 +490,10 @@ export class AuthService {
    * Resend email verification
    * @param request Resend verification request
    * @returns Observable of response
+   *
+   * @remarks
+   * Success notification is shown automatically.
+   * Error handling is delegated to the calling component.
    */
   resendVerificationEmail(request: ResendVerificationEmailRequest): Observable<any> {
     return this.http.post(`${this.AUTH_URL}/resend-verification`, request).pipe(
@@ -440,7 +503,11 @@ export class AuthService {
           'Email Sent'
         );
       }),
-      catchError(error => this.handleAuthError(error, 'Failed to resend verification email'))
+      catchError(error => {
+        // Error interceptor has already processed the error
+        // Component will handle error display
+        return throwError(() => error);
+      })
     );
   }
 
@@ -450,18 +517,21 @@ export class AuthService {
    * Initiate password reset (forgot password)
    * @param request Password reset request with email
    * @returns Observable of response
+   *
+   * @remarks
+   * This method handles only authentication logic (API call).
+   * UI concerns (notifications) are delegated to the calling component.
+   * The component should:
+   * - Show success message on successful request
+   * - Show error notification if request fails
    */
   forgotPassword(request: PasswordResetRequest): Observable<PasswordResetRequestResponse> {
     return this.http.post<PasswordResetRequestResponse>(`${this.AUTH_URL}/forgot-password`, request).pipe(
-      tap(response => {
-        if (response.success) {
-          this.notificationService.success(
-            response.message || 'Password reset email has been sent. Please check your inbox.',
-            'Email Sent'
-          );
-        }
-      }),
-      catchError(error => this.handleAuthError(error, 'Failed to send password reset email'))
+      catchError(error => {
+        // Error interceptor has already processed the error
+        // Component will handle error display
+        return throwError(() => error);
+      })
     );
   }
 
@@ -469,19 +539,22 @@ export class AuthService {
    * Reset password with token from email
    * @param request Password reset data with token
    * @returns Observable of response
+   *
+   * @remarks
+   * This method handles only authentication logic (API call).
+   * UI concerns (notifications, navigation) are delegated to the calling component.
+   * The component should:
+   * - Show success message on successful reset
+   * - Navigate to login page after successful reset
+   * - Show error notification if reset fails
    */
   resetPassword(request: PasswordReset): Observable<PasswordResetResponse> {
     return this.http.post<PasswordResetResponse>(`${this.AUTH_URL}/reset-password`, request).pipe(
-      tap(response => {
-        if (response.success) {
-          this.notificationService.success(
-            response.message || 'Password has been reset successfully! You can now login with your new password.',
-            'Password Reset'
-          );
-          this.router.navigate(['/auth/login']);
-        }
-      }),
-      catchError(error => this.handleAuthError(error, 'Failed to reset password'))
+      catchError(error => {
+        // Error interceptor has already processed the error
+        // Component will handle error display
+        return throwError(() => error);
+      })
     );
   }
 
@@ -489,6 +562,10 @@ export class AuthService {
    * Change password for logged-in user
    * @param request Change password request
    * @returns Observable of response
+   *
+   * @remarks
+   * Success notification is shown automatically.
+   * Error handling is delegated to the calling component.
    */
   changePassword(request: ChangePasswordRequest): Observable<ChangePasswordResponse> {
     return this.http.post<ChangePasswordResponse>(`${this.AUTH_URL}/change-password`, request).pipe(
@@ -500,7 +577,11 @@ export class AuthService {
           );
         }
       }),
-      catchError(error => this.handleAuthError(error, 'Failed to change password'))
+      catchError(error => {
+        // Error interceptor has already processed the error
+        // Component will handle error display
+        return throwError(() => error);
+      })
     );
   }
 
@@ -557,37 +638,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Handle authentication errors
-   * @param error HTTP error response
-   * @param defaultMessage Default error message
-   * @returns Observable that throws the error
-   * @private
-   */
-  private handleAuthError(error: HttpErrorResponse, defaultMessage: string): Observable<never> {
-    let errorMessage = defaultMessage;
-
-    if (error.error && isAuthError(error.error)) {
-      errorMessage = getAuthErrorMessage(error.error);
-    } else if (error.error?.message) {
-      errorMessage = error.error.message;
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-
-    // Show error notification
-    this.notificationService.error(errorMessage, 'Error');
-
-    // Update error state
-    const currentState = this.authStateSubject.value;
-    this.authStateSubject.next({
-      ...currentState,
-      error: errorMessage,
-      loading: false
-    });
-
-    return throwError(() => error);
-  }
 
   /**
    * Decode JWT token to extract payload

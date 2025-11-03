@@ -22,7 +22,7 @@ namespace CareerRoute.Infrastructure.Repositories
             return await dbContext.Set<T>().ToListAsync();
         }
 
-        public async Task<T?> GetByIdAsync(int id)
+        public async Task<T?> GetByIdAsync(string id)
         {
             return await dbContext.Set<T>().FindAsync(id);
         }

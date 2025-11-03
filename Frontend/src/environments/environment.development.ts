@@ -8,8 +8,15 @@ export const environment = {
   /**
    * API Configuration
    * Base URL for the backend API
+   *
+   * For testing with mock HTTP interceptor:
    */
-  apiUrl: 'http://localhost:5000/api',
+  apiUrl: 'http://localhost:4200/api',
+
+  /**
+   * Uncomment below when backend is ready on localhost:5000
+   */
+  // apiUrl: 'http://localhost:5000/api',
 
   /**
    * Authentication Configuration

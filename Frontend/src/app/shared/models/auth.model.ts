@@ -27,10 +27,10 @@ export interface RegisterRequest {
   confirmPassword: string;
 
   /** User's first name */
-  firstName: string;
+  firstName?: string;
 
   /** User's last name */
-  lastName: string;
+  lastName?: string;
 
   /** User's phone number (optional) */
   phoneNumber?: string;
@@ -267,6 +267,20 @@ export interface EmailVerificationResponse {
 
   /** Login token if autoLogin is true */
   loginToken?: string;
+
+  /** Refresh token if autoLogin is true */
+  refreshToken?: string;
+
+  /** User data if autoLogin is true */
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    emailConfirmed: boolean;
+    roles: string[];
+    isMentor: boolean;
+  };
 }
 
 /**
