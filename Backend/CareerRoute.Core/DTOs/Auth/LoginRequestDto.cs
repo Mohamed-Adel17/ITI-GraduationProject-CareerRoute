@@ -10,10 +10,7 @@ namespace CareerRoute.Core.DTOs.Auth
 {
     public class LoginRequestDto
     {
-        [Required]
-        [RegularExpression(AppRegex.EmailPattern, ErrorMessage = AppErrorMessages.InvalidEmailFormat)]
         public required string Email { get; set; }
-        [Required]
         public required string Password { get; set; }
     }
 }
