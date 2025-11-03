@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Services.Interfaces
 {
-    internal interface IUserService
+    public interface IUserService
     {
-        Task<RetriveUserDto>CreateUserWithRoleAsync(CreateUserDto cuDto);
+        public Task<RetriveUserDto>CreateUserWithRoleAsync(CreateUserDto cuDto);
     }
 }

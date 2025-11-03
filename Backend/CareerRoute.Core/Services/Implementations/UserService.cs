@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Services.Implementations
 {
-    internal class UserService :IUserService
+    public class UserService :IUserService
     {
         //private readonly IUserService userService;
         private readonly IMapper mapper;
@@ -33,9 +33,18 @@ namespace CareerRoute.Core.Services.Implementations
         }
         public async Task<RetriveUserDto> CreateUserWithRoleAsync(CreateUserDto cuDto)
         {
-            //create user using identity not pure repository 
+            var validationResult = await createValidator.ValidateAsync(cuDto);
+
+            if (!validationResult.IsValid)
+            {
+                // Collect all validation messages into one readable string
+                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ValidationException($"validation failed: {errors}");
+            }
 
             var user = mapper.Map<ApplicationUser>(cuDto);
+
+            //create user using identity not pure repository 
 
             var result = await userManager.CreateAsync(user, cuDto.Password);
 

@@ -1,7 +1,9 @@
+using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Setting;
 using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,9 +49,9 @@ public static class DependencyInjection
         // services.AddScoped<IStorageService, AzureStorageService>();
 
         // Identity Configuration (if using)
-        // services.AddIdentity<ApplicationUser, IdentityRole>()
-        //     .AddEntityFrameworkStores<AppDbContext>()
-        //     .AddDefaultTokenProviders();
+        services.AddIdentity<ApplicationUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
         return services;
     }
