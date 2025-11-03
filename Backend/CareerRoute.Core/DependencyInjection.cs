@@ -2,7 +2,7 @@ using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
-using CareerRoute.Core.Validators;
+using CareerRoute.Core.Validators.Mentors;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -49,7 +49,7 @@ namespace CareerRoute.API.Middleware
                     _logger.LogWarning(businessEx, "Business rule violation: {Message}", businessEx.Message);
                     break;
                     
-                case ValidationException validationEx:
+                case ValidationExceptionCustom validationEx:
                     response = ApiResponse.Error(validationEx.Message, 400, validationEx.Errors);
                     _logger.LogWarning(validationEx, "Validation exception: {Message}", validationEx.Message);
                     break;

@@ -5,10 +5,12 @@ using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Interfaces;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,18 +22,28 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IMapper _mapper;
         private readonly IMentorRepository _mentorRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IValidator<CreateMentorProfileDto> _createValidator;
+        private readonly IValidator<UpdateMentorProfileDto> _updateValidator;
+        private readonly IValidator<RejectMentorDto> _rejectValidator;
 
         public MentorService(
             IMentorRepository mentorRepository,
             IUserRepository userRepository,
             IMapper mapper,
-            ILogger<MentorService> logger)
+            ILogger<MentorService> logger,
+            IValidator<CreateMentorProfileDto> createValidator,
+            IValidator<UpdateMentorProfileDto> updateValidator,
+            IValidator<RejectMentorDto> rejectValidator)
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
             _mapper = mapper;
             _logger = logger;
+            _createValidator = createValidator;
+            _updateValidator = updateValidator;
+            _rejectValidator = rejectValidator;
         }
+        
         // Get mentor profile by ID
         public async Task<MentorProfileDto> GetMentorProfileAsync(string mentorId)
         {
@@ -53,6 +65,7 @@ namespace CareerRoute.Core.Services.Implementations
             string mentorId,
             UpdateMentorProfileDto updatedDto)
         {
+            await _updateValidator.ValidateAndThrowAsync(updatedDto);
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
             if(mentor == null)
             {
@@ -90,6 +103,7 @@ namespace CareerRoute.Core.Services.Implementations
             string userId,
             CreateMentorProfileDto createdDto)
         {
+            await _createValidator.ValidateAndThrowAsync(createdDto);
             var user = await _userRepository.GetByIdAsync(userId);    
             if(user == null)
             {
@@ -183,8 +197,9 @@ namespace CareerRoute.Core.Services.Implementations
             // await _emailService.SendMentorApprovalEmailAsync(mentor.User.Email, mentor.User.FirstName);
         }
         // Reject a mentor application
-        public async Task RejectMentorAsync(string mentorId, string reason)
+        public async Task RejectMentorAsync(string mentorId, RejectMentorDto rejectDto)
         {
+            await _rejectValidator.ValidateAndThrowAsync(rejectDto);
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
 
             if (mentor == null)
@@ -199,7 +214,7 @@ namespace CareerRoute.Core.Services.Implementations
             _mentorRepository.Update(mentor);
             await _mentorRepository.SaveChangesAsync();
 
-            _logger.LogInformation("Mentor {MentorId} rejected with reason: {Reason}", mentorId, reason);
+            _logger.LogInformation("Mentor {MentorId} rejected with reason: {Reason}", mentorId, rejectDto.Reason);
 
             // TODO: Send rejection email with reason
             // await _emailService.SendMentorRejectionEmailAsync(
