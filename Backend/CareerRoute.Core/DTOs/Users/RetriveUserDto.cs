@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.DTOs.Users
 {
-    internal class UserDto
+    internal class RetriveUserDto
     {
+
     }
 }
