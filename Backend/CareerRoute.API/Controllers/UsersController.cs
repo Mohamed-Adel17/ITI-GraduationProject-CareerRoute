@@ -16,22 +16,22 @@ namespace CareerRoute.API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService userService;
-        private readonly ILogger logger; 
+        private readonly ILogger logger;
 
 
-        public UsersController(IUserService userService , ILogger logger)
+        public UsersController(IUserService userService, ILogger logger)
         {
             this.userService = userService;
             this.logger = logger;
         }
 
-        public async Task<IActionResult> register (CreateUserDto cuDto)
+        public async Task<IActionResult> register(CreateUserDto cuDto)
         {
             logger.LogInformation("new user register with email" + cuDto.Email);
 
             var createdUser = await userService.CreateUserWithRoleAsync(cuDto);
 
-            return StatusCode(201,new ApiResponse<RetriveUserDto>(
+            return StatusCode(201, new ApiResponse<RetriveUserDto>(
                 createdUser,
                 "user registered successfully"
             ));
@@ -51,14 +51,34 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
+        public async Task<IActionResult> updateMe(UpdateUserDto uuDto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); //from JWT 
+
+            logger.LogInformation($"user with Id {userId} requests updating his profile ");
+
+            var user = await userService.UpdateUserByIdAsync(userId, uuDto);
+
+            return StatusCode(200, new ApiResponse<RetriveUserDto>(
+            user,
+            "user profile updated successfully"
+            ));
+        }
+
+        public async Task<IActionResult> deleteMe()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); //from JWT 
+
+            logger.LogInformation($"user with Id {userId} requests deleting his profile ");
+
+            await userService.DeleteUserByIdAsync(userId);
 
 
-        
-
-
-
-
-
+            return StatusCode(204, new ApiResponse<RetriveUserDto>(
+            null,
+            "user profile deleted successfully"
+            ));
+        }
 
         public async Task<IActionResult> getAllUsers()
         {

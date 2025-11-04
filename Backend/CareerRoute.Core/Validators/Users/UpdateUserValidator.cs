@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Validators.Users
 {
-    internal class UpdateUserValidator : AbstractValidator<UpdateUserDto>
+    public class UpdateUserValidator : AbstractValidator<UpdateUserDto>
     {
 
         public UpdateUserValidator()

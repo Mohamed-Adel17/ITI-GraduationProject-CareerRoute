@@ -9,10 +9,10 @@ namespace CareerRoute.Core.Services.Interfaces
 {
     public interface IUserService
     {
-        public Task<RetriveUserDto>CreateUserWithRoleAsync(CreateUserDto cuDto);
+        public Task<RetriveUserDto> CreateUserWithRoleAsync(CreateUserDto cuDto);
         public Task<IEnumerable<RetriveUserDto>> GetAllUsersAsync();
         public Task<RetriveUserDto> GetUserByIdAsync(string id);
-
-
+        public Task<RetriveUserDto> UpdateUserByIdAsync(string id, UpdateUserDto uuDto);
+        public Task DeleteUserByIdAsync(string id);
     }
 }

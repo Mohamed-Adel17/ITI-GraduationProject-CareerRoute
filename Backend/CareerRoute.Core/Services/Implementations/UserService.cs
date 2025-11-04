@@ -4,6 +4,7 @@ using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.DTOs.Users;
 using CareerRoute.Core.Services.Interfaces;
+using CareerRoute.Core.Validators.Users;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -21,16 +22,19 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly UserManager<ApplicationUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IValidator<CreateUserDto> createValidator;
+        private readonly IValidator<UpdateUserDto> updateValidator;
+
 
         public UserService(IMapper mapper , 
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager,
-            IValidator<CreateUserDto> createValidator ) {
+            IValidator<CreateUserDto> createValidator, IValidator<UpdateUserDto> updateValidator) {
 
             //this.userRepository = userRepository;
             this.mapper = mapper;
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.createValidator = createValidator;
+            this.updateValidator = updateValidator;
         }
         public async Task<RetriveUserDto> CreateUserWithRoleAsync(CreateUserDto cuDto)
         {
@@ -82,6 +86,54 @@ namespace CareerRoute.Core.Services.Implementations
             var user = userManager.FindByIdAsync(id);
             return mapper.Map<RetriveUserDto>(user);
         }
-         
+
+        public async Task<RetriveUserDto> UpdateUserByIdAsync(string id , UpdateUserDto uuDto)
+        {
+            var validationResult = await updateValidator.ValidateAsync(uuDto);
+
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ValidationException($"Validation failed: {errors}");
+            }
+
+            //update user using manager not pure repository
+
+            var user = await userManager.FindByIdAsync(id);
+            if (user == null)
+                throw new KeyNotFoundException("User not found");
+
+            mapper.Map(uuDto, user);
+
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception($"Update failed: {errors}");
+            }
+
+            return mapper.Map<RetriveUserDto>(user);
+
+        }
+
+        public  async Task DeleteUserByIdAsync(string id)
+        {
+            //delete user using manager not pure repository
+
+            var user = await userManager.FindByIdAsync(id);
+            if (user == null)
+                throw new KeyNotFoundException("User not found");
+
+            var result = await userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception($"Delete failed: {errors}");
+            }
+
+        }
+
+
+
     }
 }
