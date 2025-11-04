@@ -27,13 +27,14 @@ public static class DependencyInjection
 
         services.AddAutoMapper(options =>
         {
-            options.AddProfile<MentorMappingProfile>();
+            options.AddProfile<UserProfile>();
         });
 
         services.AddAutoMapper(options =>
         {
-            options.AddProfile<UserProfile>();
+            options.AddProfile<MentorMappingProfile>();
         });
+
 
         // ============ FLUENTVALIDATION ============
         services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();

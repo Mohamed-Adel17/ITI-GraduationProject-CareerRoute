@@ -1,5 +1,7 @@
 ﻿using CareerRoute.API.Filters;
+using CareerRoute.API.Models;
 using CareerRoute.Core.Constants;
+using CareerRoute.Core.DTOs.Users;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +14,37 @@ namespace CareerRoute.API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService userService;
+        private readonly ILogger logger; 
 
 
-        public UsersController()
+        public UsersController(IUserService userService , ILogger logger)
         {
+            this.userService = userService;
+            this.logger = logger;
+        }
 
+        public async Task<IActionResult> register (CreateUserDto cuDto)
+        {
+            logger.LogInformation("new user register with email" + cuDto.Email);
 
+            var createdUser = await userService.CreateUserWithRoleAsync(cuDto);
+
+            return StatusCode(201,new ApiResponse<RetriveUserDto>(
+                createdUser,
+                "user registered successfully"
+            ));
+        }
+
+        public async Task<IActionResult> getAllUsers()
+        {
+            logger.LogInformation("admin request all users");
+
+            var allUsers = await userService.GetAllUsersAsync();
+
+            return StatusCode(200, new ApiResponse<IEnumerable<RetriveUserDto>>(
+                 allUsers,
+                 "all users retrieved successfully"
+            ));
         }
     }
 }

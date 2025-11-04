@@ -27,6 +27,10 @@ namespace CareerRoute.Core.Mappings
             .ForSourceMember(src => src.Role, opt => opt.DoNotValidate())
             .ForSourceMember(src => src.Password, opt => opt.DoNotValidate());
 
+
+            
+            CreateMap<ApplicationUser, RetriveUserDto>();
+
         }
     }
 }

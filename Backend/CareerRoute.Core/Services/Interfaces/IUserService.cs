@@ -10,5 +10,7 @@ namespace CareerRoute.Core.Services.Interfaces
     public interface IUserService
     {
         public Task<RetriveUserDto>CreateUserWithRoleAsync(CreateUserDto cuDto);
+        public Task<IEnumerable<RetriveUserDto>> GetAllUsersAsync();
+
     }
 }

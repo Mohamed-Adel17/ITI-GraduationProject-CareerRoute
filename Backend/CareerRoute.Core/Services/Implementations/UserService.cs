@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.DTOs.Users;
 using CareerRoute.Core.Services.Interfaces;
@@ -13,9 +14,9 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Services.Implementations
 {
-    public class UserService :IUserService
+    public class UserService :  IUserService
     {
-        //private readonly IUserService userService;
+        //private readonly IUserRepository userRepository;
         private readonly IMapper mapper;
         private readonly UserManager<ApplicationUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
@@ -25,7 +26,7 @@ namespace CareerRoute.Core.Services.Implementations
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager,
             IValidator<CreateUserDto> createValidator ) {
 
-            //this.userService = userService;
+            //this.userRepository = userRepository;
             this.mapper = mapper;
             this.userManager = userManager;
             this.roleManager = roleManager;
@@ -45,7 +46,6 @@ namespace CareerRoute.Core.Services.Implementations
             var user = mapper.Map<ApplicationUser>(cuDto);
 
             //create user using identity not pure repository 
-
             var result = await userManager.CreateAsync(user, cuDto.Password);
 
             if (!result.Succeeded)
@@ -64,6 +64,14 @@ namespace CareerRoute.Core.Services.Implementations
 
             var retrivedUser = mapper.Map<RetriveUserDto>(user);
             return retrivedUser;
+        }
+
+        public async Task<IEnumerable<RetriveUserDto>> GetAllUsersAsync()
+        {
+            //retrieve users using manager not pure repository
+
+            var users = userManager.Users.ToList();
+            return mapper.Map<IEnumerable<RetriveUserDto>>(users);
         }
 
     }
