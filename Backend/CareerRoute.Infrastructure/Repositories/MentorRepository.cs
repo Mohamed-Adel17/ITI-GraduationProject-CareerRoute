@@ -98,7 +98,7 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             if(newAverageRating < 0 || newAverageRating > 5)
             {
-                throw new ValidationExceptionCustom(new Dictionary<string, string[]>
+                throw new ValidationException(new Dictionary<string, string[]>
                 {
                     ["AverageRating"] = new[] { "Average rating must be between 0 and 5" }
                 });

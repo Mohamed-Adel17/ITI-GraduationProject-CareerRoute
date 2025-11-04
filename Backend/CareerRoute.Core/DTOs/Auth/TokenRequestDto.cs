@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CareerRoute.Core.Mappings
+namespace CareerRoute.Core.DTOs.Auth
 {
-    internal class UserProfile
+    public class TokenRequestDto
     {
+        public string RefreshToken { get; set; } = string.Empty;
     }
 }

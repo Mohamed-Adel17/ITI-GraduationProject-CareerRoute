@@ -17,15 +17,16 @@ public static class DependencyInjection
 
 
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
 
         //services.AddScoped<IUserService, UserService>();
         services.AddScoped<IMentorService, MentorService>();
         // services.AddScoped<ISessionService, SessionService>();
-        // services.AddScoped<IAuthService, AuthService>();
 
         services.AddAutoMapper(options =>
         {
             options.AddProfile<MentorMappingProfile>();
+            options.AddProfile<UserMappingProfile>();
         });
 
         // ============ FLUENTVALIDATION ============

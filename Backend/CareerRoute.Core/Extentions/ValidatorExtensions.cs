@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using CareerRoute.Core.Exceptions;
+
 
 namespace CareerRoute.Core.Extentions
 {
@@ -16,7 +16,7 @@ namespace CareerRoute.Core.Extentions
                             g => g.Key, 
                             g => g.Select(e => e.ErrorMessage).ToArray()
                     );
-                throw new ValidationExceptionCustom(errors);
+                throw new Exceptions.ValidationException(errors);
             }
         }
     }
