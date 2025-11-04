@@ -4,6 +4,7 @@ using CareerRoute.Core.Constants;
 using CareerRoute.Core.DTOs.Users;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -25,7 +26,9 @@ namespace CareerRoute.API.Controllers
             this.logger = logger;
         }
 
-        public async Task<IActionResult> register(CreateUserDto cuDto)
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> register([FromBody]CreateUserDto cuDto)
         {
             logger.LogInformation("new user register with email" + cuDto.Email);
 
@@ -36,6 +39,9 @@ namespace CareerRoute.API.Controllers
                 "user registered successfully"
             ));
         }
+
+        [HttpGet("me")]
+        [Authorize]
 
         public async Task<IActionResult> getMe()
         {
@@ -51,7 +57,9 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
-        public async Task<IActionResult> updateMe(UpdateUserDto uuDto)
+        [HttpPut("me")]
+        [Authorize]
+        public async Task<IActionResult> updateMe([FromBody] UpdateUserDto uuDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); //from JWT 
 
@@ -65,6 +73,8 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
+        [HttpDelete("me")]
+        [Authorize]
         public async Task<IActionResult> deleteMe()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); //from JWT 
@@ -80,6 +90,8 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
+        [HttpGet]
+        [Authorize(Roles =AppRoles.Admin)]
         public async Task<IActionResult> getAllUsers()
         {
             logger.LogInformation("admin request all users");
