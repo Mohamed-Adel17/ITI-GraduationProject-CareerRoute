@@ -28,10 +28,13 @@ namespace CareerRoute.Core.Mappings
             .ForSourceMember(src => src.Password, opt => opt.DoNotValidate());
 
 
-            
+
             CreateMap<ApplicationUser, RetriveUserDto>();
 
-            CreateMap<UpdateUserDto, ApplicationUser>();
+            //map only not null fields
+            CreateMap<UpdateUserDto, ApplicationUser>()
+           .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
         }
     }
 }
