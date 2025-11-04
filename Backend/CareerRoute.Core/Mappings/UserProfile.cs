@@ -31,6 +31,7 @@ namespace CareerRoute.Core.Mappings
             
             CreateMap<ApplicationUser, RetriveUserDto>();
 
+            CreateMap<UpdateUserDto, ApplicationUser>();
         }
     }
 }

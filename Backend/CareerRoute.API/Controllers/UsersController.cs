@@ -2,9 +2,11 @@
 using CareerRoute.API.Models;
 using CareerRoute.Core.Constants;
 using CareerRoute.Core.DTOs.Users;
+using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
 {
@@ -35,6 +37,29 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
+        public async Task<IActionResult> getMe()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); //from JWT 
+
+            logger.LogInformation($"user with Id {userId} requests his profile ");
+
+            var user = await userService.GetUserByIdAsync(userId);
+
+            return StatusCode(200, new ApiResponse<RetriveUserDto>(
+            user,
+            "user profile retrieved successfully"
+            ));
+        }
+
+
+
+        
+
+
+
+
+
+
         public async Task<IActionResult> getAllUsers()
         {
             logger.LogInformation("admin request all users");
@@ -46,5 +71,6 @@ namespace CareerRoute.API.Controllers
                  "all users retrieved successfully"
             ));
         }
+
     }
 }

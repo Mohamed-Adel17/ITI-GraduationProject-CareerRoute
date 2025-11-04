@@ -74,5 +74,14 @@ namespace CareerRoute.Core.Services.Implementations
             return mapper.Map<IEnumerable<RetriveUserDto>>(users);
         }
 
+
+        public async Task<RetriveUserDto> GetUserByIdAsync (string id )
+        {
+            //retrieve users using manager not pure repository
+
+            var user = userManager.FindByIdAsync(id);
+            return mapper.Map<RetriveUserDto>(user);
+        }
+         
     }
 }
