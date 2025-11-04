@@ -2,10 +2,11 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { CategoryService } from '../../../core/services/category.service';
 import { User, UserProfileUpdate } from '../../../shared/models/user.model';
 
 /**
@@ -18,7 +19,7 @@ import { User, UserProfileUpdate } from '../../../shared/models/user.model';
  * Features:
  * - Reactive forms with validation
  * - Pre-populated with current user data
- * - Multi-select career interests support
+ * - Multi-select career interests support (loaded from backend via CategoryService)
  * - Form validation feedback
  * - Save changes to backend API
  * - Cancel and return to profile view
@@ -42,29 +43,8 @@ export class EditProfileComponent implements OnInit, OnDestroy {
   saving: boolean = false;
   error: string | null = null;
 
-  // Predefined career interests for selection
-  availableInterests: string[] = [
-    'Software Development',
-    'Data Science',
-    'Machine Learning',
-    'Artificial Intelligence',
-    'Cloud Computing',
-    'DevOps',
-    'Cybersecurity',
-    'Mobile Development',
-    'Web Development',
-    'Database Administration',
-    'UI/UX Design',
-    'Project Management',
-    'Business Analysis',
-    'Quality Assurance',
-    'Network Engineering',
-    'Blockchain',
-    'Game Development',
-    'IoT',
-    'Embedded Systems',
-    'Other'
-  ];
+  // Career interests loaded from backend
+  availableInterests: string[] = [];
 
   // Selected interests tracking
   selectedInterests: Set<string> = new Set();
@@ -75,13 +55,14 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private userService: UserService,
     private authService: AuthService,
+    private categoryService: CategoryService,
     private notificationService: NotificationService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.initializeForm();
-    this.loadUserProfile();
+    this.loadData();
   }
 
   ngOnDestroy(): void {
@@ -104,9 +85,10 @@ export class EditProfileComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load current user profile and populate form
+   * Load user profile and career interests data
+   * Uses forkJoin to load both in parallel for better performance
    */
-  private loadUserProfile(): void {
+  private loadData(): void {
     this.loading = true;
     this.error = null;
 
@@ -119,17 +101,22 @@ export class EditProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.subscription = this.userService.getUserProfile(currentUser.id).subscribe({
-      next: (user) => {
-        this.user = user;
-        this.populateForm(user);
+    // Load user profile and career interests in parallel
+    this.subscription = forkJoin({
+      user: this.userService.getUserProfile(currentUser.id),
+      interests: this.categoryService.getCareerInterestNames()
+    }).subscribe({
+      next: (result) => {
+        this.user = result.user;
+        this.availableInterests = result.interests;
+        this.populateForm(result.user);
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load profile';
+        this.error = 'Failed to load profile data';
         this.loading = false;
         this.notificationService.error('Could not load your profile. Please try again.', 'Error');
-        console.error('Error loading user profile:', err);
+        console.error('Error loading profile data:', err);
       }
     });
   }

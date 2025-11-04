@@ -9,6 +9,7 @@ import { delay } from 'rxjs/operators';
 
 // Mock database (persisted in localStorage to survive page refreshes and navigation)
 const MOCK_USERS_KEY = 'mockUsers';
+const MOCK_CATEGORIES_KEY = 'mockCategories';
 const MOCK_STORAGE = localStorage; // Use localStorage instead of sessionStorage for persistence
 
 function getMockUsers(): any[] {
@@ -46,6 +47,51 @@ function saveMockUsers(users: any[]): void {
 
 let mockUsers = getMockUsers();
 
+// Mock categories database
+function getMockCategories(): any[] {
+  const stored = MOCK_STORAGE.getItem(MOCK_CATEGORIES_KEY);
+  if (stored) {
+    return JSON.parse(stored);
+  }
+  // Default categories if no stored categories
+  const defaultCategories = [
+    // Career Interests
+    { id: '1', name: 'Software Development', description: 'Building software applications', type: 'CareerInterest', isActive: true, displayOrder: 1, icon: '💻', createdAt: new Date().toISOString() },
+    { id: '2', name: 'Data Science', description: 'Analyzing and interpreting complex data', type: 'CareerInterest', isActive: true, displayOrder: 2, icon: '📊', createdAt: new Date().toISOString() },
+    { id: '3', name: 'Machine Learning', description: 'Building intelligent systems', type: 'CareerInterest', isActive: true, displayOrder: 3, icon: '🤖', createdAt: new Date().toISOString() },
+    { id: '4', name: 'Artificial Intelligence', description: 'Creating AI solutions', type: 'CareerInterest', isActive: true, displayOrder: 4, icon: '🧠', createdAt: new Date().toISOString() },
+    { id: '5', name: 'Cloud Computing', description: 'Cloud infrastructure and services', type: 'CareerInterest', isActive: true, displayOrder: 5, icon: '☁️', createdAt: new Date().toISOString() },
+    { id: '6', name: 'DevOps', description: 'Development and operations integration', type: 'CareerInterest', isActive: true, displayOrder: 6, icon: '🔧', createdAt: new Date().toISOString() },
+    { id: '7', name: 'Cybersecurity', description: 'Protecting systems and data', type: 'CareerInterest', isActive: true, displayOrder: 7, icon: '🔒', createdAt: new Date().toISOString() },
+    { id: '8', name: 'Mobile Development', description: 'iOS and Android app development', type: 'CareerInterest', isActive: true, displayOrder: 8, icon: '📱', createdAt: new Date().toISOString() },
+    { id: '9', name: 'Web Development', description: 'Building web applications', type: 'CareerInterest', isActive: true, displayOrder: 9, icon: '🌐', createdAt: new Date().toISOString() },
+    { id: '10', name: 'Database Administration', description: 'Managing databases', type: 'CareerInterest', isActive: true, displayOrder: 10, icon: '🗄️', createdAt: new Date().toISOString() },
+    { id: '11', name: 'UI/UX Design', description: 'User interface and experience design', type: 'CareerInterest', isActive: true, displayOrder: 11, icon: '🎨', createdAt: new Date().toISOString() },
+    { id: '12', name: 'Project Management', description: 'Managing projects and teams', type: 'CareerInterest', isActive: true, displayOrder: 12, icon: '📋', createdAt: new Date().toISOString() },
+    { id: '13', name: 'Business Analysis', description: 'Analyzing business requirements', type: 'CareerInterest', isActive: true, displayOrder: 13, icon: '📈', createdAt: new Date().toISOString() },
+    { id: '14', name: 'Quality Assurance', description: 'Testing and quality control', type: 'CareerInterest', isActive: true, displayOrder: 14, icon: '✅', createdAt: new Date().toISOString() },
+    { id: '15', name: 'Network Engineering', description: 'Network infrastructure', type: 'CareerInterest', isActive: true, displayOrder: 15, icon: '🌐', createdAt: new Date().toISOString() },
+    { id: '16', name: 'Blockchain', description: 'Blockchain and cryptocurrency', type: 'CareerInterest', isActive: true, displayOrder: 16, icon: '⛓️', createdAt: new Date().toISOString() },
+    { id: '17', name: 'Game Development', description: 'Creating video games', type: 'CareerInterest', isActive: true, displayOrder: 17, icon: '🎮', createdAt: new Date().toISOString() },
+    { id: '18', name: 'IoT', description: 'Internet of Things', type: 'CareerInterest', isActive: true, displayOrder: 18, icon: '📡', createdAt: new Date().toISOString() },
+    { id: '19', name: 'Embedded Systems', description: 'Embedded hardware/software', type: 'CareerInterest', isActive: true, displayOrder: 19, icon: '🔌', createdAt: new Date().toISOString() },
+    { id: '20', name: 'Other', description: 'Other career interests', type: 'CareerInterest', isActive: true, displayOrder: 20, icon: '➕', createdAt: new Date().toISOString() },
+
+    // Mentor Specializations (examples)
+    { id: '21', name: 'Backend Development', description: 'Server-side development', type: 'MentorSpecialization', isActive: true, displayOrder: 1, icon: '⚙️', createdAt: new Date().toISOString() },
+    { id: '22', name: 'Frontend Development', description: 'Client-side development', type: 'MentorSpecialization', isActive: true, displayOrder: 2, icon: '🖥️', createdAt: new Date().toISOString() },
+    { id: '23', name: 'Full Stack Development', description: 'End-to-end development', type: 'MentorSpecialization', isActive: true, displayOrder: 3, icon: '🔗', createdAt: new Date().toISOString() }
+  ];
+  saveMockCategories(defaultCategories);
+  return defaultCategories;
+}
+
+function saveMockCategories(categories: any[]): void {
+  MOCK_STORAGE.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(categories));
+}
+
+let mockCategories = getMockCategories();
+
 // Store tokens in localStorage for persistence across page refreshes
 const MOCK_TOKENS_KEY = 'mockTokens';
 
@@ -73,13 +119,14 @@ let initialized = false;
 
 export const mockHttpInterceptor: HttpInterceptorFn = (req, next) => {
   if (!initialized) {
-    console.log('[MOCK HTTP INTERCEPTOR] Initialized - Ready to mock auth and user endpoints');
+    console.log('[MOCK HTTP INTERCEPTOR] Initialized - Ready to mock auth, user, and category endpoints');
     console.log('[MOCK HTTP INTERCEPTOR] Test credentials: test@example.com / Test1234!');
+    console.log('[MOCK HTTP INTERCEPTOR] Available mock endpoints: /auth/*, /api/users/*, /api/categories');
     initialized = true;
   }
 
-  // Mock auth and user endpoints
-  const shouldMock = req.url.includes('/auth/') || req.url.includes('/api/users');
+  // Mock auth, user, and category endpoints
+  const shouldMock = req.url.includes('/auth/') || req.url.includes('/api/users') || req.url.includes('/api/categories');
 
   if (!shouldMock) {
     return next(req);
@@ -116,6 +163,23 @@ export const mockHttpInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (req.url.match(/\/api\/users\/[^/]+$/) && req.method === 'PUT') {
     return mockUpdateUserProfile(req);
+  }
+
+  // Category endpoints
+  if (req.url.includes('/api/categories') && req.method === 'GET') {
+    return mockGetCategories(req);
+  }
+  if (req.url.match(/\/api\/categories\/[^/]+$/) && req.method === 'GET') {
+    return mockGetCategoryById(req);
+  }
+  if (req.url.includes('/api/categories') && req.method === 'POST') {
+    return mockCreateCategory(req);
+  }
+  if (req.url.match(/\/api\/categories\/[^/]+$/) && req.method === 'PUT') {
+    return mockUpdateCategory(req);
+  }
+  if (req.url.match(/\/api\/categories\/[^/]+$/) && req.method === 'DELETE') {
+    return mockDeleteCategory(req);
   }
 
   // Default: pass through
@@ -701,4 +765,251 @@ function throwHttpError(status: number, message: string, errors: any): Observabl
     error: errorResponse,
     message: errorResponse.message
   })).pipe(delay(300));
+}
+
+// ===================== CATEGORY ENDPOINTS =====================
+
+function mockGetCategories(req: any): Observable<any> {
+  console.log('[MOCK GET CATEGORIES] Request received');
+  console.log('[MOCK GET CATEGORIES] URL:', req.url);
+
+  // Parse query parameters for filtering by type
+  const url = new URL(req.url, 'http://localhost');
+  const typeParam = url.searchParams.get('type');
+
+  // Reload categories to get latest data
+  mockCategories = getMockCategories();
+
+  let filteredCategories = mockCategories;
+
+  // Filter by type if provided
+  if (typeParam) {
+    filteredCategories = mockCategories.filter(cat => cat.type === typeParam);
+    console.log('[MOCK GET CATEGORIES] Filtering by type:', typeParam);
+  }
+
+  // Filter only active categories
+  filteredCategories = filteredCategories.filter(cat => cat.isActive);
+
+  // Sort by displayOrder and name
+  filteredCategories.sort((a, b) => {
+    if (a.displayOrder !== b.displayOrder) {
+      return a.displayOrder - b.displayOrder;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  const response = {
+    success: true,
+    message: 'Categories retrieved successfully',
+    data: filteredCategories,
+    totalCount: filteredCategories.length
+  };
+
+  console.log('[MOCK GET CATEGORIES] Returning', filteredCategories.length, 'categories');
+
+  return of(new HttpResponse({
+    status: 200,
+    body: response
+  })).pipe(delay(300));
+}
+
+function mockGetCategoryById(req: any): Observable<any> {
+  const urlParts = req.url.split('/');
+  const categoryId = urlParts[urlParts.length - 1];
+
+  console.log('[MOCK GET CATEGORY BY ID] Request for categoryId:', categoryId);
+
+  // Reload categories to get latest data
+  mockCategories = getMockCategories();
+
+  const category = mockCategories.find(c => c.id === categoryId);
+  if (!category) {
+    console.log('[MOCK GET CATEGORY BY ID] Category not found:', categoryId);
+    return throwHttpError(404, 'Category not found', null);
+  }
+
+  const response = {
+    success: true,
+    data: category
+  };
+
+  console.log('[MOCK GET CATEGORY BY ID] Success for categoryId:', categoryId);
+
+  return of(new HttpResponse({
+    status: 200,
+    body: response
+  })).pipe(delay(200));
+}
+
+function mockCreateCategory(req: any): Observable<any> {
+  const categoryData = req.body;
+
+  console.log('[MOCK CREATE CATEGORY] Request:', categoryData);
+
+  // Check authorization (admin only)
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[MOCK CREATE CATEGORY] No valid authorization header');
+    return throwHttpError(401, 'Unauthorized', null);
+  }
+
+  const token = authHeader.substring(7);
+  const tokenData = mockTokens.get(token);
+
+  if (!tokenData) {
+    console.log('[MOCK CREATE CATEGORY] Invalid token');
+    return throwHttpError(401, 'Invalid or expired token', null);
+  }
+
+  // Validate required fields
+  if (!categoryData.name || !categoryData.type) {
+    return throwHttpError(400, 'Validation failed', {
+      name: categoryData.name ? [] : ['Name is required'],
+      type: categoryData.type ? [] : ['Type is required']
+    });
+  }
+
+  // Check if category name already exists
+  if (mockCategories.some(c => c.name.toLowerCase() === categoryData.name.toLowerCase() && c.type === categoryData.type)) {
+    return throwHttpError(400, 'Category with this name already exists for this type', {
+      name: ['Category name already exists']
+    });
+  }
+
+  // Create new category
+  const newCategory = {
+    id: (mockCategories.length + 1).toString(),
+    name: categoryData.name,
+    description: categoryData.description || '',
+    type: categoryData.type,
+    icon: categoryData.icon || '',
+    displayOrder: categoryData.displayOrder || mockCategories.length + 1,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  mockCategories.push(newCategory);
+  saveMockCategories(mockCategories);
+
+  const response = {
+    success: true,
+    message: 'Category created successfully',
+    data: newCategory
+  };
+
+  console.log('[MOCK CREATE CATEGORY] Success, created category:', newCategory.id);
+
+  return of(new HttpResponse({
+    status: 201,
+    body: response
+  })).pipe(delay(400));
+}
+
+function mockUpdateCategory(req: any): Observable<any> {
+  const urlParts = req.url.split('/');
+  const categoryId = urlParts[urlParts.length - 1];
+  const updateData = req.body;
+
+  console.log('[MOCK UPDATE CATEGORY] Request for categoryId:', categoryId);
+  console.log('[MOCK UPDATE CATEGORY] Update data:', updateData);
+
+  // Check authorization (admin only)
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[MOCK UPDATE CATEGORY] No valid authorization header');
+    return throwHttpError(401, 'Unauthorized', null);
+  }
+
+  const token = authHeader.substring(7);
+  const tokenData = mockTokens.get(token);
+
+  if (!tokenData) {
+    console.log('[MOCK UPDATE CATEGORY] Invalid token');
+    return throwHttpError(401, 'Invalid or expired token', null);
+  }
+
+  // Reload categories to get latest data
+  mockCategories = getMockCategories();
+
+  const categoryIndex = mockCategories.findIndex(c => c.id === categoryId);
+  if (categoryIndex === -1) {
+    console.log('[MOCK UPDATE CATEGORY] Category not found:', categoryId);
+    return throwHttpError(404, 'Category not found', null);
+  }
+
+  // Update category
+  const updatedCategory = {
+    ...mockCategories[categoryIndex],
+    name: updateData.name !== undefined ? updateData.name : mockCategories[categoryIndex].name,
+    description: updateData.description !== undefined ? updateData.description : mockCategories[categoryIndex].description,
+    icon: updateData.icon !== undefined ? updateData.icon : mockCategories[categoryIndex].icon,
+    displayOrder: updateData.displayOrder !== undefined ? updateData.displayOrder : mockCategories[categoryIndex].displayOrder,
+    isActive: updateData.isActive !== undefined ? updateData.isActive : mockCategories[categoryIndex].isActive,
+    updatedAt: new Date().toISOString()
+  };
+
+  mockCategories[categoryIndex] = updatedCategory;
+  saveMockCategories(mockCategories);
+
+  const response = {
+    success: true,
+    message: 'Category updated successfully',
+    data: updatedCategory
+  };
+
+  console.log('[MOCK UPDATE CATEGORY] Success for categoryId:', categoryId);
+
+  return of(new HttpResponse({
+    status: 200,
+    body: response
+  })).pipe(delay(400));
+}
+
+function mockDeleteCategory(req: any): Observable<any> {
+  const urlParts = req.url.split('/');
+  const categoryId = urlParts[urlParts.length - 1];
+
+  console.log('[MOCK DELETE CATEGORY] Request for categoryId:', categoryId);
+
+  // Check authorization (admin only)
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[MOCK DELETE CATEGORY] No valid authorization header');
+    return throwHttpError(401, 'Unauthorized', null);
+  }
+
+  const token = authHeader.substring(7);
+  const tokenData = mockTokens.get(token);
+
+  if (!tokenData) {
+    console.log('[MOCK DELETE CATEGORY] Invalid token');
+    return throwHttpError(401, 'Invalid or expired token', null);
+  }
+
+  // Reload categories to get latest data
+  mockCategories = getMockCategories();
+
+  const categoryIndex = mockCategories.findIndex(c => c.id === categoryId);
+  if (categoryIndex === -1) {
+    console.log('[MOCK DELETE CATEGORY] Category not found:', categoryId);
+    return throwHttpError(404, 'Category not found', null);
+  }
+
+  // Remove category
+  mockCategories.splice(categoryIndex, 1);
+  saveMockCategories(mockCategories);
+
+  const response = {
+    success: true,
+    message: 'Category deleted successfully'
+  };
+
+  console.log('[MOCK DELETE CATEGORY] Success for categoryId:', categoryId);
+
+  return of(new HttpResponse({
+    status: 200,
+    body: response
+  })).pipe(delay(400));
 }
