@@ -21,8 +21,7 @@ namespace CareerRoute.Core.Validators.Authentication
                 .MaximumLength(100).WithMessage("Password must not exceed 100 characters")
                 .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter")
                 .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter")
-                .Matches(@"[0-9]").WithMessage("Password must contain at least one number")
-                .Matches(@"[\W_]").WithMessage("Password must contain at least one special character");
+                .Matches(@"[0-9]").WithMessage("Password must contain at least one number");
 
             RuleFor(x => x.ConfirmPassword)
                 .NotEmpty().WithMessage("Password confirmation is required")

@@ -6,8 +6,8 @@ namespace CareerRoute.Core.DTOs.Auth
     public class AuthResponseDto
     {
 
-        public required string AccessToken { get; set; }
-        public required string RefreshToken { get; set; }
-        public required UserDto User { get; set; }
+        public string AccessToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public UserDto User { get; set; }=new UserDto();
     }
 }

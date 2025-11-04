@@ -53,9 +53,9 @@ namespace CareerRoute.API.Middleware
                     _logger.LogWarning(validationEx, "Validation exception: {Message}", validationEx.Message);
                     break;
 
-                case UnauthorizedAccessException unauthorizedAccessEx:
-                    response = ApiResponse.Error(unauthorizedAccessEx.Message, 401);
-                    _logger.LogWarning(unauthorizedAccessEx, "Unauthorized access attempt: {Message}", unauthorizedAccessEx.Message);
+                case UnauthenticatedException unauthenticatedEx:
+                    response = ApiResponse.Error(unauthenticatedEx.Message, 401);
+                    _logger.LogWarning(unauthenticatedEx, "Unauthenticated: {Message}", unauthenticatedEx.Message);
                     break;
 
                 case UnauthorizedException unauthorizedEx:

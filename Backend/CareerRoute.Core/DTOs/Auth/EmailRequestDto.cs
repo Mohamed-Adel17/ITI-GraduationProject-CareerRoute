@@ -10,6 +10,6 @@ namespace CareerRoute.Core.DTOs.Auth
 {
     public class EmailRequestDto
     {
-        public required string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
     }
 }

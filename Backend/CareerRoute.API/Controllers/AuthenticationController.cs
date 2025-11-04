@@ -60,7 +60,7 @@ namespace CareerRoute.API.Controllers
         /// <returns>New JWT access token and refresh token</returns>
         /// <response code="200">Token refresh successful</response>
         /// <response code="401">Invalid or expired refresh token</response>
-        [HttpPost("refresh-token")]
+        [HttpPost("refresh")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> RefreshToken([FromBody] TokenRequestDto tokenRequest)
@@ -77,7 +77,7 @@ namespace CareerRoute.API.Controllers
         /// <returns>JWT tokens and user information after successful verification</returns>
         /// <response code="200">Email verified successfully</response>
         /// <response code="400">Invalid token or email already verified</response>
-        [HttpGet("verify-email")]
+        [HttpPost("verify-email")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto verifyRequest)
@@ -95,7 +95,7 @@ namespace CareerRoute.API.Controllers
         /// <returns>Confirmation message</returns>
         /// <response code="200">Verification email sent</response>
         /// <response code="400">Email already verified or invalid</response>
-        [HttpPost("request-verify-email")]
+        [HttpPost("resend-verification")]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> RequestVerifyEmail([FromBody] EmailRequestDto emailRequest)
@@ -135,7 +135,7 @@ namespace CareerRoute.API.Controllers
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto resetPasswordRequest)
         {
             var response = await _authenticationService.ResetPassword(resetPasswordRequest);
-            return Ok(response);
+            return Ok(new ApiResponse<AuthResponseDto>(response));
 
         }
 

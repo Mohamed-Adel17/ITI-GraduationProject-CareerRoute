@@ -38,7 +38,12 @@ builder.Services.AddConfigurationInfrastructure(builder.Configuration);
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    //options.User.RequireUniqueEmail = true; // Ensure unique email addresses
+    options.User.RequireUniqueEmail = true; // Ensure unique email addresses
+    options.Password.RequireNonAlphanumeric = false;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.AllowedForNewUsers = true;
+
 })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
