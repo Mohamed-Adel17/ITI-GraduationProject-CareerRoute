@@ -212,15 +212,27 @@ function mockLogin(req: any): Observable<any> {
 
   console.log('[MOCK LOGIN] Generated token:', mockToken.substring(0, 50) + '...');
 
-  mockTokens.set(mockToken, {
+  // Reload tokens from localStorage to get latest data, then add new token
+  const currentTokens = getMockTokens();
+
+  // Remove any existing tokens for this user (prevent duplicate sessions)
+  for (const [token, data] of currentTokens.entries()) {
+    if (data.userId === user.id) {
+      currentTokens.delete(token);
+      console.log('[MOCK LOGIN] Removed old token for user:', user.id);
+    }
+  }
+
+  // Add new token
+  currentTokens.set(mockToken, {
     userId: user.id,
     email: user.email,
     expiration: Date.now() + 3600000
   });
-  saveMockTokens(mockTokens); // Persist tokens
+  saveMockTokens(currentTokens); // Persist tokens
 
   console.log('[MOCK LOGIN] Saved token to mockTokens map');
-  console.log('[MOCK LOGIN] Total tokens in map:', mockTokens.size);
+  console.log('[MOCK LOGIN] Total tokens in map:', currentTokens.size);
   console.log('[MOCK LOGIN] Saved to localStorage:', MOCK_TOKENS_KEY);
 
   const response = {
@@ -470,13 +482,22 @@ function mockVerifyEmail(req: any): Observable<any> {
   const loginToken = generateMockJWT(user);
   const refreshToken = 'refresh_token_' + Math.random().toString(36).substring(7);
 
-  // Store token for auto-login
-  mockTokens.set(loginToken, {
+  // Store token for auto-login - reload tokens to get latest data
+  const currentTokens = getMockTokens();
+
+  // Remove any existing tokens for this user (prevent duplicate sessions)
+  for (const [token, data] of currentTokens.entries()) {
+    if (data.userId === user.id) {
+      currentTokens.delete(token);
+    }
+  }
+
+  currentTokens.set(loginToken, {
     userId: user.id,
     email: user.email,
     expiration: Date.now() + 3600000
   });
-  saveMockTokens(mockTokens);
+  saveMockTokens(currentTokens);
 
   const response = {
     success: true,
@@ -541,7 +562,9 @@ function mockRefreshToken(req: any): Observable<any> {
     return throwHttpError(401, 'Invalid token', null);
   }
 
-  const tokenData = mockTokens.get(token);
+  // Reload tokens from localStorage to get latest data
+  const currentTokens = getMockTokens();
+  const tokenData = currentTokens.get(token);
   if (!tokenData) {
     return throwHttpError(401, 'Token not found', null);
   }
@@ -554,13 +577,13 @@ function mockRefreshToken(req: any): Observable<any> {
   const newToken = generateMockJWT(user);
   const newRefreshToken = 'refresh_token_' + Math.random().toString(36).substring(7);
 
-  // Store new token
-  mockTokens.set(newToken, {
+  // Store new token (use currentTokens to ensure we're saving to the latest Map)
+  currentTokens.set(newToken, {
     userId: user.id,
     email: user.email,
     expiration: Date.now() + 3600000
   });
-  saveMockTokens(mockTokens);
+  saveMockTokens(currentTokens);
 
   const response = {
     success: true,
@@ -596,10 +619,13 @@ function mockGetUserProfile(req: any): Observable<any> {
 
   const token = authHeader.substring(7);
   console.log('[MOCK GET USER PROFILE] Token extracted:', token.substring(0, 50) + '...');
-  console.log('[MOCK GET USER PROFILE] Available tokens in map:', mockTokens.size);
-  console.log('[MOCK GET USER PROFILE] Token keys:', Array.from(mockTokens.keys()).map(k => k.substring(0, 50) + '...'));
 
-  const tokenData = mockTokens.get(token);
+  // Reload tokens from localStorage to get latest data (IMPORTANT: prevents stale token issues)
+  const currentTokens = getMockTokens();
+  console.log('[MOCK GET USER PROFILE] Available tokens in map:', currentTokens.size);
+  console.log('[MOCK GET USER PROFILE] Token keys:', Array.from(currentTokens.keys()).map(k => k.substring(0, 50) + '...'));
+
+  const tokenData = currentTokens.get(token);
   console.log('[MOCK GET USER PROFILE] Token data found:', tokenData);
 
   if (!tokenData) {
@@ -657,7 +683,10 @@ function mockUpdateUserProfile(req: any): Observable<any> {
   }
 
   const token = authHeader.substring(7);
-  const tokenData = mockTokens.get(token);
+
+  // Reload tokens from localStorage to get latest data
+  const currentTokens = getMockTokens();
+  const tokenData = currentTokens.get(token);
 
   if (!tokenData) {
     console.log('[MOCK UPDATE USER PROFILE] Invalid token');
@@ -855,7 +884,10 @@ function mockCreateCategory(req: any): Observable<any> {
   }
 
   const token = authHeader.substring(7);
-  const tokenData = mockTokens.get(token);
+
+  // Reload tokens from localStorage to get latest data
+  const currentTokens = getMockTokens();
+  const tokenData = currentTokens.get(token);
 
   if (!tokenData) {
     console.log('[MOCK CREATE CATEGORY] Invalid token');
@@ -923,7 +955,10 @@ function mockUpdateCategory(req: any): Observable<any> {
   }
 
   const token = authHeader.substring(7);
-  const tokenData = mockTokens.get(token);
+
+  // Reload tokens from localStorage to get latest data
+  const currentTokens = getMockTokens();
+  const tokenData = currentTokens.get(token);
 
   if (!tokenData) {
     console.log('[MOCK UPDATE CATEGORY] Invalid token');
@@ -981,7 +1016,10 @@ function mockDeleteCategory(req: any): Observable<any> {
   }
 
   const token = authHeader.substring(7);
-  const tokenData = mockTokens.get(token);
+
+  // Reload tokens from localStorage to get latest data
+  const currentTokens = getMockTokens();
+  const tokenData = currentTokens.get(token);
 
   if (!tokenData) {
     console.log('[MOCK DELETE CATEGORY] Invalid token');
