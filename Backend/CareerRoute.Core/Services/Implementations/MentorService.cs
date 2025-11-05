@@ -6,6 +6,7 @@ using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
+using CareerRoute.Core.Extentions;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

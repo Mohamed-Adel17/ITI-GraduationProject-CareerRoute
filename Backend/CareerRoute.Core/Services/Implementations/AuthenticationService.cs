@@ -8,6 +8,7 @@ using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
 using FluentValidation;
+using CareerRoute.Core.Extentions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -87,7 +88,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<AuthResponseDto> Login(LoginRequestDto loginRequest)
         {
-            await _loginValidator.ValidateAndThrowAsync(loginRequest);
+            await _loginValidator.ValidateAndThrowAsync<LoginRequestDto>(loginRequest);
 
             var user = await ValidateUserForLogin(loginRequest.Email, loginRequest.Password);
 
@@ -304,7 +305,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             return new AuthResponseDto
             {
-                AccessToken = accessToken,
+                Token = accessToken,
                 RefreshToken = refreshToken,
                 User = userDto
             };
