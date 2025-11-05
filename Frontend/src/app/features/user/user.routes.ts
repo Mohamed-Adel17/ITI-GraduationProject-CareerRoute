@@ -21,9 +21,8 @@ export const USER_ROUTES: Routes = [
     path: 'apply-mentor',
     loadComponent: () => import('../mentors/mentor-profile/mentor-application.component').then(m => m.MentorApplicationComponent),
     title: 'Become a Mentor - CareerRoute'
-  }
-  // TODO: Add user routes here as components are created
-  // Example:
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./user-profile/user-profile.component').then(m => m.UserProfileComponent),
     title: 'My Profile - Career Route'
@@ -34,6 +33,7 @@ export const USER_ROUTES: Routes = [
     title: 'Edit Profile - Career Route'
   }
   // TODO: Add more user routes here as components are created
+  // Example:
   // {
   //   path: 'dashboard',
   //   loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent)
