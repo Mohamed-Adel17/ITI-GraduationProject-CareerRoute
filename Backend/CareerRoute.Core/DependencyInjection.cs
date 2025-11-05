@@ -37,7 +37,6 @@ public static class DependencyInjection
 
 
         // ============ FLUENTVALIDATION ============
-        services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
 
         services.AddValidatorsFromAssemblyContaining<UpdateMentorProfileValidator>();

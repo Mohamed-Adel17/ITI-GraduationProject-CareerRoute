@@ -44,12 +44,12 @@ namespace CareerRoute.Core.Validators.Users
 
 
             RuleFor(uuDto => uuDto.CareerGoal)
-                  .MaximumLength(200).WithMessage("Career Goal must not exceed 200 char long")
+                  .MaximumLength(500).WithMessage("Career Goal must not exceed 500 char long")
                   .When(x => !string.IsNullOrEmpty(x.CareerGoal));
 
 
             RuleFor(uuDto => uuDto.CareerInterst)
-                 .MaximumLength(200).WithMessage("Career Goal must not exceed 200 char long")
+                 .MaximumLength(500).WithMessage("Career Goal must not exceed 500 char long")
                  .When(x => !string.IsNullOrEmpty(x.CareerInterst));
 
 
