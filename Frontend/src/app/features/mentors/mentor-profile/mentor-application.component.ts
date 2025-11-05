@@ -7,13 +7,17 @@ import { NotificationService } from '../../../core/services/notification.service
 import { MentorApplication, MentorCategory } from '../../../shared/models/mentor.model';
 
 /**
- * MentorProfilePageComponent
- * 
- * Page wrapper for the MentorProfileFormComponent
- * Handles form submission and provides mock data for testing
+ * MentorApplicationComponent
+ *
+ * Page component for mentor application (applying to become a mentor).
+ * Wraps MentorProfileFormComponent in create mode and handles form submission.
+ *
+ * Route: /user/apply-mentor
+ * Guard: authGuard (requires authentication)
+ * Access: Any authenticated user can apply
  */
 @Component({
-  selector: 'app-mentor-profile-page',
+  selector: 'app-mentor-application',
   standalone: true,
   imports: [CommonModule, MentorProfileFormComponent],
   template: `
@@ -46,7 +50,7 @@ import { MentorApplication, MentorCategory } from '../../../shared/models/mentor
     }
   `]
 })
-export class MentorProfilePageComponent {
+export class MentorApplicationComponent {
   categories: MentorCategory[] = [
     { id: 1, name: 'Software Development', description: 'Web, mobile, and desktop development' },
     { id: 2, name: 'Data Science', description: 'Machine learning, AI, and analytics' },

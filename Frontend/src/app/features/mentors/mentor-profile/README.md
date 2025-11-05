@@ -8,12 +8,29 @@ The `MentorProfileFormComponent` is a comprehensive form component for creating 
 
 ```
 Frontend/src/app/features/mentors/mentor-profile/
-├── mentor-profile-form.component.ts       # Component logic
-├── mentor-profile-form.component.html     # Template
-├── mentor-profile-form.component.css      # Styles
+├── mentor-profile-form.component.ts       # Reusable form component (create/edit modes)
+├── mentor-profile-form.component.html     # Form template
+├── mentor-profile-form.component.css      # Form styles
 ├── mentor-profile-form.component.spec.ts  # Unit tests
+├── mentor-application.component.ts        # Page wrapper for mentor application
 └── README.md                              # This file
 ```
+
+## Routes
+
+### Application Route (Implemented)
+- **Path**: `/user/apply-mentor`
+- **Component**: `MentorApplicationComponent`
+- **Guard**: `authGuard` (requires authentication)
+- **Access**: Any authenticated user can apply to become a mentor
+- **Purpose**: Apply to become a mentor (creates new mentor profile)
+
+### Edit Route (Planned)
+- **Path**: `/mentor/profile/edit` (TODO: Not yet implemented)
+- **Component**: `MentorProfileEditPageComponent` (needs to be created)
+- **Guard**: `mentorRoleGuard` (requires Mentor role)
+- **Access**: Only existing mentors can edit their profile
+- **Purpose**: Update existing mentor profile (bio, rates, expertise, etc.)
 
 ## Features
 
@@ -302,7 +319,7 @@ import {
 } from '@app/shared/models/mentor.model';
 
 @Component({
-  selector: 'app-mentor-application-page',
+  selector: 'app-mentor-application',
   imports: [MentorProfileFormComponent],
   template: `
     <div class="container mx-auto py-8">
@@ -316,7 +333,7 @@ import {
     </div>
   `
 })
-export class MentorApplicationPageComponent implements OnInit {
+export class MentorApplicationComponent implements OnInit {
   @ViewChild('mentorForm') mentorForm!: MentorProfileFormComponent;
   
   categories: MentorCategory[] = [];
