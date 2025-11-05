@@ -8,9 +8,8 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.DTOs.Auth
 {
-    public class LoginRequestDto
+    public class EmailRequestDto
     {
         public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
     }
 }

@@ -8,20 +8,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-
 namespace CareerRoute.Core.Mappings
 {
-    public class UserProfile : Profile
+    public class UserMappingProfile : Profile
     {
-        public UserProfile()
+        public UserMappingProfile()
         {
-           //src  , dest 
+            CreateMap<ApplicationUser, UserDto>()
+            .ForMember(dest => dest.Roles, opt => opt.Ignore())
+            .ForMember(dest => dest.IsMentor, opt => opt.Ignore());
 
+
+            
             CreateMap<ApplicationUser, RetriveUserDto>();
 
             //map only not null fields
             CreateMap<UpdateUserDto, ApplicationUser>()
            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+
 
         }
     }
