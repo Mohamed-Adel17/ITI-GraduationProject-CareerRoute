@@ -1,5 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* Bootstrap Icons */
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
 /* Tailwind CSS v3 Directives */
 @tailwind base;
 @tailwind components;

@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace CareerRoute.Core.DTOs.Users
 {
-    internal class UserDto
+    public class UserDto
     {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public bool EmailConfirmed { get; set; }
+        public List<string> Roles { get; set; } = [];
+        public bool IsMentor { get; set; }
+        public string? ProfilePictureUrl { get; set; }
     }
 }

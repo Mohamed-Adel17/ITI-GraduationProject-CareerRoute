@@ -40,7 +40,7 @@ export const authGuard: CanActivateFn = (
       // Token is expired, remove it and redirect to login
       console.warn('Auth Guard: Token expired, redirecting to login');
       authService.removeTokens();
-      return router.createUrlTree(['/login'], {
+      return router.createUrlTree(['/auth/login'], {
         queryParams: { returnUrl: state.url }
       });
     }
@@ -48,7 +48,7 @@ export const authGuard: CanActivateFn = (
 
   // User is not authenticated, redirect to login
   console.warn('Auth Guard: User not authenticated, redirecting to login');
-  return router.createUrlTree(['/login'], {
+  return router.createUrlTree(['/auth/login'], {
     queryParams: { returnUrl: state.url }
   });
 };
@@ -86,7 +86,7 @@ export const guestGuard: CanActivateFn = (
   if (authService.isAuthenticated() && !authService.isTokenExpired()) {
     // User is already logged in, redirect to dashboard
     console.info('Guest Guard: User already authenticated, redirecting to dashboard');
-    return router.createUrlTree(['/dashboard']);
+    return router.createUrlTree(['/user/dashboard']);
   }
 
   // User is not authenticated, allow access to login/register

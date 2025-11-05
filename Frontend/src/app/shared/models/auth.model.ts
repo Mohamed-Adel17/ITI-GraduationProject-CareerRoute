@@ -35,8 +35,8 @@ export interface RegisterRequest {
   /** User's phone number (optional) */
   phoneNumber?: string;
 
-  /** User's career interests (optional) */
-  careerInterests?: string;
+  /** User's career interests as an array (optional) - e.g., ["Software Development", "Data Science"] */
+  careerInterests?: string[];
 
   /** User's career goals (optional) */
   careerGoals?: string;
