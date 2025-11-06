@@ -19,7 +19,7 @@ import { Routes } from '@angular/router';
 export const USER_ROUTES: Routes = [
   {
     path: 'apply-mentor',
-    loadComponent: () => import('../mentors/mentor-profile/mentor-application.component').then(m => m.MentorApplicationComponent),
+    loadComponent: () => import('../mentors/mentor-application/mentor-application.component').then(m => m.MentorApplicationComponent),
     title: 'Become a Mentor - CareerRoute'
   },
   {

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MentorProfileFormComponent } from './mentor-profile-form.component';
+import { MentorProfileFormComponent } from '../mentor-profile/mentor-profile-form.component';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MentorApplication, MentorCategory } from '../../../shared/models/mentor.model';
