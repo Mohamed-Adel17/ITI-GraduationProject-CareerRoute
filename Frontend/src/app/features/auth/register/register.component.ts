@@ -140,8 +140,9 @@ export class RegisterComponent implements OnInit {
         console.log('Registration successful:', response);
 
         // Show success notification
+        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
         this.notificationService.success(
-          response.message || 'Account created successfully! Please check your email to verify your account.',
+          'Account created successfully! Please check your email to verify your account.',
           'Welcome!'
         );
 
