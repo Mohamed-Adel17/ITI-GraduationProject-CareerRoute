@@ -1,4 +1,5 @@
-﻿using CareerRoute.Core.Domain.Entities;
+﻿using CareerRoute.Core.Constants;
+using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
 using Microsoft.AspNetCore.Identity;
@@ -23,9 +24,16 @@ namespace CareerRoute.Core.Services.Implementations
         {
             List<Claim> claims = [
                         new (JwtRegisteredClaimNames.Sub ,user.Id),
-                        new (JwtRegisteredClaimNames.Email ,user.Email),
-                        new (JwtRegisteredClaimNames.Name, user.UserName),
+                        new (JwtRegisteredClaimNames.Email ,user.Email!),
                         new (JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
+                        new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            // OpenID Connect claims
+                        new Claim("given_name", user.FirstName ?? ""),
+                        new Claim("family_name", user.LastName ?? ""),
+                        new Claim("email_verified", user.EmailConfirmed.ToString().ToLowerInvariant()),
+                        new Claim("picture", user.ProfilePictureUrl ?? ""),
+            // Custom claims
+                        new Claim("is_mentor",roles.Contains(AppRoles.Mentor).ToString().ToLowerInvariant() ),
             ];
 
             //var roles = await userManager.GetRolesAsync(user);

@@ -8,6 +8,7 @@ using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
 using FluentValidation;
+using CareerRoute.Core.Extentions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -69,7 +70,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<RegisterResponseDto> Register(RegisterRequestDto registerRequest)
         {
-            await _registerValidator.ValidateAndThrowAsync(registerRequest);
+            await _registerValidator.ValidateAndThrowCustomAsync(registerRequest);
 
             await EnsureUserDoesNotExist(registerRequest.Email);
 
@@ -87,7 +88,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<AuthResponseDto> Login(LoginRequestDto loginRequest)
         {
-            await _loginValidator.ValidateAndThrowAsync(loginRequest);
+            await _loginValidator.ValidateAndThrowCustomAsync<LoginRequestDto>(loginRequest);
 
             var user = await ValidateUserForLogin(loginRequest.Email, loginRequest.Password);
 
@@ -100,7 +101,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<AuthResponseDto> RefreshToken(TokenRequestDto tokenRequest)
         {
-            await _tokenValidator.ValidateAndThrowAsync(tokenRequest);
+            await _tokenValidator.ValidateAndThrowCustomAsync(tokenRequest);
 
             var refreshToken = await ValidateRefreshToken(tokenRequest.RefreshToken);
             var user = await GetActiveUser(refreshToken.UserId);
@@ -114,7 +115,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task ForgotPassword(EmailRequestDto emailRequest)
         {
-            await _emailValidator.ValidateAndThrowAsync(emailRequest);
+            await _emailValidator.ValidateAndThrowCustomAsync(emailRequest);
 
             var user = await _userManager.FindByEmailAsync(emailRequest.Email);
             if (user == null) return; // Don't reveal user existence
@@ -129,7 +130,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<AuthResponseDto> ResetPassword(ResetPasswordRequestDto resetPasswordRequest)
         {
-            await _resetPasswordValidator.ValidateAndThrowAsync(resetPasswordRequest);
+            await _resetPasswordValidator.ValidateAndThrowCustomAsync(resetPasswordRequest);
 
             var user = await GetUserByEmail(resetPasswordRequest.Email);
 
@@ -143,7 +144,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task ChangePassword(string userId, ChangePasswordRequestDto changePasswordRequest)
         {
-            await _changePasswordValidator.ValidateAndThrowAsync(changePasswordRequest);
+            await _changePasswordValidator.ValidateAndThrowCustomAsync(changePasswordRequest);
 
             var user = await GetUserById(userId);
 
@@ -168,7 +169,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task RequestVerifyEmail(EmailRequestDto emailRequest)
         {
-            await _emailValidator.ValidateAndThrowAsync(emailRequest);
+            await _emailValidator.ValidateAndThrowCustomAsync(emailRequest);
 
             var user = await GetUserByEmail(emailRequest.Email);
 
@@ -182,7 +183,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<AuthResponseDto> VerifyEmail(VerifyEmailRequestDto verifyEmailRequest)
         {
-            await _verifyEmailValidator.ValidateAndThrowAsync(verifyEmailRequest);
+            await _verifyEmailValidator.ValidateAndThrowCustomAsync(verifyEmailRequest);
 
             var user = await GetUserByEmail(verifyEmailRequest.Email);
 
@@ -304,7 +305,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             return new AuthResponseDto
             {
-                AccessToken = accessToken,
+                Token = accessToken,
                 RefreshToken = refreshToken,
                 User = userDto
             };
