@@ -9,5 +9,6 @@ namespace CareerRoute.Core.Domain.Interfaces
 {
     public interface IUserRepository : IBaseRepository<ApplicationUser>
     {
+        //add functions deal with DB sepcific for User
     }
 }

@@ -19,6 +19,14 @@ namespace CareerRoute.Core.Mappings
             .ForMember(dest => dest.IsMentor, opt => opt.Ignore());
 
 
+            
+            CreateMap<ApplicationUser, RetriveUserDto>();
+
+            //map only not null fields
+            CreateMap<UpdateUserDto, ApplicationUser>()
+           .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+
 
         }
     }
