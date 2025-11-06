@@ -4,12 +4,14 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { ApiResponse, getApiErrorMessage } from '../../shared/models/api-response.model';
 
 /**
  * HTTP Interceptor that handles errors from API requests
  *
  * This interceptor:
  * - Catches HTTP errors and provides centralized error handling
+ * - Extracts error information from standardized ApiResponse format
  * - Handles 401 Unauthorized errors by logging out the user
  * - Handles 403 Forbidden errors with appropriate messaging
  * - Handles 404 Not Found errors
@@ -32,22 +34,32 @@ export const errorInterceptor: HttpInterceptorFn = (
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       let errorMessage = 'An unexpected error occurred';
+      let validationErrors: { [key: string]: string[] } | undefined;
 
       if (error.error instanceof ErrorEvent) {
         // Client-side or network error
         errorMessage = `Network Error: ${error.error.message}`;
         console.error('Client-side error:', error.error.message);
       } else {
+        // Try to extract ApiResponse from error body
+        const apiResponse: ApiResponse<any> | undefined =
+          error.error && typeof error.error === 'object' ? error.error : undefined;
+
         // Backend returned an unsuccessful response code
         switch (error.status) {
           case 400:
             // Bad Request - validation errors
-            errorMessage = handleBadRequest(error);
+            if (apiResponse) {
+              errorMessage = getApiErrorMessage(apiResponse);
+              validationErrors = apiResponse.errors;
+            } else {
+              errorMessage = handleBadRequest(error);
+            }
             break;
 
           case 401:
             // Unauthorized - token expired or invalid
-            errorMessage = 'Your session has expired. Please log in again.';
+            errorMessage = apiResponse?.message || 'Your session has expired. Please log in again.';
             console.warn('Unauthorized request - logging out user');
             authService.removeTokens();
             router.navigate(['/login']);
@@ -55,41 +67,46 @@ export const errorInterceptor: HttpInterceptorFn = (
 
           case 403:
             // Forbidden - user doesn't have permission
-            errorMessage = 'You do not have permission to access this resource.';
+            errorMessage = apiResponse?.message || 'You do not have permission to access this resource.';
             console.warn('Forbidden access attempt:', req.url);
             break;
 
           case 404:
             // Not Found
-            errorMessage = 'The requested resource was not found.';
+            errorMessage = apiResponse?.message || 'The requested resource was not found.';
             console.warn('Resource not found:', req.url);
             break;
 
           case 409:
             // Conflict - e.g., duplicate resource
-            errorMessage = error.error?.message || 'A conflict occurred. The resource may already exist.';
+            errorMessage = apiResponse?.message || 'A conflict occurred. The resource may already exist.';
             break;
 
           case 422:
             // Unprocessable Entity - validation errors
-            errorMessage = handleValidationErrors(error);
+            if (apiResponse) {
+              errorMessage = getApiErrorMessage(apiResponse);
+              validationErrors = apiResponse.errors;
+            } else {
+              errorMessage = handleValidationErrors(error);
+            }
             break;
 
           case 429:
             // Too Many Requests - rate limiting
-            errorMessage = 'Too many requests. Please try again later.';
+            errorMessage = apiResponse?.message || 'Too many requests. Please try again later.';
             console.warn('Rate limit exceeded');
             break;
 
           case 500:
             // Internal Server Error
-            errorMessage = 'A server error occurred. Please try again later.';
+            errorMessage = apiResponse?.message || 'A server error occurred. Please try again later.';
             console.error('Server error:', error.error);
             break;
 
           case 503:
             // Service Unavailable
-            errorMessage = 'The service is temporarily unavailable. Please try again later.';
+            errorMessage = apiResponse?.message || 'The service is temporarily unavailable. Please try again later.';
             console.error('Service unavailable');
             break;
 
@@ -101,7 +118,7 @@ export const errorInterceptor: HttpInterceptorFn = (
 
           default:
             // Other errors
-            errorMessage = error.error?.message || `Error: ${error.statusText || 'Unknown error'}`;
+            errorMessage = apiResponse?.message || error.error?.message || `Error: ${error.statusText || 'Unknown error'}`;
             console.error(`HTTP Error ${error.status}:`, error.error);
         }
       }
@@ -112,13 +129,15 @@ export const errorInterceptor: HttpInterceptorFn = (
         message: errorMessage,
         url: req.url,
         method: req.method,
+        errors: validationErrors,
         error: error.error
       });
 
-      // Return error with user-friendly message
+      // Return error with user-friendly message and validation errors
       return throwError(() => ({
         status: error.status,
         message: errorMessage,
+        errors: validationErrors,
         originalError: error
       }));
     })

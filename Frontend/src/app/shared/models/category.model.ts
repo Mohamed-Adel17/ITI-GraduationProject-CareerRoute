@@ -2,21 +2,12 @@
  * Category Model
  *
  * Defines category-related interfaces and types for the Career Route application.
- * Categories are used for mentor specializations and user career interests.
+ * Categories represent areas of expertise that can be used for both:
+ * - User career interests (what they want to learn)
+ * - Mentor specializations (what they can teach)
+ *
+ * This unified approach simplifies the matching between users and mentors.
  */
-
-/**
- * Category Type Enum
- * Defines different types of categories in the system
- */
-export enum CategoryType {
-  /** Career interests for user profiles */
-  CareerInterest = 'CareerInterest',
-  /** Mentor specializations and expertise areas */
-  MentorSpecialization = 'MentorSpecialization',
-  /** General category (future use) */
-  General = 'General'
-}
 
 /**
  * Category Interface
@@ -31,9 +22,6 @@ export interface Category {
 
   /** Optional description of the category */
   description?: string;
-
-  /** Category type (CareerInterest, MentorSpecialization, etc.) */
-  type: CategoryType;
 
   /** Icon name or URL for visual representation */
   icon?: string;
@@ -62,9 +50,6 @@ export interface CategorySummary {
   /** Display name */
   name: string;
 
-  /** Category type */
-  type: CategoryType;
-
   /** Icon (optional) */
   icon?: string;
 }
@@ -79,9 +64,6 @@ export interface CategoryCreateRequest {
 
   /** Category description */
   description?: string;
-
-  /** Category type */
-  type: CategoryType;
 
   /** Icon */
   icon?: string;
@@ -159,16 +141,6 @@ export function sortCategories(categories: Category[]): Category[] {
 }
 
 /**
- * Filter categories by type
- * @param categories - Array of categories
- * @param type - Category type to filter by
- * @returns Filtered categories
- */
-export function filterCategoriesByType(categories: Category[], type: CategoryType): Category[] {
-  return categories.filter(cat => cat.type === type);
-}
-
-/**
  * Get only active categories
  * @param categories - Array of categories
  * @returns Only active categories
@@ -186,7 +158,6 @@ export function toCategorySummary(category: Category): CategorySummary {
   return {
     id: category.id,
     name: category.name,
-    type: category.type,
     icon: category.icon
   };
 }
@@ -203,45 +174,22 @@ export function findCategoryByName(categories: Category[], name: string): Catego
 }
 
 /**
- * Get career interest categories only
- * Convenience function for filtering career interests
- * @param categories - Array of all categories
- * @returns Only career interest categories that are active
+ * Find category by ID
+ * @param categories - Array of categories to search
+ * @param id - ID to search for
+ * @returns Matching category or undefined
  */
-export function getCareerInterestCategories(categories: Category[]): Category[] {
-  return categories.filter(cat =>
-    cat.type === CategoryType.CareerInterest && cat.isActive
-  );
+export function findCategoryById(categories: Category[], id: string): Category | undefined {
+  return categories.find(cat => cat.id === id);
 }
 
 /**
- * Get mentor specialization categories only
- * Convenience function for filtering mentor specializations
- * @param categories - Array of all categories
- * @returns Only mentor specialization categories that are active
+ * Get category names as string array
+ * @param categories - Array of categories
+ * @returns Array of category names
  */
-export function getMentorSpecializationCategories(categories: Category[]): Category[] {
-  return categories.filter(cat =>
-    cat.type === CategoryType.MentorSpecialization && cat.isActive
-  );
-}
-
-/**
- * Format category type for display
- * @param type - Category type enum
- * @returns Human-readable type name
- */
-export function formatCategoryType(type: CategoryType): string {
-  switch (type) {
-    case CategoryType.CareerInterest:
-      return 'Career Interest';
-    case CategoryType.MentorSpecialization:
-      return 'Mentor Specialization';
-    case CategoryType.General:
-      return 'General';
-    default:
-      return type;
-  }
+export function getCategoryNames(categories: Category[]): string[] {
+  return categories.map(cat => cat.name);
 }
 
 // ==================== Type Guards ====================
@@ -257,7 +205,6 @@ export function isCategory(obj: any): obj is Category {
     typeof obj === 'object' &&
     typeof obj.id === 'string' &&
     typeof obj.name === 'string' &&
-    typeof obj.type === 'string' &&
     typeof obj.isActive === 'boolean'
   );
 }
@@ -272,7 +219,6 @@ export function isCategorySummary(obj: any): obj is CategorySummary {
     obj &&
     typeof obj === 'object' &&
     typeof obj.id === 'string' &&
-    typeof obj.name === 'string' &&
-    typeof obj.type === 'string'
+    typeof obj.name === 'string'
   );
 }

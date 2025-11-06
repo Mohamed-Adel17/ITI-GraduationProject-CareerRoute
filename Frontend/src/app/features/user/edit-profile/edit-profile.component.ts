@@ -101,10 +101,10 @@ export class EditProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Load user profile and career interests in parallel
+    // Load user profile and category names in parallel
     this.subscription = forkJoin({
       user: this.userService.getUserProfile(currentUser.id),
-      interests: this.categoryService.getCareerInterestNames()
+      interests: this.categoryService.getCategoryNames()
     }).subscribe({
       next: (result) => {
         this.user = result.user;

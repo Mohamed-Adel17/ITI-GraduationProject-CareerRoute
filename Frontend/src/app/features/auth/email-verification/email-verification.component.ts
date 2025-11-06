@@ -22,7 +22,7 @@ import { EmailVerificationRequest } from '../../../shared/models/auth.model';
  * - Dark mode support
  *
  * URL Format:
- * `/auth/verify-email?userId=123&token=abc123`
+ * `/auth/verify-email?email=user@example.com&token=abc123`
  *
  * @example
  * ```html
@@ -31,8 +31,8 @@ import { EmailVerificationRequest } from '../../../shared/models/auth.model';
  *
  * User Flow:
  * 1. User receives verification email after registration
- * 2. User clicks verification link: `/auth/verify-email?userId=123&token=abc`
- * 3. Component extracts userId and token from URL
+ * 2. User clicks verification link: `/auth/verify-email?email=user@example.com&token=abc`
+ * 3. Component extracts email and token from URL
  * 4. Component automatically calls AuthService.verifyEmail()
  * 5. On success: Show success message → redirect to login/dashboard
  * 6. On error: Show error message with option to resend email
@@ -54,8 +54,8 @@ export class EmailVerificationComponent implements OnInit {
   /** Error message to display */
   errorMessage: string | null = null;
 
-  /** User ID extracted from URL */
-  userId: string | null = null;
+  /** User email extracted from URL */
+  email: string | null = null;
 
   /** Token extracted from URL */
   token: string | null = null;
@@ -84,12 +84,12 @@ export class EmailVerificationComponent implements OnInit {
       return;
     }
 
-    // Extract userId and token from URL query parameters
-    this.userId = this.route.snapshot.queryParams['userId'];
+    // Extract email and token from URL query parameters
+    this.email = this.route.snapshot.queryParams['email'];
     this.token = this.route.snapshot.queryParams['token'];
 
     // Validate that both parameters are present
-    if (!this.userId || !this.token) {
+    if (!this.email || !this.token) {
       this.verificationState = 'error';
       this.errorMessage = 'Invalid verification link. The link is missing required parameters.';
       return;
@@ -100,7 +100,7 @@ export class EmailVerificationComponent implements OnInit {
   }
 
   /**
-   * Verify email using token and userId from URL
+   * Verify email using token and email from URL
    */
   private verifyEmail(): void {
     // Set loading state
@@ -108,7 +108,7 @@ export class EmailVerificationComponent implements OnInit {
 
     // Prepare verification request
     const request: EmailVerificationRequest = {
-      userId: this.userId!,
+      email: this.email!,
       token: this.token!
     };
 
@@ -119,18 +119,19 @@ export class EmailVerificationComponent implements OnInit {
 
         // Set success state
         this.verificationState = 'success';
-        this.successMessage = response.message || 'Email verified successfully! You can now log in.';
 
         // Check if auto-login is enabled
+        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
         if (response.autoLogin && response.loginToken) {
           this.autoLogin = true;
-          this.successMessage = response.message || 'Email verified successfully! Logging you in...';
+          this.successMessage = 'Email verified successfully! Logging you in...';
 
           // AuthService.verifyEmail() has already handled token storage and auth state update
 
           // Start countdown and redirect to dashboard
           this.startRedirectCountdown('/user/dashboard');
         } else {
+          this.successMessage = 'Email verified successfully! You can now log in.';
           // Start countdown and redirect to login
           this.startRedirectCountdown('/auth/login');
         }

@@ -221,7 +221,8 @@ export class PasswordResetComponent implements OnInit {
         console.log('Password reset request successful:', response);
 
         // Show success message in component
-        this.successMessage = response.message || 'Password reset link has been sent to your email. Please check your inbox.';
+        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
+        this.successMessage = 'Password reset link has been sent to your email. Please check your inbox.';
 
         // Show success notification
         this.notificationService.success(
@@ -302,7 +303,8 @@ export class PasswordResetComponent implements OnInit {
         console.log('Password reset successful:', response);
 
         // Show success message in component
-        this.successMessage = response.message || 'Your password has been reset successfully. Redirecting to login...';
+        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
+        this.successMessage = 'Your password has been reset successfully. Redirecting to login...';
 
         // Show success notification
         this.notificationService.success(
