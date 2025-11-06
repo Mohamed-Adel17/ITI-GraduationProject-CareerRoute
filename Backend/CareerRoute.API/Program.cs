@@ -19,13 +19,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 //CORS Configuration
-var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:4200";
+var frontendUrls = builder.Configuration.GetSection("FrontendUrls").Get<string[]>() 
+    ?? new[] { "http://localhost:4200" };
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(frontendUrl).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+        policy.WithOrigins(frontendUrls)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
