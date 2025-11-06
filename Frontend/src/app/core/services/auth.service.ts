@@ -551,21 +551,23 @@ export class AuthService {
   /**
    * Initiate password reset (forgot password)
    * @param request Password reset request with email
-   * @returns Observable of response (unwrapped from ApiResponse)
+   * @returns Observable of API response with success message
    *
    * @remarks
    * This method handles only authentication logic (API call).
    * UI concerns (notifications) are delegated to the calling component.
    * The component should:
-   * - Show success message on successful request
+   * - Show success message using response.message on successful request
    * - Show error notification if request fails
+   *
+   * Returns the full ApiResponse to preserve the success message from backend.
    */
-  forgotPassword(request: PasswordResetRequest): Observable<PasswordResetRequestResponse> {
+  forgotPassword(request: PasswordResetRequest): Observable<ApiResponse<PasswordResetRequestResponse>> {
     return this.http.post<ApiResponse<PasswordResetRequestResponse>>(`${this.AUTH_URL}/forgot-password`, request).pipe(
       map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success && response.data) {
-          return response.data;
+        // Return full ApiResponse so component can access response.message
+        if (response.success) {
+          return response;
         }
         throw new Error(response.message || 'Failed to send password reset email');
       }),

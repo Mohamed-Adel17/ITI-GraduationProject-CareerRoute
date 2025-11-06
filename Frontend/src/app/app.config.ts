@@ -6,7 +6,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
-import { mockHttpInterceptor } from './core/interceptors/mock-http.interceptor';
+// import { mockHttpInterceptor } from './core/interceptors/mock-http.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,7 +20,7 @@ export const appConfig: ApplicationConfig = {
         // IMPORTANT: Must run BEFORE mockHttpInterceptor so token is attached
         authInterceptor,
         // Mock HTTP Interceptor - REMOVE THIS LINE ONLY when backend is ready
-        mockHttpInterceptor,
+        // mockHttpInterceptor,
         // Error Interceptor - KEEP THIS (handles HTTP errors globally)
         errorInterceptor
       ])
