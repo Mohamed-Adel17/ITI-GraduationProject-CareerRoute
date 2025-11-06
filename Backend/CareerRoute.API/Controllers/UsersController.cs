@@ -31,74 +31,43 @@ namespace CareerRoute.API.Controllers
 
         [HttpGet("me")]
         [Authorize]
-        public async Task<IActionResult> getMe()
+        public async Task<IActionResult> GetMe()
         {
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); //from JWT 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(userId))
-                return StatusCode(401, ApiResponse.Error("Unauthorized access", 401));
+                return Unauthorized(ApiResponse.Error("Unauthorized access", 401));
 
-            logger.LogInformation($"user with Id {userId} requests his profile ");
+            logger.LogInformation($"user with Id {userId} requests his profile");
 
-            try
-            {
-                var user = await userService.GetUserByIdAsync(userId);
+            var user = await userService.GetUserByIdAsync(userId);
 
-                return StatusCode(200, new ApiResponse<RetriveUserDto>(
-                    user,
-                    "User profile retrieved successfully"
-                ));
-            }
-            catch (KeyNotFoundException)
-            {
-                return StatusCode(404, ApiResponse.Error("User not found", 404));
-            }
-
+            return Ok(new ApiResponse<RetrieveUserDto>(
+                user,
+                "User profile retrieved successfully"
+            ));
         }
 
 
 
 
-        [HttpPut("me")]
+        [HttpPatch("me")]
         [Authorize]
-        public async Task<IActionResult> updateMe([FromBody] UpdateUserDto uuDto)
+        public async Task<IActionResult> UpdateMe([FromBody] UpdateUserDto uuDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // from JWT
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (string.IsNullOrEmpty(userId))
-                return StatusCode(401, ApiResponse.Error("Unauthorized access", 401));
+                return Unauthorized(ApiResponse.Error("Unauthorized access", 401));
 
             logger.LogInformation($"User with Id {userId} requests updating their profile");
 
-            try
-            {
-                var user = await userService.UpdateUserByIdAsync(userId, uuDto);
+            var user = await userService.UpdateUserByIdAsync(userId, uuDto);
 
-                return StatusCode(200, new ApiResponse<RetriveUserDto>(
-                    user,
-                    "User profile updated successfully"
-                ));
-            }
-            catch (KeyNotFoundException)
-            {
-                return StatusCode(404, ApiResponse.Error("User not found", 404));
-            }
-
-            catch (FluentValidation.ValidationException ex)
-            {
-                var errorDict = ex.Errors?
-                    .GroupBy(e => e.PropertyName)
-                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
-                    ?? new Dictionary<string, string[]>();
-
-                return StatusCode(400, ApiResponse.Error("Validation failed", 400, errorDict));
-
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ApiResponse.Error(ex.Message, 500));
-
-            }
+            return Ok(new ApiResponse<RetrieveUserDto>(
+                user,
+                "User profile updated successfully"
+            ));
         }
 
 
@@ -106,35 +75,18 @@ namespace CareerRoute.API.Controllers
 
         [HttpDelete("me")]
         [Authorize]
-        public async Task<IActionResult> deleteMe()
+        public async Task<IActionResult> DeleteMe()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); //from JWT 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(userId))
-                return StatusCode(401, ApiResponse.Error("Unauthorized access", 401));
+                return Unauthorized(ApiResponse.Error("Unauthorized access", 401));
 
-            logger.LogInformation($"user with Id {userId} requests deleting his profile ");
+            logger.LogInformation($"user with Id {userId} requests deleting his profile");
 
-            try
-            {
-                await userService.DeleteUserByIdAsync(userId);
+            await userService.DeleteUserByIdAsync(userId);
 
-
-                return StatusCode(200, new ApiResponse<RetriveUserDto>(
-                null,
-                "user profile deleted successfully"
-                ));
-            }
-            catch (KeyNotFoundException)
-            {
-                return StatusCode(404, ApiResponse.Error("User not found", 404));
-            }
-
-            catch (Exception ex)
-            {
-                return StatusCode(500, ApiResponse.Error(ex.Message, 500));
-
-            }
+            return Ok(new ApiResponse { Message = "User profile deleted successfully" });
         }
 
 
@@ -145,26 +97,19 @@ namespace CareerRoute.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(userId))
-                return StatusCode(401, ApiResponse.Error("Unauthorized access", 401));
+                return Unauthorized(ApiResponse.Error("Unauthorized access", 401));
 
             logger.LogInformation($"User with Id {userId} requested all users");
 
-            try
-            {
-                var allUsers = await userService.GetAllUsersAsync();
+            var allUsers = await userService.GetAllUsersAsync();
 
-                if (allUsers == null || !allUsers.Any())
-                    return StatusCode(404, ApiResponse.Error("No users found", 404));
+            if (allUsers == null || !allUsers.Any())
+                return NotFound(ApiResponse.Error("No users found", 404));
 
-                return StatusCode(200, new ApiResponse<IEnumerable<RetriveUserDto>>(
-                    allUsers,
-                    "All users retrieved successfully"
-                ));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return StatusCode(403, ApiResponse.Error("You are not allowed to view all users", 403));
-            }
+            return Ok(new ApiResponse<IEnumerable<RetrieveUserDto>>(
+                allUsers,
+                "All users retrieved successfully"
+            ));
         }
 
 
@@ -175,68 +120,35 @@ namespace CareerRoute.API.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(currentUserId))
-                return StatusCode(401, ApiResponse.Error("Unauthorized access", 401));
+                return Unauthorized(ApiResponse.Error("Unauthorized access", 401));
 
             logger.LogInformation($"Admin/Mentor (Id: {currentUserId}) requested user with Id {id}.");
 
-            try
-            {
-                var user = await userService.GetUserByIdAsync(id);
+            var user = await userService.GetUserByIdAsync(id);
 
-                return StatusCode(200, new ApiResponse<RetriveUserDto>(
-                    user,
-                    "User retrieved successfully."
-                ));
-            }
-            catch (KeyNotFoundException)
-            {
-                return StatusCode(404, ApiResponse.Error("User not found", 404));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return StatusCode(403, ApiResponse.Error("You can only view your own profile", 403));
-            }
-
+            return Ok(new ApiResponse<RetrieveUserDto>(
+                user,
+                "User retrieved successfully."
+            ));
         }
 
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> UpdateUserByAdmin(string id, [FromBody] UpdateUserDto dto)
         {
             var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(adminId))
-                return StatusCode(401, ApiResponse.Error("Unauthorized access", 401));
+                return Unauthorized(ApiResponse.Error("Unauthorized access", 401));
 
             logger.LogInformation($"Admin (Id: {adminId}) requested to update user with Id {id}.");
 
-            try
-            {
-                var user = await userService.UpdateUserByIdAsync(id, dto);
+            var user = await userService.UpdateUserByIdAsync(id, dto);
 
-                return StatusCode(200, new ApiResponse<RetriveUserDto>(
-                    user,
-                    $"User profile with Id {id} updated successfully."
-                ));
-            }
-            catch (KeyNotFoundException)
-            {
-                return StatusCode(404, ApiResponse.Error("User not found", 404));
-            }
-            catch (FluentValidation.ValidationException ex)
-            {
-                var errorDict = ex.Errors?
-                    .GroupBy(e => e.PropertyName)
-                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
-                    ?? new Dictionary<string, string[]>();
-
-                return StatusCode(400, ApiResponse.Error("Validation failed", 400, errorDict));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return StatusCode(403, ApiResponse.Error("You are not allowed to update this user", 403));
-            }
-
+            return Ok(new ApiResponse<RetrieveUserDto>(
+                user,
+                $"User profile with Id {id} updated successfully."
+            ));
         }
 
 

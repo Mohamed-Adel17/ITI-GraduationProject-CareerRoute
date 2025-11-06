@@ -19,13 +19,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 //CORS Configuration
-var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:4200";
+var frontendUrls = builder.Configuration.GetSection("FrontendUrls").Get<string[]>()
+    ?? new[] { "http://localhost:4200" };
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(frontendUrl).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+        policy.WithOrigins(frontendUrls)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -34,19 +38,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddCore();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddConfigurationInfrastructure(builder.Configuration);
-
-
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-{
-    options.User.RequireUniqueEmail = true; // Ensure unique email addresses
-    options.Password.RequireNonAlphanumeric = false;
-    options.Lockout.MaxFailedAccessAttempts = 5;
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-    options.Lockout.AllowedForNewUsers = true;
-
-})
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(
     (options) =>
@@ -81,15 +72,15 @@ builder.Services.AddAuthentication(
 //Adding Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy(AppPolicies.RequireUserRole, 
-        policy=> policy.RequireRole(AppRoles.User));
-    options.AddPolicy(AppPolicies.RequireAdminRole, 
+    options.AddPolicy(AppPolicies.RequireUserRole,
+        policy => policy.RequireRole(AppRoles.User));
+    options.AddPolicy(AppPolicies.RequireAdminRole,
         policy => policy.RequireRole(AppRoles.Admin));
     options.AddPolicy(AppPolicies.RequireMentorRole,
         policy => policy.RequireRole(AppRoles.Mentor));
-    options.AddPolicy(AppPolicies.RequireMentorOrAdminRole, 
+    options.AddPolicy(AppPolicies.RequireMentorOrAdminRole,
         policy => policy.RequireRole(AppRoles.Mentor, AppRoles.Admin));
-    options.AddPolicy(AppPolicies.RequireAnyRole, 
+    options.AddPolicy(AppPolicies.RequireAnyRole,
         policy => policy.RequireRole(AppRoles.User, AppRoles.Admin, AppRoles.Mentor));
 });
 
@@ -165,7 +156,7 @@ using (var scope = app.Services.CreateScope())
 
         await RoleSeeder.SeedRolesAsync(roleManager, logger);
     }
-    catch(Exception ex)
+    catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Error happened while seeding roles");

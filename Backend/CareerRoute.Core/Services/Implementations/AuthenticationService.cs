@@ -83,6 +83,7 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 UserId = user.Id,
                 Email = user.Email!,
+                RegisterAsMentor = registerRequest.RegisterAsMentor
             };
         }
 
@@ -225,7 +226,7 @@ namespace CareerRoute.Core.Services.Implementations
             };
         }
 
-        private async Task CreateUserWithRole(ApplicationUser user, string password, bool isMentor)
+        private async Task CreateUserWithRole(ApplicationUser user, string password, bool registerAsMentor)
         {
             var result = await _userManager.CreateAsync(user, password);
             if (!result.Succeeded)
@@ -233,8 +234,9 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException($"Failed to create user: {GetErrorMessages(result)}");
             }
 
-            var roleName = isMentor ? AppRoles.Mentor : AppRoles.User;
-            await _userManager.AddToRoleAsync(user, roleName);
+            // Always assign User role at registration
+            // Mentor role will be assigned by admin after application approval
+            await _userManager.AddToRoleAsync(user, AppRoles.User);
         }
 
         private async Task<ApplicationUser> ValidateUserForLogin(string email, string password)
@@ -301,7 +303,6 @@ namespace CareerRoute.Core.Services.Implementations
             var roles = await _userManager.GetRolesAsync(user);
             var userDto = _mapper.Map<UserDto>(user);
             userDto.Roles = roles.ToList();
-            userDto.IsMentor = roles.Contains(AppRoles.Mentor);
 
             return new AuthResponseDto
             {

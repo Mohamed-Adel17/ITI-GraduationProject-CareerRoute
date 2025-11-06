@@ -8,6 +8,8 @@ using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
 using CareerRoute.Core.Extentions;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Identity;
+using CareerRoute.Core.Constants;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +28,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<CreateMentorProfileDto> _createValidator;
         private readonly IValidator<UpdateMentorProfileDto> _updateValidator;
         private readonly IValidator<RejectMentorDto> _rejectValidator;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public MentorService(
             IMentorRepository mentorRepository,
@@ -34,7 +37,8 @@ namespace CareerRoute.Core.Services.Implementations
             ILogger<MentorService> logger,
             IValidator<CreateMentorProfileDto> createValidator,
             IValidator<UpdateMentorProfileDto> updateValidator,
-            IValidator<RejectMentorDto> rejectValidator)
+            IValidator<RejectMentorDto> rejectValidator,
+            UserManager<ApplicationUser> userManager)
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
@@ -43,6 +47,7 @@ namespace CareerRoute.Core.Services.Implementations
             _createValidator = createValidator;
             _updateValidator = updateValidator;
             _rejectValidator = rejectValidator;
+            _userManager = userManager;
         }
         
         // Get mentor profile by ID
@@ -184,10 +189,24 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 throw new BusinessException("Mentor is already approved");
             }
+            
+            // Update mentor status
             mentor.ApprovalStatus = "Approved";
             mentor.IsVerified = true;
             mentor.IsAvailable = true;
             mentor.UpdatedAt = DateTime.UtcNow;
+            
+            // Assign Mentor role to user
+            var user = mentor.User;
+            if (!await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
+            {
+                var roleResult = await _userManager.AddToRoleAsync(user, AppRoles.Mentor);
+                if (!roleResult.Succeeded)
+                {
+                    throw new BusinessException("Failed to assign Mentor role");
+                }
+                _logger.LogInformation("Mentor role assigned to user {UserId}", user.Id);
+            }
 
             _mentorRepository.Update(mentor);
             await _mentorRepository.SaveChangesAsync();
@@ -211,6 +230,21 @@ namespace CareerRoute.Core.Services.Implementations
             mentor.ApprovalStatus = "Rejected";
             mentor.IsAvailable = false;
             mentor.UpdatedAt = DateTime.UtcNow;
+            
+            // Remove Mentor role if user had it (in case of re-rejection)
+            var user = mentor.User;
+            if (await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
+            {
+                var roleResult = await _userManager.RemoveFromRoleAsync(user, AppRoles.Mentor);
+                if (!roleResult.Succeeded)
+                {
+                    _logger.LogWarning("Failed to remove Mentor role from user {UserId}", user.Id);
+                }
+                else
+                {
+                    _logger.LogInformation("Mentor role removed from user {UserId}", user.Id);
+                }
+            }
 
             _mentorRepository.Update(mentor);
             await _mentorRepository.SaveChangesAsync();
@@ -221,7 +255,7 @@ namespace CareerRoute.Core.Services.Implementations
             // await _emailService.SendMentorRejectionEmailAsync(
             //     mentor.User.Email, 
             //     mentor.User.FirstName, 
-            //     reason);
+            //     rejectDto.Reason);
         }
 
         // Check if user is a mentor

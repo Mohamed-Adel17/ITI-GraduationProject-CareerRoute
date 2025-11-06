@@ -13,6 +13,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using CareerRoute.Core.Exceptions;
+using CareerRoute.Core.Extentions;
 
 
 
@@ -38,44 +40,34 @@ namespace CareerRoute.Core.Services.Implementations
             this.updateValidator = updateValidator;
         }
       
-        public async Task<IEnumerable<RetriveUserDto>> GetAllUsersAsync()
+        public async Task<IEnumerable<RetrieveUserDto>> GetAllUsersAsync()
         {
             //retrieve users using manager not pure repository
 
             var users = await userManager.Users.ToListAsync();
-            return mapper.Map<IEnumerable<RetriveUserDto>>(users);
+            return mapper.Map<IEnumerable<RetrieveUserDto>>(users);
         }
 
 
-        public async Task<RetriveUserDto> GetUserByIdAsync (string id )
+        public async Task<RetrieveUserDto> GetUserByIdAsync (string id )
         {
             //retrieve users using manager not pure repository
 
             var user = await userManager.FindByIdAsync(id);
             if (user == null)
             {
-                throw new KeyNotFoundException("User not found");
+                throw new NotFoundException("User", id);
             }
-            return mapper.Map<RetriveUserDto>(user);
+            return mapper.Map<RetrieveUserDto>(user);
         }
 
-        public async Task<RetriveUserDto> UpdateUserByIdAsync(string id , UpdateUserDto uuDto)
+        public async Task<RetrieveUserDto> UpdateUserByIdAsync(string id , UpdateUserDto uuDto)
         {
-            var validationResult = await updateValidator.ValidateAsync(uuDto);
-
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors
-                    .GroupBy(e => e.PropertyName)
-                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-
-                throw new ValidationException("Validation failed", errors.Select(e =>
-                    new FluentValidation.Results.ValidationFailure(e.Key, string.Join("; ", e.Value))));
-            }
+            await updateValidator.ValidateAndThrowCustomAsync(uuDto);
 
             var user = await userManager.FindByIdAsync(id);
             if (user == null)
-                throw new KeyNotFoundException("User not found");
+                throw new NotFoundException("User", id);
 
             mapper.Map(uuDto, user);
 
@@ -83,10 +75,10 @@ namespace CareerRoute.Core.Services.Implementations
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Exception($"Update failed: {errors}");
+                throw new BusinessException($"Update failed: {errors}");
             }
 
-            return mapper.Map<RetriveUserDto>(user);
+            return mapper.Map<RetrieveUserDto>(user);
         }
 
 
@@ -96,13 +88,13 @@ namespace CareerRoute.Core.Services.Implementations
 
             var user = await userManager.FindByIdAsync(id);
             if (user == null)
-                throw new KeyNotFoundException("User not found");
+                throw new NotFoundException("User", id);
 
             var result = await userManager.DeleteAsync(user);
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Exception($"Delete failed: {errors}");
+                throw new BusinessException($"Delete failed: {errors}");
             }
 
         }

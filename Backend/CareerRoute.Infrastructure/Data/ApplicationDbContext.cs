@@ -28,7 +28,7 @@ namespace CareerRoute.Infrastructure.Data
                     .IsRequired(false) 
                     .HasMaxLength(500);
 
-                b.Property(u => u.CareerInterst)
+                b.Property(u => u.CareerInterest)
                     .IsRequired(false) 
                     .HasMaxLength(500);
             });

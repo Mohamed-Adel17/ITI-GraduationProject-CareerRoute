@@ -13,25 +13,17 @@ namespace CareerRoute.Core.Validators.Users
 
         public UpdateUserValidator()
         {
-            //all accepts null
+            //all fields accept null
 
             RuleFor(uuDto => uuDto.FirstName)
-             .MaximumLength(50).WithMessage("First Name length must not exceed 50 char long ")
+             .MinimumLength(2).WithMessage("First Name must be at least 2 characters long")
+             .MaximumLength(50).WithMessage("First Name must not exceed 50 characters")
              .When(x => !string.IsNullOrEmpty(x.FirstName));
             
-
-
             RuleFor(uuDto => uuDto.LastName)
-                .MaximumLength(50).WithMessage("First Name length must not exceed 50 char long ")
+                .MinimumLength(2).WithMessage("Last Name must be at least 2 characters long")
+                .MaximumLength(50).WithMessage("Last Name must not exceed 50 characters")
                 .When(x => !string.IsNullOrEmpty(x.LastName));
-
-
-
-            RuleFor(uuDto => uuDto.Email)
-                    .EmailAddress().WithMessage("Email format is invalid")
-                    .When(x => !string.IsNullOrEmpty(x.Email));
-
-
 
             RuleFor(uuDto => uuDto.PhoneNumber)
                 .Matches(@"^\+?[0-9]{10,15}$").WithMessage("Phone number must be valid and contain 10–15 digits")
@@ -48,9 +40,9 @@ namespace CareerRoute.Core.Validators.Users
                   .When(x => !string.IsNullOrEmpty(x.CareerGoal));
 
 
-            RuleFor(uuDto => uuDto.CareerInterst)
-                 .MaximumLength(500).WithMessage("Career Goal must not exceed 500 char long")
-                 .When(x => !string.IsNullOrEmpty(x.CareerInterst));
+            RuleFor(uuDto => uuDto.CareerInterest)
+                 .MaximumLength(500).WithMessage("Career Interest must not exceed 500 characters")
+                 .When(x => !string.IsNullOrEmpty(x.CareerInterest));
 
 
 
