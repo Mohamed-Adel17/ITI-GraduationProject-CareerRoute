@@ -303,7 +303,6 @@ namespace CareerRoute.Core.Services.Implementations
             var roles = await _userManager.GetRolesAsync(user);
             var userDto = _mapper.Map<UserDto>(user);
             userDto.Roles = roles.ToList();
-            userDto.IsMentor = roles.Contains(AppRoles.Mentor);
 
             return new AuthResponseDto
             {

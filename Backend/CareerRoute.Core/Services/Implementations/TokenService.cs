@@ -33,7 +33,7 @@ namespace CareerRoute.Core.Services.Implementations
                         new Claim("email_verified", user.EmailConfirmed.ToString().ToLowerInvariant()),
                         new Claim("picture", user.ProfilePictureUrl ?? ""),
             // Custom claims
-                        new Claim("is_mentor",roles.Contains(AppRoles.Mentor).ToString().ToLowerInvariant() ),
+                        new Claim("is_mentor",user.IsMentor.ToString().ToLowerInvariant() ),
             ];
 
             //var roles = await userManager.GetRolesAsync(user);

@@ -15,8 +15,7 @@ namespace CareerRoute.Core.Mappings
         public UserMappingProfile()
         {
             CreateMap<ApplicationUser, UserDto>()
-            .ForMember(dest => dest.Roles, opt => opt.Ignore())
-            .ForMember(dest => dest.IsMentor, opt => opt.Ignore());
+            .ForMember(dest => dest.Roles, opt => opt.Ignore());
 
 
             

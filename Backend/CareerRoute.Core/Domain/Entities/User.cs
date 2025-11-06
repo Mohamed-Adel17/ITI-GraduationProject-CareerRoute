@@ -15,8 +15,9 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
         public DateTime? LastLoginDate { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool IsMentor { get; set; } = false;
         public string? CareerGoal { get; set; } = null;
-        public string? CareerInterest { get; set; } = null; 
+        public string? CareerInterest { get; set; } = null;
         public virtual List<RefreshToken> RefreshTokens { get; set; } = [];
     }
 }
