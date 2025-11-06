@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MentorProfileFormComponent } from '../mentor-profile/mentor-profile-form.component';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { CategoryService } from '../../../core/services/category.service';
 import { MentorApplication, MentorCategory } from '../../../shared/models/mentor.model';
 
 /**
@@ -23,7 +24,7 @@ import { MentorApplication, MentorCategory } from '../../../shared/models/mentor
   template: `
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div class="container mx-auto px-4">
-        <!-- Optional: Add a page header -->
+        <!-- Page header -->
         <div class="mb-8 text-center">
           <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Become a Mentor
@@ -33,8 +34,15 @@ import { MentorApplication, MentorCategory } from '../../../shared/models/mentor
           </p>
         </div>
 
+        <!-- Loading state -->
+        <div *ngIf="isLoadingCategories" class="flex justify-center items-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p class="ml-4 text-gray-600 dark:text-gray-400">Loading categories...</p>
+        </div>
+
         <!-- Form Component -->
         <app-mentor-profile-form
+          *ngIf="!isLoadingCategories"
           [mode]="'create'"
           [categories]="categories"
           (formSubmit)="onSubmit($event)"
@@ -50,21 +58,48 @@ import { MentorApplication, MentorCategory } from '../../../shared/models/mentor
     }
   `]
 })
-export class MentorApplicationComponent {
-  categories: MentorCategory[] = [
-    { id: 1, name: 'Software Development', description: 'Web, mobile, and desktop development' },
-    { id: 2, name: 'Data Science', description: 'Machine learning, AI, and analytics' },
-    { id: 3, name: 'DevOps', description: 'CI/CD, cloud infrastructure, and automation' },
-    { id: 4, name: 'UI/UX Design', description: 'User interface and user experience design' },
-    { id: 5, name: 'Product Management', description: 'Product strategy and development' },
-    { id: 6, name: 'Career Coaching', description: 'Career guidance and professional development' }
-  ];
+export class MentorApplicationComponent implements OnInit {
+  categories: MentorCategory[] = [];
+  isLoadingCategories = false;
 
   constructor(
     private mentorService: MentorService,
     private notificationService: NotificationService,
+    private categoryService: CategoryService,
     private router: Router
   ) {}
+
+  ngOnInit(): void {
+    this.loadCategories();
+  }
+
+  /**
+   * Load mentor specialization categories from the backend
+   */
+  private loadCategories(): void {
+    this.isLoadingCategories = true;
+
+    this.categoryService.getMentorSpecializations().subscribe({
+      next: (categories) => {
+        // Map backend Category to MentorCategory interface
+        this.categories = categories.map(cat => ({
+          id: parseInt(cat.id, 10) || 0, // Convert string ID to number
+          name: cat.name,
+          description: cat.description,
+          iconUrl: cat.icon
+        }));
+        this.isLoadingCategories = false;
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+        this.notificationService.error('Failed to load categories. Please try again.');
+        this.isLoadingCategories = false;
+
+        // Fallback to empty array on error
+        this.categories = [];
+      }
+    });
+  }
 
   onSubmit(data: MentorApplication): void {
     console.log('Form submitted:', data);
