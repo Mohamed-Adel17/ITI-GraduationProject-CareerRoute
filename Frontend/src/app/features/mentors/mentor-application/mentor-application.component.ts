@@ -74,12 +74,13 @@ export class MentorApplicationComponent implements OnInit {
   }
 
   /**
-   * Load mentor specialization categories from the backend
+   * Load categories from the backend
+   * Categories are unified - same list used for both user interests and mentor specializations
    */
   private loadCategories(): void {
     this.isLoadingCategories = true;
 
-    this.categoryService.getMentorSpecializations().subscribe({
+    this.categoryService.getAllCategories().subscribe({
       next: (categories) => {
         // Map backend Category to MentorCategory interface
         this.categories = categories.map(cat => ({

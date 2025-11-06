@@ -5,14 +5,12 @@ import { tap, catchError, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
 import {
   Category,
-  CategoryType,
   CategorySummary,
   CategoryCreateRequest,
   CategoryUpdateRequest,
-  getCareerInterestCategories,
-  getMentorSpecializationCategories,
   sortCategories,
-  getActiveCategories
+  getActiveCategories,
+  getCategoryNames
 } from '../../shared/models/category.model';
 
 /**
@@ -31,12 +29,12 @@ interface ApiResponse<T> {
  * CategoryService
  *
  * Service for managing categories in the Career Route application.
- * Handles fetching career interests, mentor specializations, and category management.
+ * Categories represent unified areas of expertise used for both user career interests
+ * and mentor specializations, simplifying the matching process.
  *
  * Features:
- * - Get all categories or by type
- * - Get career interests for user profiles
- * - Get mentor specializations
+ * - Get all categories (unified system)
+ * - Get category names as string array
  * - Create and update categories (admin only)
  * - Category caching for performance
  * - Automatic error handling
@@ -46,22 +44,23 @@ interface ApiResponse<T> {
  * - Categories are cached after first fetch
  * - Public endpoints don't require authentication
  * - Admin endpoints require authentication and admin role
- * - Cache can be refreshed by calling loadCategories() again
+ * - Cache can be refreshed by calling refreshCategories()
+ * - Same categories used for both user interests and mentor specializations
  *
  * @example
  * ```typescript
  * // In a component
  * constructor(private categoryService: CategoryService) {}
  *
- * // Get career interests for user profile
- * this.categoryService.getCareerInterests().subscribe(
- *   (interests) => this.availableInterests = interests,
+ * // Get all categories for user/mentor selection
+ * this.categoryService.getAllCategories().subscribe(
+ *   (categories) => this.availableCategories = categories,
  *   (error) => console.error('Error:', error)
  * );
  *
- * // Get mentor specializations
- * this.categoryService.getMentorSpecializations().subscribe(
- *   (specializations) => this.specializations = specializations
+ * // Get just category names for dropdowns
+ * this.categoryService.getCategoryNames().subscribe(
+ *   (names) => this.categoryNames = names
  * );
  * ```
  */
@@ -147,73 +146,20 @@ export class CategoryService {
   }
 
   /**
-   * Get categories by type
-   *
-   * @param type - Category type to filter by
-   * @param forceRefresh - Force reload from API
-   * @returns Observable of categories matching the type
-   *
-   * @remarks
-   * - Filters from cached categories if available
-   * - Returns only active categories
-   */
-  getCategoriesByType(type: CategoryType, forceRefresh: boolean = false): Observable<Category[]> {
-    return this.getAllCategories(forceRefresh).pipe(
-      map(categories => categories.filter(cat => cat.type === type))
-    );
-  }
-
-  /**
-   * Get career interest categories
-   * Convenience method for getting career interests for user profiles
-   *
-   * @param forceRefresh - Force reload from API
-   * @returns Observable of career interest categories
-   *
-   * @remarks
-   * - Returns only active career interest categories
-   * - Sorted by displayOrder and name
-   * - Use this for user profile career interests selection
-   */
-  getCareerInterests(forceRefresh: boolean = false): Observable<Category[]> {
-    return this.getAllCategories(forceRefresh).pipe(
-      map(categories => getCareerInterestCategories(categories))
-    );
-  }
-
-  /**
-   * Get career interest names only
+   * Get category names only
    * Returns just the names as strings for simple use cases
    *
    * @param forceRefresh - Force reload from API
-   * @returns Observable of career interest names
+   * @returns Observable of category names
    *
    * @remarks
    * - Returns array of strings (category names)
    * - Useful for dropdowns and multi-select
    * - Maintains sort order
    */
-  getCareerInterestNames(forceRefresh: boolean = false): Observable<string[]> {
-    return this.getCareerInterests(forceRefresh).pipe(
-      map(categories => categories.map(cat => cat.name))
-    );
-  }
-
-  /**
-   * Get mentor specialization categories
-   * Convenience method for getting mentor specializations
-   *
-   * @param forceRefresh - Force reload from API
-   * @returns Observable of mentor specialization categories
-   *
-   * @remarks
-   * - Returns only active mentor specialization categories
-   * - Sorted by displayOrder and name
-   * - Use this for mentor profile specializations
-   */
-  getMentorSpecializations(forceRefresh: boolean = false): Observable<Category[]> {
+  getCategoryNames(forceRefresh: boolean = false): Observable<string[]> {
     return this.getAllCategories(forceRefresh).pipe(
-      map(categories => getMentorSpecializationCategories(categories))
+      map(categories => getCategoryNames(categories))
     );
   }
 
@@ -232,21 +178,16 @@ export class CategoryService {
   }
 
   /**
-   * Get cached career interests (synchronous)
+   * Get cached category names (synchronous)
    *
-   * @returns Current career interest categories from cache
-   */
-  getCachedCareerInterests(): Category[] {
-    return getCareerInterestCategories(this.categoriesSubject.value);
-  }
-
-  /**
-   * Get cached career interest names (synchronous)
+   * @returns Array of category names from cache
    *
-   * @returns Array of career interest names
+   * @remarks
+   * - Returns immediately without API call
+   * - Returns empty array if not loaded yet
    */
-  getCachedCareerInterestNames(): string[] {
-    return this.getCachedCareerInterests().map(cat => cat.name);
+  getCachedCategoryNames(): string[] {
+    return getCategoryNames(this.categoriesSubject.value);
   }
 
   // ==================== Admin Operations ====================
