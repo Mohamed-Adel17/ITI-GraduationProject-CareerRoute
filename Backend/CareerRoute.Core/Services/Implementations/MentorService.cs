@@ -66,7 +66,7 @@ namespace CareerRoute.Core.Services.Implementations
             string mentorId,
             UpdateMentorProfileDto updatedDto)
         {
-            await _updateValidator.ValidateAndThrowAsync(updatedDto);
+            await _updateValidator.ValidateAndThrowCustomAsync(updatedDto);
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
             if(mentor == null)
             {
@@ -104,7 +104,7 @@ namespace CareerRoute.Core.Services.Implementations
             string userId,
             CreateMentorProfileDto createdDto)
         {
-            await _createValidator.ValidateAndThrowAsync(createdDto);
+            await _createValidator.ValidateAndThrowCustomAsync(createdDto);
             var user = await _userRepository.GetByIdAsync(userId);    
             if(user == null)
             {
@@ -200,7 +200,7 @@ namespace CareerRoute.Core.Services.Implementations
         // Reject a mentor application
         public async Task RejectMentorAsync(string mentorId, RejectMentorDto rejectDto)
         {
-            await _rejectValidator.ValidateAndThrowAsync(rejectDto);
+            await _rejectValidator.ValidateAndThrowCustomAsync(rejectDto);
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
 
             if (mentor == null)
