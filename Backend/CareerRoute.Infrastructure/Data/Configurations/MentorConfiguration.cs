@@ -21,10 +21,15 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                 t.HasCheckConstraint("CK_Mentor_YearsOfExperience", "[YearsOfExperience] >= 0");
             });
 
-           builder.HasOne(m => m.User)
-                  .WithOne()
-                  .HasForeignKey<Mentor>(m => m.Id)
-                  .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(m => m.User)
+                   .WithOne()
+                   .HasForeignKey<Mentor>(m => m.Id)
+                   .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.HasMany(m => m.MentorCategories)
+                   .WithOne(mc => mc.Mentor)
+                   .HasForeignKey(mc => mc.MentorId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
             builder.Property(m => m.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
