@@ -9,11 +9,13 @@ import { RegisterRequest } from '../../../shared/models/auth.model';
 /**
  * RegisterComponent
  *
- * Handles user registration with email, password, and role selection (User/Mentor).
+ * Handles user registration with email, password, name, phone, and role selection (User/Mentor).
  * Provides registration form with validation and role-based account creation.
  *
  * Features:
- * - Reactive form with email, password validation
+ * - Reactive form with email, password, name validation
+ * - First name and last name fields (required)
+ * - Phone number field (optional)
  * - Role selection (User as mentee, Mentor as service provider)
  * - Password visibility toggle
  * - Loading state during API call
@@ -56,7 +58,10 @@ export class RegisterComponent implements OnInit {
 
     // Initialize registration form with validators
     this.registerForm = this.fb.group({
+      firstName: ['', [Validators.required, Validators.minLength(2)]],
+      lastName: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
+      phoneNumber: [''], // Optional field
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
       userType: ['client', Validators.required] // 'mentor' or 'client'
@@ -66,8 +71,20 @@ export class RegisterComponent implements OnInit {
   /**
    * Getter for easy access to form controls in template
    */
+  get firstName() {
+    return this.registerForm.get('firstName')!;
+  }
+
+  get lastName() {
+    return this.registerForm.get('lastName')!;
+  }
+
   get email() {
     return this.registerForm.get('email')!;
+  }
+
+  get phoneNumber() {
+    return this.registerForm.get('phoneNumber')!;
   }
 
   get password() {
@@ -128,8 +145,9 @@ export class RegisterComponent implements OnInit {
       email: this.registerForm.value.email,
       password: this.registerForm.value.password,
       confirmPassword: this.registerForm.value.confirmPassword,
-      firstName: '', // TODO: Add firstName field to form if needed
-      lastName: '', // TODO: Add lastName field to form if needed
+      firstName: this.registerForm.value.firstName,
+      lastName: this.registerForm.value.lastName,
+      phoneNumber: this.registerForm.value.phoneNumber || undefined, // Optional
       registerAsMentor: this.registerForm.value.userType === 'mentor'
     };
 

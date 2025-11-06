@@ -113,8 +113,8 @@ return BadRequest(ApiResponse.Error(
 - `email` (required): Valid email format
 - `password` (required): Min 8 chars, uppercase, lowercase, number
 - `confirmPassword` (required): Must match password
-- `firstName`, `lastName` (optional): User's name
-- `phoneNumber` (optional): User's phone
+- `firstName`, `lastName` (Required): minimum 2 characters
+- `phoneNumber` (optional): No Validation
 - `careerInterests` (optional): Array of career interests
 - `careerGoals` (optional): Career goals description
 - `registerAsMentor` (optional): Default false
