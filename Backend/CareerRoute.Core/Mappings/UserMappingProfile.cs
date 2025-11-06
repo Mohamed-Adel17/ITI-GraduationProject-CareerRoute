@@ -20,7 +20,7 @@ namespace CareerRoute.Core.Mappings
 
 
             
-            CreateMap<ApplicationUser, RetriveUserDto>();
+            CreateMap<ApplicationUser, RetrieveUserDto>();
 
             //map only not null fields
             CreateMap<UpdateUserDto, ApplicationUser>()

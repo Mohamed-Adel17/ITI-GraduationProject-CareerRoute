@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CareerRoute.Core.DTOs.Users
+﻿namespace CareerRoute.Core.DTOs.Users
 {
-    public class RetriveUserDto
+    public class RetrieveUserDto
     {
         public string Id { get; set; }
         public string UserName { get; set; }
@@ -17,15 +10,10 @@ namespace CareerRoute.Core.DTOs.Users
         public string? PhoneNumber { get; set; }
         public string? ProfilePictureUrl { get; set; }
         public string? CareerGoal { get; set; }
-        public string? CareerInterst { get; set; }
-        public string Role { get; set; } //???? 
+        public string? CareerInterest { get; set; }
+        public string Role { get; set; }
         public bool IsActive { get; set; }
-
         public DateTime RegistrationDate { get; set; } 
         public DateTime? LastLoginDate { get; set; }
-
-
-
-
     }
 }
