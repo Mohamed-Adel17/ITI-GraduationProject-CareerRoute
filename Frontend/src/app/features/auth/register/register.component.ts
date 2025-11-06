@@ -158,30 +158,21 @@ export class RegisterComponent implements OnInit {
         console.log('Registration successful:', response);
 
         // Show success notification
-        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
         this.notificationService.success(
-          'Account created successfully! Please check your email to verify your account.',
+          'Account created successfully!',
           'Welcome!'
         );
 
-        // Navigate based on email verification requirement
-        if (response.requiresEmailVerification) {
-          // Email verification required - user should check their email for verification link
-          // The verification token is sent via email, not returned in the response for security
-          // Show info notification and stay on registration page or redirect to a "check email" page
-          this.notificationService.info(
-            `A verification email has been sent to ${response.email || 'your email'}. Please check your inbox and click the verification link to activate your account.`,
-            'Verify Your Email',
-            10000 // Show for 10 seconds
-          );
+        // Email verification is always required
+        // The verification token is sent via email, not returned in the response for security
+        this.notificationService.info(
+          `A verification email has been sent to ${response.email || 'your email'}. Please check your inbox and click the verification link to activate your account.`,
+          'Verify Your Email',
+          10000 // Show for 10 seconds
+        );
 
-          // Navigate to verify-email page without token (it will show instructions to check email)
-          // Or navigate to home page
-          this.router.navigate(['/']);
-        } else {
-          // Email verification not required, user can log in immediately
-          this.router.navigate(['/auth/login']);
-        }
+        // Navigate to home page
+        this.router.navigate(['/']);
       },
       error: (error) => {
         // Registration failed

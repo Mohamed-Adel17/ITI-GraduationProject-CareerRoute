@@ -11,7 +11,7 @@ import { PasswordResetRequest, PasswordReset } from '../../../shared/models/auth
  *
  * Handles two-step password reset process:
  * - Step 1: Request reset (email input) - forgotPassword()
- * - Step 2: Reset password (token from URL + new password) - resetPassword()
+ * - Step 2: Reset password (token from URL + new password) - resetPassword() with auto-login
  *
  * Features:
  * - Two-step password reset flow
@@ -21,7 +21,8 @@ import { PasswordResetRequest, PasswordReset } from '../../../shared/models/auth
  * - Password visibility toggle
  * - Loading states during API calls
  * - Error message display
- * - Success confirmation with redirect to login
+ * - Success confirmation with auto-login and redirect to dashboard
+ * - Automatic login after successful password reset (no manual login required)
  * - Responsive design with Tailwind CSS
  * - Dark mode support
  *
@@ -35,7 +36,7 @@ import { PasswordResetRequest, PasswordReset } from '../../../shared/models/auth
  * Step 2 (Reset Password):
  * ```
  * Navigate to: /auth/reset-password?email=user@example.com&token=abc123
- * User enters new password → password is reset → redirect to login
+ * User enters new password → password is reset → auto-login → redirect to dashboard
  * ```
  */
 @Component({
@@ -262,7 +263,7 @@ export class PasswordResetComponent implements OnInit {
    * - Validate email and token from URL
    * - Call AuthService.resetPassword()
    * - Show success message and notification
-   * - Navigate to login page after successful reset
+   * - Navigate to dashboard after successful reset (user is automatically logged in)
    * - Handle and display errors via NotificationService
    * - Manage loading state
    */
@@ -302,19 +303,19 @@ export class PasswordResetComponent implements OnInit {
       next: (response) => {
         console.log('Password reset successful:', response);
 
-        // Show success message in component
-        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
-        this.successMessage = 'Your password has been reset successfully. Redirecting to login...';
+        // Backend always returns tokens for auto-login
+        // AuthService.resetPassword() has already handled token storage and auth state update
+        this.successMessage = `Welcome back, ${response.user.firstName}! Your password has been reset successfully. Logging you in...`;
 
         // Show success notification
         this.notificationService.success(
-          'Your password has been reset successfully.',
-          'Password Reset'
+          'Your password has been reset successfully!',
+          'Welcome Back'
         );
 
-        // Redirect to login after 3 seconds
+        // Redirect to dashboard after 3 seconds (user is now logged in)
         setTimeout(() => {
-          this.router.navigate(['/auth/login']);
+          this.router.navigate(['/user/dashboard']);
         }, 3000);
 
         this.loading = false;

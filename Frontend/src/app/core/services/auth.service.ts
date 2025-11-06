@@ -448,11 +448,12 @@ export class AuthService {
    * @returns Observable of verification response (unwrapped from ApiResponse)
    *
    * @remarks
-   * This method does NOT handle navigation or notifications.
+   * This method handles authentication logic (storing tokens, updating auth state).
    * The EmailVerificationComponent is responsible for:
    * - Displaying success/error messages
-   * - Storing the auto-login token if provided
    * - Handling navigation with countdown timer
+   *
+   * The backend always returns AuthResponseDto with tokens for auto-login after verification.
    */
   verifyEmail(request: EmailVerificationRequest): Observable<EmailVerificationResponse> {
     return this.http.post<ApiResponse<EmailVerificationResponse>>(`${this.AUTH_URL}/verify-email`, request).pipe(
@@ -464,47 +465,27 @@ export class AuthService {
         throw new Error(response.message || 'Email verification failed');
       }),
       tap(verifyResponse => {
-        // If auto-login is enabled and token is provided, update auth state
-        if (verifyResponse.autoLogin && verifyResponse.loginToken) {
-          // Decode token to get user info
-          const tokenPayload = decodeToken(verifyResponse.loginToken);
-          if (tokenPayload) {
-            const user: AuthUser = {
-              id: tokenPayload.sub,
-              email: tokenPayload.email,
-              firstName: tokenPayload.given_name || '',
-              lastName: tokenPayload.family_name || '',
-              emailConfirmed: true, // Email is now verified
-              roles: getRolesFromToken(tokenPayload),
-              isMentor: tokenPayload.is_mentor || false,
-              mentorId: tokenPayload.mentor_id,
-              profilePictureUrl: tokenPayload.picture
-            };
+        // Backend always returns tokens for auto-login
+        // Store tokens in localStorage
+        this.setToken(verifyResponse.token);
+        this.setRefreshToken(verifyResponse.refreshToken);
 
-            // Store tokens in localStorage
-            this.setToken(verifyResponse.loginToken);
-            if (verifyResponse.refreshToken) {
-              this.setRefreshToken(verifyResponse.refreshToken);
-            }
+        console.log('[AUTH SERVICE] Auto-login after email verification - tokens stored');
+        console.log('[AUTH SERVICE] User authenticated:', verifyResponse.user.email);
 
-            console.log('[AUTH SERVICE] Auto-login after email verification - tokens stored');
-            console.log('[AUTH SERVICE] User authenticated:', user.email);
+        // Update auth state with verified user
+        this.authStateSubject.next({
+          isAuthenticated: true,
+          user: verifyResponse.user,
+          token: verifyResponse.token,
+          refreshToken: verifyResponse.refreshToken,
+          tokenExpiration: decodeToken(verifyResponse.token)?.exp || null,
+          loading: false,
+          error: null
+        });
 
-            // Update auth state
-            this.authStateSubject.next({
-              isAuthenticated: true,
-              user,
-              token: verifyResponse.loginToken,
-              refreshToken: verifyResponse.refreshToken || '',
-              tokenExpiration: tokenPayload.exp,
-              loading: false,
-              error: null
-            });
-
-            // Start token refresh timer
-            this.startTokenRefreshTimer();
-          }
-        }
+        // Start token refresh timer
+        this.startTokenRefreshTimer();
       }),
       catchError(error => {
         // Don't use handleAuthError as it shows notification
@@ -585,12 +566,12 @@ export class AuthService {
    * @returns Observable of response (unwrapped from ApiResponse)
    *
    * @remarks
-   * This method handles only authentication logic (API call).
-   * UI concerns (notifications, navigation) are delegated to the calling component.
-   * The component should:
-   * - Show success message on successful reset
-   * - Navigate to login page after successful reset
-   * - Show error notification if reset fails
+   * This method handles authentication logic (storing tokens, updating auth state).
+   * The PasswordResetComponent is responsible for:
+   * - Displaying success/error messages
+   * - Handling navigation with countdown timer
+   *
+   * The backend always returns AuthResponseDto with tokens for auto-login after password reset.
    */
   resetPassword(request: PasswordReset): Observable<PasswordResetResponse> {
     return this.http.post<ApiResponse<PasswordResetResponse>>(`${this.AUTH_URL}/reset-password`, request).pipe(
@@ -600,6 +581,29 @@ export class AuthService {
           return response.data;
         }
         throw new Error(response.message || 'Failed to reset password');
+      }),
+      tap(resetResponse => {
+        // Backend always returns tokens for auto-login
+        // Store tokens in localStorage
+        this.setToken(resetResponse.token);
+        this.setRefreshToken(resetResponse.refreshToken);
+
+        console.log('[AUTH SERVICE] Auto-login after password reset - tokens stored');
+        console.log('[AUTH SERVICE] User authenticated:', resetResponse.user.email);
+
+        // Update auth state with authenticated user
+        this.authStateSubject.next({
+          isAuthenticated: true,
+          user: resetResponse.user,
+          token: resetResponse.token,
+          refreshToken: resetResponse.refreshToken,
+          tokenExpiration: decodeToken(resetResponse.token)?.exp || null,
+          loading: false,
+          error: null
+        });
+
+        // Start token refresh timer
+        this.startTokenRefreshTimer();
       }),
       catchError(error => {
         // Error interceptor has already processed the error
