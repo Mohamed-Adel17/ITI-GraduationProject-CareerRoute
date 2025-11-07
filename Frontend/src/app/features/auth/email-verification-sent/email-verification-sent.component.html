@@ -1,0 +1,293 @@
+<!-- Email Verification Sent Page Container -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col lg:flex-row">
+
+  <!-- Left Side - Verification Sent Confirmation -->
+  <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-12">
+    <div class="w-full max-w-md space-y-8">
+
+      <!-- Success Icon -->
+      <div class="flex justify-center mb-6">
+        <div class="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <svg
+            class="w-16 h-16 text-green-600 dark:text-green-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Success Title -->
+      <div class="text-center">
+        <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          Verification Email Sent!
+        </h1>
+
+        <!-- Success Message -->
+        <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">
+          We've sent a verification email to:
+        </p>
+        <p class="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-6">
+          {{ email }}
+        </p>
+      </div>
+
+      <!-- Instructions Box -->
+      <div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-6">
+        <div class="space-y-3">
+          <div class="flex items-start">
+            <svg
+              class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <p class="text-sm text-blue-700 dark:text-blue-300">
+              Please check your inbox and click the verification link to activate your account.
+            </p>
+          </div>
+          <div class="flex items-start">
+            <svg
+              class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <p class="text-sm text-blue-700 dark:text-blue-300">
+              If you don't see the email, check your spam or junk folder.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resend Email Section -->
+      <div class="text-center mb-6">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Didn't receive the email?
+        </p>
+
+        <!-- Resend Button (Active) -->
+        <button
+          *ngIf="canResend && !loading"
+          (click)="resendVerificationEmail()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Resend Verification Email
+        </button>
+
+        <!-- Resend Button (Loading) -->
+        <button
+          *ngIf="loading"
+          disabled
+          class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-400 cursor-not-allowed"
+        >
+          <svg
+            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          Sending...
+        </button>
+
+        <!-- Resend Button (Cooldown) -->
+        <button
+          *ngIf="!canResend && !loading"
+          disabled
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+        >
+          Resend available in {{ resendCooldown }}s
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="relative mb-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">or</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+          (click)="goToLogin()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Go to Login
+        </button>
+        <button
+          (click)="goToHome()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Go to Home
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right Side - Features/Information -->
+  <div
+    class="w-full lg:w-1/2 flex flex-col items-center lg:items-start justify-center bg-blue-50 dark:bg-blue-900/10 p-8 lg:p-12"
+  >
+    <div class="w-full max-w-lg text-center lg:text-left">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        Welcome to CareerRoute
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-8">
+        You're one step away from connecting with expert mentors and accelerating your career growth.
+      </p>
+
+      <div class="space-y-4">
+        <!-- Feature 1: Expert Mentors -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Expert Mentors</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Connect with industry professionals
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 2: One-on-One Sessions -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">One-on-One Sessions</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Personalized mentorship sessions
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 3: Career Growth -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Career Growth</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Accelerate your professional development
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 4: Flexible Scheduling -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Flexible Scheduling</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Book sessions at your convenience
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -58,14 +58,97 @@ export class RegisterComponent implements OnInit {
 
     // Initialize registration form with validators
     this.registerForm = this.fb.group({
-      firstName: ['', [Validators.required, Validators.minLength(2)]],
-      lastName: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      phoneNumber: [''], // Optional field
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      firstName: ['', [
+        Validators.required,
+        Validators.minLength(2),
+        Validators.maxLength(50),
+        Validators.pattern(/^[a-zA-Z\s'-]+$/) // Only letters, spaces, hyphens, and apostrophes
+      ]],
+      lastName: ['', [
+        Validators.required,
+        Validators.minLength(2),
+        Validators.maxLength(50),
+        Validators.pattern(/^[a-zA-Z\s'-]+$/) // Only letters, spaces, hyphens, and apostrophes
+      ]],
+      email: ['', [
+        Validators.required,
+        Validators.email,
+        Validators.maxLength(256)
+      ]],
+      phoneNumber: ['', [
+        Validators.pattern(/^\+?[1-9]\d{1,14}$/) // E.164 international phone number format
+      ]],
+      password: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(100),
+        this.passwordStrengthValidator
+      ]],
       confirmPassword: ['', [Validators.required]],
       userType: ['client', Validators.required] // 'mentor' or 'client'
+    }, {
+      validators: this.passwordMatchValidator // Add cross-field validator
     });
+  }
+
+  /**
+   * Custom validator to check password strength
+   * Password must contain at least one uppercase, one lowercase, and one number
+   * @param control The form control to validate
+   * @returns Validation error object or null
+   */
+  passwordStrengthValidator(control: any): { [key: string]: boolean } | null {
+    const value = control.value;
+
+    if (!value) {
+      return null; // Don't validate empty value (required validator handles that)
+    }
+
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasLowerCase = /[a-z]/.test(value);
+    const hasNumber = /\d/.test(value);
+
+    const errors: { [key: string]: boolean } = {};
+
+    if (!hasUpperCase) {
+      errors['noUpperCase'] = true;
+    }
+    if (!hasLowerCase) {
+      errors['noLowerCase'] = true;
+    }
+    if (!hasNumber) {
+      errors['noNumber'] = true;
+    }
+
+    return Object.keys(errors).length > 0 ? errors : null;
+  }
+
+  /**
+   * Custom validator to check if password and confirmPassword match
+   * @param formGroup The form group to validate
+   * @returns Validation error object or null
+   */
+  passwordMatchValidator(formGroup: FormGroup): { [key: string]: boolean } | null {
+    const password = formGroup.get('password')?.value;
+    const confirmPassword = formGroup.get('confirmPassword')?.value;
+
+    // Only validate if both fields have values
+    if (password && confirmPassword && password !== confirmPassword) {
+      formGroup.get('confirmPassword')?.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+
+    // Clear the passwordMismatch error if passwords match
+    const confirmPasswordControl = formGroup.get('confirmPassword');
+    if (confirmPasswordControl?.hasError('passwordMismatch')) {
+      const errors = confirmPasswordControl.errors;
+      if (errors) {
+        delete errors['passwordMismatch'];
+        confirmPasswordControl.setErrors(Object.keys(errors).length > 0 ? errors : null);
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -165,14 +248,10 @@ export class RegisterComponent implements OnInit {
 
         // Email verification is always required
         // The verification token is sent via email, not returned in the response for security
-        this.notificationService.info(
-          `A verification email has been sent to ${response.email || 'your email'}. Please check your inbox and click the verification link to activate your account.`,
-          'Verify Your Email',
-          10000 // Show for 10 seconds
-        );
-
-        // Navigate to home page
-        this.router.navigate(['/']);
+        // Navigate to verification-sent page with email in state
+        this.router.navigate(['/auth/verification-sent'], {
+          state: { email: response.email || this.registerForm.value.email }
+        });
       },
       error: (error) => {
         // Registration failed
