@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CareerRoute.Core.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,7 +25,7 @@ namespace CareerRoute.Core.DTOs.Mentors
         public int TotalReviews { get; set; }
         public int TotalSessionsCompleted { get; set; }
         public bool IsVerified { get; set; }
-        public string ApprovalStatus { get; set; } = string.Empty;
+        public MentorApprovalStatus ApprovalStatus { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

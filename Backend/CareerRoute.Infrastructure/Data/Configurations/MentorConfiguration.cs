@@ -1,4 +1,5 @@
 ﻿using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -30,6 +31,10 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                    .WithOne(mc => mc.Mentor)
                    .HasForeignKey(mc => mc.MentorId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Property(m => m.ApprovalStatus)
+                   .HasConversion<string>()
+                   .HasMaxLength(20);
 
             builder.Property(m => m.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");

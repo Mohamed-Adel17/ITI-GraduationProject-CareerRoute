@@ -1,4 +1,5 @@
 ﻿using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Infrastructure.Data;
@@ -27,7 +28,7 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             return await dbContext.Mentors
                 .Include(m => m.User)
-                .Where(m => m.IsVerified && m.ApprovalStatus == "Approved")
+                .Where(m => m.IsVerified && m.ApprovalStatus == MentorApprovalStatus.Approved)
                 .ToListAsync();
         }
 
@@ -35,7 +36,7 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             return await dbContext.Mentors
                 .Include(m => m.User)
-                .Where(m => m.ApprovalStatus == "Pending")
+                .Where(m => m.ApprovalStatus == MentorApprovalStatus.Pending)
                 .OrderBy(m => m.CreatedAt)
                 .ToListAsync();
         }
@@ -44,7 +45,7 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             return await dbContext.Mentors
                 .Include(m => m.User)
-                .Where(m => m.ApprovalStatus == "Approved" && m.IsVerified && m.TotalReviews > 0)
+                .Where(m => m.ApprovalStatus == MentorApprovalStatus.Approved && m.IsVerified && m.TotalReviews > 0)
                 .OrderByDescending(m => m.AverageRating)
                 .ThenByDescending(m => m.TotalReviews)
                 .Take(count)
@@ -83,7 +84,7 @@ namespace CareerRoute.Infrastructure.Repositories
 
             return await dbContext.Mentors
                 .Include(m => m.User)
-                .Where(m => m.ApprovalStatus == "Approved" && m.IsVerified &&
+                .Where(m => m.ApprovalStatus == MentorApprovalStatus.Approved && m.IsVerified &&
                        (EF.Functions.Like(m.Bio, $"%{escapedTerm}%") ||
                         EF.Functions.Like(m.ExpertiseTags, $"%{escapedTerm}%") ||
                         EF.Functions.Like(m.User.FirstName, $"%{escapedTerm}%") ||
