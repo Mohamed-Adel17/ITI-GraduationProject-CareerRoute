@@ -137,6 +137,14 @@ export class LoginComponent implements OnInit {
         // ErrorInterceptor has already transformed the error
         console.error('Login failed:', error);
 
+        // Check if error is due to unverified email (401 with specific message)
+        // Backend throws UnauthenticatedException which returns 401
+        if (error.status === 401 && error.message?.includes('verify your email')) {
+          // Email not verified - automatically resend verification email and navigate
+          this.handleUnverifiedEmail(this.loginForm.value.email);
+          return;
+        }
+
         // Display error message via notification
         const errorMessage = error.message || 'Login failed. Please check your credentials and try again.';
         this.notificationService.error(errorMessage, 'Login Error');
@@ -150,6 +158,38 @@ export class LoginComponent implements OnInit {
         this.loading = false;
       },
       complete: () => {
+        this.loading = false;
+      }
+    });
+  }
+
+  /**
+   * Handles unverified email error by resending verification email
+   * and navigating to verification-sent page
+   * @param email User's email address
+   */
+  private handleUnverifiedEmail(email: string): void {
+    console.log('Handling unverified email for:', email);
+
+    // Automatically resend verification email
+    this.authService.resendVerificationEmail({ email }).subscribe({
+      next: () => {
+        // Success notification is shown by AuthService
+        // Navigate to verification-sent page with email
+        this.router.navigate(['/auth/verification-sent'], {
+          state: { email }
+        });
+        this.loading = false;
+      },
+      error: (resendError) => {
+        // Resend failed - still navigate to verification-sent page
+        // But show error notification
+        console.error('Failed to resend verification email:', resendError);
+
+        // Navigate to verification-sent page anyway so user can manually retry
+        this.router.navigate(['/auth/verification-sent'], {
+          state: { email }
+        });
         this.loading = false;
       }
     });

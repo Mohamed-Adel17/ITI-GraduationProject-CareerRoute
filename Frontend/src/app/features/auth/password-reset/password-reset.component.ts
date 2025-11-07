@@ -122,11 +122,48 @@ export class PasswordResetComponent implements OnInit {
    */
   private initializeResetPasswordForm(): void {
     this.resetPasswordForm = this.fb.group({
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
+      newPassword: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(100),
+        this.passwordStrengthValidator
+      ]],
       confirmPassword: ['', [Validators.required]]
     }, {
       validators: this.passwordMatchValidator
     });
+  }
+
+  /**
+   * Custom validator to check password strength
+   * Password must contain at least one uppercase, one lowercase, and one number
+   * @param control The form control to validate
+   * @returns Validation error object or null
+   */
+  passwordStrengthValidator(control: any): { [key: string]: boolean } | null {
+    const value = control.value;
+
+    if (!value) {
+      return null; // Don't validate empty value (required validator handles that)
+    }
+
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasLowerCase = /[a-z]/.test(value);
+    const hasNumber = /\d/.test(value);
+
+    const errors: { [key: string]: boolean } = {};
+
+    if (!hasUpperCase) {
+      errors['noUpperCase'] = true;
+    }
+    if (!hasLowerCase) {
+      errors['noLowerCase'] = true;
+    }
+    if (!hasNumber) {
+      errors['noNumber'] = true;
+    }
+
+    return Object.keys(errors).length > 0 ? errors : null;
   }
 
   /**
@@ -139,6 +176,16 @@ export class PasswordResetComponent implements OnInit {
     if (password && confirmPassword && password.value !== confirmPassword.value) {
       confirmPassword.setErrors({ passwordMismatch: true });
       return { passwordMismatch: true };
+    }
+
+    // Clear the passwordMismatch error if passwords match
+    const confirmPasswordControl = form.get('confirmPassword');
+    if (confirmPasswordControl?.hasError('passwordMismatch')) {
+      const errors = confirmPasswordControl.errors;
+      if (errors) {
+        delete errors['passwordMismatch'];
+        confirmPasswordControl.setErrors(Object.keys(errors).length > 0 ? errors : null);
+      }
     }
 
     return null;

@@ -103,8 +103,6 @@ return BadRequest(ApiResponse.Error(
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": ["Software Development", "Cloud Computing"],
-  "careerGoals": "Become a Solutions Architect",
   "registerAsMentor": false
 }
 ```
@@ -196,8 +194,6 @@ See [Section 4: Email Verification](#4-email-verification) for complete email te
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "refresh-token-string",
-    "expiresIn": 3600,
-    "tokenType": "Bearer",
     "user": {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "email": "user@example.com",
