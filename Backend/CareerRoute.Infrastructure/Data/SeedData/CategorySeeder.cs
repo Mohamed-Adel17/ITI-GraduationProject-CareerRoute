@@ -23,32 +23,41 @@ namespace CareerRoute.Infrastructure.Data.SeedData
         public static async Task SeedCategoriesAsync(ApplicationDbContext context, ILogger logger)
         {
             logger.LogInformation("Starting category seeding...");
-            var existingCategoryNames = await context.Categories.AsNoTracking().Select(c => c.Name).ToListAsync();
 
-            foreach (var categoryName in DefaultCategories)
+            // Fetch existing category names once, in lowercase for case-insensitive comparison
+            var existingCategoryNames = new HashSet<string>(
+                await context.Categories
+                    .AsNoTracking()
+                    .Select(c => c.Name.ToLower())
+                    .ToListAsync(),
+                    StringComparer.OrdinalIgnoreCase
+            );
+
+            // Filter only new categories
+            var newCategories = DefaultCategories
+                .Where(name => !existingCategoryNames.Contains(name))
+                .Select(name => new Category
+                {
+                    Name = name,
+                    CreatedAt = DateTime.UtcNow
+                })
+                .ToList();
+
+            if (newCategories.Count == 0)
             {
-
-
-                if (!existingCategoryNames.Contains(categoryName))
-                {
-                    logger.LogInformation($"Creating category: {categoryName}");
-
-                    var category = new Category
-                    {
-                        Name = categoryName,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    await context.Categories.AddAsync(category);
-                    await context.SaveChangesAsync();
-                    logger.LogInformation($"Category '{categoryName}' created successfully.");
-                }
-                else
-                {
-                    logger.LogInformation($"Category '{categoryName}' already exists — skipping.");
-                }
+                logger.LogInformation("No new categories to seed. All default categories already exist.");
+                return;
             }
-            logger.LogInformation("Category seeding completed.");
+
+            await context.Categories.AddRangeAsync(newCategories);
+            await context.SaveChangesAsync();
+
+            logger.LogInformation("Seeded {Count} new categories: {Names}",
+                newCategories.Count,
+                string.Join(", ", newCategories.Select(c => c.Name)));
+
+            logger.LogInformation("Category seeding completed successfully.");
         }
+
     }
 }

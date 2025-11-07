@@ -13,21 +13,19 @@ namespace CareerRoute.Infrastructure.Repositories
 {
     public class MentorRepository : GenericRepository<Mentor>, IMentorRepository
     {
-        private readonly ApplicationDbContext _context;
-        public MentorRepository(ApplicationDbContext context):base(context)
+        public MentorRepository(ApplicationDbContext dbContext) :base(dbContext)
         {
-            _context = context;
         }
 
         public async Task<Mentor?> GetMentorWithUserByIdAsync(string id)
         {
-            return await _context.Mentors.Include(m => m.User)
+            return await dbContext.Mentors.Include(m => m.User)
                                    .FirstOrDefaultAsync(m => m.Id == id);
         }
 
         public async Task<IEnumerable<Mentor>> GetApprovedMentorsAsync()
         {
-            return await _context.Mentors
+            return await dbContext.Mentors
                 .Include(m => m.User)
                 .Where(m => m.IsVerified && m.ApprovalStatus == "Approved")
                 .ToListAsync();
@@ -35,7 +33,7 @@ namespace CareerRoute.Infrastructure.Repositories
 
         public async Task<IEnumerable<Mentor>> GetPendingMentorsAsync()
         {
-            return await _context.Mentors
+            return await dbContext.Mentors
                 .Include(m => m.User)
                 .Where(m => m.ApprovalStatus == "Pending")
                 .OrderBy(m => m.CreatedAt)
@@ -44,7 +42,7 @@ namespace CareerRoute.Infrastructure.Repositories
 
         public async Task<IEnumerable<Mentor>> GetTopRatedMentorsAsync(int count = 10)
         {
-            return await _context.Mentors
+            return await dbContext.Mentors
                 .Include(m => m.User)
                 .Where(m => m.ApprovalStatus == "Approved" && m.IsVerified && m.TotalReviews > 0)
                 .OrderByDescending(m => m.AverageRating)
@@ -55,19 +53,19 @@ namespace CareerRoute.Infrastructure.Repositories
 
         public async Task IncrementSessionCountAsync(string mentorId)
         {
-            var mentor = await _context.Mentors.FindAsync(mentorId);
+            var mentor = await dbContext.Mentors.FindAsync(mentorId);
             if (mentor == null)
             {
                 throw new NotFoundException("Mentor", mentorId);
             }
             mentor.TotalSessionsCompleted++;
             mentor.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
         }
 
         public async Task<bool> IsMentorAsync(string id)
         {
-            return await _context.Mentors.AnyAsync(m => m.Id == id);
+            return await dbContext.Mentors.AnyAsync(m => m.Id == id);
         }
 
         public async Task<IEnumerable<Mentor>> SearchMentorsAsync(string searchTerm)
@@ -83,7 +81,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Replace("%", "[%]")
                 .Replace("_", "[_]");
 
-            return await _context.Mentors
+            return await dbContext.Mentors
                 .Include(m => m.User)
                 .Where(m => m.ApprovalStatus == "Approved" && m.IsVerified &&
                        (EF.Functions.Like(m.Bio, $"%{escapedTerm}%") ||
@@ -103,7 +101,7 @@ namespace CareerRoute.Infrastructure.Repositories
                     ["AverageRating"] = new[] { "Average rating must be between 0 and 5" }
                 });
             }
-            var mentor =  await _context.Mentors.FindAsync(mentorId);
+            var mentor =  await dbContext.Mentors.FindAsync(mentorId);
             if (mentor == null)
             {
                 throw new NotFoundException("Mentor", mentorId);
@@ -111,7 +109,7 @@ namespace CareerRoute.Infrastructure.Repositories
             mentor.AverageRating = newAverageRating;
             mentor.TotalReviews = totalReviews;
             mentor.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
         }
     }
 }
