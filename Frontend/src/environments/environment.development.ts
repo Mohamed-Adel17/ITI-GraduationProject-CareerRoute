@@ -16,7 +16,7 @@ export const environment = {
   /**
    * Uncomment below when backend is ready on localhost:5000
    */
-  apiUrl: 'http://localhost:5000/api',
+  apiUrl: 'https://localhost:7023/api',
 
   /**
    * Authentication Configuration

@@ -62,7 +62,7 @@ export const errorInterceptor: HttpInterceptorFn = (
             errorMessage = apiResponse?.message || 'Your session has expired. Please log in again.';
             console.warn('Unauthorized request - logging out user');
             authService.removeTokens();
-            router.navigate(['/login']);
+            router.navigate(['/auth/login']);
             break;
 
           case 403:

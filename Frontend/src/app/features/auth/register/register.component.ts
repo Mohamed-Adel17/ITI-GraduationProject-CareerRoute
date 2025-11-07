@@ -9,11 +9,13 @@ import { RegisterRequest } from '../../../shared/models/auth.model';
 /**
  * RegisterComponent
  *
- * Handles user registration with email, password, and role selection (User/Mentor).
+ * Handles user registration with email, password, name, phone, and role selection (User/Mentor).
  * Provides registration form with validation and role-based account creation.
  *
  * Features:
- * - Reactive form with email, password validation
+ * - Reactive form with email, password, name validation
+ * - First name and last name fields (required)
+ * - Phone number field (optional)
  * - Role selection (User as mentee, Mentor as service provider)
  * - Password visibility toggle
  * - Loading state during API call
@@ -56,18 +58,116 @@ export class RegisterComponent implements OnInit {
 
     // Initialize registration form with validators
     this.registerForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      firstName: ['', [
+        Validators.required,
+        Validators.minLength(2),
+        Validators.maxLength(50),
+        Validators.pattern(/^[a-zA-Z\s'-]+$/) // Only letters, spaces, hyphens, and apostrophes
+      ]],
+      lastName: ['', [
+        Validators.required,
+        Validators.minLength(2),
+        Validators.maxLength(50),
+        Validators.pattern(/^[a-zA-Z\s'-]+$/) // Only letters, spaces, hyphens, and apostrophes
+      ]],
+      email: ['', [
+        Validators.required,
+        Validators.email,
+        Validators.maxLength(256)
+      ]],
+      phoneNumber: ['', [
+        Validators.pattern(/^\+?[1-9]\d{1,14}$/) // E.164 international phone number format
+      ]],
+      password: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(100),
+        this.passwordStrengthValidator
+      ]],
       confirmPassword: ['', [Validators.required]],
       userType: ['client', Validators.required] // 'mentor' or 'client'
+    }, {
+      validators: this.passwordMatchValidator // Add cross-field validator
     });
+  }
+
+  /**
+   * Custom validator to check password strength
+   * Password must contain at least one uppercase, one lowercase, and one number
+   * @param control The form control to validate
+   * @returns Validation error object or null
+   */
+  passwordStrengthValidator(control: any): { [key: string]: boolean } | null {
+    const value = control.value;
+
+    if (!value) {
+      return null; // Don't validate empty value (required validator handles that)
+    }
+
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasLowerCase = /[a-z]/.test(value);
+    const hasNumber = /\d/.test(value);
+
+    const errors: { [key: string]: boolean } = {};
+
+    if (!hasUpperCase) {
+      errors['noUpperCase'] = true;
+    }
+    if (!hasLowerCase) {
+      errors['noLowerCase'] = true;
+    }
+    if (!hasNumber) {
+      errors['noNumber'] = true;
+    }
+
+    return Object.keys(errors).length > 0 ? errors : null;
+  }
+
+  /**
+   * Custom validator to check if password and confirmPassword match
+   * @param formGroup The form group to validate
+   * @returns Validation error object or null
+   */
+  passwordMatchValidator(formGroup: FormGroup): { [key: string]: boolean } | null {
+    const password = formGroup.get('password')?.value;
+    const confirmPassword = formGroup.get('confirmPassword')?.value;
+
+    // Only validate if both fields have values
+    if (password && confirmPassword && password !== confirmPassword) {
+      formGroup.get('confirmPassword')?.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+
+    // Clear the passwordMismatch error if passwords match
+    const confirmPasswordControl = formGroup.get('confirmPassword');
+    if (confirmPasswordControl?.hasError('passwordMismatch')) {
+      const errors = confirmPasswordControl.errors;
+      if (errors) {
+        delete errors['passwordMismatch'];
+        confirmPasswordControl.setErrors(Object.keys(errors).length > 0 ? errors : null);
+      }
+    }
+
+    return null;
   }
 
   /**
    * Getter for easy access to form controls in template
    */
+  get firstName() {
+    return this.registerForm.get('firstName')!;
+  }
+
+  get lastName() {
+    return this.registerForm.get('lastName')!;
+  }
+
   get email() {
     return this.registerForm.get('email')!;
+  }
+
+  get phoneNumber() {
+    return this.registerForm.get('phoneNumber')!;
   }
 
   get password() {
@@ -128,8 +228,9 @@ export class RegisterComponent implements OnInit {
       email: this.registerForm.value.email,
       password: this.registerForm.value.password,
       confirmPassword: this.registerForm.value.confirmPassword,
-      firstName: '', // TODO: Add firstName field to form if needed
-      lastName: '', // TODO: Add lastName field to form if needed
+      firstName: this.registerForm.value.firstName,
+      lastName: this.registerForm.value.lastName,
+      phoneNumber: this.registerForm.value.phoneNumber || undefined, // Optional
       registerAsMentor: this.registerForm.value.userType === 'mentor'
     };
 
@@ -140,30 +241,17 @@ export class RegisterComponent implements OnInit {
         console.log('Registration successful:', response);
 
         // Show success notification
-        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
         this.notificationService.success(
-          'Account created successfully! Please check your email to verify your account.',
+          'Account created successfully!',
           'Welcome!'
         );
 
-        // Navigate based on email verification requirement
-        if (response.requiresEmailVerification) {
-          // Email verification required - user should check their email for verification link
-          // The verification token is sent via email, not returned in the response for security
-          // Show info notification and stay on registration page or redirect to a "check email" page
-          this.notificationService.info(
-            `A verification email has been sent to ${response.email || 'your email'}. Please check your inbox and click the verification link to activate your account.`,
-            'Verify Your Email',
-            10000 // Show for 10 seconds
-          );
-
-          // Navigate to verify-email page without token (it will show instructions to check email)
-          // Or navigate to home page
-          this.router.navigate(['/']);
-        } else {
-          // Email verification not required, user can log in immediately
-          this.router.navigate(['/auth/login']);
-        }
+        // Email verification is always required
+        // The verification token is sent via email, not returned in the response for security
+        // Navigate to verification-sent page with email in state
+        this.router.navigate(['/auth/verification-sent'], {
+          state: { email: response.email || this.registerForm.value.email }
+        });
       },
       error: (error) => {
         // Registration failed

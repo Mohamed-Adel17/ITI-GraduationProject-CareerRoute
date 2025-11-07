@@ -103,8 +103,6 @@ return BadRequest(ApiResponse.Error(
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": ["Software Development", "Cloud Computing"],
-  "careerGoals": "Become a Solutions Architect",
   "registerAsMentor": false
 }
 ```
@@ -113,8 +111,8 @@ return BadRequest(ApiResponse.Error(
 - `email` (required): Valid email format
 - `password` (required): Min 8 chars, uppercase, lowercase, number
 - `confirmPassword` (required): Must match password
-- `firstName`, `lastName` (optional): User's name
-- `phoneNumber` (optional): User's phone
+- `firstName`, `lastName` (Required): minimum 2 characters
+- `phoneNumber` (optional): No Validation
 - `careerInterests` (optional): Array of career interests
 - `careerGoals` (optional): Career goals description
 - `registerAsMentor` (optional): Default false
@@ -126,7 +124,6 @@ return BadRequest(ApiResponse.Error(
   "data": {
     "userId": "550e8400-e29b-41d4-a716-446655440000",
     "email": "user@example.com",
-    "requiresEmailVerification": true
   },
   "message": "Registration successful! Please check your email to verify your account."
 }
@@ -197,8 +194,6 @@ See [Section 4: Email Verification](#4-email-verification) for complete email te
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "refresh-token-string",
-    "expiresIn": 3600,
-    "tokenType": "Bearer",
     "user": {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "email": "user@example.com",
@@ -340,7 +335,6 @@ https://careerroute.com/auth/verify-email?email={userEmail}&token={verificationT
 {
   "success": true,
   "data": {
-    "autoLogin": true,
     "loginToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "refresh-token-string",
     "user": {
@@ -356,18 +350,7 @@ https://careerroute.com/auth/verify-email?email={userEmail}&token={verificationT
 
 **Note:** The frontend `AuthService` automatically unwraps this response, so components receive only the `data` object (EmailVerificationResponse). The `success` indicator and `message` are only in the wrapper, not in the inner DTO.
 
-### Success Response without Auto-Login (200):
-```json
-{
-  "success": true,
-  "data": {
-    "autoLogin": false,
-    "loginToken": null,
-    "refreshToken": null,
-    "user": null
-  },
-  "message": "Email verified successfully! You can now log in."
-}
+
 ```
 
 ### Error Response (400):
