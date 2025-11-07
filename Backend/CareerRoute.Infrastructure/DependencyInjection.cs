@@ -43,6 +43,7 @@ public static class DependencyInjection
         // Uncomment and add as you create repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMentorRepository, MentorRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         // services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 

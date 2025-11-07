@@ -15,6 +15,7 @@ namespace CareerRoute.Infrastructure.Data
     {
         public DbSet<Mentor> Mentors { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Category> Categories { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -32,6 +33,9 @@ namespace CareerRoute.Infrastructure.Data
                     .IsRequired(false) 
                     .HasMaxLength(500);
             });
+
+            builder.Entity<MentorCategory>()
+                .HasKey(mc => new { mc.MentorId, mc.CategoryId });
 
             // Automatically applies all IEntityTypeConfiguration classes in the assembly
             builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
