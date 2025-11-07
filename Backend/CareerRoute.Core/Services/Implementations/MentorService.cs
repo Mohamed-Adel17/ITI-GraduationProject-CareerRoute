@@ -1,15 +1,16 @@
 ﻿using AutoMapper;
+using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.Exceptions;
+using CareerRoute.Core.Extentions;
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
-using CareerRoute.Core.Extentions;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Identity;
-using CareerRoute.Core.Constants;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -134,7 +135,7 @@ namespace CareerRoute.Core.Services.Implementations
                 Rate60Min = createdDto.Rate60Min, 
 
                 // Default values for new mentors
-                ApprovalStatus = "Pending", // Requires admin approval
+                ApprovalStatus = MentorApprovalStatus.Pending, // Requires admin approval
                 IsVerified = false,
                 IsAvailable = false,  
                 AverageRating = 0,
@@ -185,13 +186,13 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 throw new NotFoundException("Mentor", mentorId);
             }
-            if(mentor.ApprovalStatus == "Approved")
+            if(mentor.ApprovalStatus == MentorApprovalStatus.Approved)
             {
                 throw new BusinessException("Mentor is already approved");
             }
             
             // Update mentor status
-            mentor.ApprovalStatus = "Approved";
+            mentor.ApprovalStatus = MentorApprovalStatus.Approved;
             mentor.IsVerified = true;
             mentor.IsAvailable = true;
             mentor.UpdatedAt = DateTime.UtcNow;
@@ -227,7 +228,7 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Mentor", mentorId);
             }
 
-            mentor.ApprovalStatus = "Rejected";
+            mentor.ApprovalStatus = MentorApprovalStatus.Rejected;
             mentor.IsAvailable = false;
             mentor.UpdatedAt = DateTime.UtcNow;
             
