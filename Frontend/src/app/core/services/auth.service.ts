@@ -375,15 +375,17 @@ export class AuthService {
           this.setToken(tokenResponse.token);
           this.setRefreshToken(tokenResponse.refreshToken);
 
-          // Update auth state
-          const currentState = this.authStateSubject.value;
+          // Update auth state with refreshed user data
           const tokenPayload = decodeToken(tokenResponse.token);
 
           this.authStateSubject.next({
-            ...currentState,
+            isAuthenticated: true,
+            user: tokenResponse.user, // User data is now included in the refresh response
             token: tokenResponse.token,
             refreshToken: tokenResponse.refreshToken,
-            tokenExpiration: tokenPayload?.exp || null
+            tokenExpiration: tokenPayload?.exp || null,
+            loading: false,
+            error: null
           });
 
           // Restart token refresh timer

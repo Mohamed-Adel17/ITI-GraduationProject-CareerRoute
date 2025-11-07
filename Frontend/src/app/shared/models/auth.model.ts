@@ -152,6 +152,7 @@ export interface TokenRefreshRequest {
  * @remarks
  * This DTO is wrapped in ApiResponse<T> by the backend.
  * The 'success' indicator is in the wrapper, not in this DTO.
+ * The backend returns AuthResponseDto which includes token, refreshToken, and user data.
  */
 export interface TokenRefreshResponse {
   /** New JWT access token */
@@ -160,8 +161,8 @@ export interface TokenRefreshResponse {
   /** New refresh token */
   refreshToken: string;
 
-  /** Token expiration time in seconds */
-  expiresIn: number;
+  /** Authenticated user information (included in token refresh response) */
+  user: AuthUser;
 }
 
 /**
