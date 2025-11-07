@@ -247,10 +247,13 @@ export class RegisterComponent implements OnInit {
         );
 
         // Email verification is always required
-        // The verification token is sent via email, not returned in the response for security
-        // Navigate to verification-sent page with email in state
-        this.router.navigate(['/auth/verification-sent'], {
-          state: { email: response.email || this.registerForm.value.email }
+        // Backend automatically sends verification email during registration
+        // Navigate to send-email-verification page with email and emailAlreadySent flag
+        this.router.navigate(['/auth/send-email-verification'], {
+          state: {
+            email: response.email || this.registerForm.value.email,
+            emailAlreadySent: true  // Backend already sent the email
+          }
         });
       },
       error: (error) => {

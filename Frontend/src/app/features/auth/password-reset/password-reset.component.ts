@@ -16,7 +16,7 @@ import { PasswordResetRequest, PasswordReset } from '../../../shared/models/auth
  * Features:
  * - Two-step password reset flow
  * - Email validation in step 1
- * - Password strength validation in step 2
+ * - Password strength validation in step 2 (uppercase, lowercase, number required)
  * - Token extraction from URL query parameters
  * - Password visibility toggle
  * - Loading states during API calls
@@ -31,6 +31,7 @@ import { PasswordResetRequest, PasswordReset } from '../../../shared/models/auth
  * ```
  * Navigate to: /auth/forgot-password
  * User enters email → receives reset link via email
+ * If email not verified → resends verification email → redirects to verification-sent page
  * ```
  *
  * Step 2 (Reset Password):
@@ -286,6 +287,14 @@ export class PasswordResetComponent implements OnInit {
       error: (error) => {
         console.error('Password reset request failed:', error);
 
+        // Check if error is due to unverified email (400 with specific message)
+        // Backend throws BusinessException which returns 400
+        if (error.status === 400 && error.message?.includes('verify your email')) {
+          // Email not verified - automatically resend verification email
+          this.handleUnverifiedEmail(this.requestResetForm.value.email);
+          return;
+        }
+
         // Display error message in component
         const errorMessage = error.message || 'Failed to send password reset email. Please try again.';
         this.errorMessage = errorMessage;
@@ -401,5 +410,26 @@ export class PasswordResetComponent implements OnInit {
 
     // Clear URL query parameters
     this.router.navigate(['/auth/forgot-password']);
+  }
+
+  /**
+   * Handles unverified email error by resending verification email
+   * and navigating to verification-sent page
+   * @param email User's email address
+   */
+  private handleUnverifiedEmail(email: string): void {
+    console.log('Handling unverified email for forgot password:', email);
+
+    // Show info notification about email verification requirement
+    this.notificationService.warning(
+      'Please verify your email address before resetting your password.',
+      'Email Verification Required'
+    );
+
+    // Navigate to send-email-verification page so user can manually send verification
+    this.router.navigate(['/auth/send-email-verification'], {
+      state: { email }
+    });
+    this.loading = false;
   }
 }

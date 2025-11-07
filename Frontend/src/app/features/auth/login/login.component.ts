@@ -171,28 +171,11 @@ export class LoginComponent implements OnInit {
   private handleUnverifiedEmail(email: string): void {
     console.log('Handling unverified email for:', email);
 
-    // Automatically resend verification email
-    this.authService.resendVerificationEmail({ email }).subscribe({
-      next: () => {
-        // Success notification is shown by AuthService
-        // Navigate to verification-sent page with email
-        this.router.navigate(['/auth/verification-sent'], {
-          state: { email }
-        });
-        this.loading = false;
-      },
-      error: (resendError) => {
-        // Resend failed - still navigate to verification-sent page
-        // But show error notification
-        console.error('Failed to resend verification email:', resendError);
-
-        // Navigate to verification-sent page anyway so user can manually retry
-        this.router.navigate(['/auth/verification-sent'], {
-          state: { email }
-        });
-        this.loading = false;
-      }
+    // Navigate to send-email-verification page so user can manually send verification
+    this.router.navigate(['/auth/send-email-verification'], {
+      state: { email }
     });
+    this.loading = false;
   }
 
   /**
