@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CareerRoute.Core.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -37,8 +38,7 @@ namespace CareerRoute.Core.Domain.Entities
         //================================================
         //Approval Status
         public bool IsVerified { get; set; } = false;
-        [MaxLength(20)]
-        public string ApprovalStatus { get; set; } = "Pending";
+        public MentorApprovalStatus ApprovalStatus { get; set; } = MentorApprovalStatus.Pending;
         //================================================
         //Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -49,6 +49,6 @@ namespace CareerRoute.Core.Domain.Entities
         //TO-DO: Navigation Property
         //public virtual ICollection<Session> Sessions { get; set; }
         //public virtual ICollection<Review> Reviews { get; set; }
-        //public virtual ICollection<MentorCategory> MentorCategories { get; set; }
+        public virtual ICollection<MentorCategory> MentorCategories { get; set; }= new List<MentorCategory>();
     }
 }

@@ -10,6 +10,84 @@
 
 All authentication endpoints are located at `/api/auth/*`. These endpoints handle user registration, login, token refresh, email verification, and password management.
 
+## API Response Structure (ApiResponse Wrapper)
+
+**IMPORTANT:** All authentication endpoints now return responses wrapped in a standardized `ApiResponse<T>` structure defined in `Backend/CareerRoute.API/Models/ApiResponse.cs`.
+
+### ApiResponse Structure
+
+```typescript
+{
+  "success": boolean,        // Indicates if the request was successful
+  "data"?: T,                // The actual response data (only present on success)
+  "message"?: string,        // User-friendly message (success or error description)
+  "statusCode"?: number,     // HTTP status code (included in error responses)
+  "errors"?: {               // Validation errors dictionary (field name -> error messages)
+    [fieldName: string]: string[]
+  }
+}
+```
+
+### Success Response Format
+
+```json
+{
+  "success": true,
+  "data": {
+    // Actual response data (LoginResponse, RegisterResponse, etc.)
+  },
+  "message": "Operation completed successfully"
+}
+```
+
+### Error Response Format
+
+```json
+{
+  "success": false,
+  "message": "Operation failed",
+  "statusCode": 400,
+  "errors": {
+    "Email": ["Email is required"],
+    "Password": ["Password must be at least 8 characters"]
+  }
+}
+```
+
+### Frontend Handling
+
+The Angular frontend automatically:
+- **Unwraps** successful responses to extract the `data` field
+- **Extracts** error messages from the `message` field
+- **Parses** validation errors from the `errors` dictionary
+- **Displays** user-friendly error notifications
+
+Components receive the unwrapped data types directly (e.g., `LoginResponse`, `RegisterResponse`) without needing to access the `.data` property.
+
+### Backend Implementation Notes
+
+All authentication endpoints should use:
+- `ApiResponse<T>` for success responses with typed data
+- `ApiResponse.Error()` static method for error responses
+- Consistent error format with validation errors in the `errors` dictionary
+
+**Example Backend Response Creation:**
+```csharp
+// Success
+return Ok(new ApiResponse<LoginResponse> {
+    Success = true,
+    Data = loginResponse,
+    Message = "Login successful"
+});
+
+// Error
+return BadRequest(ApiResponse.Error(
+    "Validation failed",
+    400,
+    errors: validationErrors
+));
+```
+
 ---
 
 ## 1. User Registration
@@ -25,8 +103,6 @@ All authentication endpoints are located at `/api/auth/*`. These endpoints handl
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": ["Software Development", "Cloud Computing"],
-  "careerGoals": "Become a Solutions Architect",
   "registerAsMentor": false
 }
 ```
@@ -35,8 +111,8 @@ All authentication endpoints are located at `/api/auth/*`. These endpoints handl
 - `email` (required): Valid email format
 - `password` (required): Min 8 chars, uppercase, lowercase, number
 - `confirmPassword` (required): Must match password
-- `firstName`, `lastName` (optional): User's name
-- `phoneNumber` (optional): User's phone
+- `firstName`, `lastName` (Required): minimum 2 characters
+- `phoneNumber` (optional): No Validation
 - `careerInterests` (optional): Array of career interests
 - `careerGoals` (optional): Career goals description
 - `registerAsMentor` (optional): Default false
@@ -45,12 +121,15 @@ All authentication endpoints are located at `/api/auth/*`. These endpoints handl
 ```json
 {
   "success": true,
-  "message": "Registration successful! Please check your email to verify your account.",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "user@example.com",
-  "requiresEmailVerification": true
+  "data": {
+    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "user@example.com",
+  },
+  "message": "Registration successful! Please check your email to verify your account."
 }
 ```
+
+**Note:** The frontend `AuthService` automatically unwraps this response, so components receive only the `data` object (RegisterResponse). The `success` indicator and `message` are only in the wrapper, not in the inner DTO.
 
 **Error Responses:**
 - **400 Validation Failed:**
@@ -82,14 +161,14 @@ All authentication endpoints are located at `/api/auth/*`. These endpoints handl
 - Hash password before storing
 - Set `emailConfirmed` to false
 - Generate unique email verification token (24-48 hour expiration)
-- Send verification email with link: `http://localhost:4200/auth/verify-email?userId={userId}&token={verificationToken}`
+- Send verification email with link: `http://localhost:4200/auth/verify-email?email={userEmail}&token={verificationToken}`
 - Return success response (do NOT include token in response - security)
 
 **Verification Email Link Format:**
 ```
-http://localhost:4200/auth/verify-email?userId={userId}&token={verificationToken}
+http://localhost:4200/auth/verify-email?email={userEmail}&token={verificationToken}
 ```
-Example: `http://localhost:4200/auth/verify-email?userId=e27e53&token=verify_rq6pn`
+Example: `http://localhost:4200/auth/verify-email?email=user@example.com&token=verify_rq6pn`
 
 See [Section 4: Email Verification](#4-email-verification) for complete email template and verification flow details
 
@@ -112,23 +191,26 @@ See [Section 4: Email Verification](#4-email-verification) for complete email te
 ```json
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh-token-string",
-  "expiresIn": 3600,
-  "tokenType": "Bearer",
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "emailConfirmed": true,
-    "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null,
-    "profilePictureUrl": "https://example.com/profile.jpg"
-  }
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "refresh-token-string",
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "user@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "emailConfirmed": true,
+      "roles": ["User"],
+      "isMentor": false,
+      "mentorId": null,
+      "profilePictureUrl": "https://example.com/profile.jpg"
+    }
+  },
+  "message": "Login successful"
 }
 ```
+
+**Note:** The frontend `AuthService` automatically unwraps this response, so components receive only the `data` object (LoginResponse). The `success` indicator is only in the wrapper, not in the inner DTO.
 
 **Error Responses:**
 - **401 Invalid Credentials:**
@@ -177,11 +259,16 @@ See [Section 4: Email Verification](#4-email-verification) for complete email te
 ```json
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new-token...",
-  "refreshToken": "new-refresh-token-string",
-  "expiresIn": 3600
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new-token...",
+    "refreshToken": "new-refresh-token-string",
+    "expiresIn": 3600
+  },
+  "message": "Token refreshed successfully"
 }
 ```
+
+**Note:** The frontend `AuthService` automatically unwraps this response, so components receive only the `data` object (TokenRefreshResponse). The `success` indicator is only in the wrapper, not in the inner DTO.
 
 **Error Response (401):**
 ```json
@@ -210,23 +297,23 @@ See [Section 4: Email Verification](#4-email-verification) for complete email te
 
 **Email Link Sent to User:**
 ```
-http://localhost:4200/auth/verify-email?userId={userId}&token={verificationToken}
+http://localhost:4200/auth/verify-email?email={userEmail}&token={verificationToken}
 ```
 
 **Example:**
 ```
-http://localhost:4200/auth/verify-email?userId=e27e53&token=verify_rq6pn
+http://localhost:4200/auth/verify-email?email=user@example.com&token=verify_rq6pn
 ```
 
 **Frontend Route:** `/auth/verify-email`
 - Component: `EmailVerificationComponent`
 - Location: `Frontend/src/app/features/auth/email-verification/`
-- Automatically extracts `userId` and `token` from URL query parameters
+- Automatically extracts `email` and `token` from URL query parameters
 - Calls `POST /api/auth/verify-email` endpoint automatically on page load
 
 **Production URL Format:**
 ```
-https://careerroute.com/auth/verify-email?userId={userId}&token={verificationToken}
+https://careerroute.com/auth/verify-email?email={userEmail}&token={verificationToken}
 ```
 
 ### API Request
@@ -234,42 +321,36 @@ https://careerroute.com/auth/verify-email?userId={userId}&token={verificationTok
 **Request Body:**
 ```json
 {
-  "userId": "user-guid",
+  "email": "user@example.com",
   "token": "email-verification-token"
 }
 ```
 
 **Field Requirements:**
-- `userId` (required): User's GUID from registration
+- `email` (required): User's email address
 - `token` (required): Verification token generated during registration
 
 ### Success Response with Auto-Login (200):
 ```json
 {
   "success": true,
-  "message": "Email verified successfully! Logging you in...",
-  "autoLogin": true,
-  "loginToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh-token-string",
-  "user": {
-    "id": "user-guid",
-    "email": "user@example.com",
-    "emailConfirmed": true,
-    "roles": ["User"]
-  }
+  "data": {
+    "loginToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "refresh-token-string",
+    "user": {
+      "id": "user-guid",
+      "email": "user@example.com",
+      "emailConfirmed": true,
+      "roles": ["User"]
+    }
+  },
+  "message": "Email verified successfully! Logging you in..."
 }
 ```
 
-### Success Response without Auto-Login (200):
-```json
-{
-  "success": true,
-  "message": "Email verified successfully! You can now log in.",
-  "autoLogin": false,
-  "loginToken": null,
-  "refreshToken": null,
-  "user": null
-}
+**Note:** The frontend `AuthService` automatically unwraps this response, so components receive only the `data` object (EmailVerificationResponse). The `success` indicator and `message` are only in the wrapper, not in the inner DTO.
+
+
 ```
 
 ### Error Response (400):
@@ -283,14 +364,14 @@ https://careerroute.com/auth/verify-email?userId={userId}&token={verificationTok
 
 ### Backend Behavior:
 - Validate token is not expired (recommend 24-48 hour expiration)
-- Validate token matches the userId
+- Validate token matches the email address
 - Update `emailConfirmed` to true
 - Invalidate verification token (one-time use)
 - If `autoLogin` enabled: Generate JWT tokens and return user data
 - If `autoLogin` disabled: Return success without tokens
 
 ### Frontend Behavior:
-- Extract `userId` and `token` from URL query parameters
+- Extract `email` and `token` from URL query parameters
 - Automatically call API on component load
 - Show loading spinner during verification
 - On success with `autoLogin: true`:
@@ -348,9 +429,12 @@ CareerRoute Team
 ```json
 {
   "success": true,
+  "data": {},
   "message": "Verification email has been sent. Please check your inbox."
 }
 ```
+
+**Note:** The frontend `AuthService` automatically unwraps this response. The `success` indicator and `message` are only in the wrapper. The `data` object may be empty or contain additional fields in the future.
 
 **Error Responses:**
 - **400 Already Verified:**
@@ -376,7 +460,7 @@ CareerRoute Team
 - Rate limit: Max 1 request per 5 minutes per email
 - Invalidate previous verification token
 - Generate new verification token
-- Send verification email with link: `http://localhost:4200/auth/verify-email?userId={userId}&token={newToken}`
+- Send verification email with link: `http://localhost:4200/auth/verify-email?email={userEmail}&token={newToken}`
 - Return success even if email doesn't exist (security - prevent email enumeration)
 
 **Note:** Uses same email verification link format as registration (see Section 4 for details)
@@ -398,9 +482,12 @@ CareerRoute Team
 ```json
 {
   "success": true,
+  "data": {},
   "message": "If an account with that email exists, a password reset link has been sent."
 }
 ```
+
+**Note:** The frontend `AuthService` automatically unwraps this response. The `success` indicator and `message` are only in the wrapper. The `data` object may be empty or contain additional fields in the future.
 
 **Error Response (429):**
 ```json
@@ -437,9 +524,12 @@ CareerRoute Team
 ```json
 {
   "success": true,
+  "data": {},
   "message": "Your password has been reset successfully. You can now log in."
 }
 ```
+
+**Note:** The frontend `AuthService` automatically unwraps this response. The `success` indicator and `message` are only in the wrapper. The `data` object may be empty or contain additional fields in the future.
 
 **Error Responses:**
 - **400 Invalid/Expired Token:**
@@ -492,9 +582,12 @@ CareerRoute Team
 ```json
 {
   "success": true,
+  "data": {},
   "message": "Your password has been changed successfully."
 }
 ```
+
+**Note:** The frontend `AuthService` automatically unwraps this response. The `success` indicator and `message` are only in the wrapper. The `data` object may be empty or contain additional fields in the future.
 
 **Error Responses:**
 - **400 Current Password Incorrect:**
@@ -604,3 +697,61 @@ builder.WithOrigins("http://localhost:4200")
 **Storage:** localStorage (consider httpOnly cookies for production)
 
 **Auto-Refresh:** Frontend triggers refresh 5 minutes before expiration
+
+---
+
+## API Response Wrapper Implementation Summary
+
+### Changes Made (January 2025)
+
+All authentication endpoints have been updated to return responses wrapped in the standardized `ApiResponse<T>` structure:
+
+1. **Backend Changes Required:**
+   - All endpoints must return `ApiResponse<T>` for success responses
+   - All endpoints must return `ApiResponse.Error()` for error responses
+   - Validation errors must be included in the `errors` dictionary
+   - Success messages should be included in the `message` field
+
+2. **Frontend Implementation (COMPLETED):**
+   - ✅ Created `ApiResponse<T>` model in `Frontend/src/app/shared/models/api-response.model.ts`
+   - ✅ Updated `AuthService` to unwrap `ApiResponse<T>` automatically
+   - ✅ Updated `errorInterceptor` to extract errors from `ApiResponse` format
+   - ✅ Components receive unwrapped data types (no changes needed)
+   - ✅ Full backward compatibility maintained
+
+3. **Benefits:**
+   - Consistent error handling across all endpoints
+   - Standardized validation error format
+   - Better error messages from backend
+   - Type-safe response handling
+   - Easier debugging and error tracking
+
+4. **Testing Checklist for Backend Team:**
+   - [ ] All success responses include `success: true` and `data` field
+   - [ ] All error responses include `success: false`, `message`, and `statusCode`
+   - [ ] Validation errors are properly formatted in the `errors` dictionary
+   - [ ] HTTP status codes match the `statusCode` field in error responses
+   - [ ] All authentication endpoints tested with frontend integration
+
+### Migration Path
+
+**For Existing Endpoints:**
+1. Wrap success responses: `return Ok(new ApiResponse<T> { Success = true, Data = data })`
+2. Wrap error responses: `return BadRequest(ApiResponse.Error(message, 400, errors))`
+3. Test with frontend to verify unwrapping works correctly
+
+**For New Endpoints:**
+- Use `ApiResponse<T>` from the start for consistency
+- Follow the same pattern as authentication endpoints
+
+### Related Files
+
+**Backend:**
+- `Backend/CareerRoute.API/Models/ApiResponse.cs` - Response wrapper definition
+
+**Frontend:**
+- `Frontend/src/app/shared/models/api-response.model.ts` - TypeScript model
+- `Frontend/src/app/core/services/auth.service.ts` - Unwrapping implementation
+- `Frontend/src/app/core/interceptors/error.interceptor.ts` - Error extraction
+- `Frontend/src/app/shared/models/README.md` - Model documentation
+- `Frontend/src/app/core/services/README.md` - Service documentation
