@@ -90,7 +90,11 @@ export class SendEmailVerificationComponent implements OnInit, OnDestroy {
         'Email Required'
       );
       this.router.navigate(['/auth/register']);
+      return;
     }
+
+    // Restore cooldown state from localStorage if it exists
+    this.restoreCooldownState();
   }
 
   ngOnDestroy(): void {
@@ -98,6 +102,49 @@ export class SendEmailVerificationComponent implements OnInit, OnDestroy {
     if (this.cooldownSubscription) {
       this.cooldownSubscription.unsubscribe();
     }
+  }
+
+  /**
+   * Restore cooldown state from localStorage
+   * Checks if there's an active cooldown for this email
+   */
+  private restoreCooldownState(): void {
+    const cooldownKey = this.getCooldownKey();
+    const savedExpiry = localStorage.getItem(cooldownKey);
+
+    if (savedExpiry) {
+      const expiryTime = parseInt(savedExpiry, 10);
+      const now = Date.now();
+      const remainingSeconds = Math.ceil((expiryTime - now) / 1000);
+
+      if (remainingSeconds > 0) {
+        // Cooldown is still active
+        this.canSend = false;
+        this.sendCooldown = remainingSeconds;
+        this.emailSent = true; // Email was sent in previous session
+
+        // Start countdown timer
+        this.cooldownSubscription = interval(1000).subscribe(() => {
+          this.sendCooldown--;
+
+          if (this.sendCooldown <= 0) {
+            this.canSend = true;
+            this.cooldownSubscription?.unsubscribe();
+            localStorage.removeItem(cooldownKey);
+          }
+        });
+      } else {
+        // Cooldown expired, clean up
+        localStorage.removeItem(cooldownKey);
+      }
+    }
+  }
+
+  /**
+   * Get localStorage key for this email's cooldown
+   */
+  private getCooldownKey(): string {
+    return `email_verification_cooldown_${this.email}`;
   }
 
   /**
@@ -137,10 +184,16 @@ export class SendEmailVerificationComponent implements OnInit, OnDestroy {
 
   /**
    * Start 60-second cooldown timer to prevent spam
+   * Persists expiry time to localStorage to survive page reloads
    */
   private startCooldown(): void {
     this.canSend = false;
     this.sendCooldown = 60; // 60 seconds cooldown
+
+    // Save expiry time to localStorage (current time + 60 seconds)
+    const expiryTime = Date.now() + (60 * 1000);
+    const cooldownKey = this.getCooldownKey();
+    localStorage.setItem(cooldownKey, expiryTime.toString());
 
     // Update countdown every second
     this.cooldownSubscription = interval(1000).subscribe(() => {
@@ -149,6 +202,7 @@ export class SendEmailVerificationComponent implements OnInit, OnDestroy {
       if (this.sendCooldown <= 0) {
         this.canSend = true;
         this.cooldownSubscription?.unsubscribe();
+        localStorage.removeItem(cooldownKey);
       }
     });
   }
