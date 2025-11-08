@@ -31,18 +31,20 @@ User profile endpoints allow users to view, update, and manage their personal in
   "message": "User profile retrieved successfully",
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
-    "userName": "johndoe123",
     "email": "john.doe@example.com",
     "firstName": "John",
     "lastName": "Doe",
+    "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john.jpg",
     "careerInterests": ["Software Development", "Cloud Computing", "Data Science"],
-    "careerGoal": "Become a Solutions Architect",
-    "isMentor": false,
-    "isActive": true,
+    "careerGoals": "Become a Solutions Architect",
     "registrationDate": "2025-01-15T10:30:00Z",
-    "lastLoginDate": "2025-10-29T14:20:00Z"
+    "lastLoginDate": "2025-10-29T14:20:00Z",
+    "isActive": true,
+    "roles": ["User"],
+    "isMentor": false,
+    "mentorId": null
   }
 }
 ```
@@ -78,7 +80,7 @@ User profile endpoints allow users to view, update, and manage their personal in
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
   "careerInterests": ["Software Development", "AI", "Cloud Computing"],
-  "careerGoal": "Become a Solutions Architect within 2 years",
+  "careerGoals": "Become a Solutions Architect within 2 years",
   "profilePictureUrl": "https://example.com/profiles/john-new.jpg"
 }
 ```
@@ -88,10 +90,10 @@ User profile endpoints allow users to view, update, and manage their personal in
 - `lastName` (optional): Min 2 chars, max 50 chars
 - `phoneNumber` (optional): Valid phone number format
 - `careerInterests` (optional): Array of career interest names
-- `careerGoal` (optional): Max 500 characters
+- `careerGoals` (optional): Max 500 characters
 - `profilePictureUrl` (optional): Valid URL format, max 200 chars
 
-**Note:** All fields are optional. Only provided fields will be updated. Email and userName cannot be changed via this endpoint.
+**Note:** All fields are optional. Only provided fields will be updated. Email cannot be changed via this endpoint.
 
 **Success Response (200):**
 ```json
@@ -100,18 +102,20 @@ User profile endpoints allow users to view, update, and manage their personal in
   "message": "User profile updated successfully",
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
-    "userName": "johndoe123",
     "email": "john.doe@example.com",
     "firstName": "John",
     "lastName": "Doe",
+    "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john-new.jpg",
     "careerInterests": ["Software Development", "AI", "Cloud Computing"],
-    "careerGoal": "Become a Solutions Architect within 2 years",
-    "isMentor": false,
-    "isActive": true,
+    "careerGoals": "Become a Solutions Architect within 2 years",
     "registrationDate": "2025-01-15T10:30:00Z",
-    "lastLoginDate": "2025-10-29T14:20:00Z"
+    "lastLoginDate": "2025-10-29T14:20:00Z",
+    "isActive": true,
+    "roles": ["User"],
+    "isMentor": false,
+    "mentorId": null
   }
 }
 ```
@@ -195,33 +199,37 @@ User profile endpoints allow users to view, update, and manage their personal in
   "data": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
-      "userName": "johndoe123",
       "email": "john.doe@example.com",
       "firstName": "John",
       "lastName": "Doe",
+      "emailConfirmed": true,
       "phoneNumber": "+1234567890",
       "profilePictureUrl": "https://example.com/profiles/john.jpg",
       "careerInterests": ["Software Development", "Cloud Computing"],
-      "careerGoal": "Become a Solutions Architect",
-      "isMentor": false,
-      "isActive": true,
+      "careerGoals": "Become a Solutions Architect",
       "registrationDate": "2025-01-15T10:30:00Z",
-      "lastLoginDate": "2025-10-29T14:20:00Z"
+      "lastLoginDate": "2025-10-29T14:20:00Z",
+      "isActive": true,
+      "roles": ["User"],
+      "isMentor": false,
+      "mentorId": null
     },
     {
       "id": "660e8400-e29b-41d4-a716-446655440001",
-      "userName": "janedoe456",
       "email": "jane.doe@example.com",
       "firstName": "Jane",
       "lastName": "Doe",
+      "emailConfirmed": true,
       "phoneNumber": "+1234567891",
       "profilePictureUrl": "https://example.com/profiles/jane.jpg",
       "careerInterests": ["Data Science", "Machine Learning"],
-      "careerGoal": "Become a Data Scientist",
-      "isMentor": true,
-      "isActive": true,
+      "careerGoals": "Become a Data Scientist",
       "registrationDate": "2025-01-10T08:15:00Z",
-      "lastLoginDate": "2025-10-30T09:45:00Z"
+      "lastLoginDate": "2025-10-30T09:45:00Z",
+      "isActive": true,
+      "roles": ["Mentor"],
+      "isMentor": true,
+      "mentorId": null
     }
   ]
 }
@@ -280,18 +288,20 @@ User profile endpoints allow users to view, update, and manage their personal in
   "message": "User retrieved successfully.",
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
-    "userName": "johndoe123",
     "email": "john.doe@example.com",
     "firstName": "John",
     "lastName": "Doe",
+    "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john.jpg",
     "careerInterests": ["Software Development", "Cloud Computing", "Data Science"],
-    "careerGoal": "Become a Solutions Architect",
-    "isMentor": false,
-    "isActive": true,
+    "careerGoals": "Become a Solutions Architect",
     "registrationDate": "2025-01-15T10:30:00Z",
-    "lastLoginDate": "2025-10-29T14:20:00Z"
+    "lastLoginDate": "2025-10-29T14:20:00Z",
+    "isActive": true,
+    "roles": ["User"],
+    "isMentor": false,
+    "mentorId": null
   }
 }
 ```
@@ -349,7 +359,7 @@ User profile endpoints allow users to view, update, and manage their personal in
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
   "careerInterests": ["Software Development", "AI", "Cloud Computing"],
-  "careerGoal": "Become a Solutions Architect within 2 years",
+  "careerGoals": "Become a Solutions Architect within 2 years",
   "profilePictureUrl": "https://example.com/profiles/john-new.jpg"
 }
 ```
@@ -359,10 +369,10 @@ User profile endpoints allow users to view, update, and manage their personal in
 - `lastName` (optional): Min 2 chars, max 50 chars
 - `phoneNumber` (optional): Valid phone number format
 - `careerInterests` (optional): Array of career interest names
-- `careerGoal` (optional): Max 500 characters
+- `careerGoals` (optional): Max 500 characters
 - `profilePictureUrl` (optional): Valid URL format, max 200 chars
 
-**Note:** All fields are optional. Only provided fields will be updated. Email and userName cannot be changed via this endpoint.
+**Note:** All fields are optional. Only provided fields will be updated. Email cannot be changed via this endpoint.
 
 **Success Response (200):**
 ```json
@@ -371,18 +381,20 @@ User profile endpoints allow users to view, update, and manage their personal in
   "message": "User profile with Id 550e8400-e29b-41d4-a716-446655440000 updated successfully.",
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
-    "userName": "johndoe123",
     "email": "john.doe@example.com",
     "firstName": "John",
     "lastName": "Doe",
+    "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john-new.jpg",
     "careerInterests": ["Software Development", "AI", "Cloud Computing"],
-    "careerGoal": "Become a Solutions Architect within 2 years",
-    "isMentor": false,
-    "isActive": true,
+    "careerGoals": "Become a Solutions Architect within 2 years",
     "registrationDate": "2025-01-15T10:30:00Z",
-    "lastLoginDate": "2025-10-29T14:20:00Z"
+    "lastLoginDate": "2025-10-29T14:20:00Z",
+    "isActive": true,
+    "roles": ["User"],
+    "isMentor": false,
+    "mentorId": null
   }
 }
 ```
@@ -443,24 +455,27 @@ User profile endpoints allow users to view, update, and manage their personal in
 ```typescript
 {
   "id": "string (GUID)",
-  "userName": "string",
   "email": "string",
   "firstName": "string",
   "lastName": "string",
+  "emailConfirmed": "boolean",
   "phoneNumber": "string | null",
   "profilePictureUrl": "string | null",
   "careerInterests": "string[] | null",  // Will be implemented with CareerInterest table
-  "careerGoal": "string | null",
-  "isMentor": "boolean",
-  "isActive": "boolean",
+  "careerGoals": "string | null",
   "registrationDate": "ISO 8601 date string",
-  "lastLoginDate": "ISO 8601 date string | null"
+  "lastLoginDate": "ISO 8601 date string | null",
+  "isActive": "boolean",
+  "roles": "string[]",  // ["User"], ["Mentor"], or ["Admin"]
+  "isMentor": "boolean",
+  "mentorId": "string | null"
 }
 ```
 
 **Notes:** 
-- User roles are available in the JWT token claims. Frontend should decode the JWT for role-based authorization decisions.
-- `isMentor` indicates if user has mentor status (approved mentor application). This is separate from the "Mentor" role.
+- `roles` contains the user's assigned roles in the system
+- `isMentor` indicates if user has mentor status (approved mentor application)
+- `mentorId` is null for regular users, populated for mentees
 
 ## Update User Model Structure (UpdateUserDto)
 
@@ -471,11 +486,11 @@ User profile endpoints allow users to view, update, and manage their personal in
   "phoneNumber": "string | optional",
   "profilePictureUrl": "string | optional",
   "careerInterests": "string[] | optional",
-  "careerGoal": "string | optional"
+  "careerGoals": "string | optional"
 }
 ```
 
-**Note:** Email, userName, password, and role cannot be changed through profile update endpoints.
+**Note:** Email, password, and role cannot be changed through profile update endpoints.
 
 ---
 
@@ -498,7 +513,7 @@ User profile endpoints allow users to view, update, and manage their personal in
 - Each interest must be a valid category name
 - Future: Will validate against CareerInterest table
 
-### Career Goal
+### Career Goals
 - Optional
 - Max 500 characters
 - Personal career goal statement
@@ -594,7 +609,7 @@ Content-Type: application/json
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
   "careerInterests": ["Software Development", "AI"],
-  "careerGoal": "Become a Solutions Architect"
+  "careerGoals": "Become a Solutions Architect"
 }
 ```
 
@@ -627,6 +642,6 @@ Content-Type: application/json
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
   "careerInterests": ["Software Development", "AI"],
-  "careerGoal": "Become a Solutions Architect"
+  "careerGoals": "Become a Solutions Architect"
 }
 ```
