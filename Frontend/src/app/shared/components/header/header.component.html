@@ -49,11 +49,11 @@
         
         <!-- Unauthenticated State -->
         <ng-container *ngIf="(isAuthenticated$ | async) === false">
-          <a routerLink="/login" 
+          <a routerLink="/auth/login" 
              class="hidden sm:inline-block px-4 py-2 text-sm font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
             Log In
           </a>
-          <a routerLink="/register" 
+          <a routerLink="/auth/register" 
              class="hidden sm:inline-block px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors">
             Sign Up
           </a>
@@ -63,10 +63,11 @@
         <ng-container *ngIf="isAuthenticated$ | async">
           <div class="relative">
             <!-- User Menu Trigger -->
-            <button 
+            <button
               (click)="toggleUserMenu()"
               (keydown.enter)="toggleUserMenu()"
               (keydown.space)="toggleUserMenu()"
+              (keydown.escape)="closeMenus()"
               class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
               [attr.aria-expanded]="userMenuOpen"
               aria-haspopup="true"
@@ -233,8 +234,9 @@
         </ng-container>
 
         <!-- Mobile Menu Toggle (Hamburger) -->
-        <button 
+        <button
           (click)="toggleMenu()"
+          (keydown.escape)="closeMenus()"
           class="lg:hidden p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
           [attr.aria-expanded]="menuOpen"
           aria-label="Toggle navigation menu">
@@ -300,12 +302,12 @@
         <!-- Mobile Auth Links (Unauthenticated) -->
         <ng-container *ngIf="(isAuthenticated$ | async) === false">
           <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-          <a routerLink="/login" 
+          <a routerLink="/auth/login" 
              (click)="closeMenus()"
              class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
             Log In
           </a>
-          <a routerLink="/register" 
+          <a routerLink="/auth/register" 
              (click)="closeMenus()"
              class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-md hover:bg-primary/90 transition-colors text-center">
             Sign Up

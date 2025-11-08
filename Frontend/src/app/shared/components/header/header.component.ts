@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, HostListener, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Observable } from 'rxjs';
@@ -36,6 +36,7 @@ export class HeaderComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notificationService = inject(NotificationService);
+  private readonly elementRef = inject(ElementRef);
 
   // Observable streams from AuthService
   isAuthenticated$: Observable<boolean>;
@@ -56,6 +57,21 @@ export class HeaderComponent implements OnInit {
 
   ngOnInit(): void {
     // Component initialization logic if needed
+  }
+
+  /**
+   * Close menus when clicking outside the component
+   * @param event Mouse click event
+   */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const clickedInside = this.elementRef.nativeElement.contains(target);
+
+    // Only close menus if clicked outside the header component
+    if (!clickedInside) {
+      this.closeMenus();
+    }
   }
 
   /**
@@ -90,15 +106,12 @@ export class HeaderComponent implements OnInit {
 
   /**
    * Handle user logout
-   * Clears tokens, shows notification, and redirects to home
+   * Delegates to AuthService which handles token removal, state reset, and notification
    */
   onLogout(): void {
     this.closeMenus();
-    // AuthService.logout() handles token removal, state reset, and navigation
-    // Pass false to prevent default notification, we'll show our own
-    this.authService.logout(false);
-    this.notificationService.showSuccess('Logged out successfully');
-    this.router.navigate(['/']);
+    // AuthService.logout() handles everything (tokens, state, notification)
+    this.authService.logout();
   }
 
   /**
