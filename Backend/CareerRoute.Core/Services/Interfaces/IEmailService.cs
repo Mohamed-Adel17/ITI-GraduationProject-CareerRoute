@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Services.Interfaces
 {
-    internal interface IEmailService
+    public interface IEmailService
     {
+        Task SendEmailAsync(string to, string subject, string body,string htmlContent);
     }
 }

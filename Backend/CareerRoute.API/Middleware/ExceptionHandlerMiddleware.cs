@@ -11,7 +11,7 @@ namespace CareerRoute.API.Middleware
         private readonly IHostEnvironment _environment;
 
         public ExceptionHandlerMiddleware
-            (RequestDelegate next, 
+            (RequestDelegate next,
             ILogger<ExceptionHandlerMiddleware> logger,
             IHostEnvironment environment)
         {
@@ -30,35 +30,42 @@ namespace CareerRoute.API.Middleware
                 await HandleExceptionAsync(context, ex);
             }
         }
-      
+
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-            
+
             ApiResponse response;
-            
+
             switch (exception)
             {
                 case NotFoundException notFoundEx:
                     response = ApiResponse.Error(notFoundEx.Message, 404);
                     _logger.LogWarning(notFoundEx, "Resource not found: {Message}", notFoundEx.Message);
                     break;
-                    
+
                 case BusinessException businessEx:
                     response = ApiResponse.Error(businessEx.Message, 400);
                     _logger.LogWarning(businessEx, "Business rule violation: {Message}", businessEx.Message);
                     break;
-                    
                 case ValidationException validationEx:
                     response = ApiResponse.Error(validationEx.Message, 400, validationEx.Errors);
                     _logger.LogWarning(validationEx, "Validation exception: {Message}", validationEx.Message);
                     break;
-                    
+
+                case UnauthenticatedException unauthenticatedEx:
+                    response = ApiResponse.Error(unauthenticatedEx.Message, 401);
+                    _logger.LogWarning(unauthenticatedEx, "Unauthenticated: {Message}", unauthenticatedEx.Message);
+                    break;
+
                 case UnauthorizedException unauthorizedEx:
                     response = ApiResponse.Error(unauthorizedEx.Message, 403);
                     _logger.LogWarning(unauthorizedEx, "Unauthorized access: {Message}", unauthorizedEx.Message);
                     break;
-                    
+                case SendEmailException emailException:
+                    response = ApiResponse.Error(emailException.Message, 400);
+                    _logger.LogWarning(emailException, $"Send Email exception: {emailException.Message}");
+                    break;
                 default:
                     var message = _environment.IsDevelopment()
                         ? exception.Message
@@ -67,7 +74,7 @@ namespace CareerRoute.API.Middleware
                     _logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
                     break;
             }
-            
+
             context.Response.StatusCode = response.StatusCode ?? 500;
 
             await context.Response.WriteAsJsonAsync(response);

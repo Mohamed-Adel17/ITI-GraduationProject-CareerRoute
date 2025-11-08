@@ -30,7 +30,7 @@ namespace CareerRoute.Core.Services.Interfaces
         Task ApproveMentorAsync(string mentorId);
 
         // Reject a mentor application (admin-only)
-        Task RejectMentorAsync(string mentorId, string reason);
+        Task RejectMentorAsync(string mentorId, RejectMentorDto rejectDto);
 
         // Check if a user is already a mentor (prevents duplicate applications)
         Task<bool> IsMentorAsync(string id);

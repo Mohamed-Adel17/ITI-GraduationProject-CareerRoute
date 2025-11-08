@@ -80,14 +80,17 @@ namespace CareerRoute.API.Controllers
 
             var createdMentor = await _mentorService.CreateMentorProfileAsync(userId, createDto);
 
-            return StatusCode(201, new ApiResponse<MentorProfileDto>(
-                createdMentor,
-                "Mentor application submitted successfully! Your application is pending approval."
-            ));
+            return CreatedAtAction(
+                nameof(GetMentorById),
+                new { id = createdMentor.Id },
+                new ApiResponse<MentorProfileDto>(
+                    createdMentor,
+                    "Mentor application submitted successfully! Your application is pending approval."
+                ));
         }
 
-        // PUT /api/mentors/{id} - Update mentor profile
-        [HttpPut("{id}")]
+        // PATCH /api/mentors/{id} - Update mentor profile
+        [HttpPatch("{id}")]
         [Authorize]
         public async Task<ActionResult> UpdateMentorProfile(
             string id,
@@ -127,8 +130,8 @@ namespace CareerRoute.API.Controllers
             return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(mentors));
         }
 
-        // PUT /api/mentors/{id}/approve - Approve mentor
-        [HttpPut("{id}/approve")]
+        // PATCH /api/mentors/{id}/approve - Approve mentor
+        [HttpPatch("{id}/approve")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> ApproveMentor(string id)
         {
@@ -138,14 +141,14 @@ namespace CareerRoute.API.Controllers
         }
         
 
-        // PUT /api/mentors/{id}/reject - Reject mentor
-        [HttpPut("{id}/reject")]
+        // PATCH /api/mentors/{id}/reject - Reject mentor
+        [HttpPatch("{id}/reject")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> RejectMentor(
             string id,
             [FromBody] RejectMentorDto rejectDto)
         {
-            await _mentorService.RejectMentorAsync(id, rejectDto.Reason);
+            await _mentorService.RejectMentorAsync(id, rejectDto);
 
             return Ok(new ApiResponse { Message = "Mentor application rejected" });
         }

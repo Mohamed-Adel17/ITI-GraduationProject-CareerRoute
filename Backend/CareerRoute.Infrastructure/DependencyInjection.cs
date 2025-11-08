@@ -1,7 +1,12 @@
+using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
+using CareerRoute.Core.Settings;
 using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
+using CareerRoute.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,8 +21,9 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.Configure<JwtSettings>(configuration.GetSection(nameof(JwtSettings)));
+        services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
         return services;
-    
+
     }
 
 
@@ -31,11 +37,13 @@ public static class DependencyInjection
         );
 
         services.AddScoped<ITokenRepository, TokenRepository>();
+        services.AddScoped<IEmailService, SendGridEmailService>();
 
         // Repository Registration
         // Uncomment and add as you create repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMentorRepository, MentorRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         // services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
@@ -47,9 +55,19 @@ public static class DependencyInjection
         // services.AddScoped<IStorageService, AzureStorageService>();
 
         // Identity Configuration (if using)
-        // services.AddIdentity<ApplicationUser, IdentityRole>()
-        //     .AddEntityFrameworkStores<AppDbContext>()
-        //     .AddDefaultTokenProviders();
+        //services.AddIdentity<ApplicationUser, IdentityRole>()
+        //    .AddEntityFrameworkStores<ApplicationDbContext>()
+        //    .AddDefaultTokenProviders();
+        services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+        {
+            options.User.RequireUniqueEmail = true; // Ensure unique email addresses
+            options.Password.RequireNonAlphanumeric = false;
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            options.Lockout.AllowedForNewUsers = true;
+        })
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
         return services;
     }

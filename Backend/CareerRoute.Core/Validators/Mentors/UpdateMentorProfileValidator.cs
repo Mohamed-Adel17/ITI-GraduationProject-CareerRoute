@@ -1,7 +1,7 @@
 ﻿using CareerRoute.Core.DTOs.Mentors;
 using FluentValidation;
 
-namespace CareerRoute.Core.Validators
+namespace CareerRoute.Core.Validators.Mentors
 {
     // Validator for UpdateMentorProfileDto - matches API contract requirements
     public class UpdateMentorProfileValidator : AbstractValidator<UpdateMentorProfileDto>
@@ -44,21 +44,21 @@ namespace CareerRoute.Core.Validators
                 .When(x => !string.IsNullOrWhiteSpace(x.Certifications));
 
             // ============ PRICING VALIDATION ============
-            // API Contract: $20-$500 range for both rates
+            // API Contract: $5-$500 range for both rates
             RuleFor(x => x.Rate30Min)
-                .InclusiveBetween(20, 500)
-                    .WithMessage("30-minute rate must be between $20 and $500")
+                .InclusiveBetween(5, 500)
+                    .WithMessage("30-minute rate must be between $5 and $500")
                 .When(x => x.Rate30Min.HasValue);
 
             RuleFor(x => x.Rate60Min)
-                .InclusiveBetween(20, 500)
-                    .WithMessage("60-minute rate must be between $20 and $500")
+                .InclusiveBetween(5, 500)
+                    .WithMessage("60-minute rate must be between $5 and $500")
                 .When(x => x.Rate60Min.HasValue);
 
             // ============ CATEGORY IDS VALIDATION ============
             // API Contract: 1-5 categories
             RuleFor(x => x.CategoryIds)
-                .Must(ids => ids == null || (ids.Count >= 1 && ids.Count <= 5))
+                .Must(ids => ids == null || ids.Count >= 1 && ids.Count <= 5)
                     .WithMessage("Must select between 1 and 5 categories")
                 .When(x => x.CategoryIds != null);
 
