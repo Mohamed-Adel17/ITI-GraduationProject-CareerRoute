@@ -30,7 +30,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="400">Invalid input or user already exists</response>
         [HttpPost("register")]
         [ProducesResponseType(typeof(ApiResponse<RegisterResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerRequest)
         {
             var response = await _authenticationService.Register(registerRequest);
@@ -46,7 +46,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">Invalid credentials or account issues</response>
         [HttpPost("login")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
             var response = await _authenticationService.Login(loginRequest);
@@ -62,7 +62,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">Invalid or expired refresh token</response>
         [HttpPost("refresh")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> RefreshToken([FromBody] TokenRequestDto tokenRequest)
         {
             var response = await _authenticationService.RefreshToken(tokenRequest);
@@ -72,14 +72,13 @@ namespace CareerRoute.API.Controllers
         /// <summary>
         /// Verify email address with token
         /// </summary>
-        /// <param name="email">User email</param>
-        /// <param name="token">Verification token</param>
+        /// <param name="verifyRequest">Email and verification token</param>
         /// <returns>JWT tokens and user information after successful verification</returns>
         /// <response code="200">Email verified successfully</response>
         /// <response code="400">Invalid token or email already verified</response>
         [HttpPost("verify-email")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto verifyRequest)
         {
 
@@ -97,7 +96,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="400">Email already verified or invalid</response>
         [HttpPost("resend-verification")]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> RequestVerifyEmail([FromBody] EmailRequestDto emailRequest)
         {
             await _authenticationService.RequestVerifyEmail(emailRequest);
@@ -113,7 +112,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="400">Invalid request</response>
         [HttpPost("forgot-password")]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ForgotPassword([FromBody] EmailRequestDto emailRequest)
         {
 
@@ -131,7 +130,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="400">Invalid token or password</response>
         [HttpPost("reset-password")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto resetPasswordRequest)
         {
             var response = await _authenticationService.ResetPassword(resetPasswordRequest);
@@ -150,8 +149,8 @@ namespace CareerRoute.API.Controllers
         [HttpPost("change-password")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto changePasswordRequest)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -175,7 +174,7 @@ namespace CareerRoute.API.Controllers
         [HttpPost("logout")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Logout()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

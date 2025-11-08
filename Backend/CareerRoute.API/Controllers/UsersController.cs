@@ -12,8 +12,12 @@ using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
 {
+    /// <summary>
+    /// Manages user profiles and account operations
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
+    [Produces("application/json")]
     //[AuthorizeRole(AppRoles.Admin)]
     public class UsersController : ControllerBase
     {
@@ -29,8 +33,16 @@ namespace CareerRoute.API.Controllers
 
 
 
+        /// <summary>
+        /// Get current authenticated user's profile
+        /// </summary>
+        /// <returns>Current user's profile information</returns>
+        /// <response code="200">Returns the user's profile</response>
+        /// <response code="401">User not authenticated</response>
         [HttpGet("me")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<RetrieveUserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetMe()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -51,8 +63,33 @@ namespace CareerRoute.API.Controllers
 
 
 
+        /// <summary>
+        /// Update current authenticated user's profile
+        /// </summary>
+        /// <param name="uuDto">User profile fields to update (all fields optional)</param>
+        /// <returns>Updated user profile</returns>
+        /// <response code="200">Profile updated successfully</response>
+        /// <response code="400">Invalid input data</response>
+        /// <response code="401">User not authenticated</response>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     PATCH /api/users/me
+        ///     {
+        ///         "firstName": "John",
+        ///         "lastName": "Doe",
+        ///         "phoneNumber": "+1234567890",
+        ///         "careerGoal": "Software Engineer",
+        ///         "careerInterest": "Full Stack Development"
+        ///     }
+        /// 
+        /// Note: All fields are optional. Only provide fields you want to update.
+        /// </remarks>
         [HttpPatch("me")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<RetrieveUserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> UpdateMe([FromBody] UpdateUserDto uuDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -73,8 +110,19 @@ namespace CareerRoute.API.Controllers
 
 
 
+        /// <summary>
+        /// Delete current authenticated user's account
+        /// </summary>
+        /// <returns>Confirmation message</returns>
+        /// <response code="200">Account deleted successfully</response>
+        /// <response code="401">User not authenticated</response>
+        /// <remarks>
+        /// Warning: This action is irreversible and will permanently delete the user account and all associated data.
+        /// </remarks>
         [HttpDelete("me")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> DeleteMe()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -90,8 +138,20 @@ namespace CareerRoute.API.Controllers
         }
 
 
+        /// <summary>
+        /// Get all users (Admin and Mentor only)
+        /// </summary>
+        /// <returns>List of all users in the system</returns>
+        /// <response code="200">Returns list of users</response>
+        /// <response code="401">User not authenticated</response>
+        /// <response code="403">User doesn't have required permissions</response>
+        /// <response code="404">No users found</response>
         [HttpGet]
         [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Mentor}")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<RetrieveUserDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> getAllUsers()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -113,8 +173,21 @@ namespace CareerRoute.API.Controllers
         }
 
 
+        /// <summary>
+        /// Get user by ID (Admin and Mentor only)
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>User profile information</returns>
+        /// <response code="200">Returns the user profile</response>
+        /// <response code="401">User not authenticated</response>
+        /// <response code="403">User doesn't have required permissions</response>
+        /// <response code="404">User not found</response>
         [HttpGet("{id}")]
         [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Mentor}")]
+        [ProducesResponseType(typeof(ApiResponse<RetrieveUserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetUserById(string id)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -132,8 +205,36 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
+        /// <summary>
+        /// Update user profile by ID (Admin only)
+        /// </summary>
+        /// <param name="id">User ID to update</param>
+        /// <param name="dto">User profile fields to update (all fields optional)</param>
+        /// <returns>Updated user profile</returns>
+        /// <response code="200">Profile updated successfully</response>
+        /// <response code="400">Invalid input data</response>
+        /// <response code="401">User not authenticated</response>
+        /// <response code="403">User doesn't have admin permissions</response>
+        /// <response code="404">User not found</response>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     PATCH /api/users/{id}
+        ///     {
+        ///         "firstName": "John",
+        ///         "lastName": "Doe",
+        ///         "careerGoal": "Data Scientist"
+        ///     }
+        /// 
+        /// Note: All fields are optional. Only provide fields you want to update.
+        /// </remarks>
         [HttpPatch("{id}")]
         [Authorize(Roles = AppRoles.Admin)]
+        [ProducesResponseType(typeof(ApiResponse<RetrieveUserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateUserByAdmin(string id, [FromBody] UpdateUserDto dto)
         {
             var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
