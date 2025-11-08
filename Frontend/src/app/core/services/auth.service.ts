@@ -503,8 +503,9 @@ export class AuthService {
    * @returns Observable of response (unwrapped from ApiResponse)
    *
    * @remarks
-   * Success notification is shown automatically.
-   * Error handling is delegated to the calling component.
+   * This method handles only authentication logic (API call).
+   * UI concerns (notifications) are delegated to the calling component.
+   * The component should show success/error notifications.
    */
   resendVerificationEmail(request: ResendVerificationEmailRequest): Observable<any> {
     return this.http.post<ApiResponse<any>>(`${this.AUTH_URL}/resend-verification`, request).pipe(
@@ -514,12 +515,6 @@ export class AuthService {
           return response.data || response;
         }
         throw new Error(response.message || 'Failed to resend verification email');
-      }),
-      tap(() => {
-        this.notificationService.success(
-          'Verification email has been sent. Please check your inbox.',
-          'Email Sent'
-        );
       }),
       catchError(error => {
         // Error interceptor has already processed the error

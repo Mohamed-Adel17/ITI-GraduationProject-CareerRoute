@@ -46,9 +46,9 @@ export const PUBLIC_ROUTES: Routes = [
     title: 'Verify Email - CareerRoute'
   },
   {
-    path: 'auth/verification-sent',
+    path: 'auth/send-email-verification',
     canActivate: [guestGuard],
-    loadComponent: () => import('../auth/email-verification-sent/email-verification-sent.component').then(m => m.EmailVerificationSentComponent),
-    title: 'Verification Email Sent - CareerRoute'
+    loadComponent: () => import('../auth/send-email-verification/send-email-verification.component').then(m => m.SendEmailVerificationComponent),
+    title: 'Send Email Verification - CareerRoute'
   },
 ];
