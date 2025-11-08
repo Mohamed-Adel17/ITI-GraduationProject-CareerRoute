@@ -9,20 +9,21 @@ import { EmailVerificationRequest } from '../../../shared/models/auth.model';
  * EmailVerificationComponent
  *
  * Handles email verification when user clicks verification link from email.
- * Automatically verifies email on component load by extracting token and userId from URL.
+ * Automatically verifies email and logs in the user on successful verification.
  *
  * Features:
  * - Automatic verification on component load
- * - Token and userId extraction from URL query parameters
+ * - Token and email extraction from URL query parameters
  * - Loading spinner during verification
- * - Success message with auto-redirect to login or dashboard
+ * - Success message with auto-login and redirect to dashboard
  * - Error message with option to resend verification email
- * - Support for auto-login after successful verification
+ * - Automatic login after successful verification (no manual login required)
+ * - Countdown timer before redirect
  * - Responsive design with Tailwind CSS
  * - Dark mode support
  *
  * URL Format:
- * `/auth/verify-email?userId=123&token=abc123`
+ * `/auth/verify-email?email=user@example.com&token=abc123`
  *
  * @example
  * ```html
@@ -31,10 +32,10 @@ import { EmailVerificationRequest } from '../../../shared/models/auth.model';
  *
  * User Flow:
  * 1. User receives verification email after registration
- * 2. User clicks verification link: `/auth/verify-email?userId=123&token=abc`
- * 3. Component extracts userId and token from URL
+ * 2. User clicks verification link: `/auth/verify-email?email=user@example.com&token=abc`
+ * 3. Component extracts email and token from URL
  * 4. Component automatically calls AuthService.verifyEmail()
- * 5. On success: Show success message → redirect to login/dashboard
+ * 5. On success: Auto-login → Show success message → Redirect to dashboard (3 second countdown)
  * 6. On error: Show error message with option to resend email
  */
 @Component({
@@ -54,14 +55,11 @@ export class EmailVerificationComponent implements OnInit {
   /** Error message to display */
   errorMessage: string | null = null;
 
-  /** User ID extracted from URL */
-  userId: string | null = null;
+  /** User email extracted from URL */
+  email: string | null = null;
 
   /** Token extracted from URL */
   token: string | null = null;
-
-  /** Whether auto-login is enabled after verification */
-  autoLogin: boolean = false;
 
   /** Countdown timer for redirect (in seconds) */
   redirectCountdown: number = 3;
@@ -84,12 +82,12 @@ export class EmailVerificationComponent implements OnInit {
       return;
     }
 
-    // Extract userId and token from URL query parameters
-    this.userId = this.route.snapshot.queryParams['userId'];
+    // Extract email and token from URL query parameters
+    this.email = this.route.snapshot.queryParams['email'];
     this.token = this.route.snapshot.queryParams['token'];
 
     // Validate that both parameters are present
-    if (!this.userId || !this.token) {
+    if (!this.email || !this.token) {
       this.verificationState = 'error';
       this.errorMessage = 'Invalid verification link. The link is missing required parameters.';
       return;
@@ -100,7 +98,7 @@ export class EmailVerificationComponent implements OnInit {
   }
 
   /**
-   * Verify email using token and userId from URL
+   * Verify email using token and email from URL
    */
   private verifyEmail(): void {
     // Set loading state
@@ -108,7 +106,7 @@ export class EmailVerificationComponent implements OnInit {
 
     // Prepare verification request
     const request: EmailVerificationRequest = {
-      userId: this.userId!,
+      email: this.email!,
       token: this.token!
     };
 
@@ -119,21 +117,19 @@ export class EmailVerificationComponent implements OnInit {
 
         // Set success state
         this.verificationState = 'success';
-        this.successMessage = response.message || 'Email verified successfully! You can now log in.';
 
-        // Check if auto-login is enabled
-        if (response.autoLogin && response.loginToken) {
-          this.autoLogin = true;
-          this.successMessage = response.message || 'Email verified successfully! Logging you in...';
+        // Backend always returns tokens for auto-login
+        // AuthService.verifyEmail() has already handled token storage and auth state update
+        this.successMessage = `Welcome ${response.user.firstName}! Your email has been verified. Logging you in...`;
 
-          // AuthService.verifyEmail() has already handled token storage and auth state update
+        // Show success notification
+        this.notificationService.success(
+          'Email verified successfully!',
+          'Welcome to CareerRoute'
+        );
 
-          // Start countdown and redirect to dashboard
-          this.startRedirectCountdown('/user/dashboard');
-        } else {
-          // Start countdown and redirect to login
-          this.startRedirectCountdown('/auth/login');
-        }
+        // Start countdown and redirect to dashboard
+        this.startRedirectCountdown('/user/dashboard');
       },
       error: (error) => {
         console.error('Email verification failed:', error);
@@ -188,13 +184,13 @@ export class EmailVerificationComponent implements OnInit {
   }
 
   /**
-   * Navigate to home page
+   * Navigate to dashboard manually (cancel countdown)
    */
   goToHome(): void {
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval);
     }
-    this.router.navigate(['/']);
+    this.router.navigate(['/user/dashboard']);
   }
 
   /**

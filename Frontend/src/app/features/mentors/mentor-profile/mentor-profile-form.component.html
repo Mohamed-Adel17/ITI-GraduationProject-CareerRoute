@@ -1,0 +1,331 @@
+<form [formGroup]="mentorForm" (ngSubmit)="onSubmit()" class="mentor-profile-form max-w-4xl mx-auto p-6">
+  
+  <!-- Form Header -->
+  <div class="form-header mb-8">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      {{ mode === 'create' ? 'Apply to Become a Mentor' : 'Edit Mentor Profile' }}
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400">
+      {{ mode === 'create' 
+        ? 'Share your expertise and help others grow their careers' 
+        : 'Update your professional profile and rates' }}
+    </p>
+  </div>
+
+  <!-- Bio Section -->
+  <div class="form-section mb-8">
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Professional Bio</h3>
+    
+    <div class="form-group">
+      <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        About You
+        <span class="text-red-500">*</span>
+      </label>
+      <textarea
+        id="bio"
+        formControlName="bio"
+        rows="8"
+        class="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-black/20 border border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary dark:text-white"
+        [class.border-red-500]="hasError('bio')"
+        placeholder="Tell potential mentees about your background, experience, and what you can help them with..."></textarea>
+      
+      <!-- Character Count -->
+      <div class="flex justify-between items-center mt-2">
+        <div *ngIf="hasError('bio')" class="text-sm text-red-600 dark:text-red-400">
+          {{ getErrorMessage('bio') }}
+        </div>
+        <div class="text-sm ml-auto" [class.text-red-600]="isBioNearLimit()" [class.text-gray-500]="!isBioNearLimit()">
+          {{ getBioCharCount() }} / {{ MAX_BIO_LENGTH }} characters
+        </div>
+      </div>
+      
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Minimum {{ MIN_BIO_LENGTH }} characters. Include your experience, skills, and what makes you a great mentor.
+      </p>
+    </div>
+  </div>
+
+  <!-- Expertise Section -->
+  <div class="form-section mb-8">
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Expertise & Experience</h3>
+    
+    <!-- Expertise Tags -->
+    <div class="form-group mb-6">
+      <label for="expertiseTags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Expertise Tags
+        <span class="text-red-500">*</span>
+      </label>
+      <input
+        type="text"
+        id="expertiseTags"
+        formControlName="expertiseTags"
+        class="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-black/20 border border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary dark:text-white"
+        [class.border-red-500]="hasError('expertiseTags')"
+        placeholder="React, Node.js, AWS, Docker, etc."
+      />
+      
+      <div *ngIf="hasError('expertiseTags')" class="text-sm text-red-600 dark:text-red-400 mt-1">
+        {{ getErrorMessage('expertiseTags') }}
+      </div>
+      
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Enter comma-separated tags (minimum 2, maximum 20). Example: React, Node.js, AWS
+      </p>
+      
+      <!-- Tags Preview -->
+      <div *ngIf="getExpertiseTags().length > 0" class="flex flex-wrap gap-2 mt-3">
+        <span 
+          *ngFor="let tag of getExpertiseTags()" 
+          class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
+          {{ tag }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Years of Experience -->
+    <div class="form-group mb-6">
+      <label for="yearsOfExperience" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Years of Professional Experience
+        <span class="text-red-500">*</span>
+      </label>
+      <input
+        type="number"
+        id="yearsOfExperience"
+        formControlName="yearsOfExperience"
+        min="0"
+        max="50"
+        class="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-black/20 border border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary dark:text-white"
+        [class.border-red-500]="hasError('yearsOfExperience')"
+      />
+      
+      <div *ngIf="hasError('yearsOfExperience')" class="text-sm text-red-600 dark:text-red-400 mt-1">
+        {{ getErrorMessage('yearsOfExperience') }}
+      </div>
+    </div>
+
+    <!-- Certifications -->
+    <div class="form-group">
+      <label for="certifications" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Certifications (Optional)
+      </label>
+      <input
+        type="text"
+        id="certifications"
+        formControlName="certifications"
+        class="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-black/20 border border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary dark:text-white"
+        placeholder="AWS Certified, PMP, Scrum Master, etc."
+      />
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        List your professional certifications, comma-separated
+      </p>
+    </div>
+  </div>
+
+  <!-- Pricing Section -->
+  <div class="form-section mb-8">
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Session Rates</h3>
+    
+    <!-- Pricing Help Toggle -->
+    <button
+      type="button"
+      (click)="showPricingHelp = !showPricingHelp"
+      class="flex items-center gap-2 text-sm text-primary hover:text-primary/80 mb-4">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      {{ showPricingHelp ? 'Hide' : 'Show' }} Pricing Guidelines
+    </button>
+
+    <!-- Pricing Help Box -->
+    <div *ngIf="showPricingHelp" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+      <h4 class="font-semibold text-blue-900 dark:text-blue-300 mb-2">Pricing Guidelines</h4>
+      <ul class="text-sm text-blue-800 dark:text-blue-400 space-y-1">
+        <li>• Rates must be between ${{ MIN_PRICE }} and ${{ MAX_PRICE }}</li>
+        <li>• 60-minute rate should be higher than 30-minute rate</li>
+        <li>• Typical 60-min rate is 1.8x the 30-min rate</li>
+        <li>• Consider your experience level and market rates</li>
+        <li>• You can adjust rates anytime after approval</li>
+      </ul>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- 30-Minute Rate -->
+      <div class="form-group">
+        <label for="rate30Min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          30-Minute Session Rate
+          <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
+          <input
+            type="number"
+            id="rate30Min"
+            formControlName="rate30Min"
+            min="20"
+            max="500"
+            step="5"
+            class="w-full pl-8 pr-4 py-3 rounded-lg bg-white/50 dark:bg-black/20 border border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary dark:text-white"
+            [class.border-red-500]="hasError('rate30Min')"
+          />
+        </div>
+        <div *ngIf="hasError('rate30Min')" class="text-sm text-red-600 dark:text-red-400 mt-1">
+          {{ getErrorMessage('rate30Min') }}
+        </div>
+      </div>
+
+      <!-- 60-Minute Rate -->
+      <div class="form-group">
+        <label for="rate60Min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          60-Minute Session Rate
+          <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
+          <input
+            type="number"
+            id="rate60Min"
+            formControlName="rate60Min"
+            min="20"
+            max="500"
+            step="5"
+            class="w-full pl-8 pr-4 py-3 rounded-lg bg-white/50 dark:bg-black/20 border border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary dark:text-white"
+            [class.border-red-500]="hasError('rate60Min')"
+          />
+        </div>
+        <div *ngIf="hasError('rate60Min')" class="text-sm text-red-600 dark:text-red-400 mt-1">
+          {{ getErrorMessage('rate60Min') }}
+        </div>
+        
+        <!-- Suggested Rate Button -->
+        <button
+          type="button"
+          (click)="applySuggestedRate()"
+          class="text-sm text-primary hover:text-primary/80 mt-2">
+          Use suggested rate: ${{ getSuggestedRate60Min() }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Pricing Validation Errors -->
+    <div *ngIf="getPricingErrors().length > 0" class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <h4 class="font-semibold text-red-900 dark:text-red-300 mb-2">Pricing Issues:</h4>
+      <ul class="text-sm text-red-800 dark:text-red-400 space-y-1">
+        <li *ngFor="let error of getPricingErrors()">• {{ error }}</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Categories Section -->
+  <div class="form-section mb-8">
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+      Categories
+      <span class="text-red-500">*</span>
+    </h3>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+      Select the categories that best match your expertise (at least one required)
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <button
+        *ngFor="let category of categories"
+        type="button"
+        (click)="toggleCategory(category.id)"
+        class="flex items-center gap-3 p-4 border-2 rounded-lg transition-all hover:border-primary"
+        [class.border-primary]="isCategorySelected(category.id)"
+        [class.bg-primary/5]="isCategorySelected(category.id)"
+        [class.border-gray-200]="!isCategorySelected(category.id)"
+        [class.dark:border-gray-700]="!isCategorySelected(category.id)">
+        
+        <!-- Checkbox Icon -->
+        <div class="flex-shrink-0">
+          <div 
+            class="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors"
+            [class.border-primary]="isCategorySelected(category.id)"
+            [class.bg-primary]="isCategorySelected(category.id)"
+            [class.border-gray-300]="!isCategorySelected(category.id)">
+            <svg 
+              *ngIf="isCategorySelected(category.id)"
+              class="w-4 h-4 text-white" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Category Info -->
+        <div class="flex-1 text-left">
+          <div class="font-medium text-gray-900 dark:text-white">{{ category.name }}</div>
+          <div *ngIf="category.description" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ category.description }}
+          </div>
+        </div>
+      </button>
+    </div>
+
+    <div *ngIf="hasError('categoryIds')" class="text-sm text-red-600 dark:text-red-400 mt-2">
+      {{ getErrorMessage('categoryIds') }}
+    </div>
+  </div>
+
+  <!-- Availability Section (Edit Mode Only) -->
+  <div *ngIf="mode === 'edit'" class="form-section mb-8">
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Availability</h3>
+    
+    <label class="flex items-center gap-3 cursor-pointer">
+      <input
+        type="checkbox"
+        formControlName="isAvailable"
+        class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary"
+      />
+      <div>
+        <span class="text-sm font-medium text-gray-900 dark:text-white">Available for new bookings</span>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Uncheck this if you're temporarily unavailable
+        </p>
+      </div>
+    </label>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="form-actions flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+    <button
+      type="submit"
+      [disabled]="isSubmitting || mentorForm.invalid"
+      class="flex-1 sm:flex-none px-8 py-3 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+      <span *ngIf="!isSubmitting">
+        {{ mode === 'create' ? 'Submit Application' : 'Save Changes' }}
+      </span>
+      <span *ngIf="isSubmitting" class="flex items-center justify-center gap-2">
+        <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {{ mode === 'create' ? 'Submitting...' : 'Saving...' }}
+      </span>
+    </button>
+
+    <button
+      type="button"
+      (click)="onCancel()"
+      [disabled]="isSubmitting"
+      class="flex-1 sm:flex-none px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+      Cancel
+    </button>
+  </div>
+
+  <!-- Form Validation Summary (Development Helper) -->
+  <div *ngIf="mentorForm.invalid && mentorForm.touched" class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+    <h4 class="font-semibold text-yellow-900 dark:text-yellow-300 mb-2">Form has validation errors:</h4>
+    <ul class="text-sm text-yellow-800 dark:text-yellow-400 space-y-1">
+      <li *ngIf="hasError('bio')">• Bio: {{ getErrorMessage('bio') }}</li>
+      <li *ngIf="hasError('expertiseTags')">• Expertise Tags: {{ getErrorMessage('expertiseTags') }}</li>
+      <li *ngIf="hasError('yearsOfExperience')">• Years of Experience: {{ getErrorMessage('yearsOfExperience') }}</li>
+      <li *ngIf="hasError('rate30Min')">• 30-Min Rate: {{ getErrorMessage('rate30Min') }}</li>
+      <li *ngIf="hasError('rate60Min')">• 60-Min Rate: {{ getErrorMessage('rate60Min') }}</li>
+      <li *ngIf="hasError('categoryIds')">• Categories: {{ getErrorMessage('categoryIds') }}</li>
+      <li *ngFor="let error of getPricingErrors()">• Pricing: {{ error }}</li>
+    </ul>
+  </div>
+</form>

@@ -13,6 +13,8 @@ namespace CareerRoute.Core.Domain.Interfaces
         Task AddAsync(RefreshToken refreshToken);
         Task RevokeAsync(string token);
         Task RevokeAllUserTokensAsync(string userId);
-        
+        Task<int> SaveChangesAsync();
+
+
     }
 }

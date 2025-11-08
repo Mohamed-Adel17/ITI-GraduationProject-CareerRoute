@@ -48,22 +48,18 @@ export interface RegisterRequest {
 /**
  * Registration response DTO
  * Returned after successful registration
+ *
+ * @remarks
+ * This DTO is wrapped in ApiResponse<T> by the backend.
+ * The 'success' indicator and 'message' are in the wrapper, not in this DTO.
+ * Email verification is always required for new accounts.
  */
 export interface RegisterResponse {
-  /** Success indicator */
-  success: boolean;
-
-  /** Success or error message */
-  message: string;
-
   /** User ID of newly created account */
   userId?: string;
 
   /** Email that needs verification */
   email?: string;
-
-  /** Whether email verification is required */
-  requiresEmailVerification: boolean;
 }
 
 /**
@@ -84,11 +80,12 @@ export interface LoginRequest {
 /**
  * Login response DTO
  * Returned after successful authentication
+ *
+ * @remarks
+ * This DTO is wrapped in ApiResponse<T> by the backend.
+ * The 'success' indicator is in the wrapper, not in this DTO.
  */
 export interface LoginResponse {
-  /** Success indicator */
-  success: boolean;
-
   /** JWT access token */
   token: string;
 
@@ -151,19 +148,21 @@ export interface TokenRefreshRequest {
 
 /**
  * Token refresh response DTO
+ *
+ * @remarks
+ * This DTO is wrapped in ApiResponse<T> by the backend.
+ * The 'success' indicator is in the wrapper, not in this DTO.
+ * The backend returns AuthResponseDto which includes token, refreshToken, and user data.
  */
 export interface TokenRefreshResponse {
-  /** Success indicator */
-  success: boolean;
-
   /** New JWT access token */
   token: string;
 
   /** New refresh token */
   refreshToken: string;
 
-  /** Token expiration time in seconds */
-  expiresIn: number;
+  /** Authenticated user information (included in token refresh response) */
+  user: AuthUser;
 }
 
 /**
@@ -177,13 +176,14 @@ export interface PasswordResetRequest {
 
 /**
  * Password reset response DTO
+ *
+ * @remarks
+ * This DTO is wrapped in ApiResponse<T> by the backend.
+ * The 'success' indicator and 'message' are in the wrapper, not in this DTO.
+ * This DTO may be empty or contain additional data in the future.
  */
 export interface PasswordResetRequestResponse {
-  /** Success indicator */
-  success: boolean;
-
-  /** Message to display to user */
-  message: string;
+  // Empty DTO - message is in ApiResponse wrapper
 }
 
 /**
@@ -206,13 +206,28 @@ export interface PasswordReset {
 
 /**
  * Password reset completion response DTO
+ * Returns the same structure as LoginResponse for auto-login after password reset
+ *
+ * @remarks
+ * This DTO is wrapped in ApiResponse<T> by the backend.
+ * The 'success' indicator and 'message' are in the wrapper, not in this DTO.
+ * The backend returns AuthResponseDto which includes JWT tokens and user info for auto-login.
  */
 export interface PasswordResetResponse {
-  /** Success indicator */
-  success: boolean;
+  /** JWT access token for auto-login */
+  token: string;
 
-  /** Message to display to user */
-  message: string;
+  /** JWT refresh token for auto-login */
+  refreshToken: string;
+
+  /** Token expiration time in seconds */
+  expiresIn: number;
+
+  /** Token type (usually "Bearer") */
+  tokenType: string;
+
+  /** Authenticated user information */
+  user: AuthUser;
 }
 
 /**
@@ -231,13 +246,14 @@ export interface ChangePasswordRequest {
 
 /**
  * Change password response DTO
+ *
+ * @remarks
+ * This DTO is wrapped in ApiResponse<T> by the backend.
+ * The 'success' indicator and 'message' are in the wrapper, not in this DTO.
+ * This DTO may be empty or contain additional data in the future.
  */
 export interface ChangePasswordResponse {
-  /** Success indicator */
-  success: boolean;
-
-  /** Message to display to user */
-  message: string;
+  // Empty DTO - message is in ApiResponse wrapper
 }
 
 /**
@@ -245,8 +261,8 @@ export interface ChangePasswordResponse {
  * Used when user clicks verification link in email
  */
 export interface EmailVerificationRequest {
-  /** User ID */
-  userId: string;
+  /** User's email address */
+  email: string;
 
   /** Verification token from email link */
   token: string;
@@ -254,33 +270,28 @@ export interface EmailVerificationRequest {
 
 /**
  * Email verification response DTO
+ * Returns the same structure as LoginResponse for auto-login after verification
+ *
+ * @remarks
+ * This DTO is wrapped in ApiResponse<T> by the backend.
+ * The 'success' indicator and 'message' are in the wrapper, not in this DTO.
+ * The backend returns AuthResponseDto which includes JWT tokens and user info.
  */
 export interface EmailVerificationResponse {
-  /** Success indicator */
-  success: boolean;
+  /** JWT access token for auto-login */
+  token: string;
 
-  /** Message to display to user */
-  message: string;
+  /** JWT refresh token for auto-login */
+  refreshToken: string;
 
-  /** Whether user should be auto-logged in after verification */
-  autoLogin?: boolean;
+  /** Token expiration time in seconds */
+  expiresIn: number;
 
-  /** Login token if autoLogin is true */
-  loginToken?: string;
+  /** Token type (usually "Bearer") */
+  tokenType: string;
 
-  /** Refresh token if autoLogin is true */
-  refreshToken?: string;
-
-  /** User data if autoLogin is true */
-  user?: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    emailConfirmed: boolean;
-    roles: string[];
-    isMentor: boolean;
-  };
+  /** Authenticated user information */
+  user: AuthUser;
 }
 
 /**

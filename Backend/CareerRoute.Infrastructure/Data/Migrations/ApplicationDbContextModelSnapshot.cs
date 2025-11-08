@@ -30,6 +30,14 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("CareerGoal")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CareerInterest")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -47,6 +55,9 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsMentor")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastLoginDate")
@@ -108,6 +119,53 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_Categories_IsActive");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Categories_Name");
+
+                    b.ToTable("Categories", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Category_Name_NotEmpty", "LEN([Name]) > 0");
+                        });
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Mentor", b =>
@@ -185,6 +243,21 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
                             t.HasCheckConstraint("CK_Mentor_YearsOfExperience", "[YearsOfExperience] >= 0");
                         });
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorCategory", b =>
+                {
+                    b.Property<string>("MentorId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MentorId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("MentorCategory");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
@@ -356,6 +429,25 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorCategory", b =>
+                {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Category", "Category")
+                        .WithMany("MentorCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
+                        .WithMany("MentorCategories")
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Mentor");
+                });
+
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "User")
@@ -421,6 +513,16 @@ namespace CareerRoute.Infrastructure.Data.Migrations
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Category", b =>
+                {
+                    b.Navigation("MentorCategories");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Mentor", b =>
+                {
+                    b.Navigation("MentorCategories");
                 });
 #pragma warning restore 612, 618
         }

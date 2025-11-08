@@ -1,11 +1,15 @@
 ﻿using AutoMapper;
+using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.Exceptions;
+using CareerRoute.Core.Extentions;
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -25,6 +29,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<CreateMentorProfileDto> _createValidator;
         private readonly IValidator<UpdateMentorProfileDto> _updateValidator;
         private readonly IValidator<RejectMentorDto> _rejectValidator;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public MentorService(
             IMentorRepository mentorRepository,
@@ -33,7 +38,8 @@ namespace CareerRoute.Core.Services.Implementations
             ILogger<MentorService> logger,
             IValidator<CreateMentorProfileDto> createValidator,
             IValidator<UpdateMentorProfileDto> updateValidator,
-            IValidator<RejectMentorDto> rejectValidator)
+            IValidator<RejectMentorDto> rejectValidator,
+            UserManager<ApplicationUser> userManager)
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
@@ -42,6 +48,7 @@ namespace CareerRoute.Core.Services.Implementations
             _createValidator = createValidator;
             _updateValidator = updateValidator;
             _rejectValidator = rejectValidator;
+            _userManager = userManager;
         }
         
         // Get mentor profile by ID
@@ -65,7 +72,7 @@ namespace CareerRoute.Core.Services.Implementations
             string mentorId,
             UpdateMentorProfileDto updatedDto)
         {
-            await _updateValidator.ValidateAndThrowAsync(updatedDto);
+            await _updateValidator.ValidateAndThrowCustomAsync(updatedDto);
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
             if(mentor == null)
             {
@@ -103,7 +110,7 @@ namespace CareerRoute.Core.Services.Implementations
             string userId,
             CreateMentorProfileDto createdDto)
         {
-            await _createValidator.ValidateAndThrowAsync(createdDto);
+            await _createValidator.ValidateAndThrowCustomAsync(createdDto);
             var user = await _userRepository.GetByIdAsync(userId);    
             if(user == null)
             {
@@ -128,7 +135,7 @@ namespace CareerRoute.Core.Services.Implementations
                 Rate60Min = createdDto.Rate60Min, 
 
                 // Default values for new mentors
-                ApprovalStatus = "Pending", // Requires admin approval
+                ApprovalStatus = MentorApprovalStatus.Pending, // Requires admin approval
                 IsVerified = false,
                 IsAvailable = false,  
                 AverageRating = 0,
@@ -179,14 +186,28 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 throw new NotFoundException("Mentor", mentorId);
             }
-            if(mentor.ApprovalStatus == "Approved")
+            if(mentor.ApprovalStatus == MentorApprovalStatus.Approved)
             {
                 throw new BusinessException("Mentor is already approved");
             }
-            mentor.ApprovalStatus = "Approved";
+            
+            // Update mentor status
+            mentor.ApprovalStatus = MentorApprovalStatus.Approved;
             mentor.IsVerified = true;
             mentor.IsAvailable = true;
             mentor.UpdatedAt = DateTime.UtcNow;
+            
+            // Assign Mentor role to user
+            var user = mentor.User;
+            if (!await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
+            {
+                var roleResult = await _userManager.AddToRoleAsync(user, AppRoles.Mentor);
+                if (!roleResult.Succeeded)
+                {
+                    throw new BusinessException("Failed to assign Mentor role");
+                }
+                _logger.LogInformation("Mentor role assigned to user {UserId}", user.Id);
+            }
 
             _mentorRepository.Update(mentor);
             await _mentorRepository.SaveChangesAsync();
@@ -199,7 +220,7 @@ namespace CareerRoute.Core.Services.Implementations
         // Reject a mentor application
         public async Task RejectMentorAsync(string mentorId, RejectMentorDto rejectDto)
         {
-            await _rejectValidator.ValidateAndThrowAsync(rejectDto);
+            await _rejectValidator.ValidateAndThrowCustomAsync(rejectDto);
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
 
             if (mentor == null)
@@ -207,9 +228,24 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Mentor", mentorId);
             }
 
-            mentor.ApprovalStatus = "Rejected";
+            mentor.ApprovalStatus = MentorApprovalStatus.Rejected;
             mentor.IsAvailable = false;
             mentor.UpdatedAt = DateTime.UtcNow;
+            
+            // Remove Mentor role if user had it (in case of re-rejection)
+            var user = mentor.User;
+            if (await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
+            {
+                var roleResult = await _userManager.RemoveFromRoleAsync(user, AppRoles.Mentor);
+                if (!roleResult.Succeeded)
+                {
+                    _logger.LogWarning("Failed to remove Mentor role from user {UserId}", user.Id);
+                }
+                else
+                {
+                    _logger.LogInformation("Mentor role removed from user {UserId}", user.Id);
+                }
+            }
 
             _mentorRepository.Update(mentor);
             await _mentorRepository.SaveChangesAsync();
@@ -220,7 +256,7 @@ namespace CareerRoute.Core.Services.Implementations
             // await _emailService.SendMentorRejectionEmailAsync(
             //     mentor.User.Email, 
             //     mentor.User.FirstName, 
-            //     reason);
+            //     rejectDto.Reason);
         }
 
         // Check if user is a mentor
