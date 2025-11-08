@@ -1,0 +1,319 @@
+<header class="site-header w-full bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-20">
+      
+      <!-- Logo/Brand -->
+      <div class="flex items-center gap-4">
+        <a routerLink="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity" (click)="closeMenus()">
+          <div class="text-primary">
+            <svg class="h-8 w-8 transform -scale-x-100" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">CareerRoute</h2>
+        </a>
+      </div>
+
+      <!-- Main Navigation (Desktop) -->
+      <nav class="hidden lg:flex items-center gap-6" role="navigation" aria-label="Main navigation">
+        <a routerLink="/" 
+           routerLinkActive="text-primary" 
+           [routerLinkActiveOptions]="{exact: true}"
+           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
+          Home
+        </a>
+        <a routerLink="/sessions" 
+           routerLinkActive="text-primary"
+           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
+          Sessions
+        </a>
+        <a routerLink="/mentors" 
+           routerLinkActive="text-primary"
+           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
+          Experts
+        </a>
+        <a routerLink="/interview-prep" 
+           routerLinkActive="text-primary"
+           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
+          Interview Prep
+        </a>
+        <a routerLink="/jobs" 
+           routerLinkActive="text-primary"
+           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
+          Jobs
+        </a>
+      </nav>
+
+      <!-- Auth Area -->
+      <div class="flex items-center gap-2">
+        
+        <!-- Unauthenticated State -->
+        <ng-container *ngIf="(isAuthenticated$ | async) === false">
+          <a routerLink="/auth/login" 
+             class="hidden sm:inline-block px-4 py-2 text-sm font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            Log In
+          </a>
+          <a routerLink="/auth/register" 
+             class="hidden sm:inline-block px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors">
+            Sign Up
+          </a>
+        </ng-container>
+
+        <!-- Authenticated State -->
+        <ng-container *ngIf="isAuthenticated$ | async">
+          <div class="relative">
+            <!-- User Menu Trigger -->
+            <button
+              (click)="toggleUserMenu()"
+              (keydown.enter)="toggleUserMenu()"
+              (keydown.space)="toggleUserMenu()"
+              (keydown.escape)="closeMenus()"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+              [attr.aria-expanded]="userMenuOpen"
+              aria-haspopup="true"
+              aria-label="User menu">
+              
+              <!-- User Avatar -->
+              <div class="relative">
+                <ng-container *ngIf="currentUser$ | async as user">
+                  <img 
+                    *ngIf="user.profilePictureUrl" 
+                    [src]="user.profilePictureUrl" 
+                    [alt]="getUserDisplayName(user)" 
+                    class="h-8 w-8 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"/>
+                  <div 
+                    *ngIf="!user.profilePictureUrl"
+                    class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
+                    {{ getUserInitials(user) }}
+                  </div>
+                </ng-container>
+              </div>
+
+              <!-- User Name (Desktop) -->
+              <span class="hidden md:block text-sm font-medium text-gray-900 dark:text-white">
+                {{ getUserDisplayName((currentUser$ | async)) }}
+              </span>
+
+              <!-- Dropdown Arrow -->
+              <svg 
+                class="h-4 w-4 text-gray-600 dark:text-gray-400 transition-transform"
+                [class.rotate-180]="userMenuOpen"
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+
+            <!-- User Dropdown Menu -->
+            <div 
+              *ngIf="userMenuOpen"
+              class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50"
+              role="menu"
+              aria-orientation="vertical">
+              
+              <!-- User Info Section -->
+              <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700" *ngIf="currentUser$ | async as user">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ getUserDisplayName(user) }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
+              </div>
+
+              <!-- Menu Items -->
+              <a 
+                routerLink="/user/dashboard"
+                (click)="closeMenus()"
+                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                  </svg>
+                  Dashboard
+                </span>
+              </a>
+
+              <a 
+                routerLink="/user/profile"
+                (click)="closeMenus()"
+                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                  My Profile
+                </span>
+              </a>
+
+              <a 
+                routerLink="/user/bookings"
+                (click)="closeMenus()"
+                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  My Bookings
+                </span>
+              </a>
+
+              <a 
+                routerLink="/user/sessions"
+                (click)="closeMenus()"
+                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                  </svg>
+                  My Sessions
+                </span>
+              </a>
+
+              <!-- Mentor Dashboard (if user is mentor) -->
+              <a 
+                *ngIf="hasRole((currentUser$ | async), UserRole.Mentor)"
+                routerLink="/mentor/dashboard"
+                (click)="closeMenus()"
+                class="block px-4 py-2 text-sm text-primary dark:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                  </svg>
+                  Mentor Dashboard
+                </span>
+              </a>
+
+              <!-- Admin Dashboard (if user is admin) -->
+              <a 
+                *ngIf="hasRole((currentUser$ | async), UserRole.Admin)"
+                routerLink="/admin/dashboard"
+                (click)="closeMenus()"
+                class="block px-4 py-2 text-sm text-primary dark:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  Admin Dashboard
+                </span>
+              </a>
+
+              <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+              <a 
+                routerLink="/user/settings"
+                (click)="closeMenus()"
+                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  Settings
+                </span>
+              </a>
+
+              <button 
+                (click)="onLogout()"
+                class="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                role="menuitem">
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                  </svg>
+                  Logout
+                </span>
+              </button>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Mobile Menu Toggle (Hamburger) -->
+        <button
+          (click)="toggleMenu()"
+          (keydown.escape)="closeMenus()"
+          class="lg:hidden p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+          [attr.aria-expanded]="menuOpen"
+          aria-label="Toggle navigation menu">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path 
+              *ngIf="!menuOpen"
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M4 6h16M4 12h16m-7 6h7">
+            </path>
+            <path 
+              *ngIf="menuOpen"
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M6 18L18 6M6 6l12 12">
+            </path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Menu -->
+    <nav 
+      *ngIf="menuOpen"
+      class="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4"
+      role="navigation"
+      aria-label="Mobile navigation">
+      <div class="flex flex-col gap-2">
+        <a routerLink="/" 
+           (click)="closeMenus()"
+           routerLinkActive="bg-primary/10 text-primary"
+           [routerLinkActiveOptions]="{exact: true}"
+           class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+          Home
+        </a>
+        <a routerLink="/sessions" 
+           (click)="closeMenus()"
+           routerLinkActive="bg-primary/10 text-primary"
+           class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+          Sessions
+        </a>
+        <a routerLink="/mentors" 
+           (click)="closeMenus()"
+           routerLinkActive="bg-primary/10 text-primary"
+           class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+          Experts
+        </a>
+        <a routerLink="/interview-prep" 
+           (click)="closeMenus()"
+           routerLinkActive="bg-primary/10 text-primary"
+           class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+          Interview Prep
+        </a>
+        <a routerLink="/jobs" 
+           (click)="closeMenus()"
+           routerLinkActive="bg-primary/10 text-primary"
+           class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+          Jobs
+        </a>
+
+        <!-- Mobile Auth Links (Unauthenticated) -->
+        <ng-container *ngIf="(isAuthenticated$ | async) === false">
+          <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+          <a routerLink="/auth/login" 
+             (click)="closeMenus()"
+             class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+            Log In
+          </a>
+          <a routerLink="/auth/register" 
+             (click)="closeMenus()"
+             class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-md hover:bg-primary/90 transition-colors text-center">
+            Sign Up
+          </a>
+        </ng-container>
+      </div>
+    </nav>
+  </div>
+</header>
