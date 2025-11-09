@@ -33,10 +33,6 @@ namespace CareerRoute.API.Controllers
         /// </summary>
         /// <returns>List of all approved mentor profiles</returns>
         /// <response code="200">Returns list of approved mentors</response>
-        /// <remarks>
-        /// This endpoint is publicly accessible and returns only mentors with approved status.
-        /// Use this to display available mentors to potential mentees.
-        /// </remarks>
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<MentorProfileDto>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetAllMentors()
@@ -52,10 +48,6 @@ namespace CareerRoute.API.Controllers
         /// <returns>Detailed mentor profile information</returns>
         /// <response code="200">Returns the mentor profile</response>
         /// <response code="404">Mentor not found</response>
-        /// <remarks>
-        /// This endpoint is publicly accessible. Use it to display detailed mentor information
-        /// including bio, expertise, ratings, and session rates.
-        /// </remarks>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<MentorProfileDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
@@ -71,12 +63,6 @@ namespace CareerRoute.API.Controllers
         /// <param name="searchTerm">Search term to match against mentor names, bio, and expertise tags</param>
         /// <returns>List of mentors matching the search criteria</returns>
         /// <response code="200">Returns matching mentors (empty array if no matches)</response>
-        /// <remarks>
-        /// Searches across mentor first name, last name, bio, and expertise tags.
-        /// The search is case-insensitive and returns partial matches.
-        /// 
-        /// Example: GET /api/mentors/search?searchTerm=python
-        /// </remarks>
         [HttpGet("search")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<MentorProfileDto>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> SearchMentors([FromQuery] string searchTerm)
@@ -92,12 +78,6 @@ namespace CareerRoute.API.Controllers
         /// <returns>List of highest-rated mentors</returns>
         /// <response code="200">Returns top-rated mentors</response>
         /// <response code="400">Invalid count parameter</response>
-        /// <remarks>
-        /// Returns mentors sorted by average rating and number of completed sessions.
-        /// Useful for featuring the best mentors on your platform.
-        /// 
-        /// Example: GET /api/mentors/top-rated?count=5
-        /// </remarks>
         [HttpGet("top-rated")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<MentorProfileDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
@@ -123,21 +103,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="400">Invalid application data or user already has mentor profile</response>
         /// <response code="401">User not authenticated</response>
         /// <remarks>
-        /// Submit an application to become a mentor. The application will be reviewed by admins.
-        /// Users can only have one mentor profile.
-        /// 
-        /// Sample request:
-        /// 
-        ///     POST /api/mentors
-        ///     {
-        ///         "bio": "Experienced software engineer with 10+ years in web development",
-        ///         "expertiseTags": ["JavaScript", "React", "Node.js", "Career Guidance"],
-        ///         "yearsOfExperience": 10,
-        ///         "certifications": "AWS Certified Solutions Architect, Google Cloud Professional",
-        ///         "rate30Min": 50.00,
-        ///         "rate60Min": 90.00,
-        ///         "categoryIds": [1, 2, 5]
-        ///     }
+        /// Users can only have one mentor profile. Application will be reviewed by admins.
         /// </remarks>
         [HttpPost]
         [Authorize]
@@ -179,17 +145,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="403">User cannot update this mentor profile</response>
         /// <response code="404">Mentor not found</response>
         /// <remarks>
-        /// Mentors can update their own profiles. Admins can update any mentor profile.
-        /// All fields in the update DTO are optional.
-        /// 
-        /// Sample request:
-        /// 
-        ///     PATCH /api/mentors/{id}
-        ///     {
-        ///         "bio": "Updated bio with new accomplishments",
-        ///         "expertiseTags": ["Python", "Machine Learning", "Data Science"],
-        ///         "rate30Min": 60.00
-        ///     }
+        /// All fields are optional. Mentors can update their own profiles. Admins can update any profile.
         /// </remarks>
         [HttpPatch("{id}")]
         [Authorize]
@@ -234,10 +190,6 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Returns list of pending applications</response>
         /// <response code="401">User not authenticated</response>
         /// <response code="403">User doesn't have admin permissions</response>
-        /// <remarks>
-        /// Returns all mentor profiles with "Pending" approval status.
-        /// Admins use this to review new mentor applications.
-        /// </remarks>
         [HttpGet("pending")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<MentorProfileDto>>), StatusCodes.Status200OK)]
@@ -259,10 +211,6 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">User not authenticated</response>
         /// <response code="403">User doesn't have admin permissions</response>
         /// <response code="404">Mentor not found</response>
-        /// <remarks>
-        /// Changes mentor's approval status to "Approved" and makes the profile publicly visible.
-        /// The mentor will be notified via email (if email notifications are configured).
-        /// </remarks>
         [HttpPatch("{id}/approve")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
@@ -289,17 +237,6 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">User not authenticated</response>
         /// <response code="403">User doesn't have admin permissions</response>
         /// <response code="404">Mentor not found</response>
-        /// <remarks>
-        /// Changes mentor's approval status to "Rejected" and stores the rejection reason.
-        /// The mentor will be notified with the rejection reason (if email notifications are configured).
-        /// 
-        /// Sample request:
-        /// 
-        ///     PATCH /api/mentors/{id}/reject
-        ///     {
-        ///         "rejectionReason": "Insufficient experience or credentials provided"
-        ///     }
-        /// </remarks>
         [HttpPatch("{id}/reject")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
