@@ -187,13 +187,6 @@ export class EditProfileComponent implements OnInit, OnDestroy {
 
     this.saving = true;
 
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      this.saving = false;
-      this.notificationService.error('User not authenticated', 'Error');
-      return;
-    }
-
     const updateData: UserProfileUpdate = {
       firstName: this.profileForm.value.firstName,
       lastName: this.profileForm.value.lastName,
@@ -203,7 +196,7 @@ export class EditProfileComponent implements OnInit, OnDestroy {
       careerGoals: this.profileForm.value.careerGoals || undefined
     };
 
-    this.userService.updateUserProfile(currentUser.id, updateData).subscribe({
+    this.userService.updateCurrentUserProfile(updateData).subscribe({
       next: (updatedUser) => {
         this.saving = false;
         this.notificationService.success('Your profile has been updated successfully!', 'Profile Updated');
