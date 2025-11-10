@@ -10,6 +10,7 @@ import {
   MentorCategory,
   validatePricing 
 } from '../../../shared/models/mentor.model';
+import { RatingDisplayComponent } from '../../../shared/rating-display/rating-display';
 
 /**
  * MentorProfileFormComponent
@@ -38,7 +39,7 @@ import {
 @Component({
   selector: 'app-mentor-profile-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RatingDisplayComponent],
   templateUrl: './mentor-profile-form.component.html',
   styleUrls: ['./mentor-profile-form.component.css']
 })
@@ -434,4 +435,8 @@ export class MentorProfileFormComponent implements OnInit {
   setSubmitting(submitting: boolean): void {
     this.isSubmitting = submitting;
   }
+
+  rating: number = 4.5;          
+  totalReviews: number = 20;     
 }
+

@@ -1,0 +1,11 @@
+<div class="flex items-center">
+  <div class="flex text-yellow-400">
+    <i *ngFor="let star of fullStars" class="fas fa-star"></i>
+    <i *ngIf="hasHalfStar" class="fas fa-star-half-alt"></i>
+    <i *ngFor="let star of emptyStars" class="far fa-star"></i>
+  </div>
+  <span class="ml-2 text-sm text-gray-600">
+    {{rating.toFixed(1)}}
+    <span *ngIf="reviewCount">({{reviewCount}} reviews)</span>
+  </span>
+</div>

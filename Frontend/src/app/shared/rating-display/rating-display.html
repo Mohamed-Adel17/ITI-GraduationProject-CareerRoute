@@ -1,0 +1,44 @@
+<div class="inline-block">
+  <div class="flex items-center space-x-1">
+    <!-- Full stars -->
+    <ng-container *ngFor="let _ of fullStars">
+      <span class="text-yellow-400 text-xl">★</span>
+    </ng-container>
+
+    <!-- Half star -->
+    <span *ngIf="hasHalfStar" class="text-yellow-400 text-xl opacity-50">★</span>
+
+    <!-- Empty stars -->
+    <ng-container *ngFor="let _ of emptyStars">
+      <span class="text-gray-300 text-xl">★</span>
+    </ng-container>
+
+    <!-- Numeric rating -->
+    <span class="text-gray-700 text-sm ml-2">{{ rating.toFixed(1) }}</span>
+
+    <!-- Total reviews -->
+    <span *ngIf="totalReviews" class="text-gray-500 text-xs">({{ totalReviews }} reviews)</span>
+  </div>
+</div>
+
+
+<!-- <div class="rating-card">
+  <h3 class="title">Rate your experience</h3>
+
+  <div class="stars">
+    <ng-container *ngFor="let star of stars; let i = index">
+      <span
+        class="star"
+        [class.filled]="i < rating"
+        (click)="setRating(i + 1)"
+        (mouseover)="hoverRating = i + 1"
+        (mouseleave)="hoverRating = 0"
+        [class.hovered]="i < hoverRating"
+      >
+        ★
+      </span>
+    </ng-container>
+  </div>
+
+  <p class="note">{{ ratingMessage }}</p>
+</div> -->
