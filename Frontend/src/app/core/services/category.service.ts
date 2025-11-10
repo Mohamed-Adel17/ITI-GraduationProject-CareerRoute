@@ -1,13 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
 import { tap, catchError, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
 import {
   Category,
   CategorySummary,
-  CategoryCreateRequest,
-  CategoryUpdateRequest,
+  CategoryMentorsResponse,
+  CategoryMentorsParams,
   sortCategories,
   getActiveCategories,
   getCategoryNames
@@ -34,33 +34,40 @@ interface ApiResponse<T> {
  *
  * Features:
  * - Get all categories (unified system)
- * - Get category names as string array
- * - Create and update categories (admin only)
+ * - Get single category by ID
+ * - Get mentors by category with filtering and pagination
  * - Category caching for performance
  * - Automatic error handling
  * - Integration with backend API
  *
  * @remarks
  * - Categories are cached after first fetch
- * - Public endpoints don't require authentication
- * - Admin endpoints require authentication and admin role
+ * - All endpoints are public (no authentication required)
  * - Cache can be refreshed by calling refreshCategories()
  * - Same categories used for both user interests and mentor specializations
+ * - Based on Category-Endpoints.md contract (endpoints 1, 2, 6)
  *
  * @example
  * ```typescript
  * // In a component
  * constructor(private categoryService: CategoryService) {}
  *
- * // Get all categories for user/mentor selection
+ * // Get all categories
  * this.categoryService.getAllCategories().subscribe(
- *   (categories) => this.availableCategories = categories,
- *   (error) => console.error('Error:', error)
+ *   (categories) => this.availableCategories = categories
  * );
  *
- * // Get just category names for dropdowns
- * this.categoryService.getCategoryNames().subscribe(
- *   (names) => this.categoryNames = names
+ * // Get single category
+ * this.categoryService.getCategoryById(1).subscribe(
+ *   (category) => this.category = category
+ * );
+ *
+ * // Get mentors by category
+ * this.categoryService.getMentorsByCategory(1, { page: 1, minRating: 4.0 }).subscribe(
+ *   (response) => {
+ *     this.mentors = response.mentors;
+ *     this.pagination = response.pagination;
+ *   }
  * );
  * ```
  */
@@ -190,100 +197,105 @@ export class CategoryService {
     return getCategoryNames(this.categoriesSubject.value);
   }
 
-  // ==================== Admin Operations ====================
+  // ==================== Get Single Category ====================
 
   /**
-   * Create a new category (admin only)
+   * Get a single category by ID
    *
-   * @param categoryData - Category data to create
-   * @returns Observable of created category
-   *
-   * @remarks
-   * - Requires admin authentication
-   * - Returns 401 if not authenticated
-   * - Returns 403 if not admin
-   * - Automatically refreshes cache after creation
-   */
-  createCategory(categoryData: CategoryCreateRequest): Observable<Category> {
-    return this.http.post<ApiResponse<Category>>(
-      this.CATEGORIES_URL,
-      categoryData
-    ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to create category');
-        }
-        return response.data;
-      }),
-      tap(() => {
-        // Refresh categories cache after creating
-        this.getAllCategories(true).subscribe();
-      }),
-      catchError(error => this.handleError('Failed to create category', error))
-    );
-  }
-
-  /**
-   * Update an existing category (admin only)
-   *
-   * @param categoryId - ID of category to update
-   * @param updateData - Updated category data
-   * @returns Observable of updated category
+   * @param categoryId - Category ID to fetch
+   * @returns Observable of category
    *
    * @remarks
-   * - Requires admin authentication
-   * - Returns 401 if not authenticated
-   * - Returns 403 if not admin
-   * - Returns 404 if category not found
-   * - Automatically refreshes cache after update
-   */
-  updateCategory(categoryId: string, updateData: CategoryUpdateRequest): Observable<Category> {
-    return this.http.put<ApiResponse<Category>>(
-      `${this.CATEGORIES_URL}/${categoryId}`,
-      updateData
-    ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to update category');
-        }
-        return response.data;
-      }),
-      tap(() => {
-        // Refresh categories cache after updating
-        this.getAllCategories(true).subscribe();
-      }),
-      catchError(error => this.handleError('Failed to update category', error))
-    );
-  }
-
-  /**
-   * Delete a category (admin only)
+   * - Endpoint: GET /api/categories/{id}
+   * - Public endpoint (no authentication required)
+   * - Returns 404 if category doesn't exist or is inactive
    *
-   * @param categoryId - ID of category to delete
-   * @returns Observable of success response
-   *
-   * @remarks
-   * - Requires admin authentication
-   * - Returns 401 if not authenticated
-   * - Returns 403 if not admin
-   * - Returns 404 if category not found
-   * - Automatically refreshes cache after deletion
+   * @example
+   * ```typescript
+   * this.categoryService.getCategoryById(1).subscribe({
+   *   next: (category) => console.log('Category:', category),
+   *   error: (error) => console.error('Error:', error)
+   * });
+   * ```
    */
-  deleteCategory(categoryId: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(
+  getCategoryById(categoryId: number): Observable<Category> {
+    return this.http.get<ApiResponse<Category>>(
       `${this.CATEGORIES_URL}/${categoryId}`
     ).pipe(
       map(response => {
-        if (!response.success) {
-          throw new Error(response.message || 'Failed to delete category');
+        if (!response.success || !response.data) {
+          throw new Error(response.message || 'Category not found');
         }
-        return;
+        return response.data;
       }),
-      tap(() => {
-        // Refresh categories cache after deleting
-        this.getAllCategories(true).subscribe();
+      catchError(error => this.handleError('Failed to fetch category', error))
+    );
+  }
+
+  // ==================== Get Mentors by Category ====================
+
+  /**
+   * Get mentors in a specific category with filtering and pagination
+   *
+   * @param categoryId - Category ID
+   * @param params - Query parameters for filtering, sorting, and pagination
+   * @returns Observable of category mentors response
+   *
+   * @remarks
+   * - Endpoint: GET /api/categories/{id}/mentors
+   * - Public endpoint (no authentication required)
+   * - Only returns approved and available mentors
+   * - Supports pagination (default 10 per page, max 50)
+   * - Default sort: rating (highest first)
+   * - Returns 404 if category doesn't exist
+   *
+   * @example
+   * ```typescript
+   * this.categoryService.getMentorsByCategory(1, {
+   *   page: 1,
+   *   pageSize: 10,
+   *   sortBy: 'rating',
+   *   minRating: 4.0,
+   *   keywords: 'react'
+   * }).subscribe({
+   *   next: (response) => {
+   *     this.mentors = response.mentors;
+   *     this.pagination = response.pagination;
+   *     this.category = response.category;
+   *   },
+   *   error: (error) => console.error('Error:', error)
+   * });
+   * ```
+   */
+  getMentorsByCategory(
+    categoryId: number,
+    params?: CategoryMentorsParams
+  ): Observable<CategoryMentorsResponse> {
+    // Build query parameters
+    let httpParams = new HttpParams();
+
+    if (params) {
+      if (params.page) httpParams = httpParams.set('page', params.page.toString());
+      if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize.toString());
+      if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
+      if (params.sortOrder) httpParams = httpParams.set('sortOrder', params.sortOrder);
+      if (params.minPrice !== undefined) httpParams = httpParams.set('minPrice', params.minPrice.toString());
+      if (params.maxPrice !== undefined) httpParams = httpParams.set('maxPrice', params.maxPrice.toString());
+      if (params.minRating !== undefined) httpParams = httpParams.set('minRating', params.minRating.toString());
+      if (params.keywords) httpParams = httpParams.set('keywords', params.keywords);
+    }
+
+    return this.http.get<ApiResponse<CategoryMentorsResponse>>(
+      `${this.CATEGORIES_URL}/${categoryId}/mentors`,
+      { params: httpParams }
+    ).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.message || 'Failed to fetch mentors');
+        }
+        return response.data;
       }),
-      catchError(error => this.handleError('Failed to delete category', error))
+      catchError(error => this.handleError('Failed to fetch mentors by category', error))
     );
   }
 
