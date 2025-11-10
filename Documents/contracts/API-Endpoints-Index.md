@@ -96,6 +96,42 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 ---
 
+### Sessions (8 endpoints)
+
+| Method | Endpoint | Auth | Documented In | Notes |
+|--------|----------|------|---------------|-------|
+| `POST` | `/api/sessions` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#1-book-new-session)** | ✅ Authoritative<br/>Book session & create payment intent |
+| `GET` | `/api/sessions/{id}` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#2-get-session-detail)** | ✅ Authoritative<br/>View session details |
+| `GET` | `/api/sessions/upcoming` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#3-get-upcoming-sessions)** | ✅ Authoritative<br/>Paginated list |
+| `GET` | `/api/sessions/past` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#4-get-past-sessions)** | ✅ Authoritative<br/>Paginated list with review flags |
+| `PATCH` | `/api/sessions/{id}/reschedule` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#5-reschedule-session)** | ✅ Authoritative<br/>Requires mentor approval |
+| `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies |
+| `POST` | `/api/sessions/{id}/join` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#7-join-session-get-video-link)** | ✅ Authoritative<br/>Get video conference link |
+| `PATCH` | `/api/sessions/{id}/complete` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#8-complete-session)** | ✅ Authoritative<br/>Trigger payment release |
+
+---
+
+### Payments (3 endpoints)
+
+| Method | Endpoint | Auth | Documented In | Notes |
+|--------|----------|------|---------------|-------|
+| `POST` | `/api/payments/create-intent` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#9-create-payment-intent)** | ✅ Authoritative<br/>Stripe/Paymob integration |
+| `POST` | `/api/payments/confirm` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#10-confirm-payment)** | ✅ Authoritative<br/>Confirm & capture payment |
+| `GET` | `/api/payments/history` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#11-get-payment-history)** | ✅ Authoritative<br/>With summary stats |
+
+---
+
+### Webhooks (2 endpoints - System Integration)
+
+| Method | Endpoint | Auth | Documented In | Notes |
+|--------|----------|------|---------------|-------|
+| `POST` | `/api/payments/webhooks/stripe` | System | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#stripe-webhook)** | 🔒 Backend Only<br/>Stripe signature verification |
+| `POST` | `/api/payments/webhooks/paymob` | System | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#paymob-webhook)** | 🔒 Backend Only<br/>HMAC signature verification |
+
+**Note:** Webhook endpoints are called by payment gateways (Stripe, Paymob), not by frontend applications. They are secured via signature verification.
+
+---
+
 ## 🔗 Cross-Document Relationships
 
 ### Skills System Integration
@@ -121,10 +157,37 @@ Category-Endpoints.md
 ```
 
 **Key Points:**
-- ✅ Skills are managed in [Skills-Endpoints.md](./Skills-Endpoints.md)
-- 🔄 User career interests updated via `PATCH /api/users/me/career-interests`
-- 🔄 Mentor expertise tags updated via `PATCH /api/mentors/{mentorId}/expertise-tags`
-- ❌ **NOT updated** via profile update endpoints
+- ✅ Skills are managed in [Skills-Endpoints.md](./Skills-Endpoints.md) (admin CRUD only)
+- 🔄 User career interests updated via `PATCH /api/users/me` with `careerInterestIds` field
+- 🔄 Mentor expertise tags updated via `PATCH /api/mentors/{id}` with `expertiseTagIds` field
+- ✅ **Consolidated approach**: Skills updated in profile endpoints (single request)
+
+---
+
+### Session-Payment-Mentor Flow
+
+Session booking and payments connect users with mentors:
+
+```
+Mentor-Endpoints.md
+    └─ Mentor discovery & profile viewing
+           ↓
+Session-Payment-Endpoints.md
+    ├─ POST /api/sessions (book with mentorId)
+    ├─ POST /api/payments/create-intent
+    ├─ POST /api/payments/confirm → Confirms session
+    ├─ Session management (upcoming, past, detail)
+    ├─ PATCH reschedule/cancel
+    ├─ POST /api/sessions/{id}/join → Video link
+    └─ PATCH /api/sessions/{id}/complete → Payment release
+```
+
+**Session Lifecycle:**
+1. **Discovery**: User finds mentor via [Mentor-Endpoints.md](./Mentor-Endpoints.md)
+2. **Booking**: POST /api/sessions creates session (Pending) + payment intent
+3. **Payment**: POST /api/payments/confirm confirms payment → session (Confirmed)
+4. **Session**: POST /api/sessions/{id}/join → video conference
+5. **Completion**: PATCH /api/sessions/{id}/complete → 72h payment hold → payout
 
 ---
 
@@ -152,14 +215,21 @@ Mentor-Endpoints.md (REFERENCES)
 
 ## 📊 Endpoint Statistics
 
-| Resource | Total Endpoints | Public | Authenticated | Admin Only |
-|----------|----------------|--------|---------------|------------|
-| Authentication | 8 | 7 | 1 | 0 |
-| Categories | 6 | 2 | 0 | 4 |
-| Skills | 5 | 2 | 0 | 3 |
-| Mentors | 9 | 4 | 2 | 3 |
-| Users | 6 | 0 | 4 | 2 |
-| **TOTAL** | **34** | **15** | **8** | **11** |
+| Resource | Total Endpoints | Public | Authenticated | Admin Only | System |
+|----------|----------------|--------|---------------|------------|--------|
+| Authentication | 8 | 7 | 1 | 0 | 0 |
+| Categories | 6 | 2 | 0 | 4 | 0 |
+| Skills | 5 | 2 | 0 | 3 | 0 |
+| Mentors | 9 | 4 | 2 | 3 | 0 |
+| Users | 6 | 0 | 4 | 2 | 0 |
+| Sessions | 8 | 0 | 8 | 0 | 0 |
+| Payments | 3 | 0 | 3 | 0 | 0 |
+| Webhooks | 2 | 0 | 0 | 0 | 2 |
+| **TOTAL** | **47** | **15** | **18** | **12** | **2** |
+
+**Notes:**
+- **System**: Webhook endpoints called by payment gateways (Stripe, Paymob), not by frontend applications
+- **Admin Only**: Count includes admin endpoints, though some may also be accessible by resource owners (e.g., PATCH /api/sessions/{id}/complete by Mentor)
 
 ---
 
@@ -198,11 +268,8 @@ Mentor-Endpoints.md (REFERENCES)
 
 **Users:**
 - `GET /api/users/me` (Any authenticated user)
-- `PATCH /api/users/me` (Any authenticated user)
+- `PATCH /api/users/me` (Any authenticated user - includes `careerInterestIds`)
 - `DELETE /api/users/me` (Any authenticated user)
-
-**Skills:**
-- `PATCH /api/users/me/career-interests` (Any authenticated user)
 
 **Users (Admin/Mentor):**
 - `GET /api/users` (Admin or Mentor)
@@ -210,7 +277,22 @@ Mentor-Endpoints.md (REFERENCES)
 
 **Mentors:**
 - `POST /api/mentors` (Any authenticated user - apply as mentor)
-- `PATCH /api/mentors/{id}` (Mentor own profile or Admin)
+- `PATCH /api/mentors/{id}` (Mentor own profile or Admin - includes `expertiseTagIds`)
+
+**Sessions:**
+- `POST /api/sessions` (User - book session)
+- `GET /api/sessions/{id}` (User/Mentor/Admin - view session)
+- `GET /api/sessions/upcoming` (Any authenticated user)
+- `GET /api/sessions/past` (Any authenticated user)
+- `PATCH /api/sessions/{id}/reschedule` (User/Mentor - reschedule session)
+- `PATCH /api/sessions/{id}/cancel` (User/Mentor/Admin - cancel session)
+- `POST /api/sessions/{id}/join` (User/Mentor - get video link)
+- `PATCH /api/sessions/{id}/complete` (Mentor/Admin - mark completed)
+
+**Payments:**
+- `POST /api/payments/create-intent` (User - create payment intent)
+- `POST /api/payments/confirm` (User - confirm payment)
+- `GET /api/payments/history` (Any authenticated user)
 
 ### Admin-Only Endpoints
 
@@ -232,8 +314,7 @@ Mentor-Endpoints.md (REFERENCES)
 - `PATCH /api/mentors/{id}/approve` (Admin - approve mentor)
 - `PATCH /api/mentors/{id}/reject` (Admin - reject mentor)
 
-### Mentor/Admin Endpoints
-- `PATCH /api/mentors/{mentorId}/expertise-tags` (Mentor own profile or Admin)
+**Note:** Mentor profile updates (including `expertiseTagIds`) are handled via `PATCH /api/mentors/{id}` (see Mentors section).
 
 ---
 
@@ -246,8 +327,8 @@ Mentor-Endpoints.md (REFERENCES)
 2. User receives verification email
 3. Click email link → POST /api/auth/verify-email (auto-called)
    📖 Authentication-Endpoints.md
-4. Select career interests → PATCH /api/users/me/career-interests
-   📖 Skills-Endpoints.md
+4. Update profile with career interests → PATCH /api/users/me (with careerInterestIds)
+   📖 User-Profile-Endpoints.md
 ```
 
 ### 2. User Login Flow
@@ -290,13 +371,29 @@ Mentor-Endpoints.md (REFERENCES)
 
 ### 6. Update User Profile
 ```
-1. Update basic info → PATCH /api/users/me
+1. Update profile (basic info + career interests) → PATCH /api/users/me
    📖 User-Profile-Endpoints.md
-2. Update career interests → PATCH /api/users/me/career-interests
-   📖 Skills-Endpoints.md
+   (Single request with optional careerInterestIds field)
 ```
 
-### 7. Admin Category Management
+### 7. Book Mentorship Session Flow
+```
+1. Find mentor → GET /api/mentors/{id}
+   📖 Mentor-Endpoints.md
+2. Book session → POST /api/sessions
+   📖 Session-Payment-Endpoints.md
+   (Creates session + payment intent)
+3. Complete payment → POST /api/payments/confirm
+   📖 Session-Payment-Endpoints.md
+   (Confirms session + generates video link)
+4. Join session → POST /api/sessions/{id}/join
+   📖 Session-Payment-Endpoints.md
+   (Get video conference link)
+5. Complete session → PATCH /api/sessions/{id}/complete (Mentor)
+   📖 Session-Payment-Endpoints.md
+```
+
+### 8. Admin Category Management
 ```
 1. Create category → POST /api/categories
    📖 Category-Endpoints.md
@@ -331,6 +428,14 @@ Mentor-Endpoints.md (REFERENCES)
 | **UpdateSkillDto** | [Skills-Endpoints.md](./Skills-Endpoints.md#updateskilldto) | Skills |
 | **CreateCategoryDto** | [Category-Endpoints.md](./Category-Endpoints.md#create-category-model-structure-createcategorydto) | Categories |
 | **UpdateCategoryDto** | [Category-Endpoints.md](./Category-Endpoints.md#update-category-model-structure-updatecategorydto) | Categories |
+| **SessionDto** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#sessiondto) | Sessions |
+| **PaymentDto** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#paymentdto) | Payments |
+| **BookSessionRequestDto** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#booksessionrequestdto) | Sessions |
+| **RescheduleRequestDto** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#reschedulerequestdto) | Sessions |
+| **CancelRequestDto** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#cancelrequestdto) | Sessions |
+| **SessionStatus (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Sessions |
+| **PaymentStatus (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Payments |
+| **PaymentMethod (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Payments |
 
 ---
 
@@ -352,9 +457,17 @@ Mentor-Endpoints.md (REFERENCES)
 - ⚠️ Always check this index before adding new endpoints
 
 ### Skills System Critical Info
-- ⚠️ **Do NOT update careerInterests via user profile endpoints**
-- ⚠️ **Do NOT update expertiseTags via mentor profile endpoints**
-- ✅ **Use dedicated Skills endpoints** for both
+- ✅ **NEW: Consolidated Approach** - Skills now updated in profile endpoints
+- ✅ **User career interests**: Update via `PATCH /api/users/me` with `careerInterestIds` field
+- ✅ **Mentor expertise tags**: Update via `PATCH /api/mentors/{id}` with `expertiseTagIds` field
+- 🔄 **Single request updates**: All profile fields including skills in one API call
+
+### Session & Payment Flow
+- 💳 **Payment Integration**: Stripe (international) + Paymob (Egypt - Meeza, InstaPay, Vodafone Cash)
+- 📅 **24-hour advance booking**: All sessions require minimum 24h advance notice
+- 💰 **Refund Policy**: >48h = 100%, 24-48h = 50%, <24h = 0% refund
+- ⏱️ **Payment Hold**: 72 hours after session completion before mentor payout
+- 🎥 **Join Window**: Can join 15 minutes before to 15 minutes after scheduled end
 
 ### Breaking Changes
 - 📅 Category system unified (removed `type` field) - see [Category-Endpoints.md](./Category-Endpoints.md#⚠️-breaking-changes---unified-category-system)
@@ -389,6 +502,7 @@ Mentor-Endpoints.md (REFERENCES)
 - **Skills**: [Skills-Endpoints.md](./Skills-Endpoints.md) - Skills CRUD and user/mentor skills management
 - **Mentors**: [Mentor-Endpoints.md](./Mentor-Endpoints.md) - Mentor search, application, profile management, and admin approval
 - **Users**: [User-Profile-Endpoints.md](./User-Profile-Endpoints.md) - User profile management
+- **Sessions & Payments**: [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md) - Session booking, payment processing, session management, and webhooks
 
 ---
 
@@ -405,6 +519,6 @@ Mentor-Endpoints.md (REFERENCES)
 
 ---
 
-**Total Documented Endpoints:** 34  
-**Total Contract Files:** 5  
+**Total Documented Endpoints:** 47  
+**Total Contract Files:** 6  
 **Documentation Status:** ✅ Complete & Synchronized
