@@ -59,40 +59,11 @@ The category system has been **unified** - categories now serve both user career
 
 ## Overview
 
-**Unified Category System** - Categories are the top-level containers that organize Skills.
+**Unified Category System** - Categories represent areas of expertise used for BOTH:
+1. **User Career Interests**: What users want to learn
+2. **Mentor Specializations**: What mentors can teach
 
-**Two-Level Hierarchy:**
-```
-Categories (this document)
-    └─ Skills (see Skills-Endpoints.md)
-        └─ Selected by Users & Mentors
-```
-
-**How It Works:**
-1. **Categories**: Top-level groupings (e.g., "Career Development", "IT Careers & Technical Consultation", "Leadership & Management")
-2. **Skills**: Specific areas within categories (e.g., "Career Shifting", "React", "System Design")
-3. **User Career Interests**: Users select specific **Skills** they want help with
-4. **Mentor Expertise**: Mentors select specific **Skills** they can provide consultation on
-
-**Example:**
-- Category: "IT Careers & Technical Consultation"
-  - Skills: "React", "Node.js", "System Design", "AWS", "Tech Leadership", "Career Shifting"
-- Category: "Career Development"
-  - Skills: "Career Shifting", "Interview Preparation", "Salary Negotiation"
-
-Users and mentors interact with **Skills**, not Categories directly. Categories are used for organization and browsing.
-
----
-
-## Related Documentation
-
-- **📖 API Endpoints Index**: See [API-Endpoints-Index.md](./API-Endpoints-Index.md) for complete endpoint directory and cross-references
-- **Mentor Discovery**: See [Mentor-Endpoints.md](./Mentor-Endpoints.md) for endpoints related to browsing mentors by category
-- **Skills Management**: See [Skills-Endpoints.md](./Skills-Endpoints.md) for skills CRUD operations - **Skills belong to Categories**
-- **Skills System Overview**: See [Skills-System-Overview.md](./Skills-System-Overview.md) for understanding how Categories and Skills work together
-- **US2 Implementation**: This document focuses on category CRUD (admin management). Mentor discovery endpoints are in the separate document above.
-
-**Important:** Categories are the parent/container for Skills. Each Skill belongs to exactly one Category. Users select Skills (not Categories) for their career interests, and mentors select Skills for their expertise tags.
+This unified approach simplifies matching between users and mentors by using the same category list for both contexts.
 
 **Frontend Implementation:** ✅ Completed (Unified System)
 - Service: `Frontend/src/app/core/services/category.service.ts`
@@ -128,66 +99,45 @@ The `type` query parameter is deprecated. Backend should return all active categ
   "message": "Categories retrieved successfully",
   "data": [
     {
-      "id": 1,
+      "id": "1",
       "name": "Software Development",
-      "description": "Building software applications and systems",
-      "iconUrl": "💻",
-      "mentorCount": 42,
+      "description": "Building software applications",
+      "icon": "💻",
+      "displayOrder": 1,
       "isActive": true,
       "createdAt": "2025-01-01T00:00:00Z",
       "updatedAt": "2025-01-01T00:00:00Z"
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "Data Science",
       "description": "Analyzing and interpreting complex data",
-      "iconUrl": "📊",
-      "mentorCount": 28,
-      "isActive": true,
-      "createdAt": "2025-01-01T00:00:00Z",
-      "updatedAt": "2025-01-01T00:00:00Z"
-    },
-    {
-      "id": 3,
-      "name": "Cloud Computing",
-      "description": "Cloud platforms and infrastructure",
-      "iconUrl": "☁️",
-      "mentorCount": 35,
+      "icon": "📊",
+      "displayOrder": 2,
       "isActive": true,
       "createdAt": "2025-01-01T00:00:00Z",
       "updatedAt": "2025-01-01T00:00:00Z"
     }
-  ]
+  ],
+  "totalCount": 23
 }
 ```
-
-**Note:** Response includes `mentorCount` showing the count of approved mentors who have selected **at least one skill** from this category.
 
 **⚠️ MIGRATION NOTE:**
 The `type` field has been removed from the Category model. Categories are now unified - used for both user interests and mentor specializations.
 
 **Backend Behavior:**
 - Return only active categories (`isActive: true`)
-- Sort by `name` ASC (alphabetically)
-- Include `mentorCount` for each category
+- ~~Support filtering by `type` query parameter~~ **REMOVED - No type filtering**
+- Sort by `displayOrder` ASC, then by `name` ASC
+- Include `totalCount` in response
 - Return empty array if no categories exist
 - **Do NOT filter by type** - return all active categories
 
-**Typical Categories:**
-- Career Development
-- Leadership & Management
-- IT Careers & Technical Consultation
-- Entrepreneurship
-- Finance & Accounting
-- Marketing & Sales
-- Design & Creative
-- Product Management
-- Data & Analytics
-- Business Strategy
+**Typical Categories (Unified):**
+Software Development, Data Science, Machine Learning, AI, Cloud Computing, DevOps, Cybersecurity, Mobile Development, Web Development, Database Administration, UI/UX Design, Project Management, Business Analysis, Quality Assurance, Network Engineering, Blockchain, Game Development, IoT, Embedded Systems, Digital Marketing, Product Management, etc. (minimum 20)
 
-Each category contains multiple Skills (see [Skills-Endpoints.md](./Skills-Endpoints.md) for the Skills list).
-
-**Note:** Users and mentors select **Skills** (not Categories). Categories are organizational containers.
+These categories serve both user career interests and mentor specializations.
 
 ---
 
@@ -203,12 +153,12 @@ Each category contains multiple Skills (see [Skills-Endpoints.md](./Skills-Endpo
 ```json
 {
   "success": true,
-  "message": "Category retrieved successfully",
   "data": {
-    "id": 1,
+    "id": "1",
     "name": "Software Development",
-    "description": "Building software applications and systems",
-    "iconUrl": "💻",
+    "description": "Building software applications",
+    "icon": "💻",
+    "displayOrder": 1,
     "isActive": true,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": "2025-01-01T00:00:00Z"
@@ -216,7 +166,7 @@ Each category contains multiple Skills (see [Skills-Endpoints.md](./Skills-Endpo
 }
 ```
 
-
+**Note:** `type` field removed from response.
 
 **Error Response (404):**
 ```json
@@ -243,14 +193,17 @@ Each category contains multiple Skills (see [Skills-Endpoints.md](./Skills-Endpo
 {
   "name": "Quantum Computing",
   "description": "Quantum computing and quantum algorithms",
-  "iconUrl": "⚛️"
+  "icon": "⚛️",
+  "displayOrder": 21
 }
 ```
 
 **Field Requirements:**
-- `name` (required): Min 2 chars, max 100 chars, must be unique
+- `name` (required): Min 2 chars, max 100 chars
 - `description` (optional): Max 500 chars
-- `iconUrl` (optional): Icon emoji or URL, max 200 chars
+- ~~`type` (required): `CareerInterest`, `MentorSpecialization`, or `General`~~ **REMOVED - No type needed**
+- `icon` (optional): Icon emoji or URL
+- `displayOrder` (optional): Positive integer, defaults to highest + 1
 
 **Success Response (201):**
 ```json
@@ -258,16 +211,19 @@ Each category contains multiple Skills (see [Skills-Endpoints.md](./Skills-Endpo
   "success": true,
   "message": "Category created successfully",
   "data": {
-    "id": 24,
+    "id": "24",
     "name": "Quantum Computing",
     "description": "Quantum computing and quantum algorithms",
-    "iconUrl": "⚛️",
+    "icon": "⚛️",
+    "displayOrder": 21,
     "isActive": true,
     "createdAt": "2025-10-30T10:00:00Z",
     "updatedAt": "2025-10-30T10:00:00Z"
   }
 }
 ```
+
+**Note:** `type` field removed from request and response.
 
 **Error Responses:**
 
@@ -325,17 +281,21 @@ Each category contains multiple Skills (see [Skills-Endpoints.md](./Skills-Endpo
 ```json
 {
   "name": "Software Engineering",
-  "description": "Software engineering and best practices",
-  "iconUrl": "💻",
+  "description": "Updated description",
+  "icon": "💻",
+  "displayOrder": 1,
   "isActive": true
 }
 ```
 
 **Field Requirements:**
-- `name` (optional): Min 2 chars, max 100 chars, must be unique if changed
+- `name` (optional): Min 2 chars, max 100 chars
 - `description` (optional): Max 500 chars
-- `iconUrl` (optional): Icon emoji or URL, max 200 chars
-- `isActive` (optional): Set to false to deactivate (soft delete)
+- `icon` (optional): Icon emoji or URL
+- `displayOrder` (optional): Positive integer
+- `isActive` (optional): Set to false to deactivate
+
+~~**Note:** Cannot change `type` after creation~~ **REMOVED - No type field exists**
 
 **Success Response (200):**
 ```json
@@ -343,16 +303,19 @@ Each category contains multiple Skills (see [Skills-Endpoints.md](./Skills-Endpo
   "success": true,
   "message": "Category updated successfully",
   "data": {
-    "id": 1,
+    "id": "1",
     "name": "Software Engineering",
-    "description": "Software engineering and best practices",
-    "iconUrl": "💻",
+    "description": "Updated description",
+    "icon": "💻",
+    "displayOrder": 1,
     "isActive": true,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": "2025-10-30T11:00:00Z"
   }
 }
 ```
+
+**Note:** `type` field removed from response.
 
 **Error Responses:**
 - **403 Forbidden:** Admin access required
@@ -437,23 +400,12 @@ GET /api/categories/1/mentors?page=1&pageSize=10&sortBy=rating&minRating=4.0&key
 ```json
 {
   "success": true,
-  "message": "Mentors retrieved successfully",
   "data": {
-    "category": {
-      "id": 1,
-      "name": "Software Development",
-      "description": "Building software applications and systems",
-      "iconUrl": "💻"
-    },
-    "mentors": [
+    "items": [
       {
         "id": "550e8400-e29b-41d4-a716-446655440000",
-        "firstName": "John",
-        "lastName": "Doe",
-        "fullName": "John Doe",
-        "profilePictureUrl": "https://example.com/profiles/john.jpg",
-        "bio": "Senior Software Engineer with 10 years of experience in enterprise applications...",
-        "expertiseTags": ["React", "Node.js", "AWS", "Docker", "Kubernetes"],
+        "bio": "Senior Software Engineer with 10 years...",
+        "expertiseTags": "React, Node.js, AWS, Docker, Kubernetes",
         "yearsOfExperience": 10,
         "rate30Min": 50.00,
         "rate60Min": 90.00,
@@ -462,22 +414,21 @@ GET /api/categories/1/mentors?page=1&pageSize=10&sortBy=rating&minRating=4.0&key
         "totalSessionsCompleted": 120,
         "isVerified": true,
         "isAvailable": true,
-        "approvalStatus": "Approved"
+        "user": {
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "firstName": "John",
+          "lastName": "Doe",
+          "profilePictureUrl": "https://example.com/profiles/john.jpg"
+        }
       }
     ],
-    "pagination": {
-      "totalCount": 45,
-      "currentPage": 1,
-      "pageSize": 10,
-      "totalPages": 5,
-      "hasNextPage": true,
-      "hasPreviousPage": false
-    }
+    "totalCount": 45,
+    "page": 1,
+    "pageSize": 10,
+    "totalPages": 5
   }
 }
 ```
-
-**Note:** Uses unified pagination structure with nested `pagination` object and includes category information in response.
 
 **Error Response (404):**
 ```json
@@ -496,59 +447,23 @@ GET /api/categories/1/mentors?page=1&pageSize=10&sortBy=rating&minRating=4.0&key
 
 ---
 
----
-
-## Category Model Structure (CategoryDto)
+## Category Model Structure
 
 ```typescript
 {
-  "id": "number",
+  "id": "string (GUID or number)",
   "name": "string",
   "description": "string | null",
-  "iconUrl": "string | null",       // Icon emoji or URL
-  "mentorCount": "number | null",   // Count of approved mentors (populated in browse contexts)
+  "icon": "string | null",        // Icon emoji or URL
+  "displayOrder": "number",
   "isActive": "boolean",
   "createdAt": "ISO 8601 date string",
-  "updatedAt": "ISO 8601 date string | null"
+  "updatedAt": "ISO 8601 date string"
 }
 ```
 
-**Notes:**
-- `id` is an integer (not GUID/string)
-- `iconUrl` can be emoji or image URL
-- `mentorCount` is populated for public/browse endpoints, may be null in admin contexts
-- All timestamps in ISO 8601 format (UTC)
-
-## Create Category Model Structure (CreateCategoryDto)
-
-```typescript
-{
-  "name": "string",                 // Required: Min 2, max 100 chars, must be unique
-  "description": "string | optional", // Optional: Max 500 chars
-  "iconUrl": "string | optional"    // Optional: Max 200 chars
-}
-```
-
-**Note:** All fields except `name` are optional.
-
-## Update Category Model Structure (UpdateCategoryDto)
-
-```typescript
-{
-  "name": "string | optional",        // Optional: Min 2, max 100 chars, must be unique if changed
-  "description": "string | optional", // Optional: Max 500 chars
-  "iconUrl": "string | optional",     // Optional: Max 200 chars
-  "isActive": "boolean | optional"    // Optional: Set to false for soft delete
-}
-```
-
-**Note:** All fields are optional. Only provided fields will be updated.
-
----
-
-## ⚠️ UNIFIED SYSTEM
-
-The `type` field has been removed. Categories now serve both user career interests and mentor specializations.
+**⚠️ BREAKING CHANGE:**
+The `type` field has been completely removed. Categories are now unified and serve both user career interests and mentor specializations.
 
 ---
 
@@ -620,9 +535,11 @@ Content-Type: application/json
 {
   "name": "Quantum Computing",
   "description": "Quantum computing and algorithms",
-  "iconUrl": "⚛️"
+  "icon": "⚛️"
 }
 ```
+
+**Note:** `type` field removed from request body.
 
 **Update Category (Admin):**
 ```bash
@@ -632,8 +549,7 @@ Content-Type: application/json
 
 {
   "name": "Software Engineering",
-  "description": "Software engineering and best practices",
-  "iconUrl": "💻",
+  "description": "Updated description",
   "isActive": true
 }
 ```

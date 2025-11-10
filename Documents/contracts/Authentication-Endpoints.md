@@ -10,12 +10,6 @@
 
 All authentication endpoints are located at `/api/auth/*`. These endpoints handle user registration, login, token refresh, email verification, and password management.
 
-## Related Documentation
-
-- **📖 API Endpoints Index**: See [API-Endpoints-Index.md](./API-Endpoints-Index.md) for complete endpoint directory and cross-references
-- **User Profiles**: See [User-Profile-Endpoints.md](./User-Profile-Endpoints.md) for user profile management after authentication
-- **Skills Management**: See [Skills-Endpoints.md](./Skills-Endpoints.md) for managing user career interests
-
 ## API Response Structure (ApiResponse Wrapper)
 
 **IMPORTANT:** All authentication endpoints now return responses wrapped in a standardized `ApiResponse<T>` structure defined in `Backend/CareerRoute.API/Models/ApiResponse.cs`.
