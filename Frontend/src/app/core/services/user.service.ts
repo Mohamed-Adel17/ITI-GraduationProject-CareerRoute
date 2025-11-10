@@ -16,43 +16,47 @@ import { ApiResponse } from '../../shared/models/api-response.model';
  * UserService
  *
  * Service for managing user profile operations in the Career Route application.
- * Handles retrieving and updating user profiles with API calls and state management.
+ * Handles retrieving, updating, and deleting user profiles with API calls and state management.
  *
  * Features:
- * - Get user profile by ID
- * - Get current authenticated user's profile
- * - Update user profile
+ * - Get current user profile (GET /api/users/me)
+ * - Update current user profile (PATCH /api/users/me)
+ * - Delete current user account (DELETE /api/users/me)
+ * - Get all users (GET /api/users) - Admin/Mentor only
+ * - Get user by ID (GET /api/users/{id}) - Admin/Mentor only
+ * - Update user by ID (PATCH /api/users/{id}) - Admin only
  * - User profile caching with BehaviorSubject
- * - Automatic error handling and notifications
+ * - Automatic error handling
  * - Integration with AuthService for token management
  *
  * @remarks
  * - All endpoints require authentication (Bearer token)
- * - Profile updates are reflected in the UI through observables
- * - Error handling is integrated with NotificationService
- * - Follows Angular standalone service pattern with dependency injection
+ * - careerInterests are managed via dedicated Skills endpoint (not updated here)
+ * - Profile updates use PATCH semantics (all fields optional)
+ * - Based on User-Profile-Endpoints.md contract
+ * - Component-level notification pattern (service extracts errors, component shows notifications)
  *
  * @example
  * ```typescript
- * // In a component
- * constructor(private userService: UserService) {}
- *
  * // Get current user profile
  * this.userService.getCurrentUserProfile().subscribe(
- *   (user) => console.log('User:', user),
- *   (error) => console.error('Error:', error)
+ *   (user) => this.user = user
  * );
  *
- * // Update profile
+ * // Update current user profile
  * const updates: UserProfileUpdate = {
  *   firstName: 'John',
  *   lastName: 'Doe',
- *   careerInterests: 'Software Development'
+ *   careerGoals: 'Become a Solutions Architect'
  * };
- * this.userService.updateUserProfile(userId, updates).subscribe(
- *   (user) => console.log('Profile updated:', user),
- *   (error) => console.error('Error:', error)
- * );
+ * this.userService.updateCurrentUserProfile(updates).subscribe({
+ *   next: (user) => {
+ *     this.notificationService.success('Profile updated!', 'Success');
+ *   },
+ *   error: (err) => {
+ *     this.notificationService.error(err.message, 'Error');
+ *   }
+ * });
  * ```
  */
 @Injectable({
@@ -77,22 +81,30 @@ export class UserService {
   // ==================== Get User Profile ====================
 
   /**
-   * Get user profile by user ID
+   * Get user profile by user ID (Admin/Mentor only)
    *
    * @param userId - The ID of the user to retrieve
    * @returns Observable of User profile
    *
    * @remarks
-   * - Requires authentication (Bearer token)
-   * - User can view their own profile
-   * - Admin can view any user profile
+   * - Endpoint: GET /api/users/{id}
+   * - Requires Admin or Mentor role
    * - Returns 401 if not authenticated
-   * - Returns 403 if trying to view another user's profile (non-admin)
+   * - Returns 403 if user doesn't have required role
    * - Returns 404 if user not found
+   * - Caches user profile for quick access
+   *
+   * @example
+   * ```typescript
+   * this.userService.getUserProfile(userId).subscribe({
+   *   next: (user) => this.user = user,
+   *   error: (err) => console.error('Error:', err)
+   * });
+   * ```
    */
   getUserProfile(userId: string): Observable<User> {
     return this.http.get<ApiResponse<User>>(
-      `${this.USERS_URL}/me`
+      `${this.USERS_URL}/${userId}`
     ).pipe(
       map(response => {
         if (!response.success || !response.data) {
@@ -109,16 +121,14 @@ export class UserService {
   /**
    * Get current authenticated user's profile
    *
-   * This method uses the authenticated user ID from AuthService
-   * to fetch the current user's profile from the API.
-   *
    * @returns Observable of current User profile
    *
    * @remarks
-   * - Automatically gets the current user ID from AuthService
+   * - Endpoint: GET /api/users/me
+   * - Uses /me endpoint (extracts user ID from JWT token on backend)
    * - Updates the currentUserProfile$ observable
    * - Caches the profile for quick access
-   * - Returns null if user is not authenticated
+   * - Returns error if user is not authenticated
    *
    * @example
    * ```typescript
@@ -133,10 +143,21 @@ export class UserService {
       return throwError(() => new Error('User not authenticated'));
     }
 
-    return this.getUserProfile(currentUser.id).pipe(
+    return this.http.get<ApiResponse<User>>(
+      `${this.USERS_URL}/me`
+    ).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.message || 'Failed to fetch user profile');
+        }
+        return response.data;
+      }),
       tap(user => {
+        // Cache the user profile
+        this.userProfilesCache.set(currentUser.id, user);
         this.currentUserProfileSubject.next(user);
-      })
+      }),
+      catchError(error => this.handleError('Failed to fetch user profile', error))
     );
   }
 
@@ -169,6 +190,45 @@ export class UserService {
     return this.currentUserProfileSubject.value;
   }
 
+  /**
+   * Get all users (Admin/Mentor only)
+   *
+   * @returns Observable of all users array
+   *
+   * @remarks
+   * - Endpoint: GET /api/users
+   * - Requires Admin or Mentor role
+   * - Returns 401 if not authenticated
+   * - Returns 403 if user doesn't have required role
+   * - Returns 404 if no users found
+   * - All users include their career interests as Skill objects
+   *
+   * @example
+   * ```typescript
+   * this.userService.getAllUsers().subscribe({
+   *   next: (users) => this.users = users,
+   *   error: (err) => console.error('Error:', err)
+   * });
+   * ```
+   */
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<ApiResponse<User[]>>(
+      this.USERS_URL
+    ).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.message || 'Failed to fetch users');
+        }
+        // Cache all user profiles
+        response.data.forEach(user => {
+          this.userProfilesCache.set(user.id, user);
+        });
+        return response.data;
+      }),
+      catchError(error => this.handleError('Failed to fetch all users', error))
+    );
+  }
+
   // ==================== Update User Profile ====================
 
   /**
@@ -194,18 +254,22 @@ export class UserService {
    *   firstName: 'John',
    *   lastName: 'Doe',
    *   phoneNumber: '+1234567890',
-   *   careerInterests: ['Software Development', 'AI'],
    *   careerGoals: 'Become a senior developer'
    * };
    *
-   * this.userService.updateCurrentUserProfile(updates).subscribe(
-   *   (updatedUser) => {
+   * this.userService.updateCurrentUserProfile(updates).subscribe({
+   *   next: (updatedUser) => {
    *     // Profile updated successfully
    *     // Show notification in component
    *     this.notificationService.success('Profile updated!', 'Success');
+   *   },
+   *   error: (err) => {
+   *     this.notificationService.error(err.message, 'Error');
    *   }
-   * );
+   * });
    * ```
+   *
+   * @note careerInterests are NOT updated via this endpoint - use dedicated Skills endpoint
    */
   updateCurrentUserProfile(profileUpdate: UserProfileUpdate): Observable<User> {
     return this.http.patch<ApiResponse<User>>(
@@ -293,6 +357,57 @@ export class UserService {
     );
   }
 
+  // ==================== Delete User Account ====================
+
+  /**
+   * Delete current user account
+   *
+   * @returns Observable of void
+   *
+   * @remarks
+   * - Endpoint: DELETE /api/users/me
+   * - Requires authentication (Bearer token)
+   * - User can only delete their own account
+   * - Returns 401 if not authenticated
+   * - Invalidates all refresh tokens
+   * - Soft delete or hard delete based on backend implementation
+   * - Component should handle logout after successful deletion
+   *
+   * @example
+   * ```typescript
+   * this.userService.deleteCurrentUser().subscribe({
+   *   next: () => {
+   *     this.notificationService.success('Account deleted', 'Success');
+   *     this.authService.logout(); // Logout after deletion
+   *     this.router.navigate(['/']);
+   *   },
+   *   error: (err) => {
+   *     this.notificationService.error(err.message, 'Error');
+   *   }
+   * });
+   * ```
+   */
+  deleteCurrentUser(): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(
+      `${this.USERS_URL}/me`
+    ).pipe(
+      map(response => {
+        if (!response.success) {
+          throw new Error(response.message || 'Failed to delete user account');
+        }
+        return;
+      }),
+      tap(() => {
+        // Clear current user profile cache
+        this.clearCurrentUserProfile();
+        this.clearProfileCache();
+
+        // Note: Component should call authService.logout() after successful deletion
+      }),
+      catchError(error => this.handleError('Failed to delete user account', error))
+    );
+  }
+
   // ==================== Helper Methods ====================
 
   /**
@@ -374,7 +489,7 @@ export class UserService {
    * - Uses cached profile
    * - Returns undefined if not a mentor or profile not cached
    */
-  getCurrentUserMentorId(): string | undefined {
+  getCurrentUserMentorId(): string | null | undefined {
     const user = this.getCachedCurrentUserProfile();
     return user?.mentorId;
   }

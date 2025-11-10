@@ -7,8 +7,11 @@
  * @remarks
  * - Extends ASP.NET Identity IdentityUser
  * - PasswordHash is never exposed to the frontend for security
- * - All dates are represented as Date objects or ISO strings from API
+ * - All dates are represented as ISO 8601 strings from API
+ * - Based on User-Profile-Endpoints.md contract (RetrieveUserDto)
  */
+
+import { Skill } from './skill.model';
 
 /**
  * User role enum for role-based access control
@@ -20,7 +23,13 @@ export enum UserRole {
 }
 
 /**
- * Main User interface representing a platform user
+ * Main User interface representing a platform user (RetrieveUserDto)
+ *
+ * @remarks
+ * Based on User-Profile-Endpoints.md contract
+ * - careerInterests is an array of Skill objects (SkillDto)
+ * - Timestamps are ISO 8601 strings
+ * - roles is always present (array of role names)
  */
 export interface User {
   /** Unique identifier (GUID from ASP.NET Identity) */
@@ -39,34 +48,34 @@ export interface User {
   lastName: string;
 
   /** User's phone number (optional) */
-  phoneNumber?: string;
+  phoneNumber: string | null;
 
   /** URL to user's profile picture (optional) */
-  profilePictureUrl?: string;
+  profilePictureUrl: string | null;
 
-  /** User's career interests as an array (e.g., ["Software Development", "Data Science", "Machine Learning"]) */
-  careerInterests?: string[];
+  /** User's career interests as array of Skill objects (areas where they seek guidance) */
+  careerInterests: Skill[] | null;
 
-  /** User's career goals (e.g., "Become a senior developer within 2 years") */
-  careerGoals?: string;
+  /** User's career goals statement (e.g., "Become a senior developer within 2 years") */
+  careerGoals: string | null;
 
-  /** Date when user registered on the platform */
-  registrationDate: Date | string;
+  /** Date when user registered on the platform (ISO 8601 string) */
+  registrationDate: string;
 
-  /** Date of user's last login */
-  lastLoginDate?: Date | string;
+  /** Date of user's last login (ISO 8601 string) */
+  lastLoginDate: string | null;
 
   /** Whether the user account is active */
   isActive: boolean;
 
-  /** User's role(s) in the system */
-  roles?: UserRole[];
+  /** User's role(s) in the system (always present, array of role names) */
+  roles: string[];
 
-  /** Whether this user is also a mentor (has mentor profile) */
-  isMentor?: boolean;
+  /** Whether this user is also a mentor (has approved mentor profile) */
+  isMentor: boolean;
 
-  /** Mentor ID if the user is also a mentor */
-  mentorId?: string;
+  /** Mentor ID if the user is also a mentor (null for regular users) */
+  mentorId: string | null;
 }
 
 /**
@@ -82,14 +91,29 @@ export interface UserSummary {
 }
 
 /**
- * User profile data for edit operations
+ * User profile data for update operations (UpdateUserDto)
+ *
+ * @remarks
+ * Based on User-Profile-Endpoints.md contract
+ * - All fields are optional (PATCH semantics)
+ * - Email, password, and roles cannot be changed via profile update
+ * - careerInterests are NOT updated via this DTO - use dedicated Skills endpoint
+ * - Used for both PATCH /api/users/me and PATCH /api/users/{id}
  */
 export interface UserProfileUpdate {
-  firstName: string;
-  lastName: string;
+  /** Updated first name (optional) */
+  firstName?: string;
+
+  /** Updated last name (optional) */
+  lastName?: string;
+
+  /** Updated phone number (optional) */
   phoneNumber?: string;
+
+  /** Updated profile picture URL (optional) */
   profilePictureUrl?: string;
-  careerInterests?: string[];
+
+  /** Updated career goals statement (optional) */
   careerGoals?: string;
 }
 
@@ -129,9 +153,23 @@ export function getUserInitials(user: User | UserSummary | AuthenticatedUser): s
 
 /**
  * Helper function to check if user has a specific role
+ *
+ * @param user - User or AuthenticatedUser object
+ * @param role - Role to check for (UserRole enum)
+ * @returns True if user has the role
+ *
+ * @remarks
+ * - Handles both string array (from API) and UserRole array
+ * - Case-insensitive role comparison
  */
 export function hasRole(user: User | AuthenticatedUser, role: UserRole): boolean {
-  return user.roles?.includes(role) ?? false;
+  if (!user.roles || user.roles.length === 0) return false;
+
+  // Convert role enum to string for comparison
+  const roleString = role.toString();
+
+  // Check if any role matches (case-insensitive)
+  return user.roles.some(r => r.toLowerCase() === roleString.toLowerCase());
 }
 
 /**
@@ -143,17 +181,55 @@ export function isAdmin(user: User | AuthenticatedUser): boolean {
 
 /**
  * Helper function to format registration date
+ *
+ * @param user - User object
+ * @returns Formatted date string
+ *
+ * @remarks
+ * - Handles ISO 8601 string format from API
  */
 export function formatRegistrationDate(user: User): string {
-  const date = typeof user.registrationDate === 'string'
-    ? new Date(user.registrationDate)
-    : user.registrationDate;
+  const date = new Date(user.registrationDate);
 
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
+}
+
+/**
+ * Helper function to format user role for display
+ *
+ * @param role - Role string from API
+ * @returns Formatted role name
+ */
+export function formatUserRole(role: string): string {
+  // Handle role strings: "User", "Mentor", "Admin"
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+/**
+ * Helper function to get career interest names
+ *
+ * @param user - User object
+ * @returns Array of career interest names
+ */
+export function getCareerInterestNames(user: User): string[] {
+  return user.careerInterests?.map(skill => skill.name) || [];
+}
+
+/**
+ * Helper function to compare users by name (for sorting)
+ *
+ * @param u1 - First user
+ * @param u2 - Second user
+ * @returns Sort comparison result
+ */
+export function compareUsersByName(u1: User, u2: User): number {
+  const name1 = getUserFullName(u1).toLowerCase();
+  const name2 = getUserFullName(u2).toLowerCase();
+  return name1.localeCompare(name2);
 }
 
 /**
