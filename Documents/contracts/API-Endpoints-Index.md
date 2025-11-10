@@ -53,7 +53,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 ---
 
-### Skills (7 endpoints)
+### Skills (5 endpoints)
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
@@ -62,8 +62,8 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `POST` | `/api/skills` | Admin | **[Skills-Endpoints.md](./Skills-Endpoints.md#3-create-skill-admin-only)** | ✅ Authoritative |
 | `PATCH` | `/api/skills/{id}` | Admin | **[Skills-Endpoints.md](./Skills-Endpoints.md#4-update-skill-admin-only)** | ✅ Authoritative |
 | `DELETE` | `/api/skills/{id}` | Admin | **[Skills-Endpoints.md](./Skills-Endpoints.md#5-delete-skill-admin-only)** | ✅ Authoritative |
-| `PATCH` | `/api/users/me/career-interests` | User | **[Skills-Endpoints.md](./Skills-Endpoints.md#6-update-user-career-interests)** | ✅ Authoritative<br/>📖 Referenced in [User-Profile-Endpoints.md](./User-Profile-Endpoints.md) |
-| `PATCH` | `/api/mentors/{mentorId}/expertise-tags` | Mentor/Admin | **[Skills-Endpoints.md](./Skills-Endpoints.md#7-update-mentor-expertise-tags)** | ✅ Authoritative<br/>📖 Referenced in [Mentor-Endpoints.md](./Mentor-Endpoints.md) |
+
+**Note:** User career interests are now updated via `PATCH /api/users/me` with `careerInterestIds` field (see [User-Profile-Endpoints.md](./User-Profile-Endpoints.md)). Mentor expertise tags are updated via `PATCH /api/mentors/{id}` with `expertiseTagIds` field (see [Mentor-Endpoints.md](./Mentor-Endpoints.md)).
 
 ---
 
@@ -156,10 +156,10 @@ Mentor-Endpoints.md (REFERENCES)
 |----------|----------------|--------|---------------|------------|
 | Authentication | 8 | 7 | 1 | 0 |
 | Categories | 6 | 2 | 0 | 4 |
-| Skills | 7 | 2 | 3 | 2 |
+| Skills | 5 | 2 | 0 | 3 |
 | Mentors | 9 | 4 | 2 | 3 |
 | Users | 6 | 0 | 4 | 2 |
-| **TOTAL** | **36** | **15** | **10** | **11** |
+| **TOTAL** | **34** | **15** | **8** | **11** |
 
 ---
 
@@ -405,6 +405,6 @@ Mentor-Endpoints.md (REFERENCES)
 
 ---
 
-**Total Documented Endpoints:** 36  
+**Total Documented Endpoints:** 34  
 **Total Contract Files:** 5  
 **Documentation Status:** ✅ Complete & Synchronized
