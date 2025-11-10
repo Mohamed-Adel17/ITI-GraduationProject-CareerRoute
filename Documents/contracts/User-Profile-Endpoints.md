@@ -19,11 +19,11 @@ User profile endpoints allow users to view, update, and manage their personal in
 ## Related Documentation
 
 - **📖 API Endpoints Index**: See [API-Endpoints-Index.md](./API-Endpoints-Index.md) for complete endpoint directory and cross-references
-- **Skills Management**: See [Skills-Endpoints.md](./Skills-Endpoints.md) for updating user career interests and skills CRUD operations
+- **Skills Management**: See [Skills-Endpoints.md](./Skills-Endpoints.md) for skills CRUD operations (admin only)
 - **Skills System Overview**: See [Skills-System-Overview.md](./Skills-System-Overview.md) for understanding how Skills work
-- **Mentor Profiles**: See [Mentor-Endpoints.md](./Mentor-Endpoints.md) for mentor expertise tags (which use the same Skills system)
+- **Mentor Profiles**: See [Mentor-Endpoints.md](./Mentor-Endpoints.md) for mentor profiles (which use the same Skills system)
 
-**Important:** User `careerInterests` are managed via the Skills system. Update career interests using `PATCH /api/users/me/career-interests` endpoint (see Skills-Endpoints.md).
+**Important:** User `careerInterests` are managed via the Skills system. Update career interests using the `careerInterestIds` field in `PATCH /api/users/me` endpoint.
 
 ---
 
@@ -93,9 +93,9 @@ User profile endpoints allow users to view, update, and manage their personal in
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": ["Software Development", "AI", "Cloud Computing"],
   "careerGoals": "Become a Solutions Architect within 2 years",
-  "profilePictureUrl": "https://example.com/profiles/john-new.jpg"
+  "profilePictureUrl": "https://example.com/profiles/john-new.jpg",
+  "careerInterestIds": [1, 5, 15, 20]
 }
 ```
 
@@ -103,9 +103,9 @@ User profile endpoints allow users to view, update, and manage their personal in
 - `firstName` (optional): Min 2 chars, max 50 chars
 - `lastName` (optional): Min 2 chars, max 50 chars
 - `phoneNumber` (optional): Valid phone number format
-- `careerInterests` (optional): Array of career interest names
 - `careerGoals` (optional): Max 500 characters
 - `profilePictureUrl` (optional): Valid URL format, max 200 chars
+- `careerInterestIds` (optional): Array of skill IDs (integers), all IDs must be valid active skills, empty array [] clears all career interests
 
 **Note:** All fields are optional. Only provided fields will be updated. Email cannot be changed via this endpoint.
 
@@ -147,7 +147,8 @@ User profile endpoints allow users to view, update, and manage their personal in
     "message": "Validation failed",
     "errors": {
       "FirstName": ["First name must be at least 2 characters"],
-      "PhoneNumber": ["Invalid phone number format"]
+      "PhoneNumber": ["Invalid phone number format"],
+      "CareerInterestIds": ["One or more skill IDs are invalid or inactive"]
     },
     "statusCode": 400
   }
@@ -166,7 +167,10 @@ User profile endpoints allow users to view, update, and manage their personal in
 - Extract user ID from JWT token claims
 - Validate all provided fields
 - Update only the fields that are provided in request
-- **Note**: `careerInterests` are NOT updated via this endpoint - use dedicated Skills endpoint
+- If `careerInterestIds` is provided:
+  - Validate all skill IDs exist and are active
+  - Use database transaction: DELETE existing UserSkills for this user, INSERT new UserSkills for provided IDs
+  - Empty array [] clears all career interests
 - **Skills Integration**: Join user's UserSkills to get careerInterests with full SkillDto structure in response
 - Return updated user data
 

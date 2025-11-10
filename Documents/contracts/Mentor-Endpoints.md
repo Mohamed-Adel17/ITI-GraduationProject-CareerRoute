@@ -28,8 +28,7 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
   - Complete CategoryDto model structure
   
 - **Skills Management**: See [Skills-Endpoints.md](./Skills-Endpoints.md) for:
-  - Skills CRUD operations
-  - Updating mentor expertise tags
+  - Skills CRUD operations (admin only)
   - Complete SkillDto model structure
   
 - **Skills System Overview**: See [Skills-System-Overview.md](./Skills-System-Overview.md) for high-level overview of the unified skills system
@@ -607,7 +606,7 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - Notify admins of new application (optional)
 - Return created mentor profile
 
-**Note:** After approval by admin, mentor should add expertise tags via `PATCH /api/mentors/{id}/expertise-tags` (see Skills-Endpoints.md)
+**Note:** After approval by admin, mentor should add expertise tags using the `expertiseTagIds` field in `PATCH /api/mentors/{id}` endpoint
 
 ---
 
@@ -627,7 +626,8 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
   "yearsOfExperience": 9,
   "certifications": "Updated certifications...",
   "rate30Min": 30.00,
-  "rate60Min": 50.00
+  "rate60Min": 50.00,
+  "expertiseTagIds": [5, 15, 20, 25, 30]
 }
 ```
 
@@ -637,6 +637,7 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - `certifications` (optional): Max 500 chars
 - `rate30Min` (optional): Decimal, min 0, max 10000
 - `rate60Min` (optional): Decimal, min 0, max 10000
+- `expertiseTagIds` (optional): Array of skill IDs (integers), all IDs must be valid active skills, empty array [] clears all expertise tags
 
 **Note:** All fields are optional. Only provided fields will be updated.
 
@@ -679,7 +680,8 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
     "success": false,
     "message": "Validation failed",
     "errors": {
-      "Bio": ["Bio must be at least 50 characters"]
+      "Bio": ["Bio must be at least 50 characters"],
+      "ExpertiseTagIds": ["One or more skill IDs are invalid or inactive"]
     },
     "statusCode": 400
   }
@@ -717,11 +719,15 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - Verify user owns this mentor profile OR user is Admin
 - Validate all provided fields
 - Update only provided fields (PATCH semantics)
+- If `expertiseTagIds` is provided:
+  - Get mentor's UserId from Mentor table
+  - Validate all skill IDs exist and are active
+  - Use database transaction: DELETE existing UserSkills for mentor's UserId, INSERT new UserSkills for provided IDs
+  - Empty array [] clears all expertise tags
 - Update `updatedAt` timestamp
+- **Skills Integration**: Join mentor's UserSkills to get expertiseTags with full SkillDto structure in response
 - Return updated mentor profile
 - Return 403 if user doesn't own profile and is not Admin
-
-**Note:** To update expertise tags, use `PATCH /api/mentors/{id}/expertise-tags` endpoint (see Skills-Endpoints.md)
 
 ---
 
@@ -991,7 +997,7 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 **Notes:**
 - `expertiseTags` is an array of SkillDto objects (see [Skills-Endpoints.md](./Skills-Endpoints.md) for SkillDto structure)
 - `expertiseTags` represents mentor's consultation areas (both career guidance and technical skills)
-- Update mentor expertise via `PATCH /api/mentors/{id}/expertise-tags` endpoint (see Skills-Endpoints.md)
+- Update mentor expertise using the `expertiseTagIds` field in `PATCH /api/mentors/{id}` endpoint
 - `rate30Min` and `rate60Min` are pricing for session durations
 - Optional fields are populated in detail view (GET /api/mentors/{id})
 
@@ -1013,7 +1019,8 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
   "yearsOfExperience": "number | optional", // Optional: Min 0, integer
   "certifications": "string | optional",   // Optional: Max 500 chars
   "rate30Min": "decimal | optional",       // Optional: Min 0, max 10000
-  "rate60Min": "decimal | optional"        // Optional: Min 0, max 10000
+  "rate60Min": "decimal | optional",       // Optional: Min 0, max 10000
+  "expertiseTagIds": "number[] | optional" // Optional: Array of skill IDs, empty array [] clears all
 }
 ```
 
