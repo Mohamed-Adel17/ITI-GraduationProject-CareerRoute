@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -90,13 +90,13 @@ export class EditProfileComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load user profile data and available skills
+   * Load user profile data
    *
    * @remarks
-   * Uses forkJoin to load:
-   * - User profile via GET /api/users/me
-   * - Available skills via GET /api/skills
-   * Career interests are now editable via multi-select
+   * - Loads user profile via GET /api/users/me (critical)
+   * - Attempts to load skills separately (non-blocking)
+   * - Profile loads even if skills endpoint is not available
+   * - Career interests are editable via multi-select if skills are available
    *
    * No authentication check needed here because:
    * - Route is protected by authGuard
@@ -106,26 +106,48 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    // Load user profile and available skills in parallel
-    this.subscription = forkJoin({
-      user: this.userService.getCurrentUserProfile(),
-      skills: this.skillService.getAllSkills()
-    }).subscribe({
-      next: ({ user, skills }) => {
+    // Load user profile (critical - must succeed)
+    this.subscription = this.userService.getCurrentUserProfile().subscribe({
+      next: (user) => {
         this.user = user;
-        this.availableSkills = skills;
 
         // Extract selected skill IDs from user's career interests
         this.selectedSkillIds = user.careerInterests?.map(skill => skill.id) || [];
 
         this.populateForm(user);
         this.loading = false;
+
+        // Try to load skills (non-critical - optional)
+        this.loadSkillsIfAvailable();
       },
       error: (err) => {
         this.error = 'Failed to load profile data';
         this.loading = false;
         this.notificationService.error('Could not load your profile. Please try again.', 'Error');
         console.error('Error loading profile data:', err);
+      }
+    });
+  }
+
+  /**
+   * Load available skills for career interests selection
+   *
+   * @remarks
+   * - Non-blocking operation (profile still works if this fails)
+   * - Skills endpoint may not be implemented yet on backend
+   * - Silently fails if endpoint is unavailable
+   * - User can still edit other profile fields without skills
+   */
+  private loadSkillsIfAvailable(): void {
+    this.skillService.getAllSkills().subscribe({
+      next: (skills) => {
+        this.availableSkills = skills;
+      },
+      error: (err) => {
+        // Skills endpoint not ready - silently fail
+        // User can still edit firstName, lastName, phoneNumber, careerGoals
+        console.warn('Skills endpoint not available yet. Career interests selection disabled.', err);
+        this.availableSkills = []; // Ensure it's empty array, not undefined
       }
     });
   }

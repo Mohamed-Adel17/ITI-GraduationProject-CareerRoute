@@ -1,10 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
-import { NotificationService } from './notification.service';
-import { AuthService } from './auth.service';
 import {
   User,
   UserProfileUpdate,
@@ -26,24 +24,24 @@ import { ApiResponse } from '../../shared/models/api-response.model';
  * - Get user by ID (GET /api/users/{id}) - Admin/Mentor only
  * - Update user by ID (PATCH /api/users/{id}) - Admin only
  * - User profile caching with BehaviorSubject
- * - Automatic error handling
- * - Integration with AuthService for token management
+ * - Token management handled by authInterceptor
  *
  * @remarks
  * - All endpoints require authentication (Bearer token)
  * - careerInterests can be updated via PATCH /api/users/me using careerInterestIds field
  * - Profile updates use PATCH semantics (all fields optional)
  * - Based on User-Profile-Endpoints.md contract
- * - Component-level notification pattern (service extracts errors, component shows notifications)
+ * - Error handling is done globally by errorInterceptor
+ * - Components only need to handle success cases and optional custom error logic
  *
  * @example
  * ```typescript
- * // Get current user profile
+ * // Get current user profile - errors handled automatically by errorInterceptor
  * this.userService.getCurrentUserProfile().subscribe(
  *   (user) => this.user = user
  * );
  *
- * // Update current user profile
+ * // Update current user profile - only handle success
  * const updates: UserProfileUpdate = {
  *   firstName: 'John',
  *   lastName: 'Doe',
@@ -53,10 +51,8 @@ import { ApiResponse } from '../../shared/models/api-response.model';
  * this.userService.updateCurrentUserProfile(updates).subscribe({
  *   next: (user) => {
  *     this.notificationService.success('Profile updated!', 'Success');
- *   },
- *   error: (err) => {
- *     this.notificationService.error(err.message, 'Error');
  *   }
+ *   // No error handler needed - errorInterceptor handles it
  * });
  * ```
  */
@@ -65,8 +61,6 @@ import { ApiResponse } from '../../shared/models/api-response.model';
 })
 export class UserService {
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
-  private readonly notificationService = inject(NotificationService);
 
   // API endpoints
   private readonly API_URL = environment.apiUrl;
@@ -78,6 +72,47 @@ export class UserService {
 
   // User profiles cache (for multiple user lookups)
   private userProfilesCache = new Map<string, User>();
+
+  // ==================== Helper Methods ====================
+
+  /**
+   * Unwrap ApiResponse and validate response structure
+   *
+   * @param response - The ApiResponse wrapper from backend
+   * @param errorMessage - Default error message if response is invalid
+   * @returns The unwrapped data from the response
+   * @throws Error if response is invalid or unsuccessful
+   *
+   * @remarks
+   * - Validates response.success flag
+   * - Validates response.data is present
+   * - Uses response.message if available, otherwise uses errorMessage
+   * - Thrown errors are caught by errorInterceptor
+   */
+  private unwrapResponse<T>(response: ApiResponse<T>, errorMessage: string): T {
+    if (!response.success || !response.data) {
+      throw new Error(response.message || errorMessage);
+    }
+    return response.data;
+  }
+
+  /**
+   * Unwrap ApiResponse for void operations (e.g., delete)
+   *
+   * @param response - The ApiResponse wrapper from backend
+   * @param errorMessage - Default error message if response is invalid
+   * @throws Error if response is unsuccessful
+   *
+   * @remarks
+   * - Only validates response.success flag (data can be null for void operations)
+   * - Uses response.message if available, otherwise uses errorMessage
+   * - Thrown errors are caught by errorInterceptor
+   */
+  private unwrapVoidResponse(response: ApiResponse<void>, errorMessage: string): void {
+    if (!response.success) {
+      throw new Error(response.message || errorMessage);
+    }
+  }
 
   // ==================== Get User Profile ====================
 
@@ -107,15 +142,11 @@ export class UserService {
     return this.http.get<ApiResponse<User>>(
       `${this.USERS_URL}/${userId}`
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch user profile');
-        }
+      map(response => this.unwrapResponse(response, 'Failed to fetch user profile')),
+      tap(user => {
         // Cache the user profile
-        this.userProfilesCache.set(userId, response.data);
-        return response.data;
-      }),
-      catchError(error => this.handleError('Failed to fetch user profile', error))
+        this.userProfilesCache.set(userId, user);
+      })
     );
   }
 
@@ -126,10 +157,12 @@ export class UserService {
    *
    * @remarks
    * - Endpoint: GET /api/users/me
-   * - Uses /me endpoint (extracts user ID from JWT token on backend)
+   * - Requires authentication (Bearer token automatically added by authInterceptor)
+   * - Backend extracts user ID from JWT token
    * - Updates the currentUserProfile$ observable
    * - Caches the profile for quick access
-   * - Returns error if user is not authenticated
+   * - Returns 401 if not authenticated (handled by errorInterceptor)
+   * - Component should be protected by authGuard to prevent unauthorized access
    *
    * @example
    * ```typescript
@@ -139,26 +172,15 @@ export class UserService {
    * ```
    */
   getCurrentUserProfile(): Observable<User> {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser || !currentUser.id) {
-      return throwError(() => new Error('User not authenticated'));
-    }
-
     return this.http.get<ApiResponse<User>>(
       `${this.USERS_URL}/me`
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch user profile');
-        }
-        return response.data;
-      }),
+      map(response => this.unwrapResponse(response, 'Failed to fetch user profile')),
       tap(user => {
-        // Cache the user profile
-        this.userProfilesCache.set(currentUser.id, user);
+        // Cache the user profile using the user ID from the response
+        this.userProfilesCache.set(user.id, user);
         this.currentUserProfileSubject.next(user);
-      }),
-      catchError(error => this.handleError('Failed to fetch user profile', error))
+      })
     );
   }
 
@@ -216,17 +238,13 @@ export class UserService {
     return this.http.get<ApiResponse<User[]>>(
       this.USERS_URL
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch users');
-        }
+      map(response => this.unwrapResponse(response, 'Failed to fetch users')),
+      tap(users => {
         // Cache all user profiles
-        response.data.forEach(user => {
+        users.forEach(user => {
           this.userProfilesCache.set(user.id, user);
         });
-        return response.data;
-      }),
-      catchError(error => this.handleError('Failed to fetch all users', error))
+      })
     );
   }
 
@@ -282,26 +300,14 @@ export class UserService {
       `${this.USERS_URL}/me`,
       profileUpdate
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to update user profile');
-        }
-        return response.data;
-      }),
+      map(response => this.unwrapResponse(response, 'Failed to update user profile')),
       tap(user => {
-        // Update cache with current user data
-        const currentUser = this.authService.getCurrentUser();
-        if (currentUser && currentUser.id) {
-          this.userProfilesCache.set(currentUser.id, user);
-        }
+        // Update cache using user ID from response
+        this.userProfilesCache.set(user.id, user);
 
         // Update current user profile observable
         this.currentUserProfileSubject.next(user);
-
-        // Note: Success notification should be shown by the calling component
-        // for context-specific messaging
-      }),
-      catchError(error => this.handleError('Failed to update user profile', error))
+      })
     );
   }
 
@@ -343,26 +349,16 @@ export class UserService {
       `${this.USERS_URL}/${userId}`,
       profileUpdate
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to update user profile');
-        }
-        return response.data;
-      }),
+      map(response => this.unwrapResponse(response, 'Failed to update user profile')),
       tap(user => {
         // Update cache
         this.userProfilesCache.set(userId, user);
 
-        // Update current user profile if it's the authenticated user
-        const currentUser = this.authService.getCurrentUser();
-        if (currentUser && currentUser.id === userId) {
+        // Update current user profile observable if updating the currently cached user
+        if (this.currentUserProfileSubject.value?.id === userId) {
           this.currentUserProfileSubject.next(user);
         }
-
-        // Note: Success notification should be shown by the calling component
-        // for context-specific messaging
-      }),
-      catchError(error => this.handleError('Failed to update user profile', error))
+      })
     );
   }
 
@@ -400,20 +396,14 @@ export class UserService {
     return this.http.delete<ApiResponse<void>>(
       `${this.USERS_URL}/me`
     ).pipe(
-      map(response => {
-        if (!response.success) {
-          throw new Error(response.message || 'Failed to delete user account');
-        }
-        return;
-      }),
+      map(response => this.unwrapVoidResponse(response, 'Failed to delete user account')),
       tap(() => {
         // Clear current user profile cache
         this.clearCurrentUserProfile();
         this.clearProfileCache();
 
         // Note: Component should call authService.logout() after successful deletion
-      }),
-      catchError(error => this.handleError('Failed to delete user account', error))
+      })
     );
   }
 
@@ -533,48 +523,5 @@ export class UserService {
     const firstInitial = user.firstName?.charAt(0)?.toUpperCase() || '';
     const lastInitial = user.lastName?.charAt(0)?.toUpperCase() || '';
     return `${firstInitial}${lastInitial}`;
-  }
-
-  // ==================== Error Handling ====================
-
-  /**
-   * Handle API errors with logging
-   *
-   * @param defaultMessage - Default message to use if error message is not available
-   * @param error - The error object
-   * @returns Throwable error for upstream handling
-   *
-   * @remarks
-   * - Extracts error message from various error formats
-   * - Logs error details for debugging
-   * - Returns formatted error to calling component
-   * - Component should handle error notification for context-specific messaging
-   * - Error interceptor handles global errors (401, network errors, etc.)
-   */
-  private handleError(defaultMessage: string, error: any): Observable<never> {
-    let errorMessage = defaultMessage;
-
-    if (error.error?.message) {
-      errorMessage = error.error.message;
-    } else if (error.error?.errors) {
-      // Extract first validation error
-      const firstError = Object.values(error.error.errors)[0];
-      if (Array.isArray(firstError) && firstError.length > 0) {
-        errorMessage = firstError[0];
-      }
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-
-    // Log error for debugging
-    console.error('[UserService] Error:', errorMessage, error);
-
-    // Note: Error notification should be shown by the calling component
-    // for context-specific messaging
-
-    return throwError(() => ({
-      ...error,
-      message: errorMessage
-    }));
   }
 }

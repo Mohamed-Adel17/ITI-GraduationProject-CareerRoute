@@ -74,14 +74,6 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      this.error = 'User not authenticated';
-      this.loading = false;
-      this.notificationService.error('Please log in to view your profile', 'Authentication Required');
-      return;
-    }
-
     this.subscription = this.userService.getCurrentUserProfile().subscribe({
       next: (user) => {
         this.user = user;
