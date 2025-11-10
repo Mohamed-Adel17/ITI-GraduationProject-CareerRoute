@@ -159,37 +159,67 @@
             </h5>
           </div>
           <div class="p-6">
-            <!-- Career Interests -->
+            <!-- Career Interests (Editable Multi-Select) -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Career Interests
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Career Interests (Skills)
               </label>
-              <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                Select all areas you're interested in (Click to toggle)
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Select the areas where you seek guidance or consultation. Click to toggle selection.
               </p>
-              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                @for (interest of availableInterests; track interest) {
-                  <button
-                    type="button"
-                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center justify-center"
-                    [ngClass]="{
-                      'bg-blue-600 text-white hover:bg-blue-700': isInterestSelected(interest),
-                      'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-blue-600 dark:border-blue-500 hover:bg-blue-50 dark:hover:bg-gray-600': !isInterestSelected(interest)
-                    }"
-                    (click)="toggleInterest(interest)"
-                  >
-                    @if (isInterestSelected(interest)) {
-                      <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                      </svg>
-                    }
-                    {{ interest }}
-                  </button>
+
+              <!-- Skills grouped by category -->
+              @if (availableSkills.length > 0) {
+                @for (category of getSkillsByCategory() | keyvalue; track category.key) {
+                  <div class="mb-4">
+                    <h6 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      {{ category.key }}
+                    </h6>
+                    <div class="flex flex-wrap gap-2">
+                      @for (skill of category.value; track skill.id) {
+                        <button
+                          type="button"
+                          (click)="toggleSkill(skill.id)"
+                          [ngClass]="{
+                            'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600': isSkillSelected(skill.id),
+                            'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600': !isSkillSelected(skill.id)
+                          }"
+                          class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          @if (isSkillSelected(skill.id)) {
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                          }
+                          {{ skill.name }}
+                        </button>
+                      }
+                    </div>
+                  </div>
                 }
+              } @else {
+                <div class="flex items-center justify-center py-8 text-gray-500 dark:text-gray-400">
+                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <p>No skills available. Please try again later.</p>
+                </div>
+              }
+
+              <!-- Selected count -->
+              <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div class="flex items-center text-sm text-blue-800 dark:text-blue-200">
+                  <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span>
+                    <strong>{{ selectedSkillIds.length }}</strong> skill{{ selectedSkillIds.length !== 1 ? 's' : '' }} selected
+                    @if (selectedSkillIds.length === 0) {
+                      <span class="ml-1">(optional - you can select skills later)</span>
+                    }
+                  </span>
+                </div>
               </div>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
-                Selected: {{ selectedInterests.size }} interest(s)
-              </p>
             </div>
 
             <!-- Career Goals -->
