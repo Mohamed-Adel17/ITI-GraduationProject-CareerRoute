@@ -5,8 +5,7 @@ import { Subscription } from 'rxjs';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { User } from '../../../shared/models/user.model';
-import { getUserFullName, getUserInitials } from '../../../shared/models/user.model';
+import { User, getUserFullName, getUserInitials, formatRegistrationDate, getCareerInterestNames } from '../../../shared/models/user.model';
 
 /**
  * UserProfileComponent
@@ -18,12 +17,18 @@ import { getUserFullName, getUserInitials } from '../../../shared/models/user.mo
  * Features:
  * - Display user personal information
  * - Show profile picture or initials fallback
- * - Display career interests as tags
+ * - Display career interests as Skill tags (from Skills system)
  * - Display career goals
  * - Show account information (email, registration date)
  * - Link to edit profile page
  * - Loading state while fetching data
  * - Error handling with user feedback
+ *
+ * @remarks
+ * - Uses GET /api/users/me endpoint via UserService
+ * - careerInterests are Skill objects with full category information
+ * - Timestamps are ISO 8601 strings from API
+ * - Based on User-Profile-Endpoints.md contract
  *
  * @example
  * Route: /user/profile
@@ -60,6 +65,10 @@ export class UserProfileComponent implements OnInit, OnDestroy {
 
   /**
    * Load the current user's profile from the API
+   *
+   * @remarks
+   * Uses GET /api/users/me endpoint via UserService.getCurrentUserProfile()
+   * This endpoint extracts user ID from JWT token on backend
    */
   private loadUserProfile(): void {
     this.loading = true;
@@ -73,7 +82,7 @@ export class UserProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.subscription = this.userService.getUserProfile(currentUser.id).subscribe({
+    this.subscription = this.userService.getCurrentUserProfile().subscribe({
       next: (user) => {
         this.user = user;
         this.loading = false;
@@ -110,19 +119,26 @@ export class UserProfileComponent implements OnInit, OnDestroy {
 
   /**
    * Get formatted registration date
+   *
+   * @remarks
+   * Uses formatRegistrationDate helper from user.model.ts
+   * Handles ISO 8601 string format from API
    */
   getRegistrationDate(): string {
-    if (!this.user?.registrationDate) return 'N/A';
+    if (!this.user) return 'N/A';
+    return formatRegistrationDate(this.user);
+  }
 
-    const date = typeof this.user.registrationDate === 'string'
-      ? new Date(this.user.registrationDate)
-      : this.user.registrationDate;
-
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  /**
+   * Get career interest names as string array
+   *
+   * @remarks
+   * Extracts skill names from Skill objects
+   * Uses getCareerInterestNames helper from user.model.ts
+   */
+  getCareerInterestNames(): string[] {
+    if (!this.user) return [];
+    return getCareerInterestNames(this.user);
   }
 
   /**
