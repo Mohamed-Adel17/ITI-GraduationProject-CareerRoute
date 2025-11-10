@@ -10,18 +10,7 @@ import {
   UserProfileUpdate,
   UserRole
 } from '../../shared/models/user.model';
-
-/**
- * Response wrapper for user API calls
- * Matches the standard API response format from backend
- */
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  errors?: { [key: string]: string[] };
-  statusCode?: number;
-}
+import { ApiResponse } from '../../shared/models/api-response.model';
 
 /**
  * UserService
@@ -103,7 +92,7 @@ export class UserService {
    */
   getUserProfile(userId: string): Observable<User> {
     return this.http.get<ApiResponse<User>>(
-      `${this.USERS_URL}/${userId}`
+      `${this.USERS_URL}/me`
     ).pipe(
       map(response => {
         if (!response.success || !response.data) {
@@ -183,21 +172,20 @@ export class UserService {
   // ==================== Update User Profile ====================
 
   /**
-   * Update user profile
+   * Update current authenticated user's profile
    *
-   * @param userId - The ID of the user to update
    * @param profileUpdate - The profile data to update
    * @returns Observable of updated User profile
    *
    * @remarks
+   * - Uses `/api/users/me` endpoint (PATCH method)
    * - Requires authentication (Bearer token)
-   * - User can only update their own profile (or admin can update any)
+   * - User can only update their own profile
    * - Email cannot be changed via this endpoint
-   * - Phone number is optional
+   * - All fields are optional (PATCH semantics)
    * - Returns 400 if validation fails
-   * - Returns 403 if trying to update another user's profile (non-admin)
-   * - Returns 404 if user not found
-   * - Updates currentUserProfile$ if updating current user
+   * - Returns 401 if not authenticated
+   * - Updates currentUserProfile$ observable
    * - Component should handle success notification for context-specific messaging
    *
    * @example
@@ -210,7 +198,7 @@ export class UserService {
    *   careerGoals: 'Become a senior developer'
    * };
    *
-   * this.userService.updateUserProfile(userId, updates).subscribe(
+   * this.userService.updateCurrentUserProfile(updates).subscribe(
    *   (updatedUser) => {
    *     // Profile updated successfully
    *     // Show notification in component
@@ -219,8 +207,66 @@ export class UserService {
    * );
    * ```
    */
-  updateUserProfile(userId: string, profileUpdate: UserProfileUpdate): Observable<User> {
-    return this.http.put<ApiResponse<User>>(
+  updateCurrentUserProfile(profileUpdate: UserProfileUpdate): Observable<User> {
+    return this.http.patch<ApiResponse<User>>(
+      `${this.USERS_URL}/me`,
+      profileUpdate
+    ).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.message || 'Failed to update user profile');
+        }
+        return response.data;
+      }),
+      tap(user => {
+        // Update cache with current user data
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser && currentUser.id) {
+          this.userProfilesCache.set(currentUser.id, user);
+        }
+
+        // Update current user profile observable
+        this.currentUserProfileSubject.next(user);
+
+        // Note: Success notification should be shown by the calling component
+        // for context-specific messaging
+      }),
+      catchError(error => this.handleError('Failed to update user profile', error))
+    );
+  }
+
+  /**
+   * Update user profile by ID (Admin only)
+   *
+   * @param userId - The ID of the user to update
+   * @param profileUpdate - The profile data to update
+   * @returns Observable of updated User profile
+   *
+   * @remarks
+   * - Uses `/api/users/{id}` endpoint (PATCH method)
+   * - Requires Admin role
+   * - Email cannot be changed via this endpoint
+   * - All fields are optional (PATCH semantics)
+   * - Returns 400 if validation fails
+   * - Returns 401 if not authenticated
+   * - Returns 403 if not Admin
+   * - Returns 404 if user not found
+   * - Component should handle success notification for context-specific messaging
+   *
+   * @example
+   * ```typescript
+   * const updates: UserProfileUpdate = {
+   *   firstName: 'John',
+   *   lastName: 'Doe'
+   * };
+   *
+   * this.userService.updateUserProfileById(userId, updates).subscribe(
+   *   (user) => console.log('Updated:', user)
+   * );
+   * ```
+   */
+  updateUserProfileById(userId: string, profileUpdate: UserProfileUpdate): Observable<User> {
+    return this.http.patch<ApiResponse<User>>(
       `${this.USERS_URL}/${userId}`,
       profileUpdate
     ).pipe(
@@ -238,10 +284,6 @@ export class UserService {
         const currentUser = this.authService.getCurrentUser();
         if (currentUser && currentUser.id === userId) {
           this.currentUserProfileSubject.next(user);
-
-          // Also update the auth state with new user info
-          // Note: This ensures AuthService currentUser$ is also updated
-          // AuthService will handle syncing with its own observables
         }
 
         // Note: Success notification should be shown by the calling component
@@ -249,41 +291,6 @@ export class UserService {
       }),
       catchError(error => this.handleError('Failed to update user profile', error))
     );
-  }
-
-  /**
-   * Update current authenticated user's profile
-   *
-   * This is a convenience method that automatically uses
-   * the authenticated user's ID.
-   *
-   * @param profileUpdate - The profile data to update
-   * @returns Observable of updated User profile
-   *
-   * @remarks
-   * - Automatically gets the current user ID from AuthService
-   * - Returns error if user is not authenticated
-   * - Same validation and authorization as updateUserProfile()
-   *
-   * @example
-   * ```typescript
-   * const updates: UserProfileUpdate = {
-   *   firstName: 'John',
-   *   lastName: 'Doe'
-   * };
-   *
-   * this.userService.updateCurrentUserProfile(updates).subscribe(
-   *   (user) => console.log('Updated:', user)
-   * );
-   * ```
-   */
-  updateCurrentUserProfile(profileUpdate: UserProfileUpdate): Observable<User> {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser || !currentUser.id) {
-      return throwError(() => new Error('User not authenticated'));
-    }
-
-    return this.updateUserProfile(currentUser.id, profileUpdate);
   }
 
   // ==================== Helper Methods ====================
