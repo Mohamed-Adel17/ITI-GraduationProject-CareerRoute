@@ -31,7 +31,7 @@ import { ApiResponse } from '../../shared/models/api-response.model';
  *
  * @remarks
  * - All endpoints require authentication (Bearer token)
- * - careerInterests are managed via dedicated Skills endpoint (not updated here)
+ * - careerInterests can be updated via PATCH /api/users/me using careerInterestIds field
  * - Profile updates use PATCH semantics (all fields optional)
  * - Based on User-Profile-Endpoints.md contract
  * - Component-level notification pattern (service extracts errors, component shows notifications)
@@ -47,7 +47,8 @@ import { ApiResponse } from '../../shared/models/api-response.model';
  * const updates: UserProfileUpdate = {
  *   firstName: 'John',
  *   lastName: 'Doe',
- *   careerGoals: 'Become a Solutions Architect'
+ *   careerGoals: 'Become a Solutions Architect',
+ *   careerInterestIds: [1, 5, 15, 20]
  * };
  * this.userService.updateCurrentUserProfile(updates).subscribe({
  *   next: (user) => {
@@ -243,6 +244,10 @@ export class UserService {
    * - User can only update their own profile
    * - Email cannot be changed via this endpoint
    * - All fields are optional (PATCH semantics)
+   * - careerInterestIds: Array of skill IDs (integers) to update career interests
+   *   - All IDs must be valid active skills
+   *   - Empty array [] clears all career interests
+   *   - Backend validates IDs and returns 400 if any are invalid/inactive
    * - Returns 400 if validation fails
    * - Returns 401 if not authenticated
    * - Updates currentUserProfile$ observable
@@ -254,7 +259,8 @@ export class UserService {
    *   firstName: 'John',
    *   lastName: 'Doe',
    *   phoneNumber: '+1234567890',
-   *   careerGoals: 'Become a senior developer'
+   *   careerGoals: 'Become a senior developer',
+   *   careerInterestIds: [1, 5, 15, 20] // Update career interests with skill IDs
    * };
    *
    * this.userService.updateCurrentUserProfile(updates).subscribe({
@@ -269,7 +275,7 @@ export class UserService {
    * });
    * ```
    *
-   * @note careerInterests are NOT updated via this endpoint - use dedicated Skills endpoint
+   * @note careerInterests can now be updated directly via this endpoint using careerInterestIds field
    */
   updateCurrentUserProfile(profileUpdate: UserProfileUpdate): Observable<User> {
     return this.http.patch<ApiResponse<User>>(
@@ -311,6 +317,7 @@ export class UserService {
    * - Requires Admin role
    * - Email cannot be changed via this endpoint
    * - All fields are optional (PATCH semantics)
+   * - careerInterestIds is NOT supported for admin updates (backend ignores this field)
    * - Returns 400 if validation fails
    * - Returns 401 if not authenticated
    * - Returns 403 if not Admin
@@ -328,6 +335,8 @@ export class UserService {
    *   (user) => console.log('Updated:', user)
    * );
    * ```
+   *
+   * @note Admin updates do NOT support careerInterestIds field (per API contract)
    */
   updateUserProfileById(userId: string, profileUpdate: UserProfileUpdate): Observable<User> {
     return this.http.patch<ApiResponse<User>>(

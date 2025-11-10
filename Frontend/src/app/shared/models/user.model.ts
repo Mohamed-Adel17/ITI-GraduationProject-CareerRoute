@@ -97,8 +97,11 @@ export interface UserSummary {
  * Based on User-Profile-Endpoints.md contract
  * - All fields are optional (PATCH semantics)
  * - Email, password, and roles cannot be changed via profile update
- * - careerInterests are NOT updated via this DTO - use dedicated Skills endpoint
- * - Used for both PATCH /api/users/me and PATCH /api/users/{id}
+ * - careerInterestIds: Array of skill IDs (integers) to update career interests
+ *   - All IDs must be valid active skills
+ *   - Empty array [] clears all career interests
+ * - Used for PATCH /api/users/me endpoint
+ * - Admin updates (PATCH /api/users/{id}) do NOT support careerInterestIds
  */
 export interface UserProfileUpdate {
   /** Updated first name (optional) */
@@ -115,6 +118,9 @@ export interface UserProfileUpdate {
 
   /** Updated career goals statement (optional) */
   careerGoals?: string;
+
+  /** Array of skill IDs to set as career interests (optional) */
+  careerInterestIds?: number[];
 }
 
 /**
