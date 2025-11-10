@@ -16,6 +16,15 @@ User profile endpoints allow users to view, update, and manage their personal in
 - Admins can update any user profile
 - Admins and Mentors can view all users list
 
+## Related Documentation
+
+- **📖 API Endpoints Index**: See [API-Endpoints-Index.md](./API-Endpoints-Index.md) for complete endpoint directory and cross-references
+- **Skills Management**: See [Skills-Endpoints.md](./Skills-Endpoints.md) for updating user career interests and skills CRUD operations
+- **Skills System Overview**: See [Skills-System-Overview.md](./Skills-System-Overview.md) for understanding how Skills work
+- **Mentor Profiles**: See [Mentor-Endpoints.md](./Mentor-Endpoints.md) for mentor expertise tags (which use the same Skills system)
+
+**Important:** User `careerInterests` are managed via the Skills system. Update career interests using `PATCH /api/users/me/career-interests` endpoint (see Skills-Endpoints.md).
+
 ---
 
 ## 1. Get Current User Profile
@@ -37,7 +46,11 @@ User profile endpoints allow users to view, update, and manage their personal in
     "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john.jpg",
-    "careerInterests": ["Software Development", "Cloud Computing", "Data Science"],
+    "careerInterests": [
+      { "id": 5, "name": "Career Shifting", "categoryId": 1, "categoryName": "Career Development" },
+      { "id": 15, "name": "React", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" },
+      { "id": 20, "name": "System Design", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" }
+    ],
     "careerGoals": "Become a Solutions Architect",
     "registrationDate": "2025-01-15T10:30:00Z",
     "lastLoginDate": "2025-10-29T14:20:00Z",
@@ -63,6 +76,7 @@ User profile endpoints allow users to view, update, and manage their personal in
 **Backend Behavior:**
 - Extract user ID from JWT token claims
 - Fetch current user data from database
+- **Skills Integration**: Join user's UserSkills to get careerInterests with full SkillDto structure
 - Return user profile data
 
 ---
@@ -108,7 +122,11 @@ User profile endpoints allow users to view, update, and manage their personal in
     "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john-new.jpg",
-    "careerInterests": ["Software Development", "AI", "Cloud Computing"],
+    "careerInterests": [
+      { "id": 5, "name": "Career Shifting", "categoryId": 1, "categoryName": "Career Development" },
+      { "id": 15, "name": "React", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" },
+      { "id": 20, "name": "System Design", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" }
+    ],
     "careerGoals": "Become a Solutions Architect within 2 years",
     "registrationDate": "2025-01-15T10:30:00Z",
     "lastLoginDate": "2025-10-29T14:20:00Z",
@@ -148,6 +166,8 @@ User profile endpoints allow users to view, update, and manage their personal in
 - Extract user ID from JWT token claims
 - Validate all provided fields
 - Update only the fields that are provided in request
+- **Note**: `careerInterests` are NOT updated via this endpoint - use dedicated Skills endpoint
+- **Skills Integration**: Join user's UserSkills to get careerInterests with full SkillDto structure in response
 - Return updated user data
 
 ---
@@ -205,7 +225,10 @@ User profile endpoints allow users to view, update, and manage their personal in
       "emailConfirmed": true,
       "phoneNumber": "+1234567890",
       "profilePictureUrl": "https://example.com/profiles/john.jpg",
-      "careerInterests": ["Software Development", "Cloud Computing"],
+      "careerInterests": [
+        { "id": 5, "name": "Career Shifting", "categoryId": 1, "categoryName": "Career Development" },
+        { "id": 15, "name": "React", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" }
+      ],
       "careerGoals": "Become a Solutions Architect",
       "registrationDate": "2025-01-15T10:30:00Z",
       "lastLoginDate": "2025-10-29T14:20:00Z",
@@ -222,7 +245,10 @@ User profile endpoints allow users to view, update, and manage their personal in
       "emailConfirmed": true,
       "phoneNumber": "+1234567891",
       "profilePictureUrl": "https://example.com/profiles/jane.jpg",
-      "careerInterests": ["Data Science", "Machine Learning"],
+      "careerInterests": [
+        { "id": 35, "name": "Data Science", "categoryId": 9, "categoryName": "Data & Analytics" },
+        { "id": 36, "name": "Machine Learning", "categoryId": 9, "categoryName": "Data & Analytics" }
+      ],
       "careerGoals": "Become a Data Scientist",
       "registrationDate": "2025-01-10T08:15:00Z",
       "lastLoginDate": "2025-10-30T09:45:00Z",
@@ -267,6 +293,7 @@ User profile endpoints allow users to view, update, and manage their personal in
 **Backend Behavior:**
 - Verify user has Admin or Mentor role
 - Fetch all users from database
+- **Skills Integration**: Join each user's UserSkills to get careerInterests with full SkillDto structure
 - Return list of all users
 - Return 404 if no users exist
 
@@ -294,7 +321,11 @@ User profile endpoints allow users to view, update, and manage their personal in
     "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john.jpg",
-    "careerInterests": ["Software Development", "Cloud Computing", "Data Science"],
+    "careerInterests": [
+      { "id": 5, "name": "Career Shifting", "categoryId": 1, "categoryName": "Career Development" },
+      { "id": 15, "name": "React", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" },
+      { "id": 20, "name": "System Design", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" }
+    ],
     "careerGoals": "Become a Solutions Architect",
     "registrationDate": "2025-01-15T10:30:00Z",
     "lastLoginDate": "2025-10-29T14:20:00Z",
@@ -338,6 +369,7 @@ User profile endpoints allow users to view, update, and manage their personal in
 **Backend Behavior:**
 - Verify user has Admin or Mentor role
 - Fetch user data by ID from database
+- **Skills Integration**: Join user's UserSkills to get careerInterests with full SkillDto structure
 - Return 403 if user doesn't have required role
 - Return 404 if user doesn't exist
 
@@ -387,7 +419,11 @@ User profile endpoints allow users to view, update, and manage their personal in
     "emailConfirmed": true,
     "phoneNumber": "+1234567890",
     "profilePictureUrl": "https://example.com/profiles/john-new.jpg",
-    "careerInterests": ["Software Development", "AI", "Cloud Computing"],
+    "careerInterests": [
+      { "id": 5, "name": "Career Shifting", "categoryId": 1, "categoryName": "Career Development" },
+      { "id": 15, "name": "React", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" },
+      { "id": 20, "name": "System Design", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" }
+    ],
     "careerGoals": "Become a Solutions Architect within 2 years",
     "registrationDate": "2025-01-15T10:30:00Z",
     "lastLoginDate": "2025-10-29T14:20:00Z",
@@ -445,6 +481,8 @@ User profile endpoints allow users to view, update, and manage their personal in
 - Verify user has Admin role
 - Validate all provided fields
 - Update user record in database
+- **Note**: `careerInterests` are NOT updated via this endpoint - use dedicated Skills endpoint
+- **Skills Integration**: Join user's UserSkills to get careerInterests with full SkillDto structure in response
 - Return 403 if user doesn't have Admin role
 - Return updated user data
 
@@ -461,7 +499,7 @@ User profile endpoints allow users to view, update, and manage their personal in
   "emailConfirmed": "boolean",
   "phoneNumber": "string | null",
   "profilePictureUrl": "string | null",
-  "careerInterests": "string[] | null",  // Will be implemented with CareerInterest table
+  "careerInterests": "SkillDto[] | null",  // Array of skill objects from Skills system
   "careerGoals": "string | null",
   "registrationDate": "ISO 8601 date string",
   "lastLoginDate": "ISO 8601 date string | null",
@@ -476,6 +514,8 @@ User profile endpoints allow users to view, update, and manage their personal in
 - `roles` contains the user's assigned roles in the system
 - `isMentor` indicates if user has mentor status (approved mentor application)
 - `mentorId` is null for regular users, populated for mentees
+- `careerInterests` is an array of SkillDto objects (see [Skills-Endpoints.md](./Skills-Endpoints.md) for SkillDto structure)
+- `careerInterests` represents areas where the user seeks guidance or consultation
 
 ## Update User Model Structure (UpdateUserDto)
 
@@ -485,12 +525,13 @@ User profile endpoints allow users to view, update, and manage their personal in
   "lastName": "string | optional",
   "phoneNumber": "string | optional",
   "profilePictureUrl": "string | optional",
-  "careerInterests": "string[] | optional",
   "careerGoals": "string | optional"
 }
 ```
 
-**Note:** Email, password, and role cannot be changed through profile update endpoints.
+**Notes:** 
+- Email, password, and role cannot be changed through profile update endpoints
+- **`careerInterests` are NOT included in UpdateUserDto** - use dedicated `PATCH /api/users/me/career-interests` endpoint (see [Skills-Endpoints.md](./Skills-Endpoints.md))
 
 ---
 
@@ -508,10 +549,10 @@ User profile endpoints allow users to view, update, and manage their personal in
 - Regex: `/^[\d\s\-\+\(\)]+$/`
 
 ### Career Interests
-- Optional
-- Array of strings
-- Each interest must be a valid category name
-- Future: Will validate against CareerInterest table
+- Managed via dedicated Skills system endpoint: `PATCH /api/users/me/career-interests`
+- Array of skill IDs (integers)
+- Each skill ID must exist in the Skills table
+- See [Skills-Endpoints.md](./Skills-Endpoints.md) for details
 
 ### Career Goals
 - Optional
@@ -539,7 +580,7 @@ User profile endpoints allow users to view, update, and manage their personal in
 - Server-side validation is required for all fields
 - Don't trust client-side validation alone
 - Sanitize input to prevent XSS attacks
-- Validate career interests against available categories
+- Career interests are validated via dedicated Skills endpoint (not in profile update)
 - All update fields are optional (PATCH semantics)
 
 ### Privacy
@@ -562,6 +603,7 @@ User profile endpoints allow users to view, update, and manage their personal in
 - [ ] Update profile with partial data (only some fields)
 - [ ] Update profile without token (should return 401)
 - [ ] Attempt to change email via update (should be ignored)
+- [ ] Verify careerInterests are NOT updated via this endpoint (use Skills endpoint)
 
 ### DELETE /api/users/me
 - [ ] Delete own account with valid token
@@ -608,10 +650,11 @@ Content-Type: application/json
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": ["Software Development", "AI"],
   "careerGoals": "Become a Solutions Architect"
 }
 ```
+
+**Note:** To update careerInterests, use the dedicated Skills endpoint (see Skills-Endpoints.md).
 
 **Delete Current User Account:**
 ```bash
@@ -641,7 +684,8 @@ Content-Type: application/json
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": ["Software Development", "AI"],
   "careerGoals": "Become a Solutions Architect"
 }
 ```
+
+**Note:** To update user careerInterests, use the dedicated Skills endpoint (see Skills-Endpoints.md).
