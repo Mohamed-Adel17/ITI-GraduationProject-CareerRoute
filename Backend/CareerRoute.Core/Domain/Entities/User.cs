@@ -17,7 +17,7 @@ namespace CareerRoute.Core.Domain.Entities
         public bool IsActive { get; set; } = true;
         public bool IsMentor { get; set; } = false;
         public string? CareerGoal { get; set; } = null;
-        public string? CareerInterest { get; set; } = null;
         public virtual List<RefreshToken> RefreshTokens { get; set; } = [];
+        public virtual ICollection<UserSkill> UserSkills { get; set; } = new List<UserSkill>();
     }
 }
