@@ -26,7 +26,10 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                 .HasForeignKey(mc => mc.CategoryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
+            builder.HasMany(c => c.Skills)
+                .WithOne(s => s.Category)
+                .HasForeignKey(s => s.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
     }

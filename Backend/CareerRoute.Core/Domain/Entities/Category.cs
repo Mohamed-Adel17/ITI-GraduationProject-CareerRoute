@@ -17,5 +17,6 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public virtual ICollection<MentorCategory> MentorCategories { get; set; } = new List<MentorCategory>();
+        public virtual ICollection<Skill> Skills { get; set; } = new List<Skill>();
     }
 }

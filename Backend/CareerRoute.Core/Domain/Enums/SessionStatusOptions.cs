@@ -8,5 +8,12 @@ namespace CareerRoute.Core.Domain.Enums
 {
     public enum SessionStatusOptions
     {
+        Pending,
+        Confirmed,
+        InProgress,
+        Completed,
+        Cancelled,
+        NoShow,
+        PendingReschedule
     }
 }
