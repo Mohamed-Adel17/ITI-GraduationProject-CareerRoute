@@ -217,6 +217,10 @@ export function createErrorResponse(
  * @param response API response
  * @returns Unwrapped data
  * @throws Error if response is not successful
+ *
+ * @remarks
+ * Use this for endpoints that return data (User, Category[], etc.)
+ * For void/empty responses, use unwrapVoidResponse()
  */
 export function unwrapResponse<T>(response: ApiResponse<T>): T {
   if (isSuccessResponse(response)) {
@@ -224,6 +228,36 @@ export function unwrapResponse<T>(response: ApiResponse<T>): T {
   }
 
   throw new Error(getApiErrorMessage(response));
+}
+
+/**
+ * Unwrap API response for void operations (delete, logout, etc.)
+ * @param response API response with void data
+ * @throws Error if response is not successful
+ *
+ * @remarks
+ * Use this for endpoints that don't return data:
+ * - DELETE operations
+ * - Logout operations
+ * - Other operations where only success/failure matters
+ *
+ * Unlike unwrapResponse(), this only validates the success flag
+ * and doesn't require response.data to be present.
+ *
+ * @example
+ * ```typescript
+ * deleteUser(): Observable<void> {
+ *   return this.http.delete<ApiResponse<void>>(url).pipe(
+ *     map(response => unwrapVoidResponse(response))
+ *   );
+ * }
+ * ```
+ */
+export function unwrapVoidResponse(response: ApiResponse<void>): void {
+  if (!response.success) {
+    throw new Error(getApiErrorMessage(response));
+  }
+  // No return value needed for void operations
 }
 
 /**
