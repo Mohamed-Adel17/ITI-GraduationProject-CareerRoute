@@ -7,7 +7,7 @@ namespace CareerRoute.Core.DTOs.Mentors
     public class UpdateMentorProfileDto
     {
         public string? Bio { get; set; }
-        public List<string>? ExpertiseTags { get; set; }
+        public List<int>? ExpertiseTagIds { get; set; }
         public int? YearsOfExperience { get; set; }
         public string? Certifications { get; set; }
         public decimal? Rate30Min { get; set; }
