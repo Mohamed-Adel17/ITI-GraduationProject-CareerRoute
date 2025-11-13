@@ -32,7 +32,7 @@ import {
   getAuthErrorMessage
 } from '../../shared/models/auth.model';
 import { UserRole } from '../../shared/models/user.model';
-import { ApiResponse } from '../../shared/models/api-response.model';
+import { ApiResponse, unwrapResponse, unwrapVoidResponse } from '../../shared/models/api-response.model';
 
 /**
  * AuthService
@@ -50,12 +50,15 @@ import { ApiResponse } from '../../shared/models/api-response.model';
  * - Auth state management with reactive updates
  * - Automatic token expiration handling
  * - Integration with NotificationService for user feedback
+ * - Uses shared unwrapResponse() utility for consistent error handling
  *
  * @remarks
  * - Tokens are stored in localStorage
  * - Auth state is managed with BehaviorSubject for reactive UI updates
  * - Automatic token refresh starts on login
  * - Token expiration triggers automatic logout
+ * - Error handling delegated to errorInterceptor for consistency
+ * - Uses unwrapResponse() from api-response.model.ts (same pattern as other services)
  */
 @Injectable({
   providedIn: 'root'
@@ -163,13 +166,7 @@ export class AuthService {
     this.setLoading(true);
 
     return this.http.post<ApiResponse<RegisterResponse>>(`${this.AUTH_URL}/register`, data).pipe(
-      map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success && response.data) {
-          return response.data;
-        }
-        throw new Error(response.message || 'Registration failed');
-      }),
+      map(response => unwrapResponse(response)),
       tap(registerResponse => {
         // Response was successfully unwrapped, update loading state
         // Component handles notifications and navigation
@@ -219,13 +216,7 @@ export class AuthService {
     this.setLoading(true);
 
     return this.http.post<ApiResponse<LoginResponse>>(`${this.AUTH_URL}/login`, data).pipe(
-      map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success && response.data) {
-          return response.data;
-        }
-        throw new Error(response.message || 'Login failed');
-      }),
+      map(response => unwrapResponse(response)),
       tap(loginResponse => {
         if (loginResponse.token) {
           // Store tokens
@@ -362,13 +353,7 @@ export class AuthService {
     const request: TokenRefreshRequest = { token, refreshToken };
 
     return this.http.post<ApiResponse<TokenRefreshResponse>>(`${this.AUTH_URL}/refresh`, request).pipe(
-      map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success && response.data) {
-          return response.data;
-        }
-        throw new Error(response.message || 'Token refresh failed');
-      }),
+      map(response => unwrapResponse(response)),
       tap(tokenResponse => {
         if (tokenResponse.token) {
           // Update tokens
@@ -459,13 +444,7 @@ export class AuthService {
    */
   verifyEmail(request: EmailVerificationRequest): Observable<EmailVerificationResponse> {
     return this.http.post<ApiResponse<EmailVerificationResponse>>(`${this.AUTH_URL}/verify-email`, request).pipe(
-      map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success && response.data) {
-          return response.data;
-        }
-        throw new Error(response.message || 'Email verification failed');
-      }),
+      map(response => unwrapResponse(response)),
       tap(verifyResponse => {
         // Backend always returns tokens for auto-login
         // Store tokens in localStorage
@@ -509,13 +488,7 @@ export class AuthService {
    */
   resendVerificationEmail(request: ResendVerificationEmailRequest): Observable<any> {
     return this.http.post<ApiResponse<any>>(`${this.AUTH_URL}/resend-verification`, request).pipe(
-      map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success) {
-          return response.data || response;
-        }
-        throw new Error(response.message || 'Failed to resend verification email');
-      }),
+      map(response => unwrapResponse(response)),
       catchError(error => {
         // Error interceptor has already processed the error
         // Component will handle error display
@@ -572,13 +545,7 @@ export class AuthService {
    */
   resetPassword(request: PasswordReset): Observable<PasswordResetResponse> {
     return this.http.post<ApiResponse<PasswordResetResponse>>(`${this.AUTH_URL}/reset-password`, request).pipe(
-      map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success && response.data) {
-          return response.data;
-        }
-        throw new Error(response.message || 'Failed to reset password');
-      }),
+      map(response => unwrapResponse(response)),
       tap(resetResponse => {
         // Backend always returns tokens for auto-login
         // Store tokens in localStorage
@@ -630,13 +597,7 @@ export class AuthService {
           );
         }
       }),
-      map(response => {
-        // Unwrap the ApiResponse and return the data
-        if (response.success && response.data) {
-          return response.data;
-        }
-        throw new Error(response.message || 'Failed to change password');
-      }),
+      map(response => unwrapResponse(response)),
       catchError(error => {
         // Error interceptor has already processed the error
         // Component will handle error display

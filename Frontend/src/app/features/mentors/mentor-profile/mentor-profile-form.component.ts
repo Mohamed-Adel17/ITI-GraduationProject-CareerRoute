@@ -3,37 +3,40 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { 
-  Mentor, 
-  MentorProfileUpdate, 
+import {
+  Mentor,
+  MentorProfileUpdate,
   MentorApplication,
-  MentorCategory,
-  validatePricing 
+  validatePricing
 } from '../../../shared/models/mentor.model';
-import { RatingDisplayComponent } from '../../../shared/rating-display/rating-display';
+// <<<<<<< Feature/frontend/RatingDisplayComponent
+// import { RatingDisplayComponent } from '../../../shared/rating-display/rating-display';
+// =======
+// import { Skill } from '../../../shared/models/skill.model';
+// >>>>>>> develop
 
 /**
  * MentorProfileFormComponent
  *
  * Form component for creating and editing mentor profiles.
- * Handles mentor-specific fields: bio, expertise, rates, experience, and certifications.
+ * Handles mentor-specific fields: bio, rates, experience, and certifications.
  *
  * Features:
  * - Create new mentor profile (application)
- * - Edit existing mentor profile
+ * - Edit existing mentor profile with expertise tags
  * - Real-time form validation
- * - Pricing validation with business rules
- * - Expertise tags management
- * - Category selection
- * - Rich text bio editor
+ * - Pricing validation with business rules (min 0, max 10000)
+ * - Multi-select expertise tags (Skill selection) - only in edit mode
  * - Responsive design
  * - Accessibility support
  *
  * @remarks
  * - Can be used in both create and edit modes
- * - Validates pricing according to business rules ($20-$500)
- * - Ensures 60-min rate is higher than 30-min rate
- * - Supports comma-separated or array expertise tags
+ * - According to API contract:
+ *   - CREATE mode: No expertise tags (added after approval via update)
+ *   - EDIT mode: Supports expertiseTagIds (array of skill IDs)
+ * - Validates pricing: rate60Min must be higher than rate30Min
+ * - Bio: min 50 chars, max 1000 chars
  * - Integrates with MentorService for API calls
  */
 @Component({
@@ -51,8 +54,8 @@ export class MentorProfileFormComponent implements OnInit {
   // Input: Existing mentor profile for edit mode
   @Input() mentor: Mentor | null = null;
 
-  // Input: Available categories for selection
-  @Input() categories: MentorCategory[] = [];
+  // Input: Available skills for expertise tags selection (edit mode only)
+  @Input() skills: Skill[] = [];
 
   // Input: Form mode (create or edit)
   @Input() mode: 'create' | 'edit' = 'create';
@@ -69,13 +72,12 @@ export class MentorProfileFormComponent implements OnInit {
   // Component state
   isSubmitting = false;
   showPricingHelp = false;
-  expertiseTagsInput = '';
 
-  // Pricing constraints
-  readonly MIN_PRICE = 20;
-  readonly MAX_PRICE = 500;
-  readonly MIN_BIO_LENGTH = 100;
-  readonly MAX_BIO_LENGTH = 2000;
+  // Pricing constraints (from API contract)
+  readonly MIN_PRICE = 0; // API allows min 0, max 10000
+  readonly MAX_PRICE = 10000;
+  readonly MIN_BIO_LENGTH = 50; // API: min 50, max 1000
+  readonly MAX_BIO_LENGTH = 1000;
   readonly MIN_EXPERIENCE = 0;
   readonly MAX_EXPERIENCE = 50;
 
@@ -90,7 +92,7 @@ export class MentorProfileFormComponent implements OnInit {
    * Initialize the reactive form with validators
    */
   private initializeForm(): void {
-    this.mentorForm = this.fb.group({
+    const formConfig: any = {
       bio: [
         '',
         [
@@ -98,10 +100,6 @@ export class MentorProfileFormComponent implements OnInit {
           Validators.minLength(this.MIN_BIO_LENGTH),
           Validators.maxLength(this.MAX_BIO_LENGTH)
         ]
-      ],
-      expertiseTags: [
-        '',
-        [Validators.required, this.expertiseTagsValidator.bind(this)]
       ],
       yearsOfExperience: [
         0,
@@ -113,7 +111,7 @@ export class MentorProfileFormComponent implements OnInit {
       ],
       certifications: [''],
       rate30Min: [
-        this.MIN_PRICE,
+        50, // Default suggested rate
         [
           Validators.required,
           Validators.min(this.MIN_PRICE),
@@ -121,16 +119,21 @@ export class MentorProfileFormComponent implements OnInit {
         ]
       ],
       rate60Min: [
-        this.MIN_PRICE * 1.8,
+        90, // Default suggested rate (1.8x of 50)
         [
           Validators.required,
           Validators.min(this.MIN_PRICE),
           Validators.max(this.MAX_PRICE)
         ]
-      ],
-      categoryIds: [[], [Validators.required, Validators.minLength(1)]],
-      isAvailable: [true]
-    }, {
+      ]
+    };
+
+    // Only add expertiseTagIds field in edit mode
+    if (this.mode === 'edit') {
+      formConfig.expertiseTagIds = [[], []]; // Optional field for edit mode
+    }
+
+    this.mentorForm = this.fb.group(formConfig, {
       validators: [this.pricingValidator.bind(this)]
     });
 
@@ -141,60 +144,23 @@ export class MentorProfileFormComponent implements OnInit {
   }
 
   /**
-   * Populate form with existing mentor data
+   * Populate form with existing mentor data (edit mode only)
    */
   private populateForm(mentor: Mentor): void {
-    const expertiseTags = Array.isArray(mentor.expertiseTags)
-      ? mentor.expertiseTags.join(', ')
-      : mentor.expertiseTags;
-
-    this.mentorForm.patchValue({
+    const formData: any = {
       bio: mentor.bio,
-      expertiseTags: expertiseTags,
       yearsOfExperience: mentor.yearsOfExperience,
       certifications: mentor.certifications || '',
       rate30Min: mentor.rate30Min,
-      rate60Min: mentor.rate60Min,
-      categoryIds: mentor.categoryIds || [],
-      isAvailable: mentor.isAvailable ?? true
-    });
+      rate60Min: mentor.rate60Min
+    };
 
-    this.expertiseTagsInput = expertiseTags;
-  }
-
-  /**
-   * Custom validator for expertise tags
-   */
-  private expertiseTagsValidator(control: AbstractControl): ValidationErrors | null {
-    const value = control.value;
-    if (!value) return { required: true };
-
-    const tags = this.parseExpertiseTags(value);
-    
-    if (tags.length === 0) {
-      return { noTags: true };
+    // Add expertise tag IDs in edit mode
+    if (this.mode === 'edit' && mentor.expertiseTags) {
+      formData.expertiseTagIds = mentor.expertiseTags.map(skill => skill.id);
     }
 
-    if (tags.length < 2) {
-      return { minTags: { required: 2, actual: tags.length } };
-    }
-
-    if (tags.length > 20) {
-      return { maxTags: { max: 20, actual: tags.length } };
-    }
-
-    // Check for empty tags
-    if (tags.some(tag => tag.trim().length === 0)) {
-      return { emptyTag: true };
-    }
-
-    // Check tag length
-    const tooLongTags = tags.filter(tag => tag.length > 50);
-    if (tooLongTags.length > 0) {
-      return { tagTooLong: { max: 50, tags: tooLongTags } };
-    }
-
-    return null;
+    this.mentorForm.patchValue(formData);
   }
 
   /**
@@ -216,46 +182,41 @@ export class MentorProfileFormComponent implements OnInit {
   }
 
   /**
-   * Parse expertise tags from string input
+   * Toggle skill selection (edit mode only)
    */
-  private parseExpertiseTags(input: string): string[] {
-    if (!input) return [];
-    return input
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
-  }
+  toggleSkill(skillId: number): void {
+    if (this.mode !== 'edit') return;
 
-  /**
-   * Get expertise tags as array
-   */
-  getExpertiseTags(): string[] {
-    const value = this.mentorForm.get('expertiseTags')?.value;
-    return this.parseExpertiseTags(value);
-  }
-
-  /**
-   * Toggle category selection
-   */
-  toggleCategory(categoryId: number): void {
-    const categoryIds = this.mentorForm.get('categoryIds')?.value || [];
-    const index = categoryIds.indexOf(categoryId);
+    const expertiseTagIds = this.mentorForm.get('expertiseTagIds')?.value || [];
+    const index = expertiseTagIds.indexOf(skillId);
 
     if (index > -1) {
-      categoryIds.splice(index, 1);
+      expertiseTagIds.splice(index, 1);
     } else {
-      categoryIds.push(categoryId);
+      expertiseTagIds.push(skillId);
     }
 
-    this.mentorForm.patchValue({ categoryIds });
+    this.mentorForm.patchValue({ expertiseTagIds });
   }
 
   /**
-   * Check if category is selected
+   * Check if skill is selected (edit mode only)
    */
-  isCategorySelected(categoryId: number): boolean {
-    const categoryIds = this.mentorForm.get('categoryIds')?.value || [];
-    return categoryIds.includes(categoryId);
+  isSkillSelected(skillId: number): boolean {
+    if (this.mode !== 'edit') return false;
+
+    const expertiseTagIds = this.mentorForm.get('expertiseTagIds')?.value || [];
+    return expertiseTagIds.includes(skillId);
+  }
+
+  /**
+   * Get selected skills (edit mode only)
+   */
+  getSelectedSkills(): Skill[] {
+    if (this.mode !== 'edit') return [];
+
+    const expertiseTagIds = this.mentorForm.get('expertiseTagIds')?.value || [];
+    return this.skills.filter(skill => expertiseTagIds.includes(skill.id));
   }
 
   /**
@@ -334,16 +295,6 @@ export class MentorProfileFormComponent implements OnInit {
       if (errors['maxlength']) return `Bio cannot exceed ${this.MAX_BIO_LENGTH} characters`;
     }
 
-    // Expertise tags errors
-    if (fieldName === 'expertiseTags') {
-      if (errors['required']) return 'Expertise tags are required';
-      if (errors['noTags']) return 'Please enter at least one expertise tag';
-      if (errors['minTags']) return `Please enter at least ${errors['minTags'].required} expertise tags`;
-      if (errors['maxTags']) return `Maximum ${errors['maxTags'].max} expertise tags allowed`;
-      if (errors['emptyTag']) return 'Tags cannot be empty';
-      if (errors['tagTooLong']) return 'Each tag must be 50 characters or less';
-    }
-
     // Experience errors
     if (fieldName === 'yearsOfExperience') {
       if (errors['required']) return 'Years of experience is required';
@@ -356,12 +307,6 @@ export class MentorProfileFormComponent implements OnInit {
       if (errors['required']) return 'Rate is required';
       if (errors['min']) return `Minimum rate is $${this.MIN_PRICE}`;
       if (errors['max']) return `Maximum rate is $${this.MAX_PRICE}`;
-    }
-
-    // Category errors
-    if (fieldName === 'categoryIds') {
-      if (errors['required']) return 'Please select at least one category';
-      if (errors['minlength']) return 'Please select at least one category';
     }
 
     return 'Invalid value';
@@ -391,18 +336,29 @@ export class MentorProfileFormComponent implements OnInit {
     this.isSubmitting = true;
 
     const formValue = this.mentorForm.value;
-    const data: MentorProfileUpdate | MentorApplication = {
-      bio: formValue.bio,
-      expertiseTags: this.parseExpertiseTags(formValue.expertiseTags),
-      yearsOfExperience: formValue.yearsOfExperience,
-      certifications: formValue.certifications || undefined,
-      rate30Min: formValue.rate30Min,
-      rate60Min: formValue.rate60Min,
-      categoryIds: formValue.categoryIds,
-      isAvailable: formValue.isAvailable
-    };
 
-    this.formSubmit.emit(data);
+    if (this.mode === 'create') {
+      // Create mode: MentorApplication (no expertise tags)
+      const data: MentorApplication = {
+        bio: formValue.bio,
+        yearsOfExperience: formValue.yearsOfExperience,
+        certifications: formValue.certifications || undefined,
+        rate30Min: formValue.rate30Min,
+        rate60Min: formValue.rate60Min
+      };
+      this.formSubmit.emit(data);
+    } else {
+      // Edit mode: MentorProfileUpdate (with optional expertise tags)
+      const data: MentorProfileUpdate = {
+        bio: formValue.bio,
+        yearsOfExperience: formValue.yearsOfExperience,
+        certifications: formValue.certifications || undefined,
+        rate30Min: formValue.rate30Min,
+        rate60Min: formValue.rate60Min,
+        expertiseTagIds: formValue.expertiseTagIds
+      };
+      this.formSubmit.emit(data);
+    }
   }
 
   /**
@@ -416,16 +372,19 @@ export class MentorProfileFormComponent implements OnInit {
    * Reset form to initial state
    */
   resetForm(): void {
-    this.mentorForm.reset({
+    const resetData: any = {
       bio: '',
-      expertiseTags: '',
       yearsOfExperience: 0,
       certifications: '',
-      rate30Min: this.MIN_PRICE,
-      rate60Min: this.MIN_PRICE * 1.8,
-      categoryIds: [],
-      isAvailable: true
-    });
+      rate30Min: 50,
+      rate60Min: 90
+    };
+
+    if (this.mode === 'edit') {
+      resetData.expertiseTagIds = [];
+    }
+
+    this.mentorForm.reset(resetData);
     this.isSubmitting = false;
   }
 

@@ -1,0 +1,84 @@
+/* PaginationComponent Styles */
+
+/* 
+ * Custom styles for pagination component
+ * Most styling is handled by Tailwind CSS classes in the template
+ * This file contains component-specific overrides and enhancements
+ */
+
+/* Smooth transitions for all interactive elements */
+:host {
+  display: block;
+}
+
+/* Ensure buttons have consistent sizing and alignment */
+button {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Disabled button cursor override */
+button:disabled {
+  cursor: not-allowed !important;
+}
+
+/* Focus visible styles for keyboard navigation */
+button:focus-visible {
+  outline: 2px solid #1193d4;
+  outline-offset: 2px;
+}
+
+/* Select dropdown custom styling */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Dark mode select dropdown arrow */
+.dark select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Hover effects for page buttons */
+button:not(:disabled):hover {
+  transform: scale(1.05);
+}
+
+button:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+/* Animation for page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:host {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  /* Stack items vertically on mobile */
+  :host {
+    width: 100%;
+  }
+}
+
+/* Print styles - hide pagination when printing */
+@media print {
+  :host {
+    display: none;
+  }
+}

@@ -12,31 +12,35 @@
 /**
  * Category Interface
  * Represents a category entity from the backend
+ *
+ * @remarks
+ * Based on Category-Endpoints.md contract
+ * Categories serve both user career interests and mentor specializations (unified system)
  */
 export interface Category {
-  /** Unique identifier for the category */
-  id: string;
+  /** Unique identifier for the category (integer, not GUID) */
+  id: number;
 
   /** Display name of the category */
   name: string;
 
   /** Optional description of the category */
-  description?: string;
+  description: string | null;
 
-  /** Icon name or URL for visual representation */
-  icon?: string;
+  /** Icon emoji or URL for visual representation */
+  iconUrl: string | null;
 
-  /** Display order for sorting */
-  displayOrder?: number;
+  /** Count of approved mentors in this category (populated in browse contexts) */
+  mentorCount?: number | null;
 
   /** Whether the category is active/visible */
   isActive: boolean;
 
-  /** Creation timestamp */
-  createdAt?: Date;
+  /** Creation timestamp (ISO 8601 format) */
+  createdAt: string;
 
-  /** Last update timestamp */
-  updatedAt?: Date;
+  /** Last update timestamp (ISO 8601 format) */
+  updatedAt: string | null;
 }
 
 /**
@@ -44,71 +48,142 @@ export interface Category {
  * Lightweight version of Category for lists and dropdowns
  */
 export interface CategorySummary {
-  /** Unique identifier */
-  id: string;
+  /** Unique identifier (integer) */
+  id: number;
 
   /** Display name */
   name: string;
 
-  /** Icon (optional) */
-  icon?: string;
+  /** Icon emoji or URL (optional) */
+  iconUrl?: string | null;
 }
 
 /**
- * Category Create Request
- * Data needed to create a new category (admin only)
+ * Pagination information
+ * Used in paginated responses
  */
-export interface CategoryCreateRequest {
-  /** Category name */
-  name: string;
+export interface PaginationInfo {
+  /** Total number of items across all pages */
+  totalCount: number;
 
-  /** Category description */
-  description?: string;
+  /** Current page number */
+  currentPage: number;
 
-  /** Icon */
-  icon?: string;
+  /** Number of items per page */
+  pageSize: number;
 
-  /** Display order */
-  displayOrder?: number;
+  /** Total number of pages */
+  totalPages: number;
+
+  /** Whether there is a next page */
+  hasNextPage: boolean;
+
+  /** Whether there is a previous page */
+  hasPreviousPage: boolean;
 }
 
 /**
- * Category Update Request
- * Data for updating an existing category (admin only)
+ * Mentor List Item for category browsing
+ * Lightweight mentor information displayed in category mentor lists
  */
-export interface CategoryUpdateRequest {
-  /** Updated name */
-  name?: string;
+export interface MentorListItem {
+  /** Mentor ID */
+  id: string;
 
-  /** Updated description */
-  description?: string;
+  /** First name */
+  firstName: string;
 
-  /** Updated icon */
-  icon?: string;
+  /** Last name */
+  lastName: string;
 
-  /** Updated display order */
-  displayOrder?: number;
+  /** Full name (formatted) */
+  fullName: string;
 
-  /** Updated active status */
-  isActive?: boolean;
+  /** Profile picture URL */
+  profilePictureUrl?: string | null;
+
+  /** Professional biography */
+  bio: string;
+
+  /** Expertise tags (skills) */
+  expertiseTags: string[];
+
+  /** Years of experience */
+  yearsOfExperience: number;
+
+  /** Rate for 30-minute session */
+  rate30Min: number;
+
+  /** Rate for 60-minute session */
+  rate60Min: number;
+
+  /** Average rating (0-5) */
+  averageRating: number;
+
+  /** Total number of reviews */
+  totalReviews: number;
+
+  /** Total sessions completed */
+  totalSessionsCompleted: number;
+
+  /** Whether mentor is verified */
+  isVerified: boolean;
+
+  /** Whether mentor is available for booking */
+  isAvailable: boolean;
+
+  /** Approval status */
+  approvalStatus: string;
 }
 
 /**
- * Categories Response
- * API response wrapper for multiple categories
+ * Category with mentors response
+ * Response from GET /api/categories/{id}/mentors
  */
-export interface CategoriesResponse {
-  /** Success status */
-  success: boolean;
+export interface CategoryMentorsResponse {
+  /** Category information */
+  category: {
+    id: number;
+    name: string;
+    description: string | null;
+    iconUrl: string | null;
+  };
 
-  /** Response message */
-  message?: string;
+  /** List of mentors in this category */
+  mentors: MentorListItem[];
 
-  /** Array of categories */
-  data: Category[];
+  /** Pagination information */
+  pagination: PaginationInfo;
+}
 
-  /** Total count (for pagination) */
-  totalCount?: number;
+/**
+ * Query parameters for getting mentors by category
+ * Used in endpoint: GET /api/categories/{id}/mentors
+ */
+export interface CategoryMentorsParams {
+  /** Page number (default: 1) */
+  page?: number;
+
+  /** Items per page (default: 10, max: 50) */
+  pageSize?: number;
+
+  /** Sort by field (default: rating) */
+  sortBy?: 'rating' | 'price' | 'experience' | 'sessions';
+
+  /** Sort order (default: desc) */
+  sortOrder?: 'asc' | 'desc';
+
+  /** Minimum 30-min rate filter */
+  minPrice?: number;
+
+  /** Maximum 30-min rate filter */
+  maxPrice?: number;
+
+  /** Minimum rating filter (0-5) */
+  minRating?: number;
+
+  /** Search in bio and expertise tags */
+  keywords?: string;
 }
 
 // ==================== Helper Functions ====================
@@ -123,21 +198,12 @@ export function getCategoryName(category: Category | CategorySummary | null | un
 }
 
 /**
- * Sort categories by display order
+ * Sort categories alphabetically by name
  * @param categories - Array of categories to sort
- * @returns Sorted array (by displayOrder, then by name)
+ * @returns Sorted array (alphabetically by name)
  */
 export function sortCategories(categories: Category[]): Category[] {
-  return [...categories].sort((a, b) => {
-    // First sort by display order (if available)
-    if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
-      if (a.displayOrder !== b.displayOrder) {
-        return a.displayOrder - b.displayOrder;
-      }
-    }
-    // Then sort alphabetically by name
-    return a.name.localeCompare(b.name);
-  });
+  return [...categories].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -158,7 +224,7 @@ export function toCategorySummary(category: Category): CategorySummary {
   return {
     id: category.id,
     name: category.name,
-    icon: category.icon
+    iconUrl: category.iconUrl
   };
 }
 
@@ -179,7 +245,7 @@ export function findCategoryByName(categories: Category[], name: string): Catego
  * @param id - ID to search for
  * @returns Matching category or undefined
  */
-export function findCategoryById(categories: Category[], id: string): Category | undefined {
+export function findCategoryById(categories: Category[], id: number): Category | undefined {
   return categories.find(cat => cat.id === id);
 }
 
@@ -203,7 +269,7 @@ export function isCategory(obj: any): obj is Category {
   return (
     obj &&
     typeof obj === 'object' &&
-    typeof obj.id === 'string' &&
+    typeof obj.id === 'number' &&
     typeof obj.name === 'string' &&
     typeof obj.isActive === 'boolean'
   );
@@ -218,7 +284,7 @@ export function isCategorySummary(obj: any): obj is CategorySummary {
   return (
     obj &&
     typeof obj === 'object' &&
-    typeof obj.id === 'string' &&
+    typeof obj.id === 'number' &&
     typeof obj.name === 'string'
   );
 }

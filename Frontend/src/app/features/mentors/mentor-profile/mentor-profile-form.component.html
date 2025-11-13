@@ -51,40 +51,7 @@
 
   <!-- Expertise Section -->
   <div class="form-section mb-8">
-    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Expertise & Experience</h3>
-    
-    <!-- Expertise Tags -->
-    <div class="form-group mb-6">
-      <label for="expertiseTags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Expertise Tags
-        <span class="text-red-500">*</span>
-      </label>
-      <input
-        type="text"
-        id="expertiseTags"
-        formControlName="expertiseTags"
-        class="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-black/20 border border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary dark:text-white"
-        [class.border-red-500]="hasError('expertiseTags')"
-        placeholder="React, Node.js, AWS, Docker, etc."
-      />
-      
-      <div *ngIf="hasError('expertiseTags')" class="text-sm text-red-600 dark:text-red-400 mt-1">
-        {{ getErrorMessage('expertiseTags') }}
-      </div>
-      
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-        Enter comma-separated tags (minimum 2, maximum 20). Example: React, Node.js, AWS
-      </p>
-      
-      <!-- Tags Preview -->
-      <div *ngIf="getExpertiseTags().length > 0" class="flex flex-wrap gap-2 mt-3">
-        <span 
-          *ngFor="let tag of getExpertiseTags()" 
-          class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
-          {{ tag }}
-        </span>
-      </div>
-    </div>
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Experience & Certifications</h3>
 
     <!-- Years of Experience -->
     <div class="form-group mb-6">
@@ -219,57 +186,64 @@
     </div>
   </div>
 
-  <!-- Categories Section -->
-  <div class="form-section mb-8">
-    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-      Categories
-      <span class="text-red-500">*</span>
-    </h3>
+  <!-- Expertise Tags Section (Edit Mode Only) -->
+  <div *ngIf="mode === 'edit'" class="form-section mb-8">
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Expertise Tags</h3>
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-      Select the categories that best match your expertise (at least one required)
+      Select the skills that represent your areas of expertise
     </p>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <button
-        *ngFor="let category of categories"
-        type="button"
-        (click)="toggleCategory(category.id)"
-        class="flex items-center gap-3 p-4 border-2 rounded-lg transition-all hover:border-primary"
-        [class.border-primary]="isCategorySelected(category.id)"
-        [class.bg-primary/5]="isCategorySelected(category.id)"
-        [class.border-gray-200]="!isCategorySelected(category.id)"
-        [class.dark:border-gray-700]="!isCategorySelected(category.id)">
-        
-        <!-- Checkbox Icon -->
-        <div class="flex-shrink-0">
-          <div 
-            class="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors"
-            [class.border-primary]="isCategorySelected(category.id)"
-            [class.bg-primary]="isCategorySelected(category.id)"
-            [class.border-gray-300]="!isCategorySelected(category.id)">
-            <svg 
-              *ngIf="isCategorySelected(category.id)"
-              class="w-4 h-4 text-white" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-            </svg>
-          </div>
-        </div>
-
-        <!-- Category Info -->
-        <div class="flex-1 text-left">
-          <div class="font-medium text-gray-900 dark:text-white">{{ category.name }}</div>
-          <div *ngIf="category.description" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {{ category.description }}
-          </div>
-        </div>
-      </button>
+    <div *ngIf="skills.length === 0" class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+      <p class="text-sm text-yellow-800 dark:text-yellow-400">
+        No skills available. Please contact support.
+      </p>
     </div>
 
-    <div *ngIf="hasError('categoryIds')" class="text-sm text-red-600 dark:text-red-400 mt-2">
-      {{ getErrorMessage('categoryIds') }}
+    <div *ngIf="skills.length > 0" class="space-y-4">
+      <!-- Group skills by category for better UX -->
+      <div class="flex flex-wrap gap-2">
+        <button
+          *ngFor="let skill of skills"
+          type="button"
+          (click)="toggleSkill(skill.id)"
+          class="inline-flex items-center px-4 py-2 border-2 rounded-lg transition-all text-sm font-medium"
+          [class.border-primary]="isSkillSelected(skill.id)"
+          [class.bg-primary]="isSkillSelected(skill.id)"
+          [class.text-white]="isSkillSelected(skill.id)"
+          [class.border-gray-300]="!isSkillSelected(skill.id)"
+          [class.text-gray-700]="!isSkillSelected(skill.id)"
+          [class.dark:border-gray-600]="!isSkillSelected(skill.id)"
+          [class.dark:text-gray-300]="!isSkillSelected(skill.id)"
+          [class.hover:border-primary]="!isSkillSelected(skill.id)">
+
+          <!-- Checkmark icon for selected skills -->
+          <svg
+            *ngIf="isSkillSelected(skill.id)"
+            class="w-4 h-4 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+          </svg>
+
+          {{ skill.name }}
+          <span class="ml-2 text-xs opacity-70">({{ skill.categoryName }})</span>
+        </button>
+      </div>
+
+      <!-- Selected Skills Summary -->
+      <div *ngIf="getSelectedSkills().length > 0" class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">
+          Selected Skills ({{ getSelectedSkills().length }})
+        </h4>
+        <div class="flex flex-wrap gap-2">
+          <span
+            *ngFor="let skill of getSelectedSkills()"
+            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+            {{ skill.name }}
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -324,11 +298,9 @@
     <h4 class="font-semibold text-yellow-900 dark:text-yellow-300 mb-2">Form has validation errors:</h4>
     <ul class="text-sm text-yellow-800 dark:text-yellow-400 space-y-1">
       <li *ngIf="hasError('bio')">• Bio: {{ getErrorMessage('bio') }}</li>
-      <li *ngIf="hasError('expertiseTags')">• Expertise Tags: {{ getErrorMessage('expertiseTags') }}</li>
       <li *ngIf="hasError('yearsOfExperience')">• Years of Experience: {{ getErrorMessage('yearsOfExperience') }}</li>
       <li *ngIf="hasError('rate30Min')">• 30-Min Rate: {{ getErrorMessage('rate30Min') }}</li>
       <li *ngIf="hasError('rate60Min')">• 60-Min Rate: {{ getErrorMessage('rate60Min') }}</li>
-      <li *ngIf="hasError('categoryIds')">• Categories: {{ getErrorMessage('categoryIds') }}</li>
       <li *ngFor="let error of getPricingErrors()">• Pricing: {{ error }}</li>
     </ul>
   </div>
