@@ -4,7 +4,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { tap, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
 import { Skill } from '../../shared/models/skill.model';
-import { ApiResponse } from '../../shared/models/api-response.model';
+import { ApiResponse, unwrapResponse } from '../../shared/models/api-response.model';
 
 /**
  * SkillService
@@ -25,6 +25,8 @@ import { ApiResponse } from '../../shared/models/api-response.model';
  * - Skills are used for both user career interests and mentor expertise tags
  * - User career interests are updated via PATCH /api/users/me with careerInterestIds
  * - Mentor expertise tags are updated via PATCH /api/mentors/{id} with expertiseTagIds
+ * - Uses shared unwrapResponse() utility for consistent error handling
+ * - Error handling delegated to errorInterceptor
  *
  * @example
  * ```typescript
@@ -93,12 +95,7 @@ export class SkillService {
     }
 
     return this.http.get<ApiResponse<Skill[]>>(this.SKILLS_URL, { params }).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch skills');
-        }
-        return response.data;
-      }),
+      map(response => unwrapResponse(response)),
       tap(skills => {
         // Update cache if fetching all skills
         if (!categoryId) {

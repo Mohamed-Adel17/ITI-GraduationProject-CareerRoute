@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
-import { tap, catchError, map, shareReplay } from 'rxjs/operators';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
 import {
   Category,
@@ -12,18 +12,7 @@ import {
   getActiveCategories,
   getCategoryNames
 } from '../../shared/models/category.model';
-
-/**
- * Response wrapper for category API calls
- * Matches the standard API response format from backend
- */
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  errors?: { [key: string]: string[] };
-  statusCode?: number;
-}
+import { ApiResponse, unwrapResponse } from '../../shared/models/api-response.model';
 
 /**
  * CategoryService
@@ -37,7 +26,6 @@ interface ApiResponse<T> {
  * - Get single category by ID
  * - Get mentors by category with filtering and pagination
  * - Category caching for performance
- * - Automatic error handling
  * - Integration with backend API
  *
  * @remarks
@@ -45,6 +33,8 @@ interface ApiResponse<T> {
  * - All endpoints are public (no authentication required)
  * - Cache can be refreshed by calling refreshCategories()
  * - Same categories used for both user interests and mentor specializations
+ * - Error handling is done globally by errorInterceptor
+ * - Uses shared unwrapResponse utility from api-response.model.ts
  * - Based on Category-Endpoints.md contract (endpoints 1, 2, 6)
  *
  * @example
@@ -52,7 +42,7 @@ interface ApiResponse<T> {
  * // In a component
  * constructor(private categoryService: CategoryService) {}
  *
- * // Get all categories
+ * // Get all categories - errors handled automatically
  * this.categoryService.getAllCategories().subscribe(
  *   (categories) => this.availableCategories = categories
  * );
@@ -63,12 +53,12 @@ interface ApiResponse<T> {
  * );
  *
  * // Get mentors by category
- * this.categoryService.getMentorsByCategory(1, { page: 1, minRating: 4.0 }).subscribe(
- *   (response) => {
+ * this.categoryService.getMentorsByCategory(1, { page: 1, minRating: 4.0 }).subscribe({
+ *   next: (response) => {
  *     this.mentors = response.mentors;
  *     this.pagination = response.pagination;
  *   }
- * );
+ * });
  * ```
  */
 @Injectable({
@@ -126,12 +116,7 @@ export class CategoryService {
     this.categoriesCache$ = this.http.get<ApiResponse<Category[]>>(
       this.CATEGORIES_URL
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch categories');
-        }
-        return response.data;
-      }),
+      map(response => unwrapResponse(response)),
       map(categories => {
         // Filter active categories and sort them
         const activeCategories = getActiveCategories(categories);
@@ -141,10 +126,6 @@ export class CategoryService {
         this.categoriesSubject.next(categories);
         this.categoriesLoaded = true;
         this.loadingSubject.next(false);
-      }),
-      catchError(error => {
-        this.loadingSubject.next(false);
-        return this.handleError('Failed to fetch categories', error);
       }),
       shareReplay(1) // Share the result with all subscribers
     );
@@ -222,13 +203,7 @@ export class CategoryService {
     return this.http.get<ApiResponse<Category>>(
       `${this.CATEGORIES_URL}/${categoryId}`
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Category not found');
-        }
-        return response.data;
-      }),
-      catchError(error => this.handleError('Failed to fetch category', error))
+      map(response => unwrapResponse(response))
     );
   }
 
@@ -289,13 +264,7 @@ export class CategoryService {
       `${this.CATEGORIES_URL}/${categoryId}/mentors`,
       { params: httpParams }
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch mentors');
-        }
-        return response.data;
-      }),
-      catchError(error => this.handleError('Failed to fetch mentors by category', error))
+      map(response => unwrapResponse(response))
     );
   }
 
@@ -337,41 +306,4 @@ export class CategoryService {
     return this.categoriesLoaded;
   }
 
-  // ==================== Error Handling ====================
-
-  /**
-   * Handle API errors with logging
-   *
-   * @param defaultMessage - Default message to use if error message is not available
-   * @param error - The error object
-   * @returns Throwable error for upstream handling
-   *
-   * @remarks
-   * - Extracts error message from various error formats
-   * - Logs error details for debugging
-   * - Returns formatted error to calling component
-   */
-  private handleError(defaultMessage: string, error: any): Observable<never> {
-    let errorMessage = defaultMessage;
-
-    if (error.error?.message) {
-      errorMessage = error.error.message;
-    } else if (error.error?.errors) {
-      // Extract first validation error
-      const firstError = Object.values(error.error.errors)[0];
-      if (Array.isArray(firstError) && firstError.length > 0) {
-        errorMessage = firstError[0];
-      }
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-
-    // Log error for debugging
-    console.error('[CategoryService] Error:', errorMessage, error);
-
-    return throwError(() => ({
-      ...error,
-      message: errorMessage
-    }));
-  }
 }

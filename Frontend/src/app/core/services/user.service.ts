@@ -8,7 +8,7 @@ import {
   UserProfileUpdate,
   UserRole
 } from '../../shared/models/user.model';
-import { ApiResponse } from '../../shared/models/api-response.model';
+import { ApiResponse, unwrapResponse, unwrapVoidResponse } from '../../shared/models/api-response.model';
 
 /**
  * UserService
@@ -75,45 +75,6 @@ export class UserService {
 
   // ==================== Helper Methods ====================
 
-  /**
-   * Unwrap ApiResponse and validate response structure
-   *
-   * @param response - The ApiResponse wrapper from backend
-   * @param errorMessage - Default error message if response is invalid
-   * @returns The unwrapped data from the response
-   * @throws Error if response is invalid or unsuccessful
-   *
-   * @remarks
-   * - Validates response.success flag
-   * - Validates response.data is present
-   * - Uses response.message if available, otherwise uses errorMessage
-   * - Thrown errors are caught by errorInterceptor
-   */
-  private unwrapResponse<T>(response: ApiResponse<T>, errorMessage: string): T {
-    if (!response.success || !response.data) {
-      throw new Error(response.message || errorMessage);
-    }
-    return response.data;
-  }
-
-  /**
-   * Unwrap ApiResponse for void operations (e.g., delete)
-   *
-   * @param response - The ApiResponse wrapper from backend
-   * @param errorMessage - Default error message if response is invalid
-   * @throws Error if response is unsuccessful
-   *
-   * @remarks
-   * - Only validates response.success flag (data can be null for void operations)
-   * - Uses response.message if available, otherwise uses errorMessage
-   * - Thrown errors are caught by errorInterceptor
-   */
-  private unwrapVoidResponse(response: ApiResponse<void>, errorMessage: string): void {
-    if (!response.success) {
-      throw new Error(response.message || errorMessage);
-    }
-  }
-
   // ==================== Get User Profile ====================
 
   /**
@@ -142,7 +103,7 @@ export class UserService {
     return this.http.get<ApiResponse<User>>(
       `${this.USERS_URL}/${userId}`
     ).pipe(
-      map(response => this.unwrapResponse(response, 'Failed to fetch user profile')),
+      map(response => unwrapResponse(response)),
       tap(user => {
         // Cache the user profile
         this.userProfilesCache.set(userId, user);
@@ -175,7 +136,7 @@ export class UserService {
     return this.http.get<ApiResponse<User>>(
       `${this.USERS_URL}/me`
     ).pipe(
-      map(response => this.unwrapResponse(response, 'Failed to fetch user profile')),
+      map(response => unwrapResponse(response)),
       tap(user => {
         // Cache the user profile using the user ID from the response
         this.userProfilesCache.set(user.id, user);
@@ -238,7 +199,7 @@ export class UserService {
     return this.http.get<ApiResponse<User[]>>(
       this.USERS_URL
     ).pipe(
-      map(response => this.unwrapResponse(response, 'Failed to fetch users')),
+      map(response => unwrapResponse(response)),
       tap(users => {
         // Cache all user profiles
         users.forEach(user => {
@@ -300,7 +261,7 @@ export class UserService {
       `${this.USERS_URL}/me`,
       profileUpdate
     ).pipe(
-      map(response => this.unwrapResponse(response, 'Failed to update user profile')),
+      map(response => unwrapResponse(response)),
       tap(user => {
         // Update cache using user ID from response
         this.userProfilesCache.set(user.id, user);
@@ -349,7 +310,7 @@ export class UserService {
       `${this.USERS_URL}/${userId}`,
       profileUpdate
     ).pipe(
-      map(response => this.unwrapResponse(response, 'Failed to update user profile')),
+      map(response => unwrapResponse(response)),
       tap(user => {
         // Update cache
         this.userProfilesCache.set(userId, user);
@@ -396,7 +357,7 @@ export class UserService {
     return this.http.delete<ApiResponse<void>>(
       `${this.USERS_URL}/me`
     ).pipe(
-      map(response => this.unwrapVoidResponse(response, 'Failed to delete user account')),
+      map(response => unwrapVoidResponse(response)),
       tap(() => {
         // Clear current user profile cache
         this.clearCurrentUserProfile();

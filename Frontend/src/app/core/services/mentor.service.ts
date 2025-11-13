@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
-import { ApiResponse } from '../../shared/models/api-response.model';
+import { ApiResponse, unwrapResponse } from '../../shared/models/api-response.model';
 import {
   Mentor,
   MentorListItem,
@@ -48,6 +48,7 @@ import {
  * - Follows Angular standalone service pattern
  * - Uses ApiResponse wrapper for consistent error handling
  * - Error handling delegated to errorInterceptor
+ * - Uses shared unwrapResponse() utility for consistent error handling
  *
  * @example
  * ```typescript
@@ -163,12 +164,7 @@ export class MentorService {
       this.MENTORS_URL,
       { params: httpParams }
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch mentors');
-        }
-        return response.data;
-      })
+      map(response => unwrapResponse(response))
     );
   }
 
@@ -206,12 +202,7 @@ export class MentorService {
       `${this.MENTORS_URL}/search`,
       { params: httpParams }
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to search mentors');
-        }
-        return response.data;
-      })
+      map(response => unwrapResponse(response))
     );
   }
 
@@ -251,12 +242,7 @@ export class MentorService {
       `${this.MENTORS_URL}/top-rated`,
       { params: httpParams }
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch top-rated mentors');
-        }
-        return response.data;
-      })
+      map(response => unwrapResponse(response))
     );
   }
 
@@ -292,12 +278,7 @@ export class MentorService {
     return this.http.get<ApiResponse<MentorDetail>>(
       `${this.MENTORS_URL}/${mentorId}`
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch mentor profile');
-        }
-        return response.data;
-      })
+      map(response => unwrapResponse(response))
     );
   }
 
@@ -352,12 +333,7 @@ export class MentorService {
       this.MENTORS_URL,
       application
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to submit mentor application');
-        }
-        return response.data;
-      })
+      map(response => unwrapResponse(response))
     );
   }
 
@@ -422,12 +398,7 @@ export class MentorService {
       `${this.MENTORS_URL}/${mentorId}`,
       profileUpdate
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to update mentor profile');
-        }
-        return response.data;
-      })
+      map(response => unwrapResponse(response))
     );
   }
 
