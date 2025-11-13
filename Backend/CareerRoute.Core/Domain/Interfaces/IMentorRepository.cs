@@ -29,6 +29,10 @@ namespace CareerRoute.Core.Domain.Interfaces
         // Used for "Featured Mentors" or "Top Rated" sections.
         Task<IEnumerable<Mentor>> GetTopRatedMentorsAsync(int count = 10);
 
+        // Get mentors by category ID (based on their skills).
+        // Used for browsing mentors by category.
+        Task<IEnumerable<Mentor>> GetMentorsByCategoryAsync(int categoryId);
+
         // Check if a user is already a mentor.
         // Used to prevent duplicate mentor applications.
         Task<bool> IsMentorAsync(string id);

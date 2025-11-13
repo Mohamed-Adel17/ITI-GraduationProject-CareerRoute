@@ -23,6 +23,9 @@ namespace CareerRoute.Core.Services.Interfaces
         // Get top-rated mentors (for featured sections)
         Task<IEnumerable<MentorProfileDto>> GetTopRatedMentorsAsync(int count = 10);
 
+        // Get mentors by category ID (for category browsing)
+        Task<IEnumerable<MentorProfileDto>> GetMentorsByCategoryAsync(int categoryId);
+
         // Get all mentors pending admin approval (admin-only)
         Task<IEnumerable<MentorProfileDto>> GetPendingMentorApplicationsAsync();
 
