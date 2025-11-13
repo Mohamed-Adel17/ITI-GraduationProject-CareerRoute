@@ -10,10 +10,16 @@ import { guestGuard } from '../../core/guards/auth.guard';
  * Future routes to implement:
  * - home: Landing page
  * - about: About page
- * - mentors: Browse mentors
- * - mentors/:id: Mentor profile
+ * - mentors: Browse mentors (list view)
  */
 export const PUBLIC_ROUTES: Routes = [
+  // Mentor Routes
+  {
+    path: 'mentors/:id',
+    loadComponent: () => import('../mentors/mentor-detail/mentor-detail.component').then(m => m.MentorDetailComponent),
+    title: 'Mentor Profile - CareerRoute'
+  },
+
   // Authentication Routes
   {
     path: 'auth/login',
