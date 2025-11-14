@@ -26,31 +26,18 @@
             [value]="searchQuery"
             (input)="onSearchInput($event)"
             placeholder="Search by name, skills, or expertise..."
-            class="w-full pl-12 pr-24 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            class="w-full pl-12 pr-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             aria-label="Search mentors">
 
           <!-- Clear Search Button -->
           <button
             *ngIf="searchQuery"
             (click)="clearSearch()"
-            class="absolute right-20 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            class="absolute right-2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             aria-label="Clear search">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
-
-          <!-- Mobile Filters Toggle Button -->
-          <button
-            (click)="toggleFilters()"
-            class="md:hidden absolute right-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            aria-label="Toggle filters">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            <span *ngIf="activeFilterCount > 0" class="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-              {{ activeFilterCount }}
-            </span>
           </button>
         </div>
       </div>
@@ -59,9 +46,31 @@
 
   <!-- Main Content -->
   <div class="container mx-auto px-4 py-6">
-    <div class="flex flex-col md:flex-row gap-6">
-      <!-- Filters Panel (Desktop Sidebar) -->
-      <aside class="hidden md:block w-64 flex-shrink-0">
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Mobile/Tablet: Filters Button (Shows in same position as desktop sidebar) -->
+      <aside class="lg:hidden w-full">
+        <button
+          type="button"
+          (click)="toggleFilters()"
+          class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+          aria-label="Open filters">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span class="font-semibold text-gray-900 dark:text-white">Filters</span>
+            <span *ngIf="activeFilterCount > 0" class="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5 font-semibold">
+              {{ activeFilterCount }}
+            </span>
+          </div>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </aside>
+
+      <!-- Desktop: Filters Panel (Sidebar) -->
+      <aside class="hidden lg:block w-64 flex-shrink-0">
         <div class="sticky top-4">
           <app-filters-panel
             [categories]="categories"
@@ -74,18 +83,20 @@
       <!-- Mobile Filters Drawer -->
       <div
         *ngIf="filtersOpen"
-        class="md:hidden fixed inset-0 z-50 bg-black bg-opacity-50"
+        class="lg:hidden fixed inset-0 bg-black bg-opacity-50"
+        style="z-index: 9999;"
         (click)="closeFilters()"
         aria-label="Filters overlay">
         <div
           class="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
           (click)="$event.stopPropagation()">
           <!-- Mobile Filters Header -->
-          <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4 flex items-center justify-between z-10">
+          <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4 flex items-center justify-between z-20 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Filters</h2>
             <button
-              (click)="closeFilters()"
-              class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              type="button"
+              (click)="closeFilters(); $event.stopPropagation()"
+              class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer z-30"
               aria-label="Close filters">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

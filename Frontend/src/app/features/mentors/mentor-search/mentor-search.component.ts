@@ -222,10 +222,7 @@ export class MentorSearchComponent implements OnInit, OnDestroy {
    */
   onFiltersChange(filters: MentorSearchParams): void {
     this.searchState.setFilters(filters);
-    // Close filters panel on mobile after applying
-    if (this.isMobileView()) {
-      this.filtersOpen = false;
-    }
+    // Don't auto-close drawer - let user close it manually
   }
 
   /**
@@ -275,10 +272,10 @@ export class MentorSearchComponent implements OnInit, OnDestroy {
   // ==================== Utility Methods ====================
 
   /**
-   * Check if current view is mobile (for responsive UI)
+   * Check if current view is mobile/tablet (for responsive UI)
    */
   isMobileView(): boolean {
-    return window.innerWidth < 768; // Tailwind md breakpoint
+    return window.innerWidth < 1024; // Tailwind lg breakpoint
   }
 
   /**

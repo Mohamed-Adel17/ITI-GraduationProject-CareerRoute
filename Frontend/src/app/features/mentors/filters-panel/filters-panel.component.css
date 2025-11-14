@@ -1,10 +1,10 @@
-/* Mobile Filter Toggle Button (Fixed at top) */
+/* Mobile Filter Toggle Button (Hidden - mentor-search handles mobile toggle) */
 .mobile-filter-toggle {
-  @apply fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3;
+  @apply hidden;
 }
 
 .mobile-toggle-btn {
-  @apply flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-sm w-full justify-center relative;
+  @apply hidden;
 }
 
 .filter-badge {
@@ -13,30 +13,40 @@
 
 /* Filters Panel */
 .filters-panel {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-md h-fit sticky top-4;
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-md h-fit;
   transition: all 0.3s ease-in-out;
 }
 
-/* Mobile: Full screen overlay panel */
-@media (max-width: 1024px) {
+/* Desktop: Sticky positioning */
+@media (min-width: 1024px) {
   .filters-panel {
-    @apply fixed inset-0 z-50 rounded-none mt-0 h-full overflow-y-auto;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-  }
-
-  .filters-panel.mobile-open {
-    transform: translateX(0);
+    @apply sticky top-4;
   }
 }
 
 /* Desktop: Collapsed state */
 .filters-panel.collapsed {
-  @apply w-16;
+  @apply w-16 overflow-hidden;
 }
 
 .filters-panel.collapsed .panel-content {
   @apply hidden;
+}
+
+.filters-panel.collapsed .panel-header {
+  @apply p-2;
+}
+
+.filters-panel.collapsed .panel-title {
+  @apply hidden;
+}
+
+.filters-panel.collapsed .reset-btn {
+  @apply hidden;
+}
+
+.filters-panel.collapsed .collapse-btn {
+  @apply mx-auto block;
 }
 
 /* Panel Header */
@@ -57,7 +67,7 @@
 }
 
 .close-btn {
-  @apply p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors;
+  @apply hidden;
 }
 
 /* Reset Button */
@@ -184,19 +194,18 @@
   @apply flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300;
 }
 
-/* Mobile Apply Button */
+/* Mobile Apply Button (Hidden - mentor-search handles mobile actions) */
 .mobile-apply-btn {
-  @apply fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg;
+  @apply hidden;
 }
 
 .apply-btn {
-  @apply w-full px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-md;
+  @apply hidden;
 }
 
-/* Mobile Overlay */
+/* Mobile Overlay (Hidden - mentor-search handles overlay) */
 .mobile-overlay {
-  @apply fixed inset-0 bg-black/50 z-40;
-  animation: fadeIn 0.3s ease-in-out;
+  @apply hidden;
 }
 
 @keyframes fadeIn {
@@ -370,11 +379,7 @@ button:active {
   @apply transform scale-95;
 }
 
-/* Tooltip for collapsed state (future enhancement) */
-.filters-panel.collapsed .panel-title {
-  @apply justify-center;
-}
-
+/* Tooltip for collapsed state - badge positioning when collapsed */
 .filters-panel.collapsed .filter-count-badge {
   @apply absolute top-2 right-2;
 }

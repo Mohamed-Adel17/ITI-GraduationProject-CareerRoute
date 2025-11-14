@@ -336,6 +336,15 @@ export class MentorSearchStateService implements OnDestroy {
     this.pageSubject$.next(1);
     this.pageSizeSubject$.next(12);
     this.cache.clear();
+
+    // Clear URL parameters if URL sync is enabled
+    if (this.urlSyncEnabled) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {},
+        replaceUrl: true
+      });
+    }
   }
 
   /**
@@ -497,10 +506,10 @@ export class MentorSearchStateService implements OnDestroy {
     if (state.pageSize !== 12) queryParams.pageSize = state.pageSize;
 
     // Update URL without navigation
+    // Don't use 'merge' - we want to replace all params to allow clearing
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
-      queryParamsHandling: 'merge',
       replaceUrl: true
     });
   }
