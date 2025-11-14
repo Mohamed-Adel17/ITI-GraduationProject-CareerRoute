@@ -17,16 +17,14 @@ namespace CareerRoute.Core.Validators.Mentors
                     .WithMessage("Bio cannot exceed 2000 characters")
                 .When(x => !string.IsNullOrWhiteSpace(x.Bio));
 
-            // ============ EXPERTISE TAGS VALIDATION ============
-            // API Contract: List<string>, minimum 3 tags
-            RuleFor(x => x.ExpertiseTags)
-                .Must(tags => tags == null || tags.Count >= 3)
-                    .WithMessage("At least 3 expertise tags are required")
-                .Must(tags => tags == null || tags.All(tag => !string.IsNullOrWhiteSpace(tag)))
-                    .WithMessage("Expertise tags cannot be empty")
-                .Must(tags => tags == null || tags.All(tag => tag.Length <= 50))
-                    .WithMessage("Each expertise tag cannot exceed 50 characters")
-                .When(x => x.ExpertiseTags != null);
+            // ============ EXPERTISE TAG IDS VALIDATION ============
+            // API Contract: List<int>, minimum 1 tag
+            RuleFor(x => x.ExpertiseTagIds)
+                .Must(ids => ids == null || ids.Count >= 1)
+                    .WithMessage("At least 1 expertise tag is required")
+                .Must(ids => ids == null || ids.All(id => id > 0))
+                    .WithMessage("All expertise tag IDs must be greater than 0")
+                .When(x => x.ExpertiseTagIds != null);
 
             // ============ YEARS OF EXPERIENCE VALIDATION ============
             // API Contract: Minimum 1 year, maximum 60

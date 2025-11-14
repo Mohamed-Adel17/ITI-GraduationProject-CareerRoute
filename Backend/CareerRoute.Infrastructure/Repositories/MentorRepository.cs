@@ -20,14 +20,21 @@ namespace CareerRoute.Infrastructure.Repositories
 
         public async Task<Mentor?> GetMentorWithUserByIdAsync(string id)
         {
-            return await dbContext.Mentors.Include(m => m.User)
-                                   .FirstOrDefaultAsync(m => m.Id == id);
+            return await dbContext.Mentors
+                .Include(m => m.User)
+                    .ThenInclude(u => u.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                            .ThenInclude(s => s.Category)
+                .FirstOrDefaultAsync(m => m.Id == id);
         }
 
         public async Task<IEnumerable<Mentor>> GetApprovedMentorsAsync()
         {
             return await dbContext.Mentors
                 .Include(m => m.User)
+                    .ThenInclude(u => u.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                            .ThenInclude(s => s.Category)
                 .Where(m => m.IsVerified && m.ApprovalStatus == MentorApprovalStatus.Approved)
                 .ToListAsync();
         }
@@ -36,6 +43,9 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             return await dbContext.Mentors
                 .Include(m => m.User)
+                    .ThenInclude(u => u.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                            .ThenInclude(s => s.Category)
                 .Where(m => m.ApprovalStatus == MentorApprovalStatus.Pending)
                 .OrderBy(m => m.CreatedAt)
                 .ToListAsync();
@@ -45,10 +55,29 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             return await dbContext.Mentors
                 .Include(m => m.User)
+                    .ThenInclude(u => u.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                            .ThenInclude(s => s.Category)
                 .Where(m => m.ApprovalStatus == MentorApprovalStatus.Approved && m.IsVerified && m.TotalReviews > 0)
                 .OrderByDescending(m => m.AverageRating)
                 .ThenByDescending(m => m.TotalReviews)
                 .Take(count)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Mentor>> GetMentorsByCategoryAsync(int categoryId)
+        {
+            return await dbContext.Mentors
+                .Include(m => m.User)
+                    .ThenInclude(u => u.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                            .ThenInclude(s => s.Category)
+                .Where(m => m.ApprovalStatus == MentorApprovalStatus.Approved 
+                         && m.IsVerified 
+                         && m.IsAvailable
+                         && m.User.UserSkills.Any(us => us.Skill.CategoryId == categoryId && us.Skill.IsActive))
+                .OrderByDescending(m => m.AverageRating)
+                .ThenByDescending(m => m.TotalReviews)
                 .ToListAsync();
         }
 
@@ -84,9 +113,12 @@ namespace CareerRoute.Infrastructure.Repositories
 
             return await dbContext.Mentors
                 .Include(m => m.User)
+                    .ThenInclude(u => u.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                            .ThenInclude(s => s.Category)
                 .Where(m => m.ApprovalStatus == MentorApprovalStatus.Approved && m.IsVerified &&
                        (EF.Functions.Like(m.Bio, $"%{escapedTerm}%") ||
-                        EF.Functions.Like(m.ExpertiseTags, $"%{escapedTerm}%") ||
+                        m.User.UserSkills.Any(us => EF.Functions.Like(us.Skill.Name, $"%{escapedTerm}%")) ||
                         EF.Functions.Like(m.User.FirstName, $"%{escapedTerm}%") ||
                         EF.Functions.Like(m.User.LastName, $"%{escapedTerm}%")))
                 .OrderByDescending(m => m.AverageRating)

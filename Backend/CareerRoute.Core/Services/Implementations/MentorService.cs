@@ -26,6 +26,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IMapper _mapper;
         private readonly IMentorRepository _mentorRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ISkillService _skillService;
         private readonly IValidator<CreateMentorProfileDto> _createValidator;
         private readonly IValidator<UpdateMentorProfileDto> _updateValidator;
         private readonly IValidator<RejectMentorDto> _rejectValidator;
@@ -34,6 +35,7 @@ namespace CareerRoute.Core.Services.Implementations
         public MentorService(
             IMentorRepository mentorRepository,
             IUserRepository userRepository,
+            ISkillService skillService,
             IMapper mapper,
             ILogger<MentorService> logger,
             IValidator<CreateMentorProfileDto> createValidator,
@@ -43,6 +45,7 @@ namespace CareerRoute.Core.Services.Implementations
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
+            _skillService = skillService;
             _mapper = mapper;
             _logger = logger;
             _createValidator = createValidator;
@@ -81,8 +84,39 @@ namespace CareerRoute.Core.Services.Implementations
             // Update only provided fields
             if(updatedDto.Bio != null)
                 mentor.Bio = updatedDto.Bio;
-            if(updatedDto.ExpertiseTags != null && updatedDto.ExpertiseTags.Any())
-                mentor.ExpertiseTags = string.Join(",", updatedDto.ExpertiseTags);
+            
+            // Handle ExpertiseTagIds - Update UserSkills junction table
+            if(updatedDto.ExpertiseTagIds != null)
+            {
+                // Validate skill IDs
+                var isValid = await _skillService.ValidateSkillIdsAsync(updatedDto.ExpertiseTagIds);
+                if (!isValid)
+                {
+                    throw new Exceptions.ValidationException(new Dictionary<string, string[]>
+                    {
+                        ["ExpertiseTagIds"] = new[] { "One or more skill IDs are invalid or inactive" }
+                    });
+                }
+
+                // Remove existing UserSkills for this mentor's UserId
+                var existingSkills = mentor.User.UserSkills.ToList();
+                foreach (var userSkill in existingSkills)
+                {
+                    mentor.User.UserSkills.Remove(userSkill);
+                }
+
+                // Add new UserSkills
+                foreach (var skillId in updatedDto.ExpertiseTagIds)
+                {
+                    mentor.User.UserSkills.Add(new UserSkill
+                    {
+                        UserId = mentor.Id,
+                        SkillId = skillId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+            
             if(updatedDto.YearsOfExperience.HasValue)
                 mentor.YearsOfExperience = updatedDto.YearsOfExperience;
             if(updatedDto.Certifications != null)
@@ -124,11 +158,23 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException("User has already applied to become a mentor");
             }
             
+            // Validate skill IDs if provided (expertise can be added after approval)
+            if (createdDto.ExpertiseTagIds != null && createdDto.ExpertiseTagIds.Any())
+            {
+                var isValid = await _skillService.ValidateSkillIdsAsync(createdDto.ExpertiseTagIds);
+                if (!isValid)
+                {
+                    throw new Exceptions.ValidationException(new Dictionary<string, string[]>
+                    {
+                        ["ExpertiseTagIds"] = new[] { "One or more skill IDs are invalid or inactive" }
+                    });
+                }
+            }
+
             var mentor = new Mentor
             {
                 Id = userId, // Same as User ID (one-to-one relationship)
                 Bio = createdDto.Bio,
-                ExpertiseTags = string.Join(", ", createdDto.ExpertiseTags),
                 YearsOfExperience = createdDto.YearsOfExperience,
                 Certifications = createdDto.Certifications,
                 Rate30Min = createdDto.Rate30Min,  
@@ -146,6 +192,21 @@ namespace CareerRoute.Core.Services.Implementations
             
             await _mentorRepository.AddAsync(mentor);
             await _mentorRepository.SaveChangesAsync();
+
+            // Add UserSkills for expertise tags if provided
+            if (createdDto.ExpertiseTagIds != null && createdDto.ExpertiseTagIds.Any())
+            {
+                foreach (var skillId in createdDto.ExpertiseTagIds)
+                {
+                    user.UserSkills.Add(new UserSkill
+                    {
+                        UserId = userId,
+                        SkillId = skillId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+                await _userRepository.SaveChangesAsync();
+            }
 
             // TODO: Handle CategoryIds when MentorCategory junction table is implemented
             // await AssignMentorCategories(userId, createDto.CategoryIds);
@@ -167,6 +228,13 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<IEnumerable<MentorProfileDto>> GetTopRatedMentorsAsync(int count = 10)
         {
             var mentors = await _mentorRepository.GetTopRatedMentorsAsync(count);
+            return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+        }
+
+        // Get mentors by category
+        public async Task<IEnumerable<MentorProfileDto>> GetMentorsByCategoryAsync(int categoryId)
+        {
+            var mentors = await _mentorRepository.GetMentorsByCategoryAsync(categoryId);
             return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
         }
 

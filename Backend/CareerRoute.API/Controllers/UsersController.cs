@@ -18,7 +18,7 @@ namespace CareerRoute.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Produces("application/json")]
-    //[AuthorizeRole(AppRoles.Admin)]
+    [AuthorizeRole(AppRoles.Admin)]
     public class UsersController : ControllerBase
     {
         private readonly IUserService userService;

@@ -27,17 +27,19 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly UserManager<ApplicationUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IValidator<UpdateUserDto> updateValidator;
+        private readonly ISkillService skillService;
 
 
         public UserService(IMapper mapper , 
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager,
-             IValidator<UpdateUserDto> updateValidator) {
+             IValidator<UpdateUserDto> updateValidator, ISkillService skillService) {
 
             //this.userRepository = userRepository;
             this.mapper = mapper;
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.updateValidator = updateValidator;
+            this.skillService = skillService;
         }
       
         public async Task<IEnumerable<RetrieveUserDto>> GetAllUsersAsync()
@@ -65,11 +67,50 @@ namespace CareerRoute.Core.Services.Implementations
         {
             await updateValidator.ValidateAndThrowCustomAsync(uuDto);
 
-            var user = await userManager.FindByIdAsync(id);
+            var user = await userManager.Users
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .FirstOrDefaultAsync(u => u.Id == id);
+                
             if (user == null)
                 throw new NotFoundException("User", id);
 
-            mapper.Map(uuDto, user);
+            // Handle CareerInterestIds - Update UserSkills junction table
+            if (uuDto.CareerInterestIds != null)
+            {
+                // Validate skill IDs
+                var isValid = await skillService.ValidateSkillIdsAsync(uuDto.CareerInterestIds);
+                if (!isValid)
+                {
+                    throw new Exceptions.ValidationException(new Dictionary<string, string[]>
+                    {
+                        ["CareerInterestIds"] = new[] { "One or more skill IDs are invalid or inactive" }
+                    });
+                }
+
+                // Remove existing UserSkills
+                var existingSkills = user.UserSkills.ToList();
+                user.UserSkills.Clear();
+
+                // Add new UserSkills
+                foreach (var skillId in uuDto.CareerInterestIds)
+                {
+                    user.UserSkills.Add(new UserSkill
+                    {
+                        UserId = id,
+                        SkillId = skillId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            // Map other fields (excluding CareerInterestIds which was already handled)
+            if (uuDto.FirstName != null) user.FirstName = uuDto.FirstName;
+            if (uuDto.LastName != null) user.LastName = uuDto.LastName;
+            if (uuDto.PhoneNumber != null) user.PhoneNumber = uuDto.PhoneNumber;
+            if (uuDto.ProfilePictureUrl != null) user.ProfilePictureUrl = uuDto.ProfilePictureUrl;
+            if (uuDto.CareerGoal != null) user.CareerGoal = uuDto.CareerGoal;
 
             var result = await userManager.UpdateAsync(user);
             if (!result.Succeeded)

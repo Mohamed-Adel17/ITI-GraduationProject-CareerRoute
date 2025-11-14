@@ -1,4 +1,5 @@
 ﻿using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.DTOs.Skills;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace CareerRoute.Core.DTOs.Mentors
         public string Email { get; set; } = string.Empty;
         public string? ProfilePictureUrl { get; set; }
         public string? Bio { get; set; }
-        public List<string> ExpertiseTags { get; set; } = new();
+        public List<SkillDto> ExpertiseTags { get; set; } = new();
         public int? YearsOfExperience { get; set; }
         public string? Certifications { get; set; }
         public decimal Rate30Min { get; set; }
