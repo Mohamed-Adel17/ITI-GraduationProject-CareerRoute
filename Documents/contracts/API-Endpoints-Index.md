@@ -1,6 +1,6 @@
 # API Endpoints Documentation Index
 
-**Last Updated:** 2025-11-10  
+**Last Updated:** 2025-11-14  
 **Base URL:** `http://localhost:5000/api`
 
 ---
@@ -100,12 +100,12 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
-| `POST` | `/api/sessions` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#1-book-new-session)** | ✅ Authoritative<br/>Book session & create payment intent |
+| `POST` | `/api/sessions` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#1-book-new-session)** | ✅ Authoritative<br/>Book session with timeSlotId |
 | `GET` | `/api/sessions/{id}` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#2-get-session-detail)** | ✅ Authoritative<br/>View session details |
 | `GET` | `/api/sessions/upcoming` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#3-get-upcoming-sessions)** | ✅ Authoritative<br/>Paginated list |
 | `GET` | `/api/sessions/past` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#4-get-past-sessions)** | ✅ Authoritative<br/>Paginated list with review flags |
 | `PATCH` | `/api/sessions/{id}/reschedule` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#5-reschedule-session)** | ✅ Authoritative<br/>Requires mentor approval |
-| `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies |
+| `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies<br/>Releases TimeSlot |
 | `POST` | `/api/sessions/{id}/join` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#7-join-session-get-video-link)** | ✅ Authoritative<br/>Get video conference link |
 | `PATCH` | `/api/sessions/{id}/complete` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#8-complete-session)** | ✅ Authoritative<br/>Trigger payment release |
 
@@ -166,28 +166,32 @@ Category-Endpoints.md
 
 ### Session-Payment-Mentor Flow
 
-Session booking and payments connect users with mentors:
+Session booking and payments connect users with mentors through TimeSlots:
 
 ```
 Mentor-Endpoints.md
     └─ Mentor discovery & profile viewing
            ↓
+    Mentor creates TimeSlots (availability)
+           ↓
 Session-Payment-Endpoints.md
-    ├─ POST /api/sessions (book with mentorId)
+    ├─ POST /api/sessions (book with timeSlotId)
     ├─ POST /api/payments/create-intent
     ├─ POST /api/payments/confirm → Confirms session
     ├─ Session management (upcoming, past, detail)
-    ├─ PATCH reschedule/cancel
+    ├─ PATCH reschedule/cancel → Releases TimeSlot
     ├─ POST /api/sessions/{id}/join → Video link
     └─ PATCH /api/sessions/{id}/complete → Payment release
 ```
 
 **Session Lifecycle:**
 1. **Discovery**: User finds mentor via [Mentor-Endpoints.md](./Mentor-Endpoints.md)
-2. **Booking**: POST /api/sessions creates session (Pending) + payment intent
-3. **Payment**: POST /api/payments/confirm confirms payment → session (Confirmed)
-4. **Session**: POST /api/sessions/{id}/join → video conference
-5. **Completion**: PATCH /api/sessions/{id}/complete → 72h payment hold → payout
+2. **View Availability**: User views mentor's available TimeSlots
+3. **Booking**: POST /api/sessions with timeSlotId creates session (Pending), marks TimeSlot as booked
+4. **Payment**: POST /api/payments/create-intent then POST /api/payments/confirm → session (Confirmed)
+5. **Session**: POST /api/sessions/{id}/join → video conference
+6. **Completion**: PATCH /api/sessions/{id}/complete → 72h payment hold → payout
+7. **Cancellation**: If cancelled, TimeSlot is released and becomes available again
 
 ---
 
@@ -380,16 +384,20 @@ Mentor-Endpoints.md (REFERENCES)
 ```
 1. Find mentor → GET /api/mentors/{id}
    📖 Mentor-Endpoints.md
-2. Book session → POST /api/sessions
+2. View available time slots → GET /api/mentors/{mentorId}/available-slots
    📖 Session-Payment-Endpoints.md
-   (Creates session + payment intent)
-3. Complete payment → POST /api/payments/confirm
+3. Book session with timeSlotId → POST /api/sessions
+   📖 Session-Payment-Endpoints.md
+   (Creates session with status Pending, marks TimeSlot as booked)
+4. Create payment intent → POST /api/payments/create-intent
+   📖 Session-Payment-Endpoints.md
+5. Complete payment → POST /api/payments/confirm
    📖 Session-Payment-Endpoints.md
    (Confirms session + generates video link)
-4. Join session → POST /api/sessions/{id}/join
+6. Join session → POST /api/sessions/{id}/join
    📖 Session-Payment-Endpoints.md
    (Get video conference link)
-5. Complete session → PATCH /api/sessions/{id}/complete (Mentor)
+7. Complete session → PATCH /api/sessions/{id}/complete (Mentor)
    📖 Session-Payment-Endpoints.md
 ```
 
@@ -515,7 +523,7 @@ Mentor-Endpoints.md (REFERENCES)
 4. Update the statistics section
 5. Add to Common Use Cases if applicable
 
-**Last Review:** 2025-11-10  
+**Last Review:** 2025-11-14  
 
 ---
 
