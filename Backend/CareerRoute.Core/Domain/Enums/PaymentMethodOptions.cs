@@ -4,9 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CareerRoute.Core.DTOs.Payments
+namespace CareerRoute.Core.Domain.Enums
 {
-    internal class PaymentDto
+    public enum PaymentMethodOptions
     {
+        Paymob,
+        Stripe
     }
 }
