@@ -27,7 +27,7 @@ import {
  * 4. Get mentor profile details by ID
  *
  * **Authenticated Endpoints (Require Bearer Token):**
- * 7. Apply to become a mentor
+ * 7. Apply to become a mentor (requires expertiseTagIds and categoryIds)
  * 8. Update mentor profile (own profile or admin)
  *
  * Features:
@@ -38,7 +38,7 @@ import {
  * - Pagination support
  * - Get top-rated mentors
  * - View detailed mentor profiles
- * - Apply to become a mentor (authenticated)
+ * - Apply to become a mentor with expertise tags and categories (authenticated)
  * - Update mentor profile (authenticated)
  * - Based on Mentor-Endpoints.md contract
  *
@@ -49,6 +49,7 @@ import {
  * - Uses ApiResponse wrapper for consistent error handling
  * - Error handling delegated to errorInterceptor
  * - Uses shared unwrapResponse() utility for consistent error handling
+ * - Mentor applications now require expertiseTagIds and categoryIds during initial submission
  *
  * @example
  * ```typescript
@@ -307,24 +308,27 @@ export class MentorService {
    * - User cannot apply twice (returns 400 if already has mentor profile)
    * - Application starts with approvalStatus: "Pending"
    * - Default values: averageRating=0, totalReviews=0, totalSessionsCompleted=0, isVerified=false
-   * - expertiseTags will be empty initially (add later via update endpoint)
-   * - After admin approval, mentor can add expertise tags using expertiseTagIds field
+   * - expertiseTagIds and categoryIds are required during initial application
    *
    * Field Requirements:
    * - bio: Required, min 50 chars, max 1000 chars
+   * - expertiseTagIds: Required, array of skill IDs (integers)
    * - yearsOfExperience: Required, min 0, integer
    * - certifications: Optional, max 500 chars
    * - rate30Min: Required, min 0, max 10000
    * - rate60Min: Required, min 0, max 10000
+   * - categoryIds: Required, array of category IDs (integers)
    *
    * @example
    * ```typescript
    * const application: MentorApplication = {
    *   bio: 'Full-stack developer with 8 years of experience...',
+   *   expertiseTagIds: [1, 5, 10],
    *   yearsOfExperience: 8,
    *   certifications: 'AWS Certified Solutions Architect - Professional',
    *   rate30Min: 25.00,
-   *   rate60Min: 45.00
+   *   rate60Min: 45.00,
+   *   categoryIds: [2, 4]
    * };
    *
    * this.mentorService.applyToBecomeMentor(application).subscribe(

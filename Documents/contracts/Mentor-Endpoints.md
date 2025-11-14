@@ -520,10 +520,16 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 ```json
 {
   "bio": "Full-stack developer with 8 years of experience building scalable enterprise software...",
+  "expertiseTagIds": [
+    0
+  ],
   "yearsOfExperience": 8,
   "certifications": "AWS Certified Solutions Architect - Professional, Google Cloud Professional Cloud Architect",
   "rate30Min": 25.00,
-  "rate60Min": 45.00
+  "rate60Min": 45.00,
+  "categoryIds": [
+    0
+  ]
 }
 ```
 
@@ -547,7 +553,15 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
     "email": "sarah.johnson@example.com",
     "profilePictureUrl": "https://example.com/profiles/sarah.jpg",
     "bio": "Full-stack developer with 8 years of experience...",
-    "expertiseTags": [],
+    "expertiseTags": [
+      {
+        "id": 0,
+        "name": "string",
+        "categoryId": 0,
+        "categoryName": "string",
+        "isActive": true
+      }
+    ],
     "yearsOfExperience": 8,
     "certifications": "AWS Certified Solutions Architect - Professional, Google Cloud Professional Cloud Architect",
     "rate30Min": 25.00,

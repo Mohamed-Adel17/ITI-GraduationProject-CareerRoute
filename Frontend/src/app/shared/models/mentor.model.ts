@@ -219,16 +219,20 @@ export interface MentorProfileUpdate {
  * Mentor application data (when user applies to become mentor) (CreateMentorProfileDto)
  *
  * @remarks
- * - According to API contract, expertise tags are NOT included in initial application
- * - After approval, mentor can add expertise tags using PATCH /api/mentors/{id} with expertiseTagIds
- * - Initial application starts with empty expertiseTags array
+ * - According to updated API contract (Endpoint #7: POST /api/mentors)
+ * - Includes expertiseTagIds and categoryIds arrays
+ * - expertiseTagIds: Array of skill IDs (integers) for mentor's expertise areas
+ * - categoryIds: Array of category IDs (integers) for mentor's service categories
+ * - Both arrays are required in the application
  */
 export interface MentorApplication {
   bio: string; // Required: Min 50, max 1000 chars
+  expertiseTagIds: number[]; // Required: Array of skill IDs
   yearsOfExperience: number; // Required: Min 0, integer
   certifications?: string; // Optional: Max 500 chars
   rate30Min: number; // Required: Min 0, max 10000
   rate60Min: number; // Required: Min 0, max 10000
+  categoryIds: number[]; // Required: Array of category IDs
 }
 
 /**

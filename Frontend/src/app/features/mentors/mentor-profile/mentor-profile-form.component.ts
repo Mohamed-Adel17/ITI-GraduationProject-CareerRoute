@@ -10,29 +10,33 @@ import {
   validatePricing
 } from '../../../shared/models/mentor.model';
 import { Skill } from '../../../shared/models/skill.model';
+import { Category } from '../../../shared/models/category.model';
 
 /**
  * MentorProfileFormComponent
  *
  * Form component for creating and editing mentor profiles.
- * Handles mentor-specific fields: bio, rates, experience, and certifications.
+ * Handles mentor-specific fields: bio, rates, experience, certifications, expertise tags, and categories.
  *
  * Features:
- * - Create new mentor profile (application)
+ * - Create new mentor profile (application) with expertise tags and categories
  * - Edit existing mentor profile with expertise tags
  * - Real-time form validation
  * - Pricing validation with business rules (min 0, max 10000)
- * - Multi-select expertise tags (Skill selection) - only in edit mode
+ * - Multi-select expertise tags (Skill selection) - available in both modes
+ * - Multi-select categories - available in both modes
  * - Responsive design
  * - Accessibility support
  *
  * @remarks
  * - Can be used in both create and edit modes
- * - According to API contract:
- *   - CREATE mode: No expertise tags (added after approval via update)
+ * - According to updated API contract:
+ *   - CREATE mode: Requires expertiseTagIds and categoryIds (array of IDs)
  *   - EDIT mode: Supports expertiseTagIds (array of skill IDs)
  * - Validates pricing: rate60Min must be higher than rate30Min
  * - Bio: min 50 chars, max 1000 chars
+ * - Expertise tags: At least one required
+ * - Categories: At least one required
  * - Integrates with MentorService for API calls
  */
 @Component({
@@ -50,8 +54,11 @@ export class MentorProfileFormComponent implements OnInit {
   // Input: Existing mentor profile for edit mode
   @Input() mentor: Mentor | null = null;
 
-  // Input: Available skills for expertise tags selection (edit mode only)
+  // Input: Available skills for expertise tags selection (required in both modes)
   @Input() skills: Skill[] = [];
+
+  // Input: Available categories for category selection (required in both modes)
+  @Input() categories: Category[] = [];
 
   // Input: Form mode (create or edit)
   @Input() mode: 'create' | 'edit' = 'create';
@@ -97,6 +104,10 @@ export class MentorProfileFormComponent implements OnInit {
           Validators.maxLength(this.MAX_BIO_LENGTH)
         ]
       ],
+      expertiseTagIds: [
+        [],
+        [Validators.required] // Required in both create and edit modes
+      ],
       yearsOfExperience: [
         0,
         [
@@ -121,13 +132,12 @@ export class MentorProfileFormComponent implements OnInit {
           Validators.min(this.MIN_PRICE),
           Validators.max(this.MAX_PRICE)
         ]
+      ],
+      categoryIds: [
+        [],
+        [Validators.required] // Required in both create and edit modes
       ]
     };
-
-    // Only add expertiseTagIds field in edit mode
-    if (this.mode === 'edit') {
-      formConfig.expertiseTagIds = [[], []]; // Optional field for edit mode
-    }
 
     this.mentorForm = this.fb.group(formConfig, {
       validators: [this.pricingValidator.bind(this)]
@@ -145,16 +155,13 @@ export class MentorProfileFormComponent implements OnInit {
   private populateForm(mentor: Mentor): void {
     const formData: any = {
       bio: mentor.bio,
+      expertiseTagIds: mentor.expertiseTags ? mentor.expertiseTags.map(skill => skill.id) : [],
       yearsOfExperience: mentor.yearsOfExperience,
       certifications: mentor.certifications || '',
       rate30Min: mentor.rate30Min,
-      rate60Min: mentor.rate60Min
+      rate60Min: mentor.rate60Min,
+      categoryIds: mentor.categories ? mentor.categories.map(cat => cat.id) : []
     };
-
-    // Add expertise tag IDs in edit mode
-    if (this.mode === 'edit' && mentor.expertiseTags) {
-      formData.expertiseTagIds = mentor.expertiseTags.map(skill => skill.id);
-    }
 
     this.mentorForm.patchValue(formData);
   }
@@ -178,11 +185,9 @@ export class MentorProfileFormComponent implements OnInit {
   }
 
   /**
-   * Toggle skill selection (edit mode only)
+   * Toggle skill selection (available in both create and edit modes)
    */
   toggleSkill(skillId: number): void {
-    if (this.mode !== 'edit') return;
-
     const expertiseTagIds = this.mentorForm.get('expertiseTagIds')?.value || [];
     const index = expertiseTagIds.indexOf(skillId);
 
@@ -196,23 +201,51 @@ export class MentorProfileFormComponent implements OnInit {
   }
 
   /**
-   * Check if skill is selected (edit mode only)
+   * Check if skill is selected (available in both create and edit modes)
    */
   isSkillSelected(skillId: number): boolean {
-    if (this.mode !== 'edit') return false;
-
     const expertiseTagIds = this.mentorForm.get('expertiseTagIds')?.value || [];
     return expertiseTagIds.includes(skillId);
   }
 
   /**
-   * Get selected skills (edit mode only)
+   * Get selected skills (available in both create and edit modes)
    */
   getSelectedSkills(): Skill[] {
-    if (this.mode !== 'edit') return [];
-
     const expertiseTagIds = this.mentorForm.get('expertiseTagIds')?.value || [];
     return this.skills.filter(skill => expertiseTagIds.includes(skill.id));
+  }
+
+  /**
+   * Toggle category selection (available in both create and edit modes)
+   */
+  toggleCategory(categoryId: number): void {
+    const categoryIds = this.mentorForm.get('categoryIds')?.value || [];
+    const index = categoryIds.indexOf(categoryId);
+
+    if (index > -1) {
+      categoryIds.splice(index, 1);
+    } else {
+      categoryIds.push(categoryId);
+    }
+
+    this.mentorForm.patchValue({ categoryIds });
+  }
+
+  /**
+   * Check if category is selected (available in both create and edit modes)
+   */
+  isCategorySelected(categoryId: number): boolean {
+    const categoryIds = this.mentorForm.get('categoryIds')?.value || [];
+    return categoryIds.includes(categoryId);
+  }
+
+  /**
+   * Get selected categories (available in both create and edit modes)
+   */
+  getSelectedCategories(): Category[] {
+    const categoryIds = this.mentorForm.get('categoryIds')?.value || [];
+    return this.categories.filter(cat => categoryIds.includes(cat.id));
   }
 
   /**
@@ -291,6 +324,16 @@ export class MentorProfileFormComponent implements OnInit {
       if (errors['maxlength']) return `Bio cannot exceed ${this.MAX_BIO_LENGTH} characters`;
     }
 
+    // Expertise tags errors
+    if (fieldName === 'expertiseTagIds') {
+      if (errors['required']) return 'Please select at least one expertise tag';
+    }
+
+    // Category errors
+    if (fieldName === 'categoryIds') {
+      if (errors['required']) return 'Please select at least one category';
+    }
+
     // Experience errors
     if (fieldName === 'yearsOfExperience') {
       if (errors['required']) return 'Years of experience is required';
@@ -334,13 +377,15 @@ export class MentorProfileFormComponent implements OnInit {
     const formValue = this.mentorForm.value;
 
     if (this.mode === 'create') {
-      // Create mode: MentorApplication (no expertise tags)
+      // Create mode: MentorApplication (now includes expertise tags and categories)
       const data: MentorApplication = {
         bio: formValue.bio,
+        expertiseTagIds: formValue.expertiseTagIds,
         yearsOfExperience: formValue.yearsOfExperience,
         certifications: formValue.certifications || undefined,
         rate30Min: formValue.rate30Min,
-        rate60Min: formValue.rate60Min
+        rate60Min: formValue.rate60Min,
+        categoryIds: formValue.categoryIds
       };
       this.formSubmit.emit(data);
     } else {
@@ -370,15 +415,13 @@ export class MentorProfileFormComponent implements OnInit {
   resetForm(): void {
     const resetData: any = {
       bio: '',
+      expertiseTagIds: [],
       yearsOfExperience: 0,
       certifications: '',
       rate30Min: 50,
-      rate60Min: 90
+      rate60Min: 90,
+      categoryIds: []
     };
-
-    if (this.mode === 'edit') {
-      resetData.expertiseTagIds = [];
-    }
 
     this.mentorForm.reset(resetData);
     this.isSubmitting = false;
