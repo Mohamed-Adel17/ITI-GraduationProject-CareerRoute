@@ -1,28 +1,32 @@
 /* Mentor List Container */
 .mentor-list-container {
-  @apply w-full;
+  @apply w-full max-w-7xl mx-auto;
 }
 
 /* Responsive Grid Layout */
 .mentor-grid {
-  @apply grid gap-6 w-full;
+  @apply grid w-full;
+  gap: 1.25rem; /* 20px - better for mobile */
 
-  /* Mobile: 1 column */
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+  /* Mobile: 1 column with min-width constraint */
+  grid-template-columns: minmax(0, 1fr);
+
+  /* Small Mobile: 2 columns for wider phones (landscape) */
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem; /* 24px */
+  }
 
   /* Tablet: 2 columns */
-  @media (min-width: 640px) {
+  @media (min-width: 768px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem; /* 24px */
   }
 
-  /* Desktop: 3 columns */
+  /* Desktop and above: Maximum 3 columns */
   @media (min-width: 1024px) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  /* Large Desktop: 4 columns */
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2rem; /* 32px */
   }
 }
 
@@ -127,13 +131,6 @@
   @apply transform -translate-y-1;
 }
 
-/* Grid gap adjustments for different screen sizes */
-@media (max-width: 640px) {
-  .mentor-grid {
-    @apply gap-4;
-  }
-}
-
 /* Ensure cards maintain equal height */
 .mentor-grid > * {
   @apply h-full;
@@ -152,7 +149,7 @@
 
   .mentor-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    @apply gap-4;
+    gap: 1rem;
   }
 }
 
@@ -166,19 +163,25 @@
 /* Responsive padding for container */
 @media (max-width: 640px) {
   .mentor-list-container {
-    @apply px-2;
+    @apply px-3;
   }
 }
 
-/* Staggered animation for cards (optional enhancement) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .mentor-list-container {
+    @apply px-4;
+  }
+}
+
+/* Staggered animation for cards - lighter and faster for better mobile performance */
 .mentor-card-wrapper {
-  animation: fadeInUp 0.5s ease-out;
+  animation: fadeInUp 0.4s ease-out backwards;
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -186,16 +189,30 @@
   }
 }
 
-/* Add stagger delay for cards */
-.mentor-card-wrapper:nth-child(1) { animation-delay: 0.05s; }
-.mentor-card-wrapper:nth-child(2) { animation-delay: 0.1s; }
-.mentor-card-wrapper:nth-child(3) { animation-delay: 0.15s; }
-.mentor-card-wrapper:nth-child(4) { animation-delay: 0.2s; }
-.mentor-card-wrapper:nth-child(5) { animation-delay: 0.25s; }
-.mentor-card-wrapper:nth-child(6) { animation-delay: 0.3s; }
-.mentor-card-wrapper:nth-child(7) { animation-delay: 0.35s; }
-.mentor-card-wrapper:nth-child(8) { animation-delay: 0.4s; }
-.mentor-card-wrapper:nth-child(9) { animation-delay: 0.45s; }
-.mentor-card-wrapper:nth-child(10) { animation-delay: 0.5s; }
-.mentor-card-wrapper:nth-child(11) { animation-delay: 0.55s; }
-.mentor-card-wrapper:nth-child(12) { animation-delay: 0.6s; }
+/* Reduced stagger delays for better mobile performance - only first 12 */
+.mentor-card-wrapper:nth-child(1) { animation-delay: 0.03s; }
+.mentor-card-wrapper:nth-child(2) { animation-delay: 0.06s; }
+.mentor-card-wrapper:nth-child(3) { animation-delay: 0.09s; }
+.mentor-card-wrapper:nth-child(4) { animation-delay: 0.12s; }
+.mentor-card-wrapper:nth-child(5) { animation-delay: 0.15s; }
+.mentor-card-wrapper:nth-child(6) { animation-delay: 0.18s; }
+.mentor-card-wrapper:nth-child(7) { animation-delay: 0.21s; }
+.mentor-card-wrapper:nth-child(8) { animation-delay: 0.24s; }
+.mentor-card-wrapper:nth-child(9) { animation-delay: 0.27s; }
+.mentor-card-wrapper:nth-child(10) { animation-delay: 0.30s; }
+.mentor-card-wrapper:nth-child(11) { animation-delay: 0.33s; }
+.mentor-card-wrapper:nth-child(12) { animation-delay: 0.36s; }
+
+/* Disable animations on mobile for better performance */
+@media (max-width: 640px) and (prefers-reduced-motion: no-preference) {
+  .mentor-card-wrapper {
+    animation: none;
+  }
+}
+
+/* Always respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .mentor-card-wrapper {
+    animation: none;
+  }
+}
