@@ -23,12 +23,16 @@ public static class DependencyInjection
 
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IMentorService, MentorService>();
+        services.AddScoped<ISkillService, SkillService>();
+        services.AddScoped<ICategoryService, CategoryService>();
         // services.AddScoped<ISessionService, SessionService>();
 
         services.AddAutoMapper(options =>
         {
             options.AddProfile<MentorMappingProfile>();
             options.AddProfile<UserMappingProfile>();
+            options.AddProfile<SkillMappingProfile>();
+            options.AddProfile<CategoryMappingProfile>();
         });
 
 

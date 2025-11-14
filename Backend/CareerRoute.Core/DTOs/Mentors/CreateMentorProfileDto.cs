@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations;
 namespace CareerRoute.Core.DTOs.Mentors
 {
     // DTO for creating a new mentor profile (mentor application)
-    // All fields are required except Certifications
+    // ExpertiseTagIds is optional - expertise can be added after approval
     public class CreateMentorProfileDto
     {
         public string Bio { get; set; } = string.Empty;
-        public List<string> ExpertiseTags { get; set; } = new();
+        public List<int>? ExpertiseTagIds { get; set; }
         public int YearsOfExperience { get; set; }
         public string? Certifications { get; set; }
         public decimal Rate30Min { get; set; }

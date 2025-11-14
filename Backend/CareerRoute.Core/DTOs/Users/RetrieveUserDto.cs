@@ -1,4 +1,6 @@
-﻿namespace CareerRoute.Core.DTOs.Users
+﻿using CareerRoute.Core.DTOs.Skills;
+
+namespace CareerRoute.Core.DTOs.Users
 {
     public class RetrieveUserDto
     {
@@ -10,7 +12,7 @@
         public string? PhoneNumber { get; set; }
         public string? ProfilePictureUrl { get; set; }
         public string? CareerGoal { get; set; }
-        public string? CareerInterest { get; set; }
+        public List<SkillDto>? CareerInterests { get; set; }
         public string Role { get; set; }
         public bool IsActive { get; set; }
         public DateTime RegistrationDate { get; set; } 

@@ -48,6 +48,12 @@ namespace CareerRoute.API.Middleware
                     response = ApiResponse.Error(businessEx.Message, 400);
                     _logger.LogWarning(businessEx, "Business rule violation: {Message}", businessEx.Message);
                     break;
+
+                case ConflictException conflictEx:
+                    response = ApiResponse.Error(conflictEx.Message, 409);
+                    _logger.LogWarning(conflictEx, "Resource conflict: {Message}", conflictEx.Message);
+                    break;
+
                 case ValidationException validationEx:
                     response = ApiResponse.Error(validationEx.Message, 400, validationEx.Errors);
                     _logger.LogWarning(validationEx, "Validation exception: {Message}", validationEx.Message);
