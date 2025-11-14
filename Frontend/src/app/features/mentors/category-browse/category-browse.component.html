@@ -1,0 +1,105 @@
+<!-- Category Browse Component -->
+<!-- Displays categories in a responsive grid for browsing mentors -->
+
+<section class="py-8 md:py-12">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-8 md:mb-12">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">
+        Browse by Category
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        Explore mentorship categories and find experts in your field of interest.
+      </p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-8" data-testid="error-state">
+      <div class="flex items-center">
+        <span class="material-symbols-outlined text-red-500 mr-3">error</span>
+        <div>
+          <h3 class="text-red-800 dark:text-red-200 font-medium">Error Loading Categories</h3>
+          <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ error }}</p>
+        </div>
+      </div>
+      <button 
+        (click)="refreshCategories()" 
+        class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+        Try Again
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading && !error" class="flex justify-center items-center py-16" data-testid="loading-state">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <span class="ml-3 text-gray-600 dark:text-gray-400">Loading categories...</span>
+    </div>
+
+    <!-- Categories Grid -->
+    <div *ngIf="!loading && !error && categories.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div 
+        *ngFor="let category of categories; trackBy: trackByCategoryId"
+        (click)="onCategoryClick(category)"
+        class="group bg-white dark:bg-background-dark rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 transform hover:-translate-y-1"
+        data-testid="category-card">
+        
+        <!-- Category Icon -->
+        <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 text-3xl bg-primary/10 dark:bg-primary/20 rounded-lg group-hover:bg-primary/20 dark:group-hover:bg-primary/30 transition-colors">
+          {{ getCategoryIcon(category) }}
+        </div>
+
+        <!-- Category Name -->
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white text-center mb-2 group-hover:text-primary transition-colors">
+          {{ category.name }}
+        </h3>
+
+        <!-- Category Description -->
+        <p *ngIf="category.description" class="text-sm text-gray-600 dark:text-gray-400 text-center mb-4 line-clamp-3">
+          {{ category.description }}
+        </p>
+
+        <!-- Mentor Count -->
+        <div class="flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+          <span class="material-symbols-outlined text-base mr-1">people</span>
+          {{ getMentorCountText(category) }}
+        </div>
+
+        <!-- Hover Indicator -->
+        <div class="mt-4 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+          <span class="text-sm font-medium">Browse Mentors</span>
+          <span class="material-symbols-outlined text-sm ml-1">arrow_forward</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && !error && categories.length === 0" class="text-center py-16" data-testid="empty-state">
+      <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+        <span class="material-symbols-outlined text-4xl text-gray-400">category</span>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Categories Available</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+        There are currently no categories available. Please check back later or contact support.
+      </p>
+      <button 
+        (click)="refreshCategories()" 
+        class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium">
+        Refresh Categories
+      </button>
+    </div>
+
+    <!-- Browse All Mentors CTA -->
+    <div *ngIf="!loading && !error && categories.length > 0" class="mt-12 text-center">
+      <p class="text-gray-600 dark:text-gray-400 mb-4">
+        Can't find what you're looking for?
+      </p>
+      <button 
+        (click)="onBrowseAllMentors()"
+        class="inline-flex items-center px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+        data-testid="browse-all-button">
+        <span>Browse All Mentors</span>
+        <span class="material-symbols-outlined ml-2">search</span>
+      </button>
+    </div>
+  </div>
+</section>
