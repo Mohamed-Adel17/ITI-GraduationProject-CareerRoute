@@ -16,31 +16,26 @@
 
       <!-- Main Navigation (Desktop) -->
       <nav class="hidden lg:flex items-center gap-6" role="navigation" aria-label="Main navigation">
-        <a routerLink="/" 
-           routerLinkActive="text-primary" 
+        <a routerLink="/"
+           routerLinkActive="text-primary"
            [routerLinkActiveOptions]="{exact: true}"
            class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
           Home
         </a>
-        <a routerLink="/sessions" 
+        <a routerLink="/categories"
+           routerLinkActive="text-primary"
+           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
+          Categories
+        </a>
+        <a routerLink="/sessions"
            routerLinkActive="text-primary"
            class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
           Sessions
         </a>
-        <a routerLink="/mentors" 
+        <a routerLink="/mentors"
            routerLinkActive="text-primary"
            class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
           Experts
-        </a>
-        <a routerLink="/interview-prep" 
-           routerLinkActive="text-primary"
-           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
-          Interview Prep
-        </a>
-        <a routerLink="/jobs" 
-           routerLinkActive="text-primary"
-           class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
-          Jobs
         </a>
       </nav>
 
@@ -261,38 +256,44 @@
     </div>
 
     <!-- Mobile Navigation Menu -->
-    <nav 
+    <nav
       *ngIf="menuOpen"
       class="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4"
       role="navigation"
       aria-label="Mobile navigation">
       <div class="flex flex-col gap-2">
-        <a routerLink="/" 
+        <a routerLink="/"
            (click)="closeMenus()"
            routerLinkActive="bg-primary/10 text-primary"
            [routerLinkActiveOptions]="{exact: true}"
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
           Home
         </a>
-        <a routerLink="/sessions" 
+        <a routerLink="/categories"
+           (click)="closeMenus()"
+           routerLinkActive="bg-primary/10 text-primary"
+           class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+          Categories
+        </a>
+        <a routerLink="/sessions"
            (click)="closeMenus()"
            routerLinkActive="bg-primary/10 text-primary"
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
           Sessions
         </a>
-        <a routerLink="/mentors" 
+        <a routerLink="/mentors"
            (click)="closeMenus()"
            routerLinkActive="bg-primary/10 text-primary"
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
           Experts
         </a>
-        <a routerLink="/interview-prep" 
+        <a routerLink="/interview-prep"
            (click)="closeMenus()"
            routerLinkActive="bg-primary/10 text-primary"
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
           Interview Prep
         </a>
-        <a routerLink="/jobs" 
+        <a routerLink="/jobs"
            (click)="closeMenus()"
            routerLinkActive="bg-primary/10 text-primary"
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
