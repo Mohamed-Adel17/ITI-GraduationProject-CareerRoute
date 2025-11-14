@@ -217,11 +217,45 @@ namespace CareerRoute.Core.Services.Implementations
             return _mapper.Map<MentorProfileDto>(createdMentor!);
         }
 
-        // Search mentors by keywords
+        // Search mentors by keywords - simple search
         public async Task<IEnumerable<MentorProfileDto>> SearchMentorsAsync(string searchTerm)
         {
             var mentors = await _mentorRepository.SearchMentorsAsync(searchTerm);
             return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+        }
+
+        // Advanced search with filters, sorting, and pagination (US2)
+        public async Task<MentorSearchResponseDto> SearchMentorsAsync(MentorSearchRequestDto request)
+        {
+            var mentors = await _mentorRepository.SearchMentorsWithFiltersAsync(request);
+            var totalCount = await _mentorRepository.GetSearchResultsCountAsync(request);
+
+            var mentorDtos = _mapper.Map<List<MentorProfileDto>>(mentors);
+
+            var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
+
+            return new MentorSearchResponseDto
+            {
+                Mentors = mentorDtos,
+                Pagination = new PaginationMetadataDto
+                {
+                    TotalCount = totalCount,
+                    CurrentPage = request.Page,
+                    PageSize = request.PageSize,
+                    TotalPages = totalPages,
+                    HasNextPage = request.Page < totalPages,
+                    HasPreviousPage = request.Page > 1
+                },
+                AppliedFilters = new AppliedFiltersDto
+                {
+                    Keywords = request.Keywords,
+                    CategoryId = request.CategoryId,
+                    MinPrice = request.MinPrice,
+                    MaxPrice = request.MaxPrice,
+                    MinRating = request.MinRating,
+                    SortBy = request.SortBy
+                }
+            };
         }
 
         // Get top-rated mentors
