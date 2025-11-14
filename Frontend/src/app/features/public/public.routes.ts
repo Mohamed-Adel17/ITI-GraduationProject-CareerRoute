@@ -8,15 +8,22 @@ import { guestGuard } from '../../core/guards/auth.guard';
  * authenticated users from accessing them.
  *
  * Implemented routes:
+ * - home: Landing page with hero section
  * - categories: Browse mentors by category (grid view)
  * - mentors: Browse and search mentors (list view with filters)
  * - mentors/:id: Individual mentor profile page
  *
  * Future routes to implement:
- * - home: Landing page
  * - about: About page
  */
 export const PUBLIC_ROUTES: Routes = [
+  // Home Route
+  {
+    path: '',
+    loadComponent: () => import('./home/home.component').then(m => m.HomeComponent),
+    title: 'CareerRoute - Expert Career Mentorship'
+  },
+
   // Category Routes
   {
     path: 'categories',
