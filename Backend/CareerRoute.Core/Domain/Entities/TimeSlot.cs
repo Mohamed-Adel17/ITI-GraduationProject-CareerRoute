@@ -1,16 +1,17 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 
 namespace CareerRoute.Core.Domain.Entities
 {
     public class TimeSlot
     {
-        public int Id { get; set; }
+        public String Id { get; set; }
         
         [MaxLength(450), Required]
         public required string MentorId { get; set; }
         
-        public int? SessionId { get; set; }
+        public string? SessionId { get; set; }
         
         public DateTime StartDateTime { get; set; }
         
