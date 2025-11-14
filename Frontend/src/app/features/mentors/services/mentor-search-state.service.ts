@@ -230,6 +230,8 @@ export class MentorSearchStateService implements OnDestroy {
             pageSize: state.pageSize
           };
 
+          console.log('🚀 Calling MentorService.getAllMentors with params:', params);
+
           return this.mentorService.getAllMentors(params).pipe(
             tap((response) => {
               // Cache the result
@@ -257,12 +259,36 @@ export class MentorSearchStateService implements OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe((response) => {
-        const searchResponse = response as MentorSearchResponse;
+        console.log('🔍 MentorSearchStateService received response:', response);
+
+        // Handle both response types
+        let mentors: MentorListItem[] = [];
+        let pagination: PaginationMetadata | null = null;
+        let totalCount = 0;
+
+        if (Array.isArray(response)) {
+          // Response is MentorListItem[]
+          console.log('📋 Response is array of mentors, count:', response.length);
+          mentors = response;
+          totalCount = response.length;
+        } else {
+          // Response is MentorSearchResponse
+          const searchResponse = response as MentorSearchResponse;
+          console.log('📄 Response is MentorSearchResponse:', {
+            mentorsCount: searchResponse.mentors?.length || 0,
+            pagination: searchResponse.pagination
+          });
+          mentors = searchResponse.mentors || [];
+          pagination = searchResponse.pagination || null;
+          totalCount = searchResponse.pagination?.totalCount || 0;
+        }
+
+        console.log('✅ Updating subjects with:', { mentorsCount: mentors.length, totalCount });
 
         // Update results
-        this.resultsSubject$.next(searchResponse.mentors || []);
-        this.paginationSubject$.next(searchResponse.pagination || null);
-        this.totalCountSubject$.next(searchResponse.pagination?.totalCount || 0);
+        this.resultsSubject$.next(mentors);
+        this.paginationSubject$.next(pagination);
+        this.totalCountSubject$.next(totalCount);
         this.loadingSubject$.next(false);
 
         // Sync to URL if enabled
