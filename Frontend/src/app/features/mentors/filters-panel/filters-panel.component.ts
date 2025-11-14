@@ -10,11 +10,11 @@ import { Category } from '../../../shared/models/category.model';
  * FiltersPanelComponent
  *
  * @description
- * Sidebar/panel component with search filters for mentor browsing.
+ * Sidebar/panel component with filters for mentor browsing.
  * Provides comprehensive filtering options with reactive forms and debouncing.
+ * Search functionality is handled by the parent MentorSearchComponent.
  *
  * Features:
- * - Search keywords input with debouncing (500ms)
  * - Price range slider (min/max)
  * - Rating filter dropdown (1-5 stars)
  * - Availability checkbox (only show available mentors)
@@ -28,9 +28,10 @@ import { Category } from '../../../shared/models/category.model';
  *
  * @remarks
  * - Uses Reactive Forms for validation and state management
- * - Debounces text input to reduce API calls
+ * - Debounces filter changes to reduce API calls
  * - Part of US2 - Browse and Search for Mentors
  * - Responsive design with mobile collapse functionality
+ * - Does NOT include search input (handled by parent component)
  *
  * @example
  * ```html
@@ -123,10 +124,10 @@ export class FiltersPanelComponent implements OnInit, OnDestroy {
 
   /**
    * Initialize reactive form with all filter controls
+   * Note: Search keywords are handled by the parent MentorSearchComponent
    */
   private initializeForm(): void {
     this.filtersForm = this.fb.group({
-      keywords: [''],
       categoryId: [null],
       minPrice: [this.MIN_PRICE],
       maxPrice: [this.MAX_PRICE],
@@ -156,15 +157,11 @@ export class FiltersPanelComponent implements OnInit, OnDestroy {
 
   /**
    * Build MentorSearchParams from form values
+   * Note: Keywords/search query is handled by parent component
    * @param formValue Current form values
    */
   private buildFilterParams(formValue: any): MentorSearchParams {
     const params: MentorSearchParams = {};
-
-    // Add keywords if not empty
-    if (formValue.keywords && formValue.keywords.trim()) {
-      params.keywords = formValue.keywords.trim();
-    }
 
     // Add category if selected
     if (formValue.categoryId) {
@@ -204,11 +201,11 @@ export class FiltersPanelComponent implements OnInit, OnDestroy {
 
   /**
    * Apply initial filter values to form
+   * Note: Keywords are not included (handled by parent)
    * @param filters Initial filter parameters
    */
   private applyInitialFilters(filters: MentorSearchParams): void {
     this.filtersForm.patchValue({
-      keywords: filters.keywords || '',
       categoryId: filters.categoryId || null,
       minPrice: filters.minPrice || this.MIN_PRICE,
       maxPrice: filters.maxPrice || this.MAX_PRICE,
@@ -221,10 +218,10 @@ export class FiltersPanelComponent implements OnInit, OnDestroy {
 
   /**
    * Reset all filters to default values
+   * Note: Does not reset search keywords (handled by parent)
    */
   onResetFilters(): void {
     this.filtersForm.reset({
-      keywords: '',
       categoryId: null,
       minPrice: this.MIN_PRICE,
       maxPrice: this.MAX_PRICE,
@@ -261,12 +258,12 @@ export class FiltersPanelComponent implements OnInit, OnDestroy {
 
   /**
    * Get active filter count for badge display
+   * Note: Does not count search keywords (handled by parent)
    */
   get activeFilterCount(): number {
     const formValue = this.filtersForm.value;
     let count = 0;
 
-    if (formValue.keywords && formValue.keywords.trim()) count++;
     if (formValue.categoryId) count++;
     if (formValue.minPrice > this.MIN_PRICE) count++;
     if (formValue.maxPrice < this.MAX_PRICE) count++;
