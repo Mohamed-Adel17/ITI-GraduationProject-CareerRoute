@@ -3,6 +3,7 @@ using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Validators.Mentors;
+using CareerRoute.Core.Validators.Payments;
 using CareerRoute.Core.Validators.Users;
 
 using FluentValidation;
@@ -33,12 +34,16 @@ public static class DependencyInjection
             options.AddProfile<UserMappingProfile>();
             options.AddProfile<SkillMappingProfile>();
             options.AddProfile<CategoryMappingProfile>();
+            options.AddProfile<PaymentProfile>();
         });
 
 
         // ============ FLUENTVALIDATION ============
 
         services.AddValidatorsFromAssemblyContaining<UpdateMentorProfileValidator>();
+        services.AddValidatorsFromAssemblyContaining<PaymentIntentRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<PaymentConfirmRequestValidator>();
+
 
         return services;
     }
