@@ -80,7 +80,10 @@ namespace CareerRoute.API.Controllers
             return CreatedAtAction(
                 nameof(GetSkillById),
                 new { id = skill.Id },
-                new ApiResponse<SkillDetailDto>(skill, "Skill created successfully"));
+                new ApiResponse<SkillDetailDto>(
+                    skill,
+                    "Skill created successfully",
+                    StatusCodes.Status201Created));
         }
 
         /// <summary>

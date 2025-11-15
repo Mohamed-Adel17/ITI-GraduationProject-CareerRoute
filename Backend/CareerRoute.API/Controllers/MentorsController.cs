@@ -81,8 +81,7 @@ namespace CareerRoute.API.Controllers
                              request.MinPrice.HasValue ||
                              request.MaxPrice.HasValue ||
                              request.MinRating.HasValue ||
-                             request.Page > 1 ||
-                             request.PageSize != 12 ||
+                             request.Page >= 1 ||
                              request.SortBy != "popularity";
 
             // Use advanced search with pagination
@@ -195,7 +194,8 @@ namespace CareerRoute.API.Controllers
                 new { id = createdMentor.Id },
                 new ApiResponse<MentorProfileDto>(
                     createdMentor,
-                    "Mentor application submitted successfully! Your application is pending approval."
+                    "Mentor application submitted successfully! Your application is pending approval.",
+                    StatusCodes.Status201Created
                 ));
         }
 
