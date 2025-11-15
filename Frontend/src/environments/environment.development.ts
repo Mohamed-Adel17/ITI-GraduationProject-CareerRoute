@@ -11,12 +11,12 @@ export const environment = {
    *
    * For testing with mock HTTP interceptor:
    */
-  apiUrl: 'http://localhost:4200/api',
+  // apiUrl: 'http://localhost:4200/api',
 
   /**
    * Uncomment below when backend is ready on localhost:5000
    */
-  // apiUrl: 'http://localhost:5000/api',
+  apiUrl: 'https://localhost:7023/api',
 
   /**
    * Authentication Configuration

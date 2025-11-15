@@ -1,89 +1,82 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
-import { NotificationService } from './notification.service';
-import { AuthService } from './auth.service';
+import { ApiResponse, unwrapResponse } from '../../shared/models/api-response.model';
 import {
   Mentor,
+  MentorListItem,
+  MentorDetail,
+  MentorSearchParams,
+  MentorSearchResponse,
   MentorApplication,
-  MentorProfileUpdate,
-  MentorApprovalStatus
+  MentorProfileUpdate
 } from '../../shared/models/mentor.model';
-
-/**
- * Response wrapper for mentor API calls
- * Matches the standard API response format from backend
- */
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  errors?: { [key: string]: string[] };
-  statusCode?: number;
-}
 
 /**
  * MentorService
  *
- * Service for managing mentor profile operations in the Career Route application.
- * Handles mentor applications, profile management, and mentor-related queries with API calls and state management.
+ * Service for mentor browsing, discovery, and profile management in the Career Route application.
+ * Provides both public and authenticated endpoints for mentor operations.
+ *
+ * **Public Endpoints (No Authentication Required):**
+ * 1. Get all approved mentors with filtering and pagination
+ * 2. Search mentors by keywords
+ * 3. Get top-rated mentors
+ * 4. Get mentor profile details by ID
+ *
+ * **Authenticated Endpoints (Require Bearer Token):**
+ * 7. Apply to become a mentor (requires expertiseTagIds and categoryIds)
+ * 8. Update mentor profile (own profile or admin)
  *
  * Features:
- * - Apply to become mentor with professional information
- * - Get mentor profile by ID
- * - Get current authenticated user's mentor profile
- * - Update mentor profile
- * - Mentor profile caching
- * - Get mentor details with user information
- * - Application status tracking
- * - Automatic error handling and notifications
- * - Integration with AuthService for user authentication
+ * - Browse all approved mentors with advanced filtering
+ * - Search mentors by keywords (name, bio, expertise)
+ * - Filter by price range, rating, category
+ * - Sort by popularity, rating, price
+ * - Pagination support
+ * - Get top-rated mentors
+ * - View detailed mentor profiles
+ * - Apply to become a mentor with expertise tags and categories (authenticated)
+ * - Update mentor profile (authenticated)
+ * - Based on Mentor-Endpoints.md contract
  *
  * @remarks
- * - All endpoints require authentication (Bearer token) except public mentor viewing
- * - Mentor application requires verified email address
- * - User cannot apply twice (backend validates existing applications)
- * - Profile updates are reflected in the UI through observables
- * - Error handling is integrated with NotificationService
- * - Follows Angular standalone service pattern with dependency injection
+ * - Public endpoints return only approved mentors
+ * - Authenticated endpoints require Bearer token (handled by authInterceptor)
+ * - Follows Angular standalone service pattern
+ * - Uses ApiResponse wrapper for consistent error handling
+ * - Error handling delegated to errorInterceptor
+ * - Uses shared unwrapResponse() utility for consistent error handling
+ * - Mentor applications now require expertiseTagIds and categoryIds during initial submission
  *
  * @example
  * ```typescript
  * // In a component
  * constructor(private mentorService: MentorService) {}
  *
- * // Apply to become mentor
- * const application: MentorApplication = {
- *   bio: 'Senior developer with 10 years experience...',
- *   expertiseTags: 'React, Node.js, AWS',
- *   yearsOfExperience: 10,
- *   rate30Min: 50,
- *   rate60Min: 90,
- *   categoryIds: [1, 2]
- * };
- * this.mentorService.applyToBecomeMentor(application).subscribe(
- *   (mentor) => console.log('Application submitted:', mentor),
- *   (error) => console.error('Error:', error)
+ * // Public: Get all mentors with pagination
+ * this.mentorService.getAllMentors({ page: 1, pageSize: 12 }).subscribe(
+ *   (response) => {
+ *     this.mentors = response.mentors;
+ *     this.pagination = response.pagination;
+ *   }
  * );
  *
- * // Get mentor profile
- * this.mentorService.getMentorProfile(mentorId).subscribe(
- *   (mentor) => console.log('Mentor:', mentor)
+ * // Public: Search mentors
+ * this.mentorService.searchMentors('react').subscribe(
+ *   (mentors) => this.searchResults = mentors
  * );
  *
- * // Update mentor profile
- * const updates: MentorProfileUpdate = {
- *   bio: 'Updated bio...',
- *   expertiseTags: 'React, Node.js, AWS, Docker',
- *   yearsOfExperience: 11,
- *   rate30Min: 55,
- *   rate60Min: 100,
- *   categoryIds: [1, 2, 5]
- * };
+ * // Authenticated: Apply to become mentor
+ * this.mentorService.applyToBecomeMentor(applicationData).subscribe(
+ *   (mentor) => this.mentorProfile = mentor
+ * );
+ *
+ * // Authenticated: Update mentor profile
  * this.mentorService.updateMentorProfile(mentorId, updates).subscribe(
- *   (mentor) => console.log('Profile updated:', mentor)
+ *   (mentor) => this.updatedProfile = mentor
  * );
  * ```
  */
@@ -92,62 +85,257 @@ interface ApiResponse<T> {
 })
 export class MentorService {
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
-  private readonly notificationService = inject(NotificationService);
 
   // API endpoints
   private readonly API_URL = environment.apiUrl;
   private readonly MENTORS_URL = `${this.API_URL}/mentors`;
 
-  // Current user's mentor profile state
-  private currentMentorProfileSubject = new BehaviorSubject<Mentor | null>(null);
-  public currentMentorProfile$ = this.currentMentorProfileSubject.asObservable();
+  // ==================== Public Endpoints ====================
 
-  // Mentor application state (for tracking application status)
-  private mentorApplicationSubject = new BehaviorSubject<{
-    status: 'idle' | 'pending' | 'approved' | 'rejected';
-    mentor: Mentor | null;
-  }>({ status: 'idle', mentor: null });
-  public mentorApplication$ = this.mentorApplicationSubject.asObservable();
+  /**
+   * Get all approved mentors with filtering and pagination
+   *
+   * Endpoint: GET /api/mentors
+   * Based on Mentor-Endpoints.md - Endpoint #1
+   *
+   * @param params - Optional search and filter parameters
+   * @returns Observable of mentors array or paginated response
+   *
+   * @remarks
+   * - Public endpoint (no authentication required)
+   * - Returns all approved mentors if no params provided
+   * - Returns paginated response if page/pageSize provided
+   * - Supports filtering by keywords, category, price, rating
+   * - Supports sorting by popularity, rating, price
+   * - Only returns approved and verified mentors
+   *
+   * Response Structure:
+   * - Without pagination: ApiResponse<MentorListItem[]>
+   * - With pagination: ApiResponse<MentorSearchResponse> (includes pagination metadata and appliedFilters)
+   *
+   * @example
+   * ```typescript
+   * // Get all mentors without pagination
+   * this.mentorService.getAllMentors().subscribe(
+   *   (mentors) => this.allMentors = mentors
+   * );
+   *
+   * // Get mentors with pagination
+   * this.mentorService.getAllMentors({ page: 1, pageSize: 12 }).subscribe(
+   *   (response) => {
+   *     this.mentors = response.mentors;
+   *     this.pagination = response.pagination;
+   *     this.appliedFilters = response.appliedFilters;
+   *   }
+   * );
+   *
+   * // Advanced filtering
+   * this.mentorService.getAllMentors({
+   *   keywords: 'react',
+   *   categoryId: 1,
+   *   minPrice: 20,
+   *   maxPrice: 50,
+   *   minRating: 4.5,
+   *   sortBy: 'rating',
+   *   page: 1,
+   *   pageSize: 12
+   * }).subscribe(response => {
+   *   this.mentors = response.mentors;
+   *   this.totalPages = response.pagination.totalPages;
+   * });
+   * ```
+   */
+  getAllMentors(params?: MentorSearchParams): Observable<MentorListItem[] | MentorSearchResponse> {
+    let httpParams = new HttpParams();
 
-  // Mentor profiles cache (for multiple mentor lookups)
-  private mentorProfilesCache = new Map<string, Mentor>();
+    if (params) {
+      if (params.keywords) httpParams = httpParams.set('keywords', params.keywords);
+      if (params.categoryId) httpParams = httpParams.set('categoryId', params.categoryId.toString());
+      if (params.minPrice !== undefined) httpParams = httpParams.set('minPrice', params.minPrice.toString());
+      if (params.maxPrice !== undefined) httpParams = httpParams.set('maxPrice', params.maxPrice.toString());
+      if (params.minRating !== undefined) httpParams = httpParams.set('minRating', params.minRating.toString());
+      if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
+      if (params.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
+      if (params.pageSize !== undefined) httpParams = httpParams.set('pageSize', params.pageSize.toString());
+      if (params.verifiedOnly !== undefined) httpParams = httpParams.set('verifiedOnly', params.verifiedOnly.toString());
+      if (params.availableOnly !== undefined) httpParams = httpParams.set('availableOnly', params.availableOnly.toString());
+    }
 
-  // ==================== Mentor Application ====================
+    const url = `${this.MENTORS_URL}?${httpParams.toString()}`;
+    console.log('🌐 MentorService calling API:', url);
+
+    return this.http.get<ApiResponse<MentorListItem[] | MentorSearchResponse>>(
+      this.MENTORS_URL,
+      { params: httpParams }
+    ).pipe(
+      map(response => {
+        console.log('📥 MentorService received raw response:', response);
+        const unwrapped = unwrapResponse(response);
+        console.log('📦 MentorService unwrapped response:', unwrapped);
+        return unwrapped;
+      })
+    );
+  }
+
+  /**
+   * Search mentors by keywords
+   *
+   * Endpoint: GET /api/mentors/search
+   * Based on Mentor-Endpoints.md - Endpoint #2
+   *
+   * @param searchTerm - Search term to match (min 2 chars)
+   * @returns Observable of matching mentor list items
+   *
+   * @remarks
+   * - Public endpoint (no authentication required)
+   * - Searches in FirstName, LastName, Bio, and Skill.Name
+   * - Case-insensitive matching
+   * - Only returns approved mentors
+   * - Returns empty array if no matches
+   * - Returns 400 if searchTerm < 2 characters
+   *
+   * @example
+   * ```typescript
+   * this.mentorService.searchMentors('full-stack').subscribe(
+   *   (mentors) => {
+   *     this.searchResults = mentors;
+   *     console.log(`Found ${mentors.length} mentors`);
+   *   }
+   * );
+   * ```
+   */
+  searchMentors(searchTerm: string): Observable<MentorListItem[]> {
+    const httpParams = new HttpParams().set('searchTerm', searchTerm);
+
+    return this.http.get<ApiResponse<MentorListItem[]>>(
+      `${this.MENTORS_URL}/search`,
+      { params: httpParams }
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Get top-rated mentors
+   *
+   * Endpoint: GET /api/mentors/top-rated
+   * Based on Mentor-Endpoints.md - Endpoint #3
+   *
+   * @param count - Number of mentors to return (default: 10, min: 1, max: 100)
+   * @returns Observable of top-rated mentor list items
+   *
+   * @remarks
+   * - Public endpoint (no authentication required)
+   * - Ordered by AverageRating DESC, then TotalReviews DESC
+   * - Only returns approved mentors
+   * - Only includes mentors with at least 1 review
+   * - Returns 400 if count < 1 or count > 100
+   *
+   * @example
+   * ```typescript
+   * // Get default top 10
+   * this.mentorService.getTopRatedMentors().subscribe(
+   *   (mentors) => this.topMentors = mentors
+   * );
+   *
+   * // Get top 20
+   * this.mentorService.getTopRatedMentors(20).subscribe(
+   *   (mentors) => this.featuredMentors = mentors
+   * );
+   * ```
+   */
+  getTopRatedMentors(count: number = 10): Observable<MentorListItem[]> {
+    const httpParams = new HttpParams().set('count', count.toString());
+
+    return this.http.get<ApiResponse<MentorListItem[]>>(
+      `${this.MENTORS_URL}/top-rated`,
+      { params: httpParams }
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Get mentor profile details by ID
+   *
+   * Endpoint: GET /api/mentors/{id}
+   * Based on Mentor-Endpoints.md - Endpoint #4
+   *
+   * @param mentorId - The ID of the mentor to retrieve (GUID)
+   * @returns Observable of detailed mentor profile
+   *
+   * @remarks
+   * - Public endpoint (no authentication required)
+   * - Only returns approved mentors
+   * - Includes up to 5 most recent reviews
+   * - Includes availability preview for next 7 days
+   * - Includes categories, responseTime, completionRate
+   * - Returns 404 if mentor not found or not approved
+   *
+   * @example
+   * ```typescript
+   * this.mentorService.getMentorById(mentorId).subscribe(
+   *   (mentor) => {
+   *     this.mentorProfile = mentor;
+   *     this.recentReviews = mentor.recentReviews;
+   *     this.availability = mentor.availabilityPreview;
+   *   }
+   * );
+   * ```
+   */
+  getMentorById(mentorId: string): Observable<MentorDetail> {
+    return this.http.get<ApiResponse<MentorDetail>>(
+      `${this.MENTORS_URL}/${mentorId}`
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  // ==================== Authenticated Endpoints ====================
 
   /**
    * Apply to become a mentor
    *
-   * Submits a mentor application with professional profile information.
-   * User must have verified email to apply.
+   * Endpoint: POST /api/mentors
+   * Based on Mentor-Endpoints.md - Endpoint #7
    *
    * @param application - The mentor application data
    * @returns Observable of created Mentor profile
    *
    * @remarks
-   * - Requires authentication (Bearer token)
-   * - User must have verified email address
-   * - User cannot apply twice (409 Conflict error if already applied)
-   * - Application starts in "Pending" approval status
-   * - User gains "Mentor" role after admin approval
-   * - Returns 400 if validation fails (bio too short, invalid rates, etc.)
+   * - Requires authentication (Bearer token automatically added by authInterceptor)
+   * - User must be authenticated
+   * - User cannot apply twice (returns 400 if already has mentor profile)
+   * - Application starts with approvalStatus: "Pending"
+   * - Default values: averageRating=0, totalReviews=0, totalSessionsCompleted=0, isVerified=false
+   * - expertiseTagIds and categoryIds are required during initial application
+   *
+   * Field Requirements:
+   * - bio: Required, min 50 chars, max 1000 chars
+   * - expertiseTagIds: Required, array of skill IDs (integers)
+   * - yearsOfExperience: Required, min 0, integer
+   * - certifications: Optional, max 500 chars
+   * - rate30Min: Required, min 0, max 10000
+   * - rate60Min: Required, min 0, max 10000
+   * - categoryIds: Required, array of category IDs (integers)
    *
    * @example
    * ```typescript
    * const application: MentorApplication = {
-   *   bio: 'Senior Software Engineer with 10 years...',
-   *   expertiseTags: 'React, Node.js, AWS, Docker',
-   *   yearsOfExperience: 10,
-   *   certifications: 'AWS Certified Solutions Architect',
-   *   rate30Min: 50.00,
-   *   rate60Min: 90.00,
-   *   categoryIds: [1, 2, 5]
+   *   bio: 'Full-stack developer with 8 years of experience...',
+   *   expertiseTagIds: [1, 5, 10],
+   *   yearsOfExperience: 8,
+   *   certifications: 'AWS Certified Solutions Architect - Professional',
+   *   rate30Min: 25.00,
+   *   rate60Min: 45.00,
+   *   categoryIds: [2, 4]
    * };
    *
    * this.mentorService.applyToBecomeMentor(application).subscribe(
    *   (mentor) => {
    *     // Application submitted successfully
-   *     // Success notification shown automatically
+   *     console.log('Application pending approval:', mentor.approvalStatus);
+   *     // Component should show success notification
    *   }
    * );
    * ```
@@ -157,443 +345,120 @@ export class MentorService {
       this.MENTORS_URL,
       application
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to submit mentor application');
-        }
-        return response.data;
-      }),
-      tap(mentor => {
-        // Update current mentor profile
-        this.currentMentorProfileSubject.next(mentor);
-
-        // Update application state
-        this.mentorApplicationSubject.next({
-          status: this.getMentorApplicationStatus(mentor),
-          mentor: mentor
-        });
-
-        // Cache the profile
-        this.mentorProfilesCache.set(mentor.id, mentor);
-
-        // Show success notification
-        this.notificationService.success(
-          'Application submitted successfully! Your application is pending approval.',
-          'Success'
-        );
-      }),
-      catchError(error => this.handleError('Failed to submit mentor application', error))
+      map(response => unwrapResponse(response))
     );
   }
-
-  // ==================== Get Mentor Profile ====================
-
-  /**
-   * Get mentor profile by mentor ID
-   *
-   * @param mentorId - The ID of the mentor to retrieve
-   * @returns Observable of Mentor profile
-   *
-   * @remarks
-   * - Public endpoint - can be accessed without authentication
-   * - Returns mentor information with rating, reviews, and categories
-   * - Returns 404 if mentor not found
-   * - Profile is cached for performance
-   */
-  getMentorProfile(mentorId: string): Observable<Mentor> {
-    // Check cache first
-    const cached = this.mentorProfilesCache.get(mentorId);
-    if (cached) {
-      return new Observable(observer => {
-        observer.next(cached);
-        observer.complete();
-      });
-    }
-
-    return this.http.get<ApiResponse<Mentor>>(
-      `${this.MENTORS_URL}/${mentorId}`
-    ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to fetch mentor profile');
-        }
-        return response.data;
-      }),
-      tap(mentor => {
-        // Cache the profile
-        this.mentorProfilesCache.set(mentorId, mentor);
-      }),
-      catchError(error => this.handleError('Failed to fetch mentor profile', error))
-    );
-  }
-
-  /**
-   * Get current authenticated user's mentor profile
-   *
-   * This method uses the authenticated user ID from AuthService
-   * to fetch the current user's mentor profile from the API.
-   *
-   * @returns Observable of current user's Mentor profile
-   *
-   * @remarks
-   * - Requires authentication (Bearer token)
-   * - User must have a mentor profile (be a mentor or have pending application)
-   * - Updates the currentMentorProfile$ observable
-   * - Returns null/error if user is not a mentor
-   *
-   * @example
-   * ```typescript
-   * this.mentorService.getCurrentMentorProfile().subscribe(
-   *   (mentor) => {
-   *     console.log('Your mentor profile:', mentor);
-   *     this.mentorProfile = mentor;
-   *   }
-   * );
-   * ```
-   */
-  getCurrentMentorProfile(): Observable<Mentor> {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser || !currentUser.mentorId) {
-      return throwError(() => new Error('User does not have a mentor profile'));
-    }
-
-    return this.getMentorProfile(currentUser.mentorId).pipe(
-      tap(mentor => {
-        this.currentMentorProfileSubject.next(mentor);
-
-        // Update application state based on approval status
-        this.mentorApplicationSubject.next({
-          status: this.getMentorApplicationStatus(mentor),
-          mentor: mentor
-        });
-      })
-    );
-  }
-
-  /**
-   * Get cached mentor profile (synchronous)
-   *
-   * @param mentorId - The ID of the mentor to retrieve from cache
-   * @returns Mentor profile if cached, undefined otherwise
-   *
-   * @remarks
-   * - Returns immediately without API call
-   * - Returns undefined if mentor profile not in cache
-   * - Use getMentorProfile() to fetch from API if not cached
-   */
-  getCachedMentorProfile(mentorId: string): Mentor | undefined {
-    return this.mentorProfilesCache.get(mentorId);
-  }
-
-  /**
-   * Get current user's mentor profile from cache (synchronous)
-   *
-   * @returns Current user's mentor profile if cached, null otherwise
-   *
-   * @remarks
-   * - Returns immediately without API call
-   * - Returns null if no mentor profile cached
-   * - Use getCurrentMentorProfile() to fetch from API
-   */
-  getCachedCurrentMentorProfile(): Mentor | null {
-    return this.currentMentorProfileSubject.value;
-  }
-
-  // ==================== Update Mentor Profile ====================
 
   /**
    * Update mentor profile
    *
-   * @param mentorId - The ID of the mentor to update
-   * @param profileUpdate - The profile data to update
+   * Endpoint: PATCH /api/mentors/{id}
+   * Based on Mentor-Endpoints.md - Endpoint #8
+   *
+   * @param mentorId - The ID of the mentor to update (GUID)
+   * @param profileUpdate - The profile data to update (all fields optional)
    * @returns Observable of updated Mentor profile
    *
    * @remarks
-   * - Requires authentication (Bearer token)
-   * - Mentor can only update their own profile (or admin can update any)
-   * - Some fields cannot be updated after approval (approvalStatus, isVerified, calculated fields)
+   * - Requires authentication (Bearer token automatically added by authInterceptor)
+   * - Mentor can only update their own profile
+   * - Admin can update any mentor profile
    * - Returns 403 if trying to update another mentor's profile (non-admin)
    * - Returns 404 if mentor not found
-   * - Automatically shows success notification on completion
-   * - Updates currentMentorProfile$ if updating current user's profile
+   * - All fields are optional (PATCH semantics for partial updates)
+   * - Only provided fields will be updated
+   * - expertiseTagIds updates the mentor's expertise tags (Skills)
+   * - Empty array [] for expertiseTagIds clears all expertise tags
+   *
+   * Field Requirements:
+   * - bio: Optional, min 50 chars, max 1000 chars
+   * - yearsOfExperience: Optional, min 0, integer
+   * - certifications: Optional, max 500 chars
+   * - rate30Min: Optional, min 0, max 10000
+   * - rate60Min: Optional, min 0, max 10000
+   * - expertiseTagIds: Optional, array of skill IDs (integers), all must be valid active skills
    *
    * @example
    * ```typescript
    * const updates: MentorProfileUpdate = {
    *   bio: 'Updated bio with new achievements...',
-   *   expertiseTags: 'React, Node.js, AWS, Docker, Kubernetes',
-   *   yearsOfExperience: 11,
-   *   certifications: 'AWS Certified, CKA, CKAD',
-   *   rate30Min: 55.00,
-   *   rate60Min: 100.00,
-   *   categoryIds: [1, 2, 5, 8],
-   *   isAvailable: true
+   *   yearsOfExperience: 9,
+   *   certifications: 'AWS Certified, Google Cloud Certified',
+   *   rate30Min: 30.00,
+   *   rate60Min: 50.00,
+   *   expertiseTagIds: [5, 15, 20, 25, 30]  // Array of skill IDs
    * };
    *
    * this.mentorService.updateMentorProfile(mentorId, updates).subscribe(
-   *   (updatedMentor) => {
-   *     console.log('Profile updated:', updatedMentor);
-   *     // Success notification shown automatically
+   *   (mentor) => {
+   *     console.log('Profile updated:', mentor);
+   *     console.log('Expertise tags:', mentor.expertiseTags);
+   *     // Component should show success notification
    *   }
    * );
+   *
+   * // Clear all expertise tags
+   * this.mentorService.updateMentorProfile(mentorId, {
+   *   expertiseTagIds: []
+   * }).subscribe(mentor => {
+   *   console.log('Expertise tags cleared');
+   * });
    * ```
    */
   updateMentorProfile(mentorId: string, profileUpdate: MentorProfileUpdate): Observable<Mentor> {
-    return this.http.put<ApiResponse<Mentor>>(
+    return this.http.patch<ApiResponse<Mentor>>(
       `${this.MENTORS_URL}/${mentorId}`,
       profileUpdate
     ).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Failed to update mentor profile');
-        }
-        return response.data;
-      }),
-      tap(mentor => {
-        // Update cache
-        this.mentorProfilesCache.set(mentorId, mentor);
-
-        // Update current mentor profile if it's the authenticated user
-        const currentUser = this.authService.getCurrentUser();
-        if (currentUser && currentUser.mentorId === mentorId) {
-          this.currentMentorProfileSubject.next(mentor);
-
-          // Update application state
-          this.mentorApplicationSubject.next({
-            status: this.getMentorApplicationStatus(mentor),
-            mentor: mentor
-          });
-        }
-
-        // Show success notification
-        this.notificationService.success(
-          'Mentor profile updated successfully',
-          'Success'
-        );
-      }),
-      catchError(error => this.handleError('Failed to update mentor profile', error))
+      map(response => unwrapResponse(response))
     );
-  }
-
-  /**
-   * Update current authenticated user's mentor profile
-   *
-   * This is a convenience method that automatically uses
-   * the authenticated user's mentor ID.
-   *
-   * @param profileUpdate - The profile data to update
-   * @returns Observable of updated Mentor profile
-   *
-   * @remarks
-   * - Automatically gets the current user's mentor ID from AuthService
-   * - Returns error if user does not have a mentor profile
-   * - Same validation and authorization as updateMentorProfile()
-   *
-   * @example
-   * ```typescript
-   * const updates: MentorProfileUpdate = {
-   *   bio: 'Updated bio...',
-   *   expertiseTags: 'React, Node.js, AWS',
-   *   yearsOfExperience: 11,
-   *   rate30Min: 55,
-   *   rate60Min: 100,
-   *   categoryIds: [1, 2]
-   * };
-   *
-   * this.mentorService.updateCurrentMentorProfile(updates).subscribe(
-   *   (mentor) => console.log('Updated:', mentor)
-   * );
-   * ```
-   */
-  updateCurrentMentorProfile(profileUpdate: MentorProfileUpdate): Observable<Mentor> {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser || !currentUser.mentorId) {
-      return throwError(() => new Error('User does not have a mentor profile'));
-    }
-
-    return this.updateMentorProfile(currentUser.mentorId, profileUpdate);
   }
 
   // ==================== Helper Methods ====================
 
   /**
-   * Clear the mentor profile cache
+   * Build query parameters for mentor search
    *
-   * @remarks
-   * - Clears all cached mentor profiles
-   * - Does not clear currentMentorProfile$ observable
-   * - Use when you need fresh data from API
+   * Helper method to construct HttpParams from MentorSearchParams
+   * Used internally by getAllMentors()
+   *
+   * @param params - Search parameters
+   * @returns HttpParams object
    */
-  clearProfileCache(): void {
-    this.mentorProfilesCache.clear();
-  }
+  private buildSearchParams(params: MentorSearchParams): HttpParams {
+    let httpParams = new HttpParams();
 
-  /**
-   * Clear current user's mentor profile cache
-   *
-   * @remarks
-   * - Sets currentMentorProfile$ to null
-   * - Clears current user's mentor profile data
-   */
-  clearCurrentMentorProfile(): void {
-    this.currentMentorProfileSubject.next(null);
-  }
-
-  /**
-   * Refresh current user's mentor profile from API
-   *
-   * @returns Observable of refreshed Mentor profile
-   *
-   * @remarks
-   * - Fetches fresh profile data from API
-   * - Ignores cache
-   * - Useful for getting latest profile after external updates
-   */
-  refreshCurrentMentorProfile(): Observable<Mentor> {
-    this.clearCurrentMentorProfile();
-    return this.getCurrentMentorProfile();
-  }
-
-  /**
-   * Check if user has applied to become a mentor
-   *
-   * @returns True if user has mentor profile or pending application
-   *
-   * @remarks
-   * - Checks cached mentor profile
-   * - Returns false if no profile cached
-   */
-  hasAppliedToBecomeMentor(): boolean {
-    const mentor = this.getCachedCurrentMentorProfile();
-    return mentor != null;
-  }
-
-  /**
-   * Get mentor application approval status
-   *
-   * @returns Application status: 'idle', 'pending', 'approved', or 'rejected'
-   *
-   * @remarks
-   * - Returns current application status from observable
-   * - Useful for UI display of application progress
-   */
-  getMentorApplicationStatusObs(): Observable<{
-    status: 'idle' | 'pending' | 'approved' | 'rejected';
-    mentor: Mentor | null;
-  }> {
-    return this.mentorApplication$;
-  }
-
-  /**
-   * Check if current user is an approved mentor
-   *
-   * @returns True if user is approved mentor
-   *
-   * @remarks
-   * - Uses cached mentor profile
-   * - Checks both approval status and verification
-   * - Returns false if profile not cached
-   */
-  isCurrentUserApprovedMentor(): boolean {
-    const mentor = this.getCachedCurrentMentorProfile();
-    return mentor != null
-      && mentor.approvalStatus === MentorApprovalStatus.Approved
-      && mentor.isVerified;
-  }
-
-  /**
-   * Check if current user has pending mentor application
-   *
-   * @returns True if application is pending
-   *
-   * @remarks
-   * - Uses cached mentor profile
-   * - Returns false if profile not cached
-   */
-  hasCurrentUserPendingApplication(): boolean {
-    const mentor = this.getCachedCurrentMentorProfile();
-    return mentor != null && mentor.approvalStatus === MentorApprovalStatus.Pending;
-  }
-
-  /**
-   * Get percentage of mentor profile completion
-   *
-   * Useful for showing profile completion UI in mentor dashboard
-   *
-   * @param mentor - The mentor profile to check
-   * @returns Completion percentage (0-100)
-   *
-   * @remarks
-   * - Checks for presence of profile data
-   * - Useful for encouraging mentors to complete profile
-   * - Includes bio, expertise, certifications, pricing, categories
-   */
-  calculateProfileCompletionPercentage(mentor: Mentor): number {
-    let completedFields = 0;
-    const totalFields = 6;
-
-    if (mentor.bio && mentor.bio.length > 0) completedFields++;
-    if (mentor.expertiseTags && (Array.isArray(mentor.expertiseTags)
-      ? mentor.expertiseTags.length > 0
-      : mentor.expertiseTags.length > 0)) completedFields++;
-    if (mentor.yearsOfExperience && mentor.yearsOfExperience > 0) completedFields++;
-    if (mentor.certifications && mentor.certifications.length > 0) completedFields++;
-    if (mentor.rate30Min && mentor.rate60Min) completedFields++;
-    if (mentor.categoryIds && mentor.categoryIds.length > 0) completedFields++;
-
-    return Math.round((completedFields / totalFields) * 100);
-  }
-
-  // ==================== Private Helper Methods ====================
-
-  /**
-   * Get mentor application status from approval status
-   *
-   * @param mentor - The mentor profile
-   * @returns Application status
-   */
-  private getMentorApplicationStatus(mentor: Mentor): 'idle' | 'pending' | 'approved' | 'rejected' {
-    switch (mentor.approvalStatus) {
-      case MentorApprovalStatus.Pending:
-        return 'pending';
-      case MentorApprovalStatus.Approved:
-        return 'approved';
-      case MentorApprovalStatus.Rejected:
-        return 'rejected';
-      default:
-        return 'idle';
+    if (params.keywords) {
+      httpParams = httpParams.set('keywords', params.keywords);
     }
-  }
-
-  /**
-   * Handle API errors with logging and user feedback
-   *
-   * @param defaultMessage - Default message to show if error message is not available
-   * @param error - The error object
-   * @returns Throwable error for upstream handling
-   *
-   * @remarks
-   * - Shows notification to user
-   * - Logs error details
-   * - Handles various error types (validation, auth, server, etc.)
-   */
-  private handleError(defaultMessage: string, error: any): Observable<never> {
-    let errorMessage = defaultMessage;
-
-    if (error.error?.message) {
-      errorMessage = error.error.message;
-    } else if (error.error?.errors) {
-      // Extract first validation error
-      const firstError = Object.values(error.error.errors)[0];
-      if (Array.isArray(firstError) && firstError.length > 0) {
-        errorMessage = firstError[0];
-      }
-    } else if (error.message) {
-      errorMessage = error.message;
+    if (params.categoryId !== undefined) {
+      httpParams = httpParams.set('categoryId', params.categoryId.toString());
+    }
+    if (params.minPrice !== undefined) {
+      httpParams = httpParams.set('minPrice', params.minPrice.toString());
+    }
+    if (params.maxPrice !== undefined) {
+      httpParams = httpParams.set('maxPrice', params.maxPrice.toString());
+    }
+    if (params.minRating !== undefined) {
+      httpParams = httpParams.set('minRating', params.minRating.toString());
+    }
+    if (params.sortBy) {
+      httpParams = httpParams.set('sortBy', params.sortBy);
+    }
+    if (params.page !== undefined) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params.pageSize !== undefined) {
+      httpParams = httpParams.set('pageSize', params.pageSize.toString());
+    }
+    if (params.verifiedOnly !== undefined) {
+      httpParams = httpParams.set('verifiedOnly', params.verifiedOnly.toString());
+    }
+    if (params.availableOnly !== undefined) {
+      httpParams = httpParams.set('availableOnly', params.availableOnly.toString());
     }
 
-    this.notificationService.error(errorMessage, 'Error');
-
-    return throwError(() => error);
+    return httpParams;
   }
 }

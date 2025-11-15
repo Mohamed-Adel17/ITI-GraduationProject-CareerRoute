@@ -10,20 +10,26 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Microsoft.VisualBasic;
+using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
 //CORS Configuration
-var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:4200";
+var frontendUrls = builder.Configuration.GetSection("FrontendUrls").Get<string[]>()
+    ?? new[] { "http://localhost:4200" };
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(frontendUrl).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+        policy.WithOrigins(frontendUrls)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -32,14 +38,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddCore();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddConfigurationInfrastructure(builder.Configuration);
-
-
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-{
-    //options.User.RequireUniqueEmail = true; // Ensure unique email addresses
-})
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(
     (options) =>
@@ -74,24 +72,68 @@ builder.Services.AddAuthentication(
 //Adding Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy(AppPolicies.RequireUserRole, 
-        policy=> policy.RequireRole(AppRoles.User));
-    options.AddPolicy(AppPolicies.RequireAdminRole, 
+    options.AddPolicy(AppPolicies.RequireUserRole,
+        policy => policy.RequireRole(AppRoles.User));
+    options.AddPolicy(AppPolicies.RequireAdminRole,
         policy => policy.RequireRole(AppRoles.Admin));
     options.AddPolicy(AppPolicies.RequireMentorRole,
         policy => policy.RequireRole(AppRoles.Mentor));
-    options.AddPolicy(AppPolicies.RequireMentorOrAdminRole, 
+    options.AddPolicy(AppPolicies.RequireMentorOrAdminRole,
         policy => policy.RequireRole(AppRoles.Mentor, AppRoles.Admin));
-    options.AddPolicy(AppPolicies.RequireAnyRole, 
+    options.AddPolicy(AppPolicies.RequireAnyRole,
         policy => policy.RequireRole(AppRoles.User, AppRoles.Admin, AppRoles.Mentor));
 });
 
 
 // API Layer Services
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "CareerRoute API",
+        Version = "v1",
+        Description = "API for CareerRoute - A platform connecting mentors and mentees for career guidance",
+        Contact = new OpenApiContact
+        {
+            Name = "CareerRoute Team",
+            Email = "support@careerroute.com"
+        }
+    });
+
+    // Include XML comments for Swagger documentation
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+
+    // Add JWT authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -130,11 +172,67 @@ using (var scope = app.Services.CreateScope())
         var logger = services.GetRequiredService<ILogger<Program>>();
 
         await RoleSeeder.SeedRolesAsync(roleManager, logger);
+
     }
-    catch(Exception ex)
+    catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Error happened while seeding roles");
+    }
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
+
+        await CategorySeeder.SeedCategoriesAsync(context, logger);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error happened while seeding categories");
+    }
+}
+
+//seed skills on application startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
+
+        await SkillSeeder.SeedSkillsAsync(context, logger);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error happened while seeding skills");
+    }
+}
+
+//seed test data on application startup (Development only)
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var env = services.GetRequiredService<IWebHostEnvironment>();
+
+        await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error happened while seeding test data");
     }
 }
 

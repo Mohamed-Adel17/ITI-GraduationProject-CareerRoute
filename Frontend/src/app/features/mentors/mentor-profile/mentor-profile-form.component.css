@@ -1,0 +1,266 @@
+/* Mentor Profile Form Styles */
+
+/* Form Container */
+.mentor-profile-form {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form Sections */
+.form-section {
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Form Groups */
+.form-group {
+  position: relative;
+}
+
+/* Input Focus States - Using Tailwind's focus:ring-primary */
+.mentor-profile-form input:focus,
+.mentor-profile-form textarea:focus {
+  outline: none;
+}
+
+/* Textarea Resize */
+.mentor-profile-form textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+/* Number Input Arrows */
+.mentor-profile-form input[type="number"]::-webkit-inner-spin-button,
+.mentor-profile-form input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* Category Cards Hover Effect */
+.mentor-profile-form button[type="button"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.mentor-profile-form button[type="button"]:active {
+  transform: translateY(0);
+}
+
+/* Selected Category Animation */
+.mentor-profile-form button[type="button"].border-primary {
+  animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Expertise Tags */
+.mentor-profile-form .flex-wrap span {
+  animation: tagFadeIn 0.2s ease-in;
+}
+
+@keyframes tagFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Error States */
+.mentor-profile-form .border-red-500 {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Loading Spinner */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Form Actions */
+.form-actions button {
+  transition: all 0.2s ease-in-out;
+}
+
+.form-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.form-actions button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Disabled State */
+.mentor-profile-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Pricing Help Box Animation */
+.mentor-profile-form .bg-blue-50 {
+  animation: expandDown 0.3s ease-out;
+}
+
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+/* Character Count Warning */
+.mentor-profile-form .text-red-600 {
+  font-weight: 600;
+}
+
+/* Checkbox Custom Styling */
+.mentor-profile-form input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.mentor-profile-form input[type="checkbox"]:checked {
+  background-color: #1193d4;
+  border-color: #1193d4;
+}
+
+/* Category Checkbox Animation */
+.mentor-profile-form .w-6.h-6 svg {
+  animation: checkmark 0.2s ease-in;
+}
+
+@keyframes checkmark {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+  .mentor-profile-form {
+    padding: 1rem;
+  }
+
+  .form-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .form-section h3 {
+    font-size: 1.25rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+/* Dark Mode Adjustments */
+@media (prefers-color-scheme: dark) {
+  .mentor-profile-form input,
+  .mentor-profile-form textarea {
+    color-scheme: dark;
+  }
+
+  .mentor-profile-form input:focus,
+  .mentor-profile-form textarea:focus {
+    box-shadow: 0 0 0 3px rgba(17, 147, 212, 0.2);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .form-actions {
+    display: none;
+  }
+
+  .mentor-profile-form {
+    padding: 0;
+  }
+}
+
+/* Accessibility - Focus Visible */
+.mentor-profile-form *:focus-visible {
+  outline: 2px solid #1193d4;
+  outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+.mentor-profile-form * {
+  transition-property: color, background-color, border-color, transform, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Remove transitions for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .mentor-profile-form *,
+  .mentor-profile-form *::before,
+  .mentor-profile-form *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,69 @@
+<div class="mentor-list-container">
+
+  <!-- Loading State - Skeleton Cards -->
+  <div *ngIf="loading" class="mentor-grid" role="status" aria-live="polite" aria-label="Loading mentors">
+    <div *ngFor="let _ of skeletonArray; trackBy: trackByIndex" class="skeleton-card">
+      <div class="skeleton-card-header">
+        <div class="skeleton-avatar"></div>
+        <div class="skeleton-content">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-subtitle"></div>
+        </div>
+      </div>
+      <div class="skeleton-body">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+      <div class="skeleton-footer">
+        <div class="skeleton-tag"></div>
+        <div class="skeleton-tag"></div>
+        <div class="skeleton-tag"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State - No Mentors Found -->
+  <div *ngIf="isEmpty" class="empty-state" role="status" aria-live="polite">
+    <div class="empty-state-icon">
+      <svg class="w-24 h-24 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+      </svg>
+    </div>
+    <h3 class="empty-state-title">No Mentors Found</h3>
+    <p class="empty-state-description">
+      We couldn't find any mentors matching your criteria. Try adjusting your filters or search terms.
+    </p>
+  </div>
+
+  <!-- Mentor Grid - Data Loaded -->
+  <div *ngIf="hasData" class="mentor-grid" role="list" aria-label="List of mentors">
+    <div
+      *ngFor="let mentor of mentors; trackBy: trackByMentorId"
+      role="listitem"
+      class="mentor-card-wrapper">
+      <app-mentor-card
+        [mentor]="mentor"
+        [maxBioLines]="3"
+        [showPrice]="true"
+        [showSessionCount]="true"
+        (mentorClick)="onMentorClick($event)"
+        class="h-full">
+      </app-mentor-card>
+    </div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div *ngIf="showPagination && hasData && totalCount > pageSize" class="pagination-wrapper">
+    <app-pagination
+      [totalItems]="totalCount"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[12, 24, 48]"
+      [maxVisiblePages]="5"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)">
+    </app-pagination>
+  </div>
+</div>

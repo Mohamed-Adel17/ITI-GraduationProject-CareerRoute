@@ -1,0 +1,117 @@
+<!-- Pagination Container -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+  <!-- Items Info (Left side on desktop, top on mobile) -->
+  <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
+    <span *ngIf="totalItems > 0">
+      Showing <span class="font-semibold text-gray-900 dark:text-gray-100">{{ startItem }}</span> to 
+      <span class="font-semibold text-gray-900 dark:text-gray-100">{{ endItem }}</span> of 
+      <span class="font-semibold text-gray-900 dark:text-gray-100">{{ totalItems }}</span> results
+    </span>
+    <span *ngIf="totalItems === 0" class="text-gray-500 dark:text-gray-400">
+      No results found
+    </span>
+  </div>
+
+  <!-- Pagination Controls (Center) -->
+  <nav 
+    *ngIf="totalPages > 1" 
+    aria-label="Pagination" 
+    class="flex items-center gap-2 order-1 sm:order-2">
+    
+    <!-- Previous Button -->
+    <button
+      type="button"
+      (click)="previousPage()"
+      [disabled]="!hasPreviousPage()"
+      [attr.aria-label]="'Go to previous page'"
+      [class.opacity-50]="!hasPreviousPage()"
+      [class.cursor-not-allowed]="!hasPreviousPage()"
+      [class.hover:bg-primary/10]="hasPreviousPage()"
+      [class.dark:hover:bg-primary/20]="hasPreviousPage()"
+      class="inline-flex items-center justify-center h-10 w-10 rounded-full text-gray-500 dark:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark">
+      <svg 
+        class="h-5 w-5" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24" 
+        xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+    </button>
+
+    <!-- Page Numbers -->
+    <ng-container *ngFor="let page of visiblePages; trackBy: trackByPage">
+      <!-- Ellipsis -->
+      <span 
+        *ngIf="isEllipsis(page)" 
+        class="inline-flex items-center justify-center h-10 w-10 text-gray-500 dark:text-gray-400"
+        aria-hidden="true">
+        ...
+      </span>
+
+      <!-- Page Number Button -->
+      <button
+        *ngIf="!isEllipsis(page)"
+        type="button"
+        (click)="goToPage($any(page))"
+        [attr.aria-label]="'Go to page ' + page"
+        [attr.aria-current]="isCurrentPage(page) ? 'page' : null"
+        [class.bg-primary]="isCurrentPage(page)"
+        [class.text-white]="isCurrentPage(page)"
+        [class.font-bold]="isCurrentPage(page)"
+        [class.text-gray-600]="!isCurrentPage(page)"
+        [class.dark:text-gray-300]="!isCurrentPage(page)"
+        [class.hover:bg-primary/10]="!isCurrentPage(page)"
+        [class.dark:hover:bg-primary/20]="!isCurrentPage(page)"
+        class="inline-flex items-center justify-center h-10 w-10 rounded-full font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark">
+        {{ page }}
+      </button>
+    </ng-container>
+
+    <!-- Next Button -->
+    <button
+      type="button"
+      (click)="nextPage()"
+      [disabled]="!hasNextPage()"
+      [attr.aria-label]="'Go to next page'"
+      [class.opacity-50]="!hasNextPage()"
+      [class.cursor-not-allowed]="!hasNextPage()"
+      [class.hover:bg-primary/10]="hasNextPage()"
+      [class.dark:hover:bg-primary/20]="hasNextPage()"
+      class="inline-flex items-center justify-center h-10 w-10 rounded-full text-gray-500 dark:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark">
+      <svg 
+        class="h-5 w-5" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24" 
+        xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </button>
+  </nav>
+
+  <!-- Page Size Selector (Right side on desktop, bottom on mobile) -->
+  <div 
+    *ngIf="showPageSizeSelector && totalItems > 0" 
+    class="flex items-center gap-2 text-sm order-3">
+    <label 
+      for="page-size-select" 
+      class="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+      Show:
+    </label>
+    <select
+      id="page-size-select"
+      [value]="pageSize"
+      (change)="onPageSizeChange($event)"
+      class="form-select h-10 px-3 pr-8 rounded-lg bg-white dark:bg-background-dark border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary transition-colors text-sm cursor-pointer">
+      <option 
+        *ngFor="let size of pageSizeOptions" 
+        [value]="size">
+        {{ size }}
+      </option>
+    </select>
+    <span class="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+      per page
+    </span>
+  </div>
+</div>

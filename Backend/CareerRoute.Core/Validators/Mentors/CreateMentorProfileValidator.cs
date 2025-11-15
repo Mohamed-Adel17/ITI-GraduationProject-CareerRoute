@@ -17,15 +17,11 @@ namespace CareerRoute.Core.Validators.Mentors
                 .MinimumLength(100).WithMessage("Bio must be at least 100 characters")
                 .MaximumLength(2000).WithMessage("Bio cannot exceed 2000 characters");
 
-            // Expertise tags validation
-            RuleFor(x => x.ExpertiseTags)
-                .NotNull().WithMessage("Expertise tags are required")
-                .Must(tags => tags != null && tags.Count >= 3)
-                    .WithMessage("At least 3 expertise tags are required")
-                .Must(tags => tags != null && tags.All(tag => !string.IsNullOrWhiteSpace(tag)))
-                    .WithMessage("Expertise tags cannot be empty")
-                .Must(tags => tags == null || tags.All(tag => tag.Length <= 50))
-                    .WithMessage("Each expertise tag cannot exceed 50 characters");
+            // Expertise tag IDs validation (optional - can be added after approval)
+            RuleFor(x => x.ExpertiseTagIds)
+                .Must(ids => ids == null || ids.All(id => id > 0))
+                    .WithMessage("All expertise tag IDs must be greater than 0")
+                .When(x => x.ExpertiseTagIds != null && x.ExpertiseTagIds.Any());
 
             // Years of experience validation
             RuleFor(x => x.YearsOfExperience)

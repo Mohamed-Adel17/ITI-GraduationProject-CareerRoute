@@ -1,4 +1,7 @@
-﻿using System;
+﻿using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.DTOs.Categories;
+using CareerRoute.Core.DTOs.Skills;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +18,7 @@ namespace CareerRoute.Core.DTOs.Mentors
         public string Email { get; set; } = string.Empty;
         public string? ProfilePictureUrl { get; set; }
         public string? Bio { get; set; }
-        public List<string> ExpertiseTags { get; set; } = new();
+        public List<SkillDto> ExpertiseTags { get; set; } = new();
         public int? YearsOfExperience { get; set; }
         public string? Certifications { get; set; }
         public decimal Rate30Min { get; set; }
@@ -24,8 +27,14 @@ namespace CareerRoute.Core.DTOs.Mentors
         public int TotalReviews { get; set; }
         public int TotalSessionsCompleted { get; set; }
         public bool IsVerified { get; set; }
-        public string ApprovalStatus { get; set; } = string.Empty;
+        public MentorApprovalStatus ApprovalStatus { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        // Optional fields for detailed views
+        public List<CategoryDto>? Categories { get; set; }
+        public string? ResponseTime { get; set; }
+        public decimal? CompletionRate { get; set; }
+        public bool? IsAvailable { get; set; }
     }
 }

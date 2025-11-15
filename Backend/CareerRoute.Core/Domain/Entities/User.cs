@@ -10,15 +10,14 @@ namespace CareerRoute.Core.Domain.Entities
         [MaxLength(50), Required]
         public required string LastName { get; set; }
         public string FullName => $"{FirstName} {LastName}";
-
         [MaxLength(200)]
         public string? ProfilePictureUrl { get; set; }
         public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
         public DateTime? LastLoginDate { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool IsMentor { get; set; } = false;
+        public string? CareerGoal { get; set; } = null;
         public virtual List<RefreshToken> RefreshTokens { get; set; } = [];
-
-
-
+        public virtual ICollection<UserSkill> UserSkills { get; set; } = new List<UserSkill>();
     }
 }

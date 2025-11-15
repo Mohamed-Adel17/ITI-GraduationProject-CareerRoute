@@ -1,0 +1,324 @@
+<!-- Send Email Verification Page Container -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col lg:flex-row">
+
+  <!-- Left Side - Send Verification Email -->
+  <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-12">
+    <div class="w-full max-w-md space-y-8">
+
+      <!-- Icon - Changes based on emailSent state -->
+      <div class="flex justify-center mb-6">
+        <!-- Initial State Icon (Email Envelope) -->
+        <div *ngIf="!emailSent" class="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+          <svg
+            class="w-16 h-16 text-blue-600 dark:text-blue-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"
+            />
+          </svg>
+        </div>
+
+        <!-- Success State Icon (Green Checkmark Envelope) -->
+        <div *ngIf="emailSent" class="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <svg
+            class="w-16 h-16 text-green-600 dark:text-green-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Title - Changes based on emailSent state -->
+      <div class="text-center">
+        <!-- Initial State Title -->
+        <h1 *ngIf="!emailSent" class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          Verify Your Email Address
+        </h1>
+
+        <!-- Success State Title -->
+        <h1 *ngIf="emailSent" class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          Verification Email Sent!
+        </h1>
+
+        <!-- Email Display -->
+        <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">
+          {{ emailSent ? 'We\'ve sent a verification email to:' : 'Click the button below to send a verification email to:' }}
+        </p>
+        <p class="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-6">
+          {{ email }}
+        </p>
+      </div>
+
+      <!-- Instructions Box - Only shown after email is sent -->
+      <div *ngIf="emailSent" class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-6">
+        <div class="space-y-3">
+          <div class="flex items-start">
+            <svg
+              class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <p class="text-sm text-blue-700 dark:text-blue-300">
+              Please check your inbox and click the verification link to activate your account.
+            </p>
+          </div>
+          <div class="flex items-start">
+            <svg
+              class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <p class="text-sm text-blue-700 dark:text-blue-300">
+              If you don't see the email, check your spam or junk folder.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Send/Resend Email Section -->
+      <div class="text-center mb-6">
+        <!-- Message before sending -->
+        <p *ngIf="!emailSent" class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Please verify your email address to continue using CareerRoute.
+        </p>
+
+        <!-- Message after sending -->
+        <p *ngIf="emailSent" class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Didn't receive the email?
+        </p>
+
+        <!-- Send/Resend Button (Active) -->
+        <button
+          *ngIf="canSend && !loading"
+          (click)="sendVerificationEmail()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          {{ emailSent ? 'Resend Verification Email' : 'Send Verification Email' }}
+        </button>
+
+        <!-- Send/Resend Button (Loading) -->
+        <button
+          *ngIf="loading"
+          disabled
+          class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-400 cursor-not-allowed"
+        >
+          <svg
+            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          Sending...
+        </button>
+
+        <!-- Send/Resend Button (Cooldown) -->
+        <button
+          *ngIf="!canSend && !loading"
+          disabled
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+        >
+          {{ emailSent ? 'Resend' : 'Send' }} available in {{ sendCooldown }}s
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="relative mb-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">or</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+          (click)="goToLogin()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Go to Login
+        </button>
+        <button
+          (click)="goToHome()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Go to Home
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right Side - Features/Information -->
+  <div
+    class="w-full lg:w-1/2 flex flex-col items-center lg:items-start justify-center bg-blue-50 dark:bg-blue-900/10 p-8 lg:p-12"
+  >
+    <div class="w-full max-w-lg text-center lg:text-left">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        Why Email Verification?
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-8">
+        Email verification helps us ensure the security of your account and enables important features.
+      </p>
+
+      <div class="space-y-4">
+        <!-- Feature 1: Account Security -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Account Security</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Protect your account from unauthorized access
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 2: Password Recovery -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Password Recovery</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Reset your password if you forget it
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 3: Important Notifications -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Important Notifications</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Receive updates about your mentorship sessions
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 4: Trust & Credibility -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Trust & Credibility</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Build trust with mentors and other users
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,58 @@
+<div class="flex items-center gap-1">
+  <!-- Star Icons -->
+  <div class="flex items-center gap-0.5">
+    @for (star of stars; track $index) {
+      <!-- Full Star -->
+      @if (star === 'full') {
+        <svg
+          [class]="starSizeClass"
+          class="text-yellow-400 fill-current"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      }
+
+      <!-- Half Star -->
+      @if (star === 'half') {
+        <svg
+          [class]="starSizeClass"
+          class="text-yellow-400"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <defs>
+            <linearGradient [id]="'half-' + $index">
+              <stop offset="50%" class="fill-yellow-400" />
+              <stop offset="50%" class="fill-gray-300" />
+            </linearGradient>
+          </defs>
+          <path [attr.fill]="'url(#half-' + $index + ')'" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      }
+
+      <!-- Empty Star -->
+      @if (star === 'empty') {
+        <svg
+          [class]="starSizeClass"
+          class="text-gray-300 fill-current"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      }
+    }
+  </div>
+
+  <!-- Numeric Rating -->
+  @if (showNumericRating) {
+    <span [class]="textSizeClass" class="font-medium text-gray-700 dark:text-gray-300 ml-1">
+      {{ rating.toFixed(1) }}
+    </span>
+  }
+</div>

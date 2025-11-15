@@ -30,6 +30,10 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("CareerGoal")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -47,6 +51,9 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsMentor")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastLoginDate")
@@ -108,6 +115,53 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_Categories_IsActive");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Categories_Name");
+
+                    b.ToTable("Categories", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Category_Name_NotEmpty", "LEN([Name]) > 0");
+                        });
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Mentor", b =>
@@ -187,6 +241,21 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorCategory", b =>
+                {
+                    b.Property<string>("MentorId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MentorId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("MentorCategories");
+                });
+
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<string>("Token")
@@ -210,6 +279,214 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Session", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Duration")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("MenteeId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("MentorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PaymentId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("ScheduledEndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ScheduledStartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SessionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int?>("TimeSlotId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VideoConferenceLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_Sessions_Status");
+
+                    b.HasIndex("MenteeId", "ScheduledStartTime")
+                        .HasDatabaseName("IX_Sessions_MenteeId_ScheduledStartTime");
+
+                    b.HasIndex("MentorId", "ScheduledStartTime")
+                        .HasDatabaseName("IX_Sessions_MentorId_ScheduledStartTime");
+
+                    b.ToTable("Sessions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Session_Price", "[Price] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Skill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_Skills_IsActive");
+
+                    b.HasIndex("Name", "CategoryId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Skills_Name_CategoryId");
+
+                    b.ToTable("Skills", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Skill_Name_NotEmpty", "LEN([Name]) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.TimeSlot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsBooked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("MentorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("SessionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsBooked")
+                        .HasDatabaseName("IX_TimeSlots_IsBooked");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TimeSlots_SessionId")
+                        .HasFilter("[SessionId] IS NOT NULL");
+
+                    b.HasIndex("MentorId", "StartDateTime")
+                        .HasDatabaseName("IX_TimeSlots_MentorId_StartDateTime");
+
+                    b.ToTable("TimeSlots", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_TimeSlot_DurationMinutes", "[DurationMinutes] IN (30, 60)");
+                        });
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.UserSkill", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("SkillId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UserId", "SkillId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("UserSkills");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -356,6 +633,25 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorCategory", b =>
+                {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Category", "Category")
+                        .WithMany("MentorCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
+                        .WithMany("MentorCategories")
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Mentor");
+                });
+
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "User")
@@ -363,6 +659,73 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Session", b =>
+                {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "Mentee")
+                        .WithMany()
+                        .HasForeignKey("MenteeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
+                        .WithMany()
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Mentee");
+
+                    b.Navigation("Mentor");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Skill", b =>
+                {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Category", "Category")
+                        .WithMany("Skills")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.TimeSlot", b =>
+                {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
+                        .WithMany("TimeSlots")
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Session", "Session")
+                        .WithOne("TimeSlot")
+                        .HasForeignKey("CareerRoute.Core.Domain.Entities.TimeSlot", "SessionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Mentor");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.UserSkill", b =>
+                {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Skill", "Skill")
+                        .WithMany("UserSkills")
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("UserSkills")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Skill");
 
                     b.Navigation("User");
                 });
@@ -421,6 +784,32 @@ namespace CareerRoute.Infrastructure.Data.Migrations
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("UserSkills");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Category", b =>
+                {
+                    b.Navigation("MentorCategories");
+
+                    b.Navigation("Skills");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Mentor", b =>
+                {
+                    b.Navigation("MentorCategories");
+
+                    b.Navigation("TimeSlots");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Session", b =>
+                {
+                    b.Navigation("TimeSlot");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Skill", b =>
+                {
+                    b.Navigation("UserSkills");
                 });
 #pragma warning restore 612, 618
         }

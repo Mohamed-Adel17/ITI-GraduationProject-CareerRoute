@@ -11,17 +11,18 @@ import { PasswordResetRequest, PasswordReset } from '../../../shared/models/auth
  *
  * Handles two-step password reset process:
  * - Step 1: Request reset (email input) - forgotPassword()
- * - Step 2: Reset password (token from URL + new password) - resetPassword()
+ * - Step 2: Reset password (token from URL + new password) - resetPassword() with auto-login
  *
  * Features:
  * - Two-step password reset flow
  * - Email validation in step 1
- * - Password strength validation in step 2
+ * - Password strength validation in step 2 (uppercase, lowercase, number required)
  * - Token extraction from URL query parameters
  * - Password visibility toggle
  * - Loading states during API calls
  * - Error message display
- * - Success confirmation with redirect to login
+ * - Success confirmation with auto-login and redirect to dashboard
+ * - Automatic login after successful password reset (no manual login required)
  * - Responsive design with Tailwind CSS
  * - Dark mode support
  *
@@ -30,12 +31,13 @@ import { PasswordResetRequest, PasswordReset } from '../../../shared/models/auth
  * ```
  * Navigate to: /auth/forgot-password
  * User enters email → receives reset link via email
+ * If email not verified → resends verification email → redirects to verification-sent page
  * ```
  *
  * Step 2 (Reset Password):
  * ```
  * Navigate to: /auth/reset-password?email=user@example.com&token=abc123
- * User enters new password → password is reset → redirect to login
+ * User enters new password → password is reset → auto-login → redirect to dashboard
  * ```
  */
 @Component({
@@ -121,11 +123,48 @@ export class PasswordResetComponent implements OnInit {
    */
   private initializeResetPasswordForm(): void {
     this.resetPasswordForm = this.fb.group({
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
+      newPassword: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(100),
+        this.passwordStrengthValidator
+      ]],
       confirmPassword: ['', [Validators.required]]
     }, {
       validators: this.passwordMatchValidator
     });
+  }
+
+  /**
+   * Custom validator to check password strength
+   * Password must contain at least one uppercase, one lowercase, and one number
+   * @param control The form control to validate
+   * @returns Validation error object or null
+   */
+  passwordStrengthValidator(control: any): { [key: string]: boolean } | null {
+    const value = control.value;
+
+    if (!value) {
+      return null; // Don't validate empty value (required validator handles that)
+    }
+
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasLowerCase = /[a-z]/.test(value);
+    const hasNumber = /\d/.test(value);
+
+    const errors: { [key: string]: boolean } = {};
+
+    if (!hasUpperCase) {
+      errors['noUpperCase'] = true;
+    }
+    if (!hasLowerCase) {
+      errors['noLowerCase'] = true;
+    }
+    if (!hasNumber) {
+      errors['noNumber'] = true;
+    }
+
+    return Object.keys(errors).length > 0 ? errors : null;
   }
 
   /**
@@ -138,6 +177,16 @@ export class PasswordResetComponent implements OnInit {
     if (password && confirmPassword && password.value !== confirmPassword.value) {
       confirmPassword.setErrors({ passwordMismatch: true });
       return { passwordMismatch: true };
+    }
+
+    // Clear the passwordMismatch error if passwords match
+    const confirmPasswordControl = form.get('confirmPassword');
+    if (confirmPasswordControl?.hasError('passwordMismatch')) {
+      const errors = confirmPasswordControl.errors;
+      if (errors) {
+        delete errors['passwordMismatch'];
+        confirmPasswordControl.setErrors(Object.keys(errors).length > 0 ? errors : null);
+      }
     }
 
     return null;
@@ -221,7 +270,8 @@ export class PasswordResetComponent implements OnInit {
         console.log('Password reset request successful:', response);
 
         // Show success message in component
-        this.successMessage = response.message || 'Password reset link has been sent to your email. Please check your inbox.';
+        // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
+        this.successMessage = 'Password reset link has been sent to your email. Please check your inbox.';
 
         // Show success notification
         this.notificationService.success(
@@ -236,6 +286,14 @@ export class PasswordResetComponent implements OnInit {
       },
       error: (error) => {
         console.error('Password reset request failed:', error);
+
+        // Check if error is due to unverified email (400 with specific message)
+        // Backend throws BusinessException which returns 400
+        if (error.status === 400 && error.message?.includes('verify your email')) {
+          // Email not verified - automatically resend verification email
+          this.handleUnverifiedEmail(this.requestResetForm.value.email);
+          return;
+        }
 
         // Display error message in component
         const errorMessage = error.message || 'Failed to send password reset email. Please try again.';
@@ -261,7 +319,7 @@ export class PasswordResetComponent implements OnInit {
    * - Validate email and token from URL
    * - Call AuthService.resetPassword()
    * - Show success message and notification
-   * - Navigate to login page after successful reset
+   * - Navigate to dashboard after successful reset (user is automatically logged in)
    * - Handle and display errors via NotificationService
    * - Manage loading state
    */
@@ -301,18 +359,19 @@ export class PasswordResetComponent implements OnInit {
       next: (response) => {
         console.log('Password reset successful:', response);
 
-        // Show success message in component
-        this.successMessage = response.message || 'Your password has been reset successfully. Redirecting to login...';
+        // Backend always returns tokens for auto-login
+        // AuthService.resetPassword() has already handled token storage and auth state update
+        this.successMessage = `Welcome back, ${response.user.firstName}! Your password has been reset successfully. Logging you in...`;
 
         // Show success notification
         this.notificationService.success(
-          'Your password has been reset successfully.',
-          'Password Reset'
+          'Your password has been reset successfully!',
+          'Welcome Back'
         );
 
-        // Redirect to login after 3 seconds
+        // Redirect to dashboard after 3 seconds (user is now logged in)
         setTimeout(() => {
-          this.router.navigate(['/auth/login']);
+          this.router.navigate(['/user/dashboard']);
         }, 3000);
 
         this.loading = false;
@@ -351,5 +410,26 @@ export class PasswordResetComponent implements OnInit {
 
     // Clear URL query parameters
     this.router.navigate(['/auth/forgot-password']);
+  }
+
+  /**
+   * Handles unverified email error by resending verification email
+   * and navigating to verification-sent page
+   * @param email User's email address
+   */
+  private handleUnverifiedEmail(email: string): void {
+    console.log('Handling unverified email for forgot password:', email);
+
+    // Show info notification about email verification requirement
+    this.notificationService.warning(
+      'Please verify your email address before resetting your password.',
+      'Email Verification Required'
+    );
+
+    // Navigate to send-email-verification page so user can manually send verification
+    this.router.navigate(['/auth/send-email-verification'], {
+      state: { email }
+    });
+    this.loading = false;
   }
 }
