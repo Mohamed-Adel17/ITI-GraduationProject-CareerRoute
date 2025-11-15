@@ -47,6 +47,7 @@ namespace CareerRoute.Core.Services.Implementations
             //retrieve users using manager not pure repository
 
             var users = await userManager.Users
+                .Where(u => !u.IsMentor)
                 .Include(u => u.UserSkills)
                     .ThenInclude(us => us.Skill)
                         .ThenInclude(s => s.Category)
@@ -74,6 +75,7 @@ namespace CareerRoute.Core.Services.Implementations
             //retrieve users using manager not pure repository
 
             var user = await userManager.Users
+                .Where(u => !u.IsMentor)
                 .Include(u => u.UserSkills)
                     .ThenInclude(us => us.Skill)
                         .ThenInclude(s => s.Category)
@@ -96,6 +98,7 @@ namespace CareerRoute.Core.Services.Implementations
             await updateValidator.ValidateAndThrowCustomAsync(uuDto);
 
             var user = await userManager.Users
+                .Where(u => !u.IsMentor)
                 .Include(u => u.UserSkills)
                     .ThenInclude(us => us.Skill)
                         .ThenInclude(s => s.Category)
@@ -155,7 +158,9 @@ namespace CareerRoute.Core.Services.Implementations
         {
             //delete user using manager not pure repository
 
-            var user = await userManager.FindByIdAsync(id);
+            var user = await userManager.Users
+                .Where(u => !u.IsMentor)
+                .FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
                 throw new NotFoundException("User", id);
 
