@@ -46,7 +46,11 @@ namespace CareerRoute.Core.Services.Implementations
         {
             //retrieve users using manager not pure repository
 
-            var users = await userManager.Users.ToListAsync();
+            var users = await userManager.Users
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .ToListAsync();
             return mapper.Map<IEnumerable<RetrieveUserDto>>(users);
         }
 
@@ -55,7 +59,12 @@ namespace CareerRoute.Core.Services.Implementations
         {
             //retrieve users using manager not pure repository
 
-            var user = await userManager.FindByIdAsync(id);
+            var user = await userManager.Users
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .FirstOrDefaultAsync(u => u.Id == id);
+            
             if (user == null)
             {
                 throw new NotFoundException("User", id);
