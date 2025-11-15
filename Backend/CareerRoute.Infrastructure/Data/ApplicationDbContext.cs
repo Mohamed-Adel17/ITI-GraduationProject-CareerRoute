@@ -21,6 +21,8 @@ namespace CareerRoute.Infrastructure.Data
         public DbSet<UserSkill> UserSkills { get; set; }
         public DbSet<TimeSlot> TimeSlots { get; set; }
         public DbSet<Session> Sessions { get; set; }
+        public DbSet<Payment>Payments { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
