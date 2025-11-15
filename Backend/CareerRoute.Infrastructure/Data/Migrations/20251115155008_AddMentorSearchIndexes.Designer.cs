@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CareerRoute.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251112205921_AddSkillsAndTimeSlotsEntities")]
-    partial class AddSkillsAndTimeSlotsEntities
+    [Migration("20251115155008_AddMentorSearchIndexes")]
+    partial class AddMentorSearchIndexes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -256,7 +256,97 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("MentorCategory");
+                    b.ToTable("MentorCategories");
+                });
+
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Payment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ClientSecret")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<bool>("IsRefunded")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsReleasedToMentor")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PaymentIntentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PaymentReleaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("PlatformCommission")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("ProviderSignature")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProviderTransactionId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("RefundAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("RefundPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("RefundStatus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderTransactionId")
+                        .HasDatabaseName("IX_Payment_ProviderTransactionId");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Payment_SessionId");
+
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
@@ -286,11 +376,8 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Session", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(500)
@@ -424,11 +511,8 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.TimeSlot", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -448,8 +532,8 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("SessionId")
-                        .HasColumnType("int");
+                    b.Property<string>("SessionId")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("datetime2");
@@ -655,6 +739,17 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("Mentor");
                 });
 
+            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Payment", b =>
+                {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.Session", "Session")
+                        .WithOne("Payment")
+                        .HasForeignKey("CareerRoute.Core.Domain.Entities.Payment", "SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "User")
@@ -807,6 +902,8 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Session", b =>
                 {
+                    b.Navigation("Payment");
+
                     b.Navigation("TimeSlot");
                 });
 
