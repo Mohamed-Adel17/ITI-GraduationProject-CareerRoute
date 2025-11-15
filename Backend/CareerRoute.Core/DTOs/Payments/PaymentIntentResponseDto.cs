@@ -14,7 +14,7 @@ namespace CareerRoute.Core.DTOs.Payments
             public string ClientSecret { get; set; }
             public decimal Amount { get; set; }
             public string Currency { get; set; }
-            public Guid SessionId { get; set; }
+            public string SessionId { get; set; }
             public PaymentMethodOptions PaymentMethod { get; set; }
             public string Status { get; set; }
       

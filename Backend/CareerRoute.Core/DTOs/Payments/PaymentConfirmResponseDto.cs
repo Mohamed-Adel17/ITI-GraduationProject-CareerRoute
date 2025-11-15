@@ -10,8 +10,8 @@ namespace CareerRoute.Core.DTOs.Payments
 {
     public class PaymentConfirmResponseDto
     {
-        public Guid PaymentId { get; set; }
-        public Guid SessionId { get; set; }
+        public string PaymentId { get; set; }
+        public string SessionId { get; set; }
         public decimal Amount { get; set; }
         public decimal PlatformCommission { get; set; }
         public decimal MentorPayoutAmount { get; set; }
