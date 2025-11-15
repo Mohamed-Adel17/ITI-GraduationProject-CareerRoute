@@ -1,8 +1,10 @@
-﻿using CareerRoute.API.Models;
+using CareerRoute.API.Models;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -75,17 +77,33 @@ namespace CareerRoute.API.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetAllMentors([FromQuery] MentorSearchRequestDto request)
         {
-            // Detect if any filters/pagination params provided
-            bool hasFilters = !string.IsNullOrWhiteSpace(request.Keywords) ||
-                             request.CategoryId.HasValue ||
-                             request.MinPrice.HasValue ||
-                             request.MaxPrice.HasValue ||
-                             request.MinRating.HasValue ||
-                             request.Page > 1 ||
-                             request.PageSize != 12 ||
-                             request.SortBy != "popularity";
+            var hasQueryParams = Request.Query.Count > 0;
+            var isDefaultRequest = string.IsNullOrWhiteSpace(request.Keywords)
+                                   && !request.CategoryId.HasValue
+                                   && !request.MinPrice.HasValue
+                                   && !request.MaxPrice.HasValue
+                                   && !request.MinRating.HasValue
+                                   && request.Page == 1
+                                   && request.PageSize == 12
+                                   && (string.IsNullOrWhiteSpace(request.SortBy) ||
+                                       string.Equals(request.SortBy, "popularity", StringComparison.OrdinalIgnoreCase));
 
-            // Use advanced search with pagination
+            var useAdvancedSearch = hasQueryParams || !isDefaultRequest;
+
+            if (!useAdvancedSearch)
+            {
+                var mentors = (await _mentorService.GetAllApprovedMentorsAsync()).ToList();
+
+                if (!mentors.Any())
+                {
+                    return NotFound(ApiResponse.Error("No mentors found", 404));
+                }
+
+                return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(
+                    mentors,
+                    "Mentors retrieved successfully"));
+            }
+
             var result = await _mentorService.SearchMentorsAsync(request);
 
             if (result.Mentors.Count == 0)
@@ -93,18 +111,11 @@ namespace CareerRoute.API.Controllers
                 return NotFound(ApiResponse.Error("No mentors found matching your criteria", 404));
             }
 
-            // Return paginated response if filters/pagination provided
-            if (hasFilters)
-            {
-                return Ok(new ApiResponse<MentorSearchResponseDto>(
-                    result,
-                    request.Keywords != null ? "Search completed successfully" : "Mentors retrieved successfully"));
-            }
+            var responseMessage = string.IsNullOrWhiteSpace(request.Keywords)
+                ? "Mentors retrieved successfully"
+                : "Search completed successfully";
 
-            // Return simple array for backward compatibility (no filters)
-            return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(
-                result.Mentors,
-                "Mentors retrieved successfully"));
+            return Ok(new ApiResponse<MentorSearchResponseDto>(result, responseMessage));
         }
 
         /// <summary>
@@ -195,7 +206,8 @@ namespace CareerRoute.API.Controllers
                 new { id = createdMentor.Id },
                 new ApiResponse<MentorProfileDto>(
                     createdMentor,
-                    "Mentor application submitted successfully! Your application is pending approval."
+                    "Mentor application submitted successfully! Your application is pending approval.",
+                    StatusCodes.Status201Created
                 ));
         }
 

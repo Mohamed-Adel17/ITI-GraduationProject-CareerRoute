@@ -19,6 +19,7 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.Roles, opt => opt.Ignore());
 
             CreateMap<ApplicationUser, RetrieveUserDto>()
+                .ForMember(dest => dest.Role, opt => opt.Ignore()) // Will be set manually in service
                 .ForMember(dest => dest.CareerInterests, opt => opt.MapFrom(src =>
                     src.UserSkills
                         .Where(us => us.Skill.IsActive)
