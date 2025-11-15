@@ -29,16 +29,82 @@ namespace CareerRoute.API.Controllers
         // ============ PUBLIC ENDPOINTS ============
 
         /// <summary>
-        /// Get all approved mentors (Public)
+        /// Search and filter mentors with advanced filtering, sorting, and pagination (Public)
         /// </summary>
-        /// <returns>List of all approved mentor profiles</returns>
-        /// <response code="200">Returns list of approved mentors</response>
+        /// <remarks>
+        /// **Search &amp; Filter Options:**
+        /// 
+        /// - **keywords**: Search in mentor name, bio, certifications, and skills (min 2 characters)
+        /// - **categoryId**: Filter by category (IT Careers, Leadership, Finance, etc.)
+        /// - **minPrice/maxPrice**: Filter by 30-minute session price range
+        /// - **minRating**: Filter by minimum average rating (0-5)
+        /// 
+        /// **Sorting Options:**
+        /// 
+        /// - **popularity** (default): Most sessions completed
+        /// - **rating**: Highest rated mentors
+        /// - **priceAsc**: Lowest price first
+        /// - **priceDesc**: Highest price first
+        /// - **experience**: Most years of experience
+        /// 
+        /// **Pagination:**
+        /// 
+        /// - **page**: Page number (default: 1)
+        /// - **pageSize**: Items per page (1-50, default: 12)
+        /// 
+        /// **Response Format:**
+        /// 
+        /// - Returns simple array if no filters applied
+        /// - Returns paginated response with metadata if any filters/pagination provided
+        /// 
+        /// **Example Queries:**
+        /// 
+        /// - `/api/mentors?keywords=React&amp;sortBy=rating`
+        /// - `/api/mentors?categoryId=2&amp;minPrice=20&amp;maxPrice=50`
+        /// - `/api/mentors?minRating=4.5&amp;sortBy=experience&amp;page=2`
+        /// </remarks>
+        /// <param name="request">Search and filter parameters</param>
+        /// <returns>List of mentors or paginated search results</returns>
+        /// <response code="200">Returns mentors (array or paginated response)</response>
+        /// <response code="400">Invalid search parameters</response>
+        /// <response code="404">No mentors found matching criteria</response>
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<MentorProfileDto>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult> GetAllMentors()
+        [ProducesResponseType(typeof(ApiResponse<MentorSearchResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetAllMentors([FromQuery] MentorSearchRequestDto request)
         {
-            var mentors = await _mentorService.GetAllApprovedMentorsAsync();
-            return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(mentors));
+            // Detect if any filters/pagination params provided
+            bool hasFilters = !string.IsNullOrWhiteSpace(request.Keywords) ||
+                             request.CategoryId.HasValue ||
+                             request.MinPrice.HasValue ||
+                             request.MaxPrice.HasValue ||
+                             request.MinRating.HasValue ||
+                             request.Page > 1 ||
+                             request.PageSize != 12 ||
+                             request.SortBy != "popularity";
+
+            // Use advanced search with pagination
+            var result = await _mentorService.SearchMentorsAsync(request);
+
+            if (result.Mentors.Count == 0)
+            {
+                return NotFound(ApiResponse.Error("No mentors found matching your criteria", 404));
+            }
+
+            // Return paginated response if filters/pagination provided
+            if (hasFilters)
+            {
+                return Ok(new ApiResponse<MentorSearchResponseDto>(
+                    result,
+                    request.Keywords != null ? "Search completed successfully" : "Mentors retrieved successfully"));
+            }
+
+            // Return simple array for backward compatibility (no filters)
+            return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(
+                result.Mentors,
+                "Mentors retrieved successfully"));
         }
 
         /// <summary>

@@ -14,6 +14,7 @@ namespace CareerRoute.Infrastructure.Data
         IdentityDbContext<ApplicationUser>(options)
     {
         public DbSet<Mentor> Mentors { get; set; }
+        public DbSet<MentorCategory> MentorCategories { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Skill> Skills { get; set; }
