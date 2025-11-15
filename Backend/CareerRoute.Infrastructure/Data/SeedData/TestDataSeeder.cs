@@ -337,6 +337,12 @@ namespace CareerRoute.Infrastructure.Data.SeedData
                 .Where(u => u.Email != null && u.Email.StartsWith("mentor") && u.Email.EndsWith("@test.com"))
                 .OrderBy(u => u.Email)
                 .ToListAsync();
+            
+            // Get all regular users
+            var regularUsers = await context.Users
+                .Where(u => u.Email != null && u.Email.StartsWith("user") && u.Email.EndsWith("@test.com"))
+                .OrderBy(u => u.Email)
+                .ToListAsync();
 
             // Get all skills
             var skills = await context.Skills.ToDictionaryAsync(s => s.Name, s => s.Id);
@@ -378,10 +384,45 @@ namespace CareerRoute.Infrastructure.Data.SeedData
                 new[] { "User Research", "UX/UI Design", "Prototyping", "Design Thinking" }
             };
 
+            // Define career interests for regular users
+            var userSkillSets = new[]
+            {
+                new[] { "Career Shifting", "Personal Development", "Goal Setting" },
+                new[] { "Interview Preparation", "Resume Building", "Job Search" },
+                new[] { "Communication Skills", "Team Collaboration", "Leadership" },
+                new[] { "Time Management", "Productivity", "Work-Life Balance" },
+                new[] { "Negotiation Skills", "Conflict Resolution", "Professional Etiquette" },
+                new[] { "Public Speaking", "Presentation Skills", "Meeting Management" },
+                new[] { "Career Planning", "Skill Assessment", "Professional Growth" },
+                new[] { "Networking", "Personal Branding", "Social Skills" },
+                new[] { "Stress Management", "Mental Health", "Wellness" },
+                new[] { "Financial Literacy", "Budget Planning", "Savings Goals" }
+            };
+
             for (int i = 0; i < mentorUsers.Count && i < mentorSkillSets.Length; i++)
             {
                 var user = mentorUsers[i];
                 var skillSet = mentorSkillSets[i];
+
+                foreach (var skillName in skillSet)
+                {
+                    if (skills.ContainsKey(skillName))
+                    {
+                        userSkills.Add(new UserSkill
+                        {
+                            UserId = user.Id,
+                            SkillId = skills[skillName],
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
+
+            // Assign skills to regular users
+            for (int i = 0; i < regularUsers.Count && i < userSkillSets.Length; i++)
+            {
+                var user = regularUsers[i];
+                var skillSet = userSkillSets[i % userSkillSets.Length];
 
                 foreach (var skillName in skillSet)
                 {

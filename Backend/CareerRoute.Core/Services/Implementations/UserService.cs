@@ -51,7 +51,21 @@ namespace CareerRoute.Core.Services.Implementations
                     .ThenInclude(us => us.Skill)
                         .ThenInclude(s => s.Category)
                 .ToListAsync();
-            return mapper.Map<IEnumerable<RetrieveUserDto>>(users);
+            
+            var userDtos = mapper.Map<IEnumerable<RetrieveUserDto>>(users);
+            
+            // Set roles for each user
+            foreach (var userDto in userDtos)
+            {
+                var user = users.FirstOrDefault(u => u.Id == userDto.Id);
+                if (user != null)
+                {
+                    var roles = await userManager.GetRolesAsync(user);
+                    userDto.Role = roles.FirstOrDefault() ?? string.Empty; // Set first role or empty string
+                }
+            }
+            
+            return userDtos;
         }
 
 
@@ -69,7 +83,12 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 throw new NotFoundException("User", id);
             }
-            return mapper.Map<RetrieveUserDto>(user);
+            
+            var userDto = mapper.Map<RetrieveUserDto>(user);
+            var roles = await userManager.GetRolesAsync(user);
+            userDto.Role = roles.FirstOrDefault() ?? string.Empty; // Set first role or empty string
+            
+            return userDto;
         }
 
         public async Task<RetrieveUserDto> UpdateUserByIdAsync(string id , UpdateUserDto uuDto)
