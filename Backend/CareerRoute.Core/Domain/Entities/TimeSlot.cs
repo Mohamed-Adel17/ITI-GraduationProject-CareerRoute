@@ -6,7 +6,7 @@ namespace CareerRoute.Core.Domain.Entities
 {
     public class TimeSlot
     {
-        public String Id { get; set; }
+        public string Id { get; set; }
         
         [MaxLength(450), Required]
         public required string MentorId { get; set; }

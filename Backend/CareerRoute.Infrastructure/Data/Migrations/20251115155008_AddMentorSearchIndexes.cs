@@ -11,7 +11,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // Note: Some indexes may already exist. Using IF NOT EXISTS to prevent errors.
-            
+
             migrationBuilder.Sql(@"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Mentors_ApprovalStatus_IsVerified' AND object_id = OBJECT_ID('Mentors'))
                 BEGIN
