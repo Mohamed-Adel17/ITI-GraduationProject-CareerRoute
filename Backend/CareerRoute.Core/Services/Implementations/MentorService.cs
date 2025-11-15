@@ -57,7 +57,7 @@ namespace CareerRoute.Core.Services.Implementations
         // Get mentor profile by ID
         public async Task<MentorProfileDto> GetMentorProfileAsync(string mentorId)
         {
-            var mentor = await _mentorRepository.GetByIdAsync(mentorId);
+            var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
             if (mentor == null)
             {
                 throw new NotFoundException("Mentor", mentorId);
