@@ -8,6 +8,33 @@ namespace CareerRoute.Core.Validators.Mentors
     {
         public UpdateMentorProfileValidator()
         {
+            // ============ USER-RELATED FIELDS VALIDATION ============
+            RuleFor(x => x.FirstName)
+                .MinimumLength(2)
+                    .WithMessage("First name must be at least 2 characters")
+                .MaximumLength(50)
+                    .WithMessage("First name cannot exceed 50 characters")
+                .When(x => !string.IsNullOrEmpty(x.FirstName));
+
+            RuleFor(x => x.LastName)
+                .MinimumLength(2)
+                    .WithMessage("Last name must be at least 2 characters")
+                .MaximumLength(50)
+                    .WithMessage("Last name cannot exceed 50 characters")
+                .When(x => !string.IsNullOrEmpty(x.LastName));
+
+            RuleFor(x => x.PhoneNumber)
+                .Matches(@"^[\d\s\-\+\(\)]+$")
+                    .WithMessage("Invalid phone number format")
+                .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
+
+            RuleFor(x => x.ProfilePictureUrl)
+                .MaximumLength(200)
+                    .WithMessage("Profile picture URL cannot exceed 200 characters")
+                .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _))
+                    .WithMessage("Profile picture URL must be a valid URL")
+                .When(x => !string.IsNullOrEmpty(x.ProfilePictureUrl));
+
             // ============ BIO VALIDATION ============
             // API Contract: Minimum 100 characters, maximum 2000
             RuleFor(x => x.Bio)
