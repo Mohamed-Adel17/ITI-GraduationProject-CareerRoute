@@ -19,7 +19,10 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.Roles, opt => opt.Ignore());
 
             CreateMap<ApplicationUser, RetrieveUserDto>()
-                .ForMember(dest => dest.Role, opt => opt.Ignore()) // Will be set manually in service
+                .ForMember(dest => dest.Roles, opt => opt.Ignore()) // Set manually in service
+                .ForMember(dest => dest.IsMentor, opt => opt.MapFrom(src => src.IsMentor))
+                .ForMember(dest => dest.EmailConfirmed, opt => opt.MapFrom(src => src.EmailConfirmed))
+                .ForMember(dest => dest.CareerGoals, opt => opt.MapFrom(src => src.CareerGoal))
                 .ForMember(dest => dest.CareerInterests, opt => opt.MapFrom(src =>
                     src.UserSkills
                         .Where(us => us.Skill.IsActive)
@@ -35,6 +38,7 @@ namespace CareerRoute.Core.Mappings
 
             //map only not null fields (excluding CareerInterestIds which is handled separately)
             CreateMap<UpdateUserDto, ApplicationUser>()
+                .ForMember(dest => dest.CareerGoal, opt => opt.MapFrom(src => src.CareerGoals))
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
