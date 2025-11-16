@@ -38,7 +38,7 @@ export class LoginComponent implements OnInit {
   loading = false;
   errorMessage: string | null = null;
   showPassword = false;
-  returnUrl: string = '/home';
+  returnUrl: string = '/';
 
   constructor(
     private fb: FormBuilder,
@@ -56,7 +56,7 @@ export class LoginComponent implements OnInit {
     }
 
     // Extract returnUrl from query params (for redirecting after login)
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/home';
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
 
     // Initialize login form with validators
     this.loginForm = this.fb.group({
