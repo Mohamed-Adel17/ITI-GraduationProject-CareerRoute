@@ -62,7 +62,7 @@ namespace CareerRoute.Core.Services.Implementations
                 if (user != null)
                 {
                     var roles = await userManager.GetRolesAsync(user);
-                    userDto.Role = roles.FirstOrDefault() ?? string.Empty; // Set first role or empty string
+                    userDto.Roles = roles.ToList();
                 }
             }
             
@@ -88,7 +88,7 @@ namespace CareerRoute.Core.Services.Implementations
             
             var userDto = mapper.Map<RetrieveUserDto>(user);
             var roles = await userManager.GetRolesAsync(user);
-            userDto.Role = roles.FirstOrDefault() ?? string.Empty; // Set first role or empty string
+            userDto.Roles = roles.ToList();
             
             return userDto;
         }
@@ -141,7 +141,7 @@ namespace CareerRoute.Core.Services.Implementations
             if (uuDto.LastName != null) user.LastName = uuDto.LastName;
             if (uuDto.PhoneNumber != null) user.PhoneNumber = uuDto.PhoneNumber;
             if (uuDto.ProfilePictureUrl != null) user.ProfilePictureUrl = uuDto.ProfilePictureUrl;
-            if (uuDto.CareerGoal != null) user.CareerGoal = uuDto.CareerGoal;
+            if (uuDto.CareerGoals != null) user.CareerGoal = uuDto.CareerGoals;
 
             var result = await userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -150,7 +150,19 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException($"Update failed: {errors}");
             }
 
-            return mapper.Map<RetrieveUserDto>(user);
+            // Reload user with skills to get updated data
+            user = await userManager.Users
+                .Where(u => !u.IsMentor)
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            var userDto = mapper.Map<RetrieveUserDto>(user);
+            var roles = await userManager.GetRolesAsync(user);
+            userDto.Roles = roles.ToList();
+
+            return userDto;
         }
 
 
