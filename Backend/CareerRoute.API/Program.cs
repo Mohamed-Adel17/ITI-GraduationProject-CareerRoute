@@ -144,16 +144,38 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+var enableSwagger = builder.Environment.IsDevelopment() ||
+    builder.Configuration.GetValue<bool>("Swagger:Enabled");
+var swaggerRoutePrefix = builder.Configuration.GetValue<string>("Swagger:RoutePrefix");
+var enableHttpsRedirection = builder.Configuration.GetValue<bool?>("HttpsRedirection:Enabled") ?? true;
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (enableSwagger)
 {
+    app.UseMiddleware<SwaggerBasicAuthMiddleware>();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareerRoute API v1");
+        if (app.Environment.IsDevelopment())
+        {
+            c.RoutePrefix = "swagger";
+        }
+        else
+        {
+            c.RoutePrefix = string.IsNullOrWhiteSpace(swaggerRoutePrefix)
+                ? string.Empty
+                : swaggerRoutePrefix;
+        }
+    });
 }
 
-app.UseHttpsRedirection();
+if (enableHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
 app.UseGlobalExceptionHandler();
 
 app.UseCors("AllowFrontend");
@@ -175,9 +197,6 @@ app.UseHangfireDashboard("/hangfire", hangfireDashboardOptions);
 app.MapHub<PaymentHub>("hub/payment");
 
 app.MapControllers();
-
-
-
 
 
 //seed roles on application startup
@@ -254,14 +273,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Start the meeting termination background timer (REMOVED - Replaced by Hangfire)
-// var meetingTerminationTimer = app.Services.GetRequiredService<CareerRoute.Infrastructure.Services.MeetingTerminationTimer>();
-// meetingTerminationTimer.Start();
-
-// Start the transcript retry background timer
-// var transcriptRetryTimer = app.Services.GetRequiredService<CareerRoute.Infrastructure.Services.TranscriptRetryTimer>();
-// transcriptRetryTimer.Start();
-
 app.Run();
 
 internal sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizationFilter
@@ -291,3 +302,5 @@ internal sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthoriza
         return user?.Identity?.IsAuthenticated == true && user.IsInRole(AppRoles.Admin);
     }
 }
+
+public partial class Program { }
