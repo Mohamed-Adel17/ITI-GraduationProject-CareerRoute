@@ -510,7 +510,76 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 
 ## Authenticated Endpoints (Require Authentication)
 
-### 7. Apply to Become a Mentor
+### 7. Get Current Mentor's Own Profile
+
+**Endpoint:** `GET /api/mentors/me`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Authenticated user with mentor profile (IsMentor = true)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentor profile retrieved successfully",
+  "data": {
+    "id": "cc0e8400-e29b-41d4-a716-446655440007",
+    "firstName": "Sarah",
+    "lastName": "Johnson",
+    "fullName": "Sarah Johnson",
+    "email": "sarah.johnson@example.com",
+    "profilePictureUrl": "https://example.com/profiles/sarah.jpg",
+    "bio": "Full-stack developer with 8 years of experience...",
+    "expertiseTags": [
+      { "id": 15, "name": "React", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" },
+      { "id": 18, "name": "Node.js", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" }
+    ],
+    "yearsOfExperience": 8,
+    "certifications": "AWS Certified Solutions Architect - Professional",
+    "rate30Min": 25.00,
+    "rate60Min": 45.00,
+    "averageRating": 4.8,
+    "totalReviews": 67,
+    "totalSessionsCompleted": 142,
+    "isVerified": true,
+    "approvalStatus": "Approved",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-10-29T14:20:00Z"
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Mentor profile not found",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token claims
+- Fetch mentor profile for current user
+- Return complete mentor profile including approval status
+- Return 404 if user doesn't have a mentor profile (IsMentor = false)
+- **Authorization**: Does NOT require Mentor role - users can access their mentor profile even while pending approval
+
+**Note:** This endpoint allows users to check their mentor application status and profile details before admin approval.
+
+---
+
+### 8. Apply to Become a Mentor
 
 **Endpoint:** `POST /api/mentors`
 **Requires:** `Authorization: Bearer {token}`
@@ -616,42 +685,56 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - Check if user already has a mentor profile (return 400 if exists)
 - Validate all required fields
 - Create mentor profile with `approvalStatus: "Pending"`
+- Set `IsMentor = true` flag on user account
 - Set default values: averageRating=0, totalReviews=0, totalSessionsCompleted=0, isVerified=false
 - Notify admins of new application (optional)
 - Return created mentor profile
 
-**Note:** After approval by admin, mentor should add expertise tags using the `expertiseTagIds` field in `PATCH /api/mentors/{id}` endpoint
+**Note:** After approval by admin, mentor should add expertise tags using the `expertiseTagIds` field in `PATCH /api/mentors/me` endpoint
 
 ---
 
-### 8. Update Mentor Profile
+### 9. Update Current Mentor's Own Profile
 
-**Endpoint:** `PATCH /api/mentors/{id}`
+**Endpoint:** `PATCH /api/mentors/me`
 **Requires:** `Authorization: Bearer {token}`
-**Roles:** Mentor (own profile) or Admin
-
-**Path Parameters:**
-- `id` (string, GUID): Mentor ID to update
+**Roles:** Authenticated user with mentor profile (IsMentor = true)
 
 **Request Body:**
 ```json
 {
+  "firstName": "Sarah",
+  "lastName": "Johnson",
+  "phoneNumber": "+1234567890",
+  "profilePictureUrl": "https://example.com/profiles/sarah-new.jpg",
   "bio": "Updated bio...",
   "yearsOfExperience": 9,
   "certifications": "Updated certifications...",
   "rate30Min": 30.00,
   "rate60Min": 50.00,
-  "expertiseTagIds": [5, 15, 20, 25, 30]
+  "expertiseTagIds": [5, 15, 20, 25, 30],
+  "isAvailable": true,
+  "categoryIds": [1, 3]
 }
 ```
 
 **Field Requirements:**
+
+**User-related fields:**
+- `firstName` (optional): Min 2 chars, max 50 chars
+- `lastName` (optional): Min 2 chars, max 50 chars
+- `phoneNumber` (optional): Valid phone number format
+- `profilePictureUrl` (optional): Valid URL format, max 200 chars
+
+**Mentor-specific fields:**
 - `bio` (optional): Min 50 chars, max 1000 chars
 - `yearsOfExperience` (optional): Min 0, integer
 - `certifications` (optional): Max 500 chars
 - `rate30Min` (optional): Decimal, min 0, max 10000
 - `rate60Min` (optional): Decimal, min 0, max 10000
+- `isAvailable` (optional): Boolean - availability status
 - `expertiseTagIds` (optional): Array of skill IDs (integers), all IDs must be valid active skills, empty array [] clears all expertise tags
+- `categoryIds` (optional): Array of category IDs (integers), 1-5 categories
 
 **Note:** All fields are optional. Only provided fields will be updated.
 
@@ -694,8 +777,10 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
     "success": false,
     "message": "Validation failed",
     "errors": {
+      "FirstName": ["First name must be at least 2 characters"],
       "Bio": ["Bio must be at least 50 characters"],
-      "ExpertiseTagIds": ["One or more skill IDs are invalid or inactive"]
+      "ExpertiseTagIds": ["One or more skill IDs are invalid or inactive"],
+      "ProfilePictureUrl": ["Profile picture URL must be a valid URL"]
     },
     "statusCode": 400
   }
@@ -710,15 +795,6 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
   }
   ```
 
-- **403 Forbidden:**
-  ```json
-  {
-    "success": false,
-    "message": "You can only update your own mentor profile",
-    "statusCode": 403
-  }
-  ```
-
 - **404 Not Found:**
   ```json
   {
@@ -729,25 +805,27 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
   ```
 
 **Backend Behavior:**
-- Extract user ID from JWT token
-- Verify user owns this mentor profile OR user is Admin
+- Extract user ID from JWT token claims
+- Fetch mentor profile for current user
 - Validate all provided fields
 - Update only provided fields (PATCH semantics)
+- **User fields**: Update ApplicationUser entity (FirstName, LastName, PhoneNumber, ProfilePictureUrl)
+- **Mentor fields**: Update Mentor entity (Bio, YearsOfExperience, Certifications, Rates, IsAvailable)
 - If `expertiseTagIds` is provided:
-  - Get mentor's UserId from Mentor table
   - Validate all skill IDs exist and are active
   - Use database transaction: DELETE existing UserSkills for mentor's UserId, INSERT new UserSkills for provided IDs
   - Empty array [] clears all expertise tags
 - Update `updatedAt` timestamp
 - **Skills Integration**: Join mentor's UserSkills to get expertiseTags with full SkillDto structure in response
 - Return updated mentor profile
-- Return 403 if user doesn't own profile and is not Admin
+- Return 404 if user doesn't have a mentor profile
+- **Authorization**: Does NOT require Mentor role - users can update their mentor profile even while pending approval
 
 ---
 
 ## Admin Endpoints (Require Admin Role)
 
-### 9. Get Pending Mentor Applications
+### 10. Get Pending Mentor Applications
 
 **Endpoint:** `GET /api/mentors/pending`
 **Requires:** `Authorization: Bearer {token}`
@@ -813,7 +891,7 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 
 ---
 
-### 10. Approve Mentor Application
+### 11. Approve Mentor Application
 
 **Endpoint:** `PATCH /api/mentors/{id}/approve`
 **Requires:** `Authorization: Bearer {token}`
@@ -873,15 +951,17 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - Fetch mentor by ID
 - Check if mentor is in "Pending" status (return 400 if already approved/rejected)
 - Update `approvalStatus: "Approved"`
+- Update `isVerified: true` and `isAvailable: true`
+- Ensure `IsMentor = true` flag is set on user account (defensive check)
 - Update `updatedAt` timestamp
-- Send approval notification email to mentor
 - Add "Mentor" role to user account
+- Send approval notification email to mentor
 - Return success message
 - Return 403 if user is not Admin
 
 ---
 
-### 11. Reject Mentor Application
+### 12. Reject Mentor Application
 
 **Endpoint:** `PATCH /api/mentors/{id}/reject`
 **Requires:** `Authorization: Bearer {token}`
@@ -1029,16 +1109,25 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 ### UpdateMentorProfileDto
 ```typescript
 {
-  "bio": "string | optional",              // Optional: Min 50, max 1000 chars
+  // User-related fields
+  "firstName": "string | optional",         // Optional: Min 2, max 50 chars
+  "lastName": "string | optional",          // Optional: Min 2, max 50 chars
+  "phoneNumber": "string | optional",       // Optional: Valid phone format
+  "profilePictureUrl": "string | optional", // Optional: Valid URL, max 200 chars
+  
+  // Mentor-specific fields
+  "bio": "string | optional",               // Optional: Min 50, max 1000 chars
   "yearsOfExperience": "number | optional", // Optional: Min 0, integer
-  "certifications": "string | optional",   // Optional: Max 500 chars
-  "rate30Min": "decimal | optional",       // Optional: Min 0, max 10000
-  "rate60Min": "decimal | optional",       // Optional: Min 0, max 10000
-  "expertiseTagIds": "number[] | optional" // Optional: Array of skill IDs, empty array [] clears all
+  "certifications": "string | optional",    // Optional: Max 500 chars
+  "rate30Min": "decimal | optional",        // Optional: Min 0, max 10000
+  "rate60Min": "decimal | optional",        // Optional: Min 0, max 10000
+  "isAvailable": "boolean | optional",      // Optional: Availability status
+  "expertiseTagIds": "number[] | optional", // Optional: Array of skill IDs, empty array [] clears all
+  "categoryIds": "number[] | optional"      // Optional: Array of category IDs, 1-5 categories
 }
 ```
 
-**Note:** All fields are optional. Only provided fields will be updated.
+**Note:** All fields are optional. Only provided fields will be updated. User-related fields update the ApplicationUser entity, while mentor-specific fields update the Mentor entity.
 
 ### RejectMentorDto
 ```typescript
@@ -1267,6 +1356,13 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 ### GET /api/categories/{id}/mentors
 - [ ] See [Category-Endpoints.md](./Category-Endpoints.md#testing-checklist) for full testing checklist
 
+### GET /api/mentors/me (Get Own Profile)
+- [ ] Get own mentor profile with valid token
+- [ ] Get profile without token (401)
+- [ ] Get profile when not a mentor (404)
+- [ ] Verify all fields are returned including approval status
+- [ ] Verify works for pending mentors (before approval)
+
 ### POST /api/mentors (Apply as Mentor)
 - [ ] Apply with valid data as authenticated user
 - [ ] Apply with missing required fields (400)
@@ -1274,17 +1370,25 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - [ ] Apply when already have mentor profile (400)
 - [ ] Apply without authentication (401)
 - [ ] Verify approvalStatus is "Pending"
+- [ ] Verify IsMentor flag is set to true
 - [ ] Verify mentor profile is created
 
-### PATCH /api/mentors/{id} (Update Profile)
-- [ ] Update own profile with valid data
+### PATCH /api/mentors/me (Update Own Profile)
+- [ ] Update own profile with valid data (user fields)
+- [ ] Update own profile with valid data (mentor fields)
 - [ ] Update with partial data (only some fields)
-- [ ] Update as Admin (should succeed)
-- [ ] Update other mentor's profile as non-Admin (403)
+- [ ] Update firstName, lastName, phoneNumber, profilePictureUrl
+- [ ] Update bio, rates, certifications, availability
+- [ ] Update expertiseTagIds
+- [ ] Update with invalid firstName (too short) (400)
 - [ ] Update with invalid bio (too short) (400)
+- [ ] Update with invalid profilePictureUrl (400)
 - [ ] Update non-existent mentor (404)
 - [ ] Update without authentication (401)
 - [ ] Verify updatedAt is updated
+- [ ] Verify user fields update ApplicationUser entity
+- [ ] Verify mentor fields update Mentor entity
+- [ ] Verify works for pending mentors (before approval)
 
 ### GET /api/mentors/pending (Admin)
 - [ ] Get pending applications as Admin
@@ -1300,6 +1404,9 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - [ ] Approve without authentication (401)
 - [ ] Approve non-existent mentor (404)
 - [ ] Verify approvalStatus is "Approved"
+- [ ] Verify IsMentor flag is set to true
+- [ ] Verify isVerified is set to true
+- [ ] Verify isAvailable is set to true
 - [ ] Verify user gets "Mentor" role
 
 ### PATCH /api/mentors/{id}/reject (Admin)
@@ -1351,6 +1458,12 @@ GET http://localhost:5000/api/mentors/top-rated?count=20
 GET http://localhost:5000/api/mentors/cc0e8400-e29b-41d4-a716-446655440007
 ```
 
+**Get Current Mentor's Own Profile:**
+```bash
+GET http://localhost:5000/api/mentors/me
+Authorization: Bearer {access-token}
+```
+
 **Get All Categories:**
 ```bash
 # See Category-Endpoints.md for full examples
@@ -1378,15 +1491,21 @@ Content-Type: application/json
 }
 ```
 
-**Update Mentor Profile:**
+**Update Current Mentor's Own Profile:**
 ```bash
-PATCH http://localhost:5000/api/mentors/cc0e8400-e29b-41d4-a716-446655440007
+PATCH http://localhost:5000/api/mentors/me
 Authorization: Bearer {access-token}
 Content-Type: application/json
 
 {
+  "firstName": "Sarah",
+  "lastName": "Johnson",
+  "phoneNumber": "+1234567890",
+  "profilePictureUrl": "https://example.com/profiles/sarah-new.jpg",
   "bio": "Updated bio...",
-  "rate30Min": 30.00
+  "rate30Min": 30.00,
+  "isAvailable": true,
+  "expertiseTagIds": [15, 18, 22, 25, 30]
 }
 ```
 
