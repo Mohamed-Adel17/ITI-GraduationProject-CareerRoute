@@ -78,7 +78,7 @@ export class EmailVerificationComponent implements OnInit {
     // Check if user is already logged in
     if (this.authService.isAuthenticated()) {
       this.notificationService.info('You are already logged in.');
-      this.router.navigate(['/user/dashboard']);
+      this.router.navigate(['/']);
       return;
     }
 
@@ -129,7 +129,7 @@ export class EmailVerificationComponent implements OnInit {
         );
 
         // Start countdown and redirect to dashboard
-        this.startRedirectCountdown('/user/dashboard');
+        this.startRedirectCountdown('/');
       },
       error: (error) => {
         console.error('Email verification failed:', error);
@@ -190,7 +190,7 @@ export class EmailVerificationComponent implements OnInit {
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval);
     }
-    this.router.navigate(['/user/dashboard']);
+    this.router.navigate(['/']);
   }
 
   /**
