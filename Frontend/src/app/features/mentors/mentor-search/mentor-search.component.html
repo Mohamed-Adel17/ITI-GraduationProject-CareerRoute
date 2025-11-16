@@ -1,0 +1,203 @@
+<div class="mentor-search-page min-h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- Header Section -->
+  <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div class="container mx-auto px-4 py-6">
+      <!-- Page Title -->
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Find Your Mentor
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          Connect with experienced professionals to accelerate your career growth
+        </p>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="relative">
+        <div class="relative flex items-center">
+          <!-- Search Icon -->
+          <svg class="absolute left-4 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+
+          <!-- Search Input -->
+          <input
+            type="search"
+            [value]="searchQuery"
+            (input)="onSearchInput($event)"
+            placeholder="Search by name, skills, or expertise..."
+            class="w-full pl-12 pr-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            aria-label="Search mentors">
+
+          <!-- Clear Search Button -->
+          <button
+            *ngIf="searchQuery"
+            (click)="clearSearch()"
+            class="absolute right-2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            aria-label="Clear search">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-6">
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Mobile/Tablet: Filters Button (Shows in same position as desktop sidebar) -->
+      <aside class="lg:hidden w-full">
+        <button
+          type="button"
+          (click)="toggleFilters()"
+          class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+          aria-label="Open filters">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span class="font-semibold text-gray-900 dark:text-white">Filters</span>
+            <span *ngIf="activeFilterCount > 0" class="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5 font-semibold">
+              {{ activeFilterCount }}
+            </span>
+          </div>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </aside>
+
+      <!-- Desktop: Filters Panel (Sidebar) -->
+      <aside class="hidden lg:block w-64 flex-shrink-0">
+        <div class="sticky top-4">
+          <app-filters-panel
+            [categories]="categories"
+            [initialFilters]="currentFilters"
+            (filtersChange)="onFiltersChange($event)">
+          </app-filters-panel>
+        </div>
+      </aside>
+
+      <!-- Mobile Filters Drawer -->
+      <div
+        *ngIf="filtersOpen"
+        class="lg:hidden fixed inset-0 bg-black bg-opacity-50"
+        style="z-index: 9999;"
+        (click)="closeFilters()"
+        aria-label="Filters overlay">
+        <div
+          class="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
+          (click)="$event.stopPropagation()">
+          <!-- Mobile Filters Header -->
+          <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4 flex items-center justify-between z-20 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Filters</h2>
+            <button
+              type="button"
+              (click)="closeFilters(); $event.stopPropagation()"
+              class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer z-30"
+              aria-label="Close filters">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Mobile Filters Content -->
+          <div class="p-4">
+            <app-filters-panel
+              [categories]="categories"
+              [initialFilters]="currentFilters"
+              (filtersChange)="onFiltersChange($event)">
+            </app-filters-panel>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <main class="flex-1 min-w-0">
+        <!-- Results Header -->
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <!-- Result Count -->
+          <div class="flex items-center gap-4">
+            <p class="text-gray-700 dark:text-gray-300 font-medium">
+              {{ getResultCountText() }}
+            </p>
+
+            <!-- Active Filters Badge -->
+            <span
+              *ngIf="activeFilterCount > 0"
+              class="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              {{ activeFilterCount }} {{ activeFilterCount === 1 ? 'filter' : 'filters' }} active
+            </span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2">
+            <!-- Reset Filters Button -->
+            <button
+              *ngIf="hasActiveFilters()"
+              (click)="resetFilters()"
+              class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              Reset Filters
+            </button>
+
+            <!-- Refresh Button -->
+            <button
+              (click)="refreshResults()"
+              class="p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              [disabled]="loading"
+              aria-label="Refresh results">
+              <svg
+                class="w-5 h-5"
+                [class.animate-spin]="loading"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div
+          *ngIf="error && !loading"
+          class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+            <p class="text-sm text-red-800 dark:text-red-200">{{ error }}</p>
+          </div>
+        </div>
+
+        <!-- Mentor List -->
+        <app-mentor-list
+          [mentors]="mentors"
+          [loading]="loading"
+          [showPagination]="false">
+        </app-mentor-list>
+
+        <!-- Pagination Controls (moved here from mentor-list) -->
+        <!-- Debug: loading={{loading}}, mentors.length={{mentors.length}}, totalCount={{totalCount}}, currentPage={{currentPage}}, pageSize={{pageSize}} -->
+        <div *ngIf="!loading && mentors.length > 0 && totalCount > 0" class="mt-8">
+          <app-pagination
+            [totalItems]="totalCount"
+            [currentPage]="currentPage"
+            [pageSize]="pageSize"
+            [showPageSizeSelector]="true"
+            [pageSizeOptions]="[12, 24, 48]"
+            [maxVisiblePages]="5"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)">
+          </app-pagination>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>

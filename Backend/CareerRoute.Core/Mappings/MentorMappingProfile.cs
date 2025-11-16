@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.DTOs.Categories;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.DTOs.Skills;
 using System;
@@ -34,7 +35,26 @@ namespace CareerRoute.Core.Mappings
                             CategoryName = us.Skill.Category.Name,
                             IsActive = us.Skill.IsActive
                         })
-                        .ToList()));
+                        .ToList()))
+                .ForMember(dest => dest.Categories,
+                    opt => opt.MapFrom(src => src.MentorCategories
+                        .Select(mc => new CategoryDto
+                        {
+                            Id = mc.Category.Id,
+                            Name = mc.Category.Name,
+                            Description = mc.Category.Description,
+                            IconUrl = mc.Category.IconUrl,
+                            IsActive = mc.Category.IsActive,
+                            CreatedAt = mc.Category.CreatedAt,
+                            UpdatedAt = mc.Category.UpdatedAt
+                        })
+                        .ToList()))
+                .ForMember(dest => dest.ResponseTime,
+                    opt => opt.Ignore()) // Calculated separately if needed
+                .ForMember(dest => dest.CompletionRate,
+                    opt => opt.Ignore()) // Calculated separately if needed
+                .ForMember(dest => dest.IsAvailable,
+                    opt => opt.MapFrom(src => src.IsAvailable));
         }
     }
 }

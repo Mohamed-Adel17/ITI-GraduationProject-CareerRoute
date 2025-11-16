@@ -35,7 +35,18 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllActiveAsync();
-            return _mapper.Map<IEnumerable<CategoryDto>>(categories);
+            var categoryDtos = _mapper.Map<IEnumerable<CategoryDto>>(categories).ToList();
+            
+            // Get mentor counts for all categories
+            var mentorCounts = await _categoryRepository.GetMentorCountsAsync();
+            
+            // Populate mentor count for each category
+            foreach (var categoryDto in categoryDtos)
+            {
+                categoryDto.MentorCount = mentorCounts.TryGetValue(categoryDto.Id, out var count) ? count : 0;
+            }
+            
+            return categoryDtos;
         }
 
         public async Task<CategoryDto> GetCategoryByIdAsync(int id)
@@ -47,7 +58,13 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Category", id.ToString());
             }
 
-            return _mapper.Map<CategoryDto>(category);
+            var categoryDto = _mapper.Map<CategoryDto>(category);
+            
+            // Get mentor count for this category
+            var mentorCounts = await _categoryRepository.GetMentorCountsAsync();
+            categoryDto.MentorCount = mentorCounts.TryGetValue(categoryDto.Id, out var count) ? count : 0;
+
+            return categoryDto;
         }
 
         public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto)

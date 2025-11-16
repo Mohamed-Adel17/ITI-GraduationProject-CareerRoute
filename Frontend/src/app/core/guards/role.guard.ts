@@ -182,6 +182,15 @@ export const premiumRoleGuard: CanActivateFn = createRoleGuard({
 });
 
 /**
+ * Guard for mentor application - denies access to users who are already mentors
+ * Redirects mentors to their mentor dashboard
+ */
+export const notMentorGuard: CanActivateFn = createRoleGuard({
+  deniedRoles: ['Mentor'],
+  redirectTo: '/mentor/dashboard'
+});
+
+/**
  * Core authorization logic
  * Extracted for reusability and testing
  */

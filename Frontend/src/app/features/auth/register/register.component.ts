@@ -52,7 +52,7 @@ export class RegisterComponent implements OnInit {
   ngOnInit(): void {
     // Check if user is already logged in
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/user/dashboard']);
+      this.router.navigate(['/']);
       return;
     }
 

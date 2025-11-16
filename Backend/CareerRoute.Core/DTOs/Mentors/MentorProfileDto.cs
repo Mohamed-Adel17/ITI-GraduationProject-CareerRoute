@@ -1,4 +1,5 @@
 ﻿using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.DTOs.Categories;
 using CareerRoute.Core.DTOs.Skills;
 using System;
 using System.Collections.Generic;
@@ -29,5 +30,11 @@ namespace CareerRoute.Core.DTOs.Mentors
         public MentorApprovalStatus ApprovalStatus { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        // Optional fields for detailed views
+        public List<CategoryDto>? Categories { get; set; }
+        public string? ResponseTime { get; set; }
+        public decimal? CompletionRate { get; set; }
+        public bool? IsAvailable { get; set; }
     }
 }

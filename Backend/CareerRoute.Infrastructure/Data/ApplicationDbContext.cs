@@ -14,12 +14,15 @@ namespace CareerRoute.Infrastructure.Data
         IdentityDbContext<ApplicationUser>(options)
     {
         public DbSet<Mentor> Mentors { get; set; }
+        public DbSet<MentorCategory> MentorCategories { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Skill> Skills { get; set; }
         public DbSet<UserSkill> UserSkills { get; set; }
         public DbSet<TimeSlot> TimeSlots { get; set; }
         public DbSet<Session> Sessions { get; set; }
+        public DbSet<Payment>Payments { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

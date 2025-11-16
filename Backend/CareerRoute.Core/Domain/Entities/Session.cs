@@ -7,7 +7,7 @@ namespace CareerRoute.Core.Domain.Entities
 {
     public class Session
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         
         [MaxLength(450), Required]
         public required string MenteeId { get; set; }
@@ -54,5 +54,7 @@ namespace CareerRoute.Core.Domain.Entities
         public virtual ApplicationUser Mentee { get; set; } = null!;
         public virtual Mentor Mentor { get; set; } = null!;
         public virtual TimeSlot? TimeSlot { get; set; }
+        public Payment? Payment { get; set; }
+
     }
 }

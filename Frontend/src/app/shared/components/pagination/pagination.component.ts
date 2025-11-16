@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -40,7 +40,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './pagination.component.html',
   styleUrls: ['./pagination.component.css']
 })
-export class PaginationComponent implements OnChanges {
+export class PaginationComponent implements OnInit, OnChanges {
   /**
    * Total number of items in the dataset
    */
@@ -86,8 +86,20 @@ export class PaginationComponent implements OnChanges {
   visiblePages: (number | string)[] = [];
   startItem: number = 0;
   endItem: number = 0;
+  selectedPageSize: number = 12; // Track selected page size for dropdown
+
+  ngOnInit(): void {
+    // Initialize selectedPageSize with the input value
+    this.selectedPageSize = this.pageSize;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
+
+    // Log specifically when pageSize changes
+    if (changes['pageSize']) {
+      // Update internal selected value
+      this.selectedPageSize = this.pageSize;
+    }
     // Recalculate pagination when inputs change
     this.calculatePagination();
   }

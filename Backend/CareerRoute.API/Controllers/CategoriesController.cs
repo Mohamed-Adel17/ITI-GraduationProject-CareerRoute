@@ -84,7 +84,10 @@ namespace CareerRoute.API.Controllers
             return CreatedAtAction(
                 nameof(GetCategoryById),
                 new { id = category.Id },
-                new ApiResponse<CategoryDto>(category, "Category created successfully"));
+                new ApiResponse<CategoryDto>(
+                    category,
+                    "Category created successfully",
+                    StatusCodes.Status201Created));
         }
 
         /// <summary>
@@ -143,26 +146,40 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
-        /// Get mentors by category (Public)
+        /// Get mentors by category with pagination and sorting (Public)
         /// </summary>
         /// <param name="id">Category ID</param>
-        /// <returns>List of mentors with skills in this category</returns>
-        /// <response code="200">Returns mentors in the category</response>
-        /// <response code="404">Category not found</response>
+        /// <param name="request">Search and pagination parameters</param>
+        /// <returns>Paginated list of mentors in this category</returns>
+        /// <response code="200">Returns mentors in the category with pagination</response>
+        /// <response code="404">Category not found or no mentors in category</response>
         [HttpGet("{id}/mentors")]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<MentorProfileDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<MentorSearchResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> GetMentorsByCategory(int id)
+        public async Task<ActionResult> GetMentorsByCategory(int id, [FromQuery] MentorSearchRequestDto request)
         {
             _logger.LogInformation("Fetching mentors for category ID: {CategoryId}", id);
 
             // Verify category exists
             var category = await _categoryService.GetCategoryByIdAsync(id);
 
-            // Get mentors with skills in this category
-            var mentors = await _mentorService.GetMentorsByCategoryAsync(id);
+            // Override categoryId with path parameter
+            request.CategoryId = id;
 
-            return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(mentors, "Mentors retrieved successfully"));
+            // Use advanced search with category filter
+            var result = await _mentorService.SearchMentorsAsync(request);
+
+            if (result.Mentors.Count == 0)
+            {
+                return NotFound(new ApiResponse
+                {
+                    Success = false,
+                    Message = "No mentors found in this category",
+                    StatusCode = 404
+                });
+            }
+
+            return Ok(new ApiResponse<MentorSearchResponseDto>(result, "Mentors retrieved successfully"));
         }
     }
 }

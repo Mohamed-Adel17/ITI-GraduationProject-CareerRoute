@@ -197,4 +197,43 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Error happened while seeding categories");
     }
 }
+
+//seed skills on application startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
+
+        await SkillSeeder.SeedSkillsAsync(context, logger);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error happened while seeding skills");
+    }
+}
+
+//seed test data on application startup (Development only)
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var env = services.GetRequiredService<IWebHostEnvironment>();
+
+        await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error happened while seeding test data");
+    }
+}
+
 app.Run();

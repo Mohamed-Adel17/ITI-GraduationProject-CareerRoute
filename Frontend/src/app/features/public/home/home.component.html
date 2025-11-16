@@ -1,0 +1,338 @@
+<!-- Hero Section -->
+<section class="hero-section relative min-h-screen flex items-center justify-center overflow-hidden">
+  <!-- Background Image with Overlay -->
+  <div class="absolute inset-0 z-0">
+    <img
+      src="/9.png"
+      alt="CareerRoute - Professional mentorship consultation"
+      class="w-full h-full object-cover"
+      loading="eager"
+    />
+    <!-- Dark overlay for text readability -->
+    <div class="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/50"></div>
+  </div>
+
+  <!-- Hero Content -->
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+    <!-- Main Headline -->
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white mb-6 leading-tight">
+      Find Your Perfect<br class="hidden sm:block" />
+      <span class="text-primary">Career Mentor</span>
+    </h1>
+
+    <!-- Subheadline -->
+    <p class="text-lg sm:text-xl lg:text-2xl text-gray-100 mb-10 max-w-3xl mx-auto leading-relaxed">
+      Connect with experienced professionals for 1-on-1 mentorship sessions.
+      Get personalized career advice, interview preparation, and skill development guidance.
+    </p>
+
+    <!-- Call-to-Action Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+      <!-- Primary CTA -->
+      <button
+        (click)="browseMentors()"
+        class="w-full sm:w-auto px-8 py-4 text-lg font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+        aria-label="Browse all mentors"
+      >
+        Browse Mentors
+      </button>
+
+      <!-- Secondary CTA - Only show if user is not already a mentor -->
+      <button
+        *ngIf="!isUserMentor"
+        (click)="becomeMentor()"
+        class="w-full sm:w-auto px-8 py-4 text-lg font-bold bg-white text-gray-800 rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl border-2 border-white transform hover:scale-105"
+        aria-label="Apply to become a mentor"
+      >
+        Become a Mentor
+      </button>
+    </div>
+
+    <!-- Trust Indicators -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+      <!-- Expert Mentors -->
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1">
+          {{ trustIndicators.mentors }}
+        </div>
+        <div class="text-sm sm:text-base text-gray-200 font-medium">
+          Expert Mentors
+        </div>
+      </div>
+
+      <!-- Sessions Completed -->
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1">
+          {{ trustIndicators.sessions }}
+        </div>
+        <div class="text-sm sm:text-base text-gray-200 font-medium">
+          Sessions Completed
+        </div>
+      </div>
+
+      <!-- Average Rating -->
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1 flex items-center justify-center gap-1">
+          {{ trustIndicators.rating }}
+          <span class="text-yellow-400">★</span>
+        </div>
+        <div class="text-sm sm:text-base text-gray-200 font-medium">
+          Average Rating
+        </div>
+      </div>
+
+      <!-- Specializations -->
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1">
+          {{ trustIndicators.specializations }}
+        </div>
+        <div class="text-sm sm:text-base text-gray-200 font-medium">
+          Specializations
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll Down Indicator (Optional) -->
+    <div class="mt-16 animate-bounce hidden md:block">
+      <svg
+        class="w-6 h-6 mx-auto text-white/70"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 14l-7 7m0 0l-7-7m7 7V3"
+        />
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="how-it-works-section py-20 bg-gray-50 dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Section Header -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+        How It Works
+      </h2>
+      <p class="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Get started with CareerRoute in 3 simple steps. Find your mentor, book a session, and accelerate your career growth.
+      </p>
+    </div>
+
+    <!-- Steps Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
+      <!-- Step 1: Browse & Choose -->
+      <div class="text-center group">
+        <!-- Image -->
+        <div class="mb-6 relative overflow-hidden rounded-2xl shadow-lg transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+          <img
+            src="/12.jpg"
+            alt="Browse and search mentors by expertise"
+            class="w-full h-64 object-cover"
+            loading="lazy"
+          />
+          <!-- Step Number Overlay -->
+          <div class="absolute top-4 left-4 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
+            1
+          </div>
+        </div>
+
+        <!-- Icon -->
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          Find Your Mentor
+        </h3>
+
+        <!-- Description -->
+        <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+          Browse by category, expertise, or search for specific skills. Filter by price, rating, and availability to find your perfect match.
+        </p>
+      </div>
+
+      <!-- Step 2: Book a Session -->
+      <div class="text-center group">
+        <!-- Image -->
+        <div class="mb-6 relative overflow-hidden rounded-2xl shadow-lg transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+          <img
+            src="/13.jpg"
+            alt="Schedule and pay for mentorship session"
+            class="w-full h-64 object-cover"
+            loading="lazy"
+          />
+          <!-- Step Number Overlay -->
+          <div class="absolute top-4 left-4 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
+            2
+          </div>
+        </div>
+
+        <!-- Icon -->
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          Schedule & Pay
+        </h3>
+
+        <!-- Description -->
+        <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+          Select session duration (30min or 1hr), choose available time slot, and complete secure payment. Simple and transparent pricing.
+        </p>
+      </div>
+
+      <!-- Step 3: Get Mentored -->
+      <div class="text-center group">
+        <!-- Image -->
+        <div class="mb-6 relative overflow-hidden rounded-2xl shadow-lg transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+          <img
+            src="/8.jpg"
+            alt="Virtual mentorship session via video call"
+            class="w-full h-64 object-cover"
+            loading="lazy"
+          />
+          <!-- Step Number Overlay -->
+          <div class="absolute top-4 left-4 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
+            3
+          </div>
+        </div>
+
+        <!-- Icon -->
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          Meet & Learn
+        </h3>
+
+        <!-- Description -->
+        <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+          Join video session at scheduled time. Get guidance, resources, and 3-day follow-up chat access. Achieve your career goals faster.
+        </p>
+      </div>
+    </div>
+
+    <!-- Optional: Get Started CTA -->
+    <div class="text-center mt-16">
+      <button
+        (click)="browseMentors()"
+        class="px-8 py-4 text-lg font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+        aria-label="Get started by browsing mentors"
+      >
+        Get Started Now
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Browse by Category Section -->
+<section class="browse-categories-section py-20 bg-white dark:bg-background-dark">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Section Header -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+        Explore by Category
+      </h2>
+      <p class="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Browse expert mentors across 50+ specializations. Find the perfect match for your career goals.
+      </p>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="categoriesLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div *ngFor="let i of [1,2,3,4,5,6,7,8]" class="animate-pulse">
+        <div class="bg-gray-200 dark:bg-gray-700 rounded-xl h-40"></div>
+      </div>
+    </div>
+
+    <!-- Categories Grid -->
+    <div *ngIf="!categoriesLoading && topCategories.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <!-- Category Card -->
+      <div
+        *ngFor="let category of topCategories"
+        (click)="viewCategory(category.id)"
+        (keydown.enter)="viewCategory(category.id)"
+        (keydown.space)="viewCategory(category.id)"
+        tabindex="0"
+        class="group bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border-2 border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 transform hover:-translate-y-1"
+        role="button"
+        [attr.aria-label]="'View ' + category.name + ' category with ' + getMentorCountText(category.mentorCount)">
+
+        <!-- Icon -->
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-300">
+            <span *ngIf="category.iconUrl">{{ category.iconUrl }}</span>
+            <svg *ngIf="!category.iconUrl" class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Category Name -->
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white text-center mb-2 group-hover:text-primary transition-colors">
+          {{ category.name }}
+        </h3>
+
+        <!-- Mentor Count -->
+        <p class="text-sm text-gray-500 dark:text-gray-400 text-center font-medium">
+          {{ getMentorCountText(category.mentorCount) }}
+        </p>
+
+        <!-- Hover Indicator -->
+        <div class="mt-4 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <span class="text-primary text-sm font-semibold flex items-center gap-1">
+            Explore
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!categoriesLoading && topCategories.length === 0" class="text-center py-12">
+      <p class="text-gray-500 dark:text-gray-400 text-lg">
+        No categories available at the moment.
+      </p>
+    </div>
+
+    <!-- View All Categories CTA -->
+    <div class="text-center">
+      <button
+        (click)="exploreCategories()"
+        class="px-8 py-4 text-lg font-bold text-primary bg-transparent border-2 border-primary rounded-lg hover:bg-primary hover:text-white transition-all duration-300 shadow-md hover:shadow-xl transform hover:scale-105"
+        aria-label="View all categories"
+      >
+        View All Categories
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- TODO: Future sections to be implemented in Phase 1 -->
+<!-- Final CTA Section -->

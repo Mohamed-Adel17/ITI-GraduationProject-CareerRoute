@@ -1,4 +1,5 @@
 ﻿using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.DTOs.Mentors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,12 @@ namespace CareerRoute.Core.Domain.Interfaces
         // Search mentors by expertise tags or bio keywords.
         // Supports full-text search for better user experience.
         Task<IEnumerable<Mentor>> SearchMentorsAsync(string searchTerm);
+
+        // Advanced search with filters, sorting, and pagination (US2)
+        Task<IEnumerable<Mentor>> SearchMentorsWithFiltersAsync(MentorSearchRequestDto request);
+
+        // Get total count for search results (for pagination)
+        Task<int> GetSearchResultsCountAsync(MentorSearchRequestDto request);
 
         // Get top mentors by average rating.
         // Used for "Featured Mentors" or "Top Rated" sections.
