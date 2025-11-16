@@ -7,6 +7,7 @@ import { MentorSearchStateService } from '../services/mentor-search-state.servic
 import { CategoryService } from '../../../core/services/category.service';
 import { MentorListComponent } from '../mentor-list/mentor-list.component';
 import { FiltersPanelComponent } from '../filters-panel/filters-panel.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { MentorListItem, MentorSearchParams } from '../../../shared/models/mentor.model';
 import { PaginationMetadata } from '../../../shared/models/mentor.model';
 import { Category } from '../../../shared/models/category.model';
@@ -52,7 +53,8 @@ import { Category } from '../../../shared/models/category.model';
   imports: [
     CommonModule,
     MentorListComponent,
-    FiltersPanelComponent
+    FiltersPanelComponent,
+    PaginationComponent
   ],
   templateUrl: './mentor-search.component.html',
   styleUrls: ['./mentor-search.component.css']
