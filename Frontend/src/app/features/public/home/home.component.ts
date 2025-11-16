@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { CategoryService } from '../../../core/services/category.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Category } from '../../../shared/models/category.model';
 
 /**
@@ -41,6 +42,7 @@ import { Category } from '../../../shared/models/category.model';
 export class HomeComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly categoryService = inject(CategoryService);
+  private readonly authService = inject(AuthService);
   private destroy$ = new Subject<void>();
 
   /**
@@ -62,6 +64,13 @@ export class HomeComponent implements OnInit, OnDestroy {
    * Loading state for categories
    */
   categoriesLoading = false;
+
+  /**
+   * Check if current user is already a mentor
+   */
+  get isUserMentor(): boolean {
+    return this.authService.isMentor();
+  }
 
   ngOnInit(): void {
     this.loadTopCategories();
