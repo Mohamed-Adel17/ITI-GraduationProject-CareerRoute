@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { tap, map, shareReplay } from 'rxjs/operators';
+import { tap, map, shareReplay, take } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
 import {
   Category,
@@ -102,7 +102,7 @@ export class CategoryService {
   getAllCategories(forceRefresh: boolean = false): Observable<Category[]> {
     // Return cached categories if available and not forcing refresh
     if (this.categoriesLoaded && !forceRefresh) {
-      return this.categories$;
+      return this.categories$.pipe(take(1));
     }
 
     // If already loading, reuse the existing observable
