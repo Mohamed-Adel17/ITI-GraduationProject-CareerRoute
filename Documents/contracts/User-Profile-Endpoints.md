@@ -262,6 +262,25 @@ User profile endpoints allow users to view, update, and manage their personal in
       "isActive": true,
       "roles": ["User"],
       "isMentor": false
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "email": "jane.smith@example.com",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "emailConfirmed": true,
+      "phoneNumber": "+1234567891",
+      "profilePictureUrl": "https://example.com/profiles/jane.jpg",
+      "careerInterests": [
+        { "id": 8, "name": "Personal Branding", "categoryId": 2, "categoryName": "Professional Branding" },
+        { "id": 25, "name": "Leadership", "categoryId": 4, "categoryName": "Leadership & Management" }
+      ],
+      "careerGoals": "Develop leadership skills and build personal brand",
+      "registrationDate": "2024-06-10T08:15:00Z",
+      "lastLoginDate": "2025-11-15T09:30:00Z",
+      "isActive": true,
+      "roles": ["User"],
+      "isMentor": false
     }
   ]
 }
