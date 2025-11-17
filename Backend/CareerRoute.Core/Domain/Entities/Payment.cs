@@ -7,8 +7,8 @@ namespace CareerRoute.Core.Domain.Entities
         public string Id { get; set; }               
        
         // ---------- Payment Provider ----------
-        public PaymentMethodOptions PaymentMethod { get; set; }
-        public PaymobPaymentMethod? PaymobPaymentMethod { get; set; }
+        public PaymentProviderOptions PaymentProvider { get; set; }
+        public PaymobPaymentMethodOptions? PaymobPaymentMethod { get; set; }
         public string PaymentIntentId { get; set; } = string.Empty;
         public string ClientSecret { get; set; } = string.Empty;
 

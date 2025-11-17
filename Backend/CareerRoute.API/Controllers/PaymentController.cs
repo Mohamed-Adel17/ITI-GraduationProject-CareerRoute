@@ -14,18 +14,16 @@ namespace CareerRoute.API.Controllers
     [Authorize]
     public class PaymentController : ControllerBase
     {
-        public class PaymentsController : ControllerBase
-        {
-            private readonly IPaymentProcessingService _paymentService;
-            private readonly ILogger<PaymentsController> _logger;
+        private readonly IPaymentProcessingService _paymentService;
+        private readonly ILogger<PaymentController> _logger;
 
-            public PaymentsController(
-                IPaymentProcessingService paymentService,
-                ILogger<PaymentsController> logger)
-            {
-                _paymentService = paymentService;
-                _logger = logger;
-            }
+        public PaymentController(
+            IPaymentProcessingService paymentService,
+            ILogger<PaymentController> logger)
+        {
+            _paymentService = paymentService;
+            _logger = logger;
+        }
 
             /// <summary>
             /// Create a payment intent for a session
@@ -106,5 +104,4 @@ namespace CareerRoute.API.Controllers
             }
 
         }
-    }
 }

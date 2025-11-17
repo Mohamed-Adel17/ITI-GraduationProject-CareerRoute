@@ -78,14 +78,17 @@ namespace CareerRoute.Core.Services.Implementations
 
 
 
+            // Determine currency based on provider
+            var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
+            
             // Get the appropriate payment service
-            var paymentService = _paymentFactory.GetService(request.PaymentMethod);
+            var paymentService = _paymentFactory.GetService(request.PaymentProvider);
 
             // Create payment intent request
             var paymentIntentRequest = new PaymentIntentRequest
             {
                 Amount = session.Price,
-                Currency = "EGP", // or session.Currency if you have it
+                Currency = currency,
                 SessionId = request.SessionId,
                 MenteeEmail = mentee.Email,
                 MenteeFirstName = mentee.FirstName,
@@ -107,7 +110,7 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 Id = Guid.NewGuid().ToString(),
                 SessionId = request.SessionId,
-                PaymentMethod = request.PaymentMethod,
+                PaymentProvider = request.PaymentProvider,
                 PaymentIntentId = providerResponse.PaymentIntentId,
                 ClientSecret = providerResponse.ClientSecret,
                 Amount = session.Price,
@@ -198,7 +201,7 @@ namespace CareerRoute.Core.Services.Implementations
             // Update payment status
             payment.Status = PaymentStatusOptions.Captured;
             payment.UpdatedAt = DateTime.UtcNow;
-            payment.PaymentReleaseDate = DateTime.UtcNow.AddDays(7); // Release after 7 days
+            payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72); // Release after 72 hours
             _paymentRepository.Update(payment);
             // Update session status
             session.Status = SessionStatusOptions.Confirmed;
@@ -321,7 +324,7 @@ namespace CareerRoute.Core.Services.Implementations
 
                 if (callbackResult.Status == PaymentStatusOptions.Captured)
                 {
-                    payment.PaymentReleaseDate = DateTime.UtcNow.AddDays(7);
+                    payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72);
                 }
 
                 _paymentRepository.Update(payment);

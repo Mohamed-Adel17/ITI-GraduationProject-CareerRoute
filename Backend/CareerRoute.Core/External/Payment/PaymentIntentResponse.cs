@@ -10,7 +10,7 @@ namespace CareerRoute.Core.External.Payment
         public decimal Amount { get; set; }
         public string Currency { get; set; } = string.Empty;
         public string PaymentMethod { get; set; } =string.Empty;
-        public PaymobPaymentMethod? PaymobPaymentMethod { get; set; }
+        
         public string? ErrorMessage { get; set; }
     }
 }
