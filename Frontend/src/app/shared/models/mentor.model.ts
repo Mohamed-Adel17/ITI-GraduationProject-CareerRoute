@@ -16,11 +16,12 @@ import { Skill } from './skill.model';
 
 /**
  * Mentor approval status enum
+ * Backend sends numeric values: 0 = Pending, 1 = Approved, 2 = Rejected
  */
 export enum MentorApprovalStatus {
-  Pending = 'Pending',
-  Approved = 'Approved',
-  Rejected = 'Rejected'
+  Pending = 0,
+  Approved = 1,
+  Rejected = 2
 }
 
 /**
@@ -433,6 +434,23 @@ export function getApprovalStatusColor(status: MentorApprovalStatus): string {
       return 'danger'; // Red
     default:
       return 'secondary'; // Gray
+  }
+}
+
+/**
+ * Helper function to get approval status display text
+ * Converts numeric enum value to readable string
+ */
+export function getApprovalStatusText(status: MentorApprovalStatus): string {
+  switch (status) {
+    case MentorApprovalStatus.Approved:
+      return 'Approved';
+    case MentorApprovalStatus.Pending:
+      return 'Pending';
+    case MentorApprovalStatus.Rejected:
+      return 'Rejected';
+    default:
+      return 'Unknown';
   }
 }
 

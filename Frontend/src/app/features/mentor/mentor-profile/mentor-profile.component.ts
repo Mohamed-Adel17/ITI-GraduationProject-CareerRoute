@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MentorService } from '../../../core/services/mentor.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -15,7 +15,8 @@ import {
   isApproved,
   isPendingApproval,
   isRejected,
-  getApprovalStatusColor
+  getApprovalStatusColor,
+  getApprovalStatusText
 } from '../../../shared/models/mentor.model';
 import { getUserInitials } from '../../../shared/models/user.model';
 
@@ -67,7 +68,8 @@ export class MentorProfileComponent implements OnInit, OnDestroy {
   constructor(
     private mentorService: MentorService,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -96,11 +98,32 @@ export class MentorProfileComponent implements OnInit, OnDestroy {
       next: (mentor) => {
         this.mentor = mentor;
         this.loading = false;
+
+        // Defensive check: If mentor is pending, redirect to application-pending page
+        // The guard should already handle this, but this is an extra safety measure
+        if (this.isPendingApproval()) {
+          console.warn('Mentor profile is pending approval - redirecting to application-pending page');
+          this.router.navigate(['/mentor/application-pending']);
+        } else if (this.isRejected()) {
+          console.warn('Mentor profile was rejected - redirecting to application-pending page');
+          this.router.navigate(['/mentor/application-pending']);
+        }
       },
       error: (err) => {
         this.error = 'Failed to load mentor profile';
         this.loading = false;
-        this.notificationService.error('Could not load your mentor profile. Please try again.', 'Error');
+
+        // If 404 Not Found, redirect to application form
+        if (err.status === 404) {
+          this.notificationService.warning(
+            'Please complete your mentor application first.',
+            'Application Required'
+          );
+          this.router.navigate(['/user/apply-mentor']);
+        } else {
+          this.notificationService.error('Could not load your mentor profile. Please try again.', 'Error');
+        }
+
         console.error('Error loading mentor profile:', err);
       }
     });
@@ -225,7 +248,7 @@ export class MentorProfileComponent implements OnInit, OnDestroy {
    */
   getApprovalStatusText(): string {
     if (!this.mentor) return 'Unknown';
-    return this.mentor.approvalStatus;
+    return getApprovalStatusText(this.mentor.approvalStatus);
   }
 
   /**
