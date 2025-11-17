@@ -223,7 +223,8 @@ namespace CareerRoute.Core.Services.Implementations
                 PhoneNumber = request.PhoneNumber,
                 EmailConfirmed = false,
                 RegistrationDate = DateTime.UtcNow,
-                IsActive = true
+                IsActive = true,
+                IsMentor = request.RegisterAsMentor
             };
         }
 

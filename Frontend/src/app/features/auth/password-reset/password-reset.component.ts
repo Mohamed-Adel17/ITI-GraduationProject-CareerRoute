@@ -90,7 +90,7 @@ export class PasswordResetComponent implements OnInit {
   ngOnInit(): void {
     // Check if user is already logged in
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/user/dashboard']);
+      this.router.navigate(['/']);
       return;
     }
 
@@ -371,7 +371,7 @@ export class PasswordResetComponent implements OnInit {
 
         // Redirect to dashboard after 3 seconds (user is now logged in)
         setTimeout(() => {
-          this.router.navigate(['/user/dashboard']);
+          this.router.navigate(['/']);
         }, 3000);
 
         this.loading = false;

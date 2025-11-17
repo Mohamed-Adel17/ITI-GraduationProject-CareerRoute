@@ -18,7 +18,6 @@ namespace CareerRoute.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Produces("application/json")]
-    [AuthorizeRole(AppRoles.Admin)]
     public class UsersController : ControllerBase
     {
         private readonly IUserService userService;
@@ -77,7 +76,18 @@ namespace CareerRoute.API.Controllers
         /// <remarks>
         /// All fields are optional - only provided fields will be updated.
         /// 
-        /// **Note:** Email, password, and role cannot be changed through this endpoint.
+        /// **Field Requirements:**
+        /// - `firstName`: Min 2 chars, max 50 chars
+        /// - `lastName`: Min 2 chars, max 50 chars
+        /// - `phoneNumber`: Valid phone number format
+        /// - `careerGoals`: Max 500 characters
+        /// - `profilePictureUrl`: Valid URL format, max 200 chars
+        /// - `careerInterestIds`: Array of skill IDs (all must be valid and active)
+        /// 
+        /// **Note:** 
+        /// - Email, password, and role cannot be changed through this endpoint.
+        /// - This endpoint is for regular users only (IsMentor = false).
+        /// - If you have a mentor profile, use /api/mentors/me to update mentor-related data.
         /// </remarks>
         [HttpPatch("me")]
         [Authorize]
@@ -143,6 +153,14 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">User not authenticated</response>
         /// <response code="403">User doesn't have required permissions</response>
         /// <response code="404">No users found</response>
+        /// <remarks>
+        /// **Authorization:** Admin and Mentor roles can view all user profiles.
+        /// 
+        /// **Note:** This endpoint returns ONLY users where IsMentor = false. 
+        /// Mentors are managed through the /api/mentors endpoints.
+        /// 
+        /// **Read-only access:** Admins and Mentors can view user profiles but cannot modify them.
+        /// </remarks>
         [HttpGet]
         [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Mentor}")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<RetrieveUserDto>>), StatusCodes.Status200OK)]
@@ -179,6 +197,14 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">User not authenticated</response>
         /// <response code="403">User doesn't have required permissions</response>
         /// <response code="404">User not found</response>
+        /// <remarks>
+        /// **Authorization:** Admin and Mentor roles can view any user profile.
+        /// 
+        /// **Note:** This endpoint returns ONLY users where IsMentor = false.
+        /// Mentors are managed through the /api/mentors endpoints.
+        /// 
+        /// **Read-only access:** Admins and Mentors can view user profiles but cannot modify them.
+        /// </remarks>
         [HttpGet("{id}")]
         [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Mentor}")]
         [ProducesResponseType(typeof(ApiResponse<RetrieveUserDto>), StatusCodes.Status200OK)]
@@ -216,7 +242,12 @@ namespace CareerRoute.API.Controllers
         /// <remarks>
         /// All fields are optional - only provided fields will be updated.
         /// 
-        /// **Note:** Email, password, and role cannot be changed through this endpoint.
+        /// **Authorization:** Admin only.
+        /// 
+        /// **Note:** 
+        /// - Email, password, and role cannot be changed through this endpoint.
+        /// - This endpoint works only on users where IsMentor = false.
+        /// - Career interests are NOT updated via this endpoint - use dedicated Skills endpoint.
         /// </remarks>
         [HttpPatch("{id}")]
         [Authorize(Roles = AppRoles.Admin)]

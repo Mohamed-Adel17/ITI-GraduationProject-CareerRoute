@@ -1,10 +1,11 @@
 import { Routes } from '@angular/router';
+import { canApplyAsMentorGuard } from '../../core/guards/role.guard';
 
 /**
  * User routes - Protected by authGuard at parent level in app.routes.ts
  *
  * Implemented routes:
- * - apply-mentor: Apply to become a mentor
+ * - apply-mentor: Apply to become a mentor (only for users who registered as mentors)
  * - profile: View user profile
  * - profile/edit: Edit user profile
  *
@@ -20,6 +21,7 @@ export const USER_ROUTES: Routes = [
   {
     path: 'apply-mentor',
     loadComponent: () => import('../mentors/mentor-application/mentor-application.component').then(m => m.MentorApplicationComponent),
+    canActivate: [canApplyAsMentorGuard],
     title: 'Become a Mentor - CareerRoute'
   },
   {

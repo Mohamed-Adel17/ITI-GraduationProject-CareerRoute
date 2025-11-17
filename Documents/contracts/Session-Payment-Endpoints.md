@@ -44,6 +44,27 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
+## TimeSlot Integration
+
+**Important:** Session booking now uses a **TimeSlot-based system**. Before booking a session, mentees must select from available time slots created by mentors.
+
+**Booking Flow:**
+1. **Mentor creates availability** → POST `/api/mentors/{mentorId}/time-slots` (creates TimeSlot records)
+2. **Mentee views available slots** → GET `/api/mentors/{mentorId}/available-slots` (public endpoint)
+3. **Mentee books session** → POST `/api/sessions` with `timeSlotId` (this document, Endpoint 1)
+4. **TimeSlot marked as booked** → `isBooked = true`, `sessionId` set to new session ID
+5. **Mentee creates payment intent** → POST `/api/payments/create-intent` with `sessionId`
+6. **Payment confirmed** → Session status changes to "Confirmed", video link generated
+
+**TimeSlot-Session Relationship:**
+- Each Session is linked to one TimeSlot via `timeSlotId`
+- TimeSlot stores: `startDateTime`, `durationMinutes`, mentor's `rate30Min` or `rate60Min`
+- When session is cancelled, TimeSlot is released (`isBooked = false`, `sessionId = null`)
+- Session price, duration, and schedule are derived from the TimeSlot
+- TimeSlots are created by mentors through their availability management endpoints
+
+---
+
 ## Session Management Endpoints
 
 ### 1. Book New Session
@@ -55,55 +76,45 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 **Request Body:**
 ```json
 {
-  "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
-  "duration": "SixtyMinutes",
-  "scheduledStartTime": "2025-11-15T14:00:00Z",
+  "timeSlotId": 123,
   "topic": "System Design Interview Preparation",
   "notes": "Focusing on distributed systems and scalability patterns"
 }
 ```
 
 **Field Requirements:**
-- `mentorId` (required): Valid mentor GUID
-- `duration` (required): Enum - `ThirtyMinutes` or `SixtyMinutes`
-- `scheduledStartTime` (required): ISO 8601 datetime, must be at least 24 hours in future
+- `timeSlotId` (required): Integer, must reference an existing available TimeSlot (isBooked = false)
 - `topic` (optional): Max 200 characters
 - `notes` (optional): Max 1000 characters
+
+**Note:** The session's mentor, duration, scheduled time, and price are automatically derived from the selected TimeSlot.
 
 **Success Response (201):**
 ```json
 {
   "success": true,
-  "message": "Session booked successfully. Please complete payment to confirm.",
+  "message": "Session booked successfully. Please proceed to payment to confirm your booking.",
   "data": {
-    "session": {
-      "id": "44444444-e29b-41d4-a716-446655440014",
-      "menteeId": "55555555-e29b-41d4-a716-446655440015",
-      "menteeFirstName": "John",
-      "menteeLastName": "Doe",
-      "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
-      "mentorFirstName": "Sarah",
-      "mentorLastName": "Johnson",
-      "sessionType": "OneOnOne",
-      "duration": "SixtyMinutes",
-      "scheduledStartTime": "2025-11-15T14:00:00Z",
-      "scheduledEndTime": "2025-11-15T15:00:00Z",
-      "status": "Pending",
-      "videoConferenceLink": null,
-      "topic": "System Design Interview Preparation",
-      "notes": "Focusing on distributed systems and scalability patterns",
-      "price": 45.00,
-      "paymentId": null,
-      "createdAt": "2025-11-09T10:30:00Z",
-      "updatedAt": "2025-11-09T10:30:00Z"
-    },
-    "paymentIntent": {
-      "clientSecret": "pi_3AbcDefGhiJkLmNoPqRsTuVw_secret_xYzAbCdEfGhIjKlMnOpQrStUvWx",
-      "paymentIntentId": "pi_3AbcDefGhiJkLmNoPqRsTuVw",
-      "amount": 45.00,
-      "currency": "USD",
-      "requiresAction": false
-    }
+    "id": "44444444-e29b-41d4-a716-446655440014",
+    "menteeId": "55555555-e29b-41d4-a716-446655440015",
+    "menteeFirstName": "John",
+    "menteeLastName": "Doe",
+    "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+    "mentorFirstName": "Sarah",
+    "mentorLastName": "Johnson",
+    "timeSlotId": 123,
+    "sessionType": "OneOnOne",
+    "duration": "SixtyMinutes",
+    "scheduledStartTime": "2025-11-15T14:00:00Z",
+    "scheduledEndTime": "2025-11-15T15:00:00Z",
+    "status": "Pending",
+    "videoConferenceLink": null,
+    "topic": "System Design Interview Preparation",
+    "notes": "Focusing on distributed systems and scalability patterns",
+    "price": 45.00,
+    "paymentId": null,
+    "createdAt": "2025-11-09T10:30:00Z",
+    "updatedAt": "2025-11-09T10:30:00Z"
   }
 }
 ```
@@ -116,19 +127,27 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
     "success": false,
     "message": "Validation failed",
     "errors": {
-      "ScheduledStartTime": ["Session must be booked at least 24 hours in advance"],
-      "Duration": ["Invalid duration. Must be ThirtyMinutes or SixtyMinutes"],
+      "TimeSlotId": ["Time slot ID is required"],
       "Topic": ["Topic cannot exceed 200 characters"]
     },
     "statusCode": 400
   }
   ```
 
-- **409 Conflict (Time Slot Not Available):**
+- **404 Not Found (Time Slot):**
   ```json
   {
     "success": false,
-    "message": "Selected time slot is no longer available",
+    "message": "Time slot not found",
+    "statusCode": 404
+  }
+  ```
+
+- **409 Conflict (Time Slot Already Booked):**
+  ```json
+  {
+    "success": false,
+    "message": "Time slot is no longer available (already booked)",
     "statusCode": 409
   }
   ```
@@ -142,26 +161,26 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
   }
   ```
 
-- **404 Not Found (Mentor):**
-  ```json
-  {
-    "success": false,
-    "message": "Mentor not found",
-    "statusCode": 404
-  }
-  ```
-
 **Backend Behavior:**
-- Validate mentor exists and is approved
-- Validate time slot is available (not booked by another user)
-- Check mentee doesn't have overlapping sessions
-- Validate minimum 24-hour advance booking
-- Calculate price based on duration (rate30Min or rate60Min)
-- Calculate scheduledEndTime based on duration
-- Create session with status "Pending"
-- Create payment intent via Stripe/Paymob
-- Session remains "Pending" until payment confirmed
-- Return payment intent for frontend to complete payment
+- Validate timeSlotId exists (return 404 if not found)
+- Validate TimeSlot is available: `IsBooked = false` (return 409 if already booked)
+- Validate TimeSlot is at least 24 hours in future
+- Get TimeSlot details (startDateTime, durationMinutes, mentorId)
+- Get Mentor details and pricing (rate30Min or rate60Min based on duration)
+- Check mentee doesn't have overlapping sessions at this time
+- Calculate price from Mentor's rate
+- Calculate scheduledEndTime = startDateTime + durationMinutes
+- Create Session entity with:
+  - TimeSlotId = timeSlotId
+  - MentorId from TimeSlot
+  - MenteeId from JWT token
+  - ScheduledStartTime from TimeSlot
+  - ScheduledEndTime calculated
+  - Price from Mentor's rate
+  - Status = "Pending"
+- Mark TimeSlot as booked: `IsBooked = true`, `SessionId = newSession.Id`
+- Return session details (without payment intent)
+- **Next step:** Frontend must call `POST /api/payments/create-intent` with sessionId to initiate payment
 
 ---
 
@@ -601,6 +620,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
   - 24-48 hours: 50% refund
   - <24 hours: 0% refund (no refund)
 - Update session status to "Cancelled"
+- **Release TimeSlot:** Set `IsBooked = false`, `SessionId = null` (makes slot available again)
 - Process refund via payment service
 - Send cancellation notification to both parties
 - Mentor receives cancellation fee if <24 hours (no refund to user)
@@ -1049,6 +1069,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
   "mentorFirstName": "string",
   "mentorLastName": "string",
   "mentorProfilePictureUrl": "string | null",
+  "timeSlotId": "number | null",                // NEW: Reference to TimeSlot
   "sessionType": "string (enum: OneOnOne, Group)",
   "duration": "string (enum: ThirtyMinutes, SixtyMinutes)",
   "scheduledStartTime": "ISO 8601 datetime",
@@ -1092,9 +1113,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ### BookSessionRequestDto
 ```typescript
 {
-  "mentorId": "string (GUID)",
-  "duration": "string (enum: ThirtyMinutes, SixtyMinutes)",
-  "scheduledStartTime": "ISO 8601 datetime",
+  "timeSlotId": "number (required)",           // Changed from mentorId + duration + scheduledStartTime
   "topic": "string | optional",
   "notes": "string | optional"
 }
@@ -1137,12 +1156,12 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ## Validation Rules
 
 ### Session Booking
-- scheduledStartTime: Must be at least 24 hours in future, cannot be in past
-- duration: Must be ThirtyMinutes or SixtyMinutes
+- timeSlotId: Required, must reference an existing TimeSlot
+- TimeSlot must be available (`isBooked = false`)
+- TimeSlot must be at least 24 hours in the future
+- Validate no scheduling conflicts for mentee (no overlapping sessions)
 - topic: Optional, max 200 characters
 - notes: Optional, max 1000 characters
-- Validate mentor availability for selected time slot
-- Validate no scheduling conflicts for mentee
 
 ### Reschedule
 - Must be requested >24 hours before original scheduledStartTime
@@ -1195,13 +1214,14 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ## Testing Checklist
 
 ### POST /api/sessions (Book Session)
-- [ ] Book session with valid data
-- [ ] Book session with invalid mentor ID (404)
-- [ ] Book session with unavailable time slot (409)
+- [ ] Book session with valid timeSlotId
+- [ ] Book session with non-existent timeSlotId (404)
+- [ ] Book session with already-booked timeSlot (409)
 - [ ] Book session with overlapping time for mentee (409)
-- [ ] Book session less than 24h in advance (400)
 - [ ] Book session without authentication (401)
-- [ ] Verify payment intent is created
+- [ ] Verify TimeSlot marked as booked after session creation
+- [ ] Verify session created with status 'Pending' and paymentId is null
+- [ ] Verify mentorId, price, and scheduledStartTime derived from TimeSlot
 
 ### GET /api/sessions/{id}
 - [ ] Get session detail as mentee
@@ -1239,6 +1259,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 - [ ] Cancel as unauthorized user (403)
 - [ ] Cancel completed session (409)
 - [ ] Verify refund is processed
+- [ ] Verify TimeSlot released (IsBooked = false, SessionId = null) after cancellation
 
 ### POST /api/sessions/{id}/join
 - [ ] Join session as mentee
@@ -1285,9 +1306,7 @@ Authorization: Bearer {access-token}
 Content-Type: application/json
 
 {
-  "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
-  "duration": "SixtyMinutes",
-  "scheduledStartTime": "2025-11-15T14:00:00Z",
+  "timeSlotId": 123,
   "topic": "System Design Interview Preparation",
   "notes": "Focusing on distributed systems"
 }

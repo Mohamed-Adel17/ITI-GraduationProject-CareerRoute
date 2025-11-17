@@ -1,8 +1,10 @@
-﻿using CareerRoute.API.Models;
+using CareerRoute.API.Models;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -75,17 +77,33 @@ namespace CareerRoute.API.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetAllMentors([FromQuery] MentorSearchRequestDto request)
         {
-            // Detect if any filters/pagination params provided
-            bool hasFilters = !string.IsNullOrWhiteSpace(request.Keywords) ||
-                             request.CategoryId.HasValue ||
-                             request.MinPrice.HasValue ||
-                             request.MaxPrice.HasValue ||
-                             request.MinRating.HasValue ||
-                             request.Page > 1 ||
-                             request.PageSize != 12 ||
-                             request.SortBy != "popularity";
+            var hasQueryParams = Request.Query.Count > 0;
+            var isDefaultRequest = string.IsNullOrWhiteSpace(request.Keywords)
+                                   && !request.CategoryId.HasValue
+                                   && !request.MinPrice.HasValue
+                                   && !request.MaxPrice.HasValue
+                                   && !request.MinRating.HasValue
+                                   && request.Page == 1
+                                   && request.PageSize == 12
+                                   && (string.IsNullOrWhiteSpace(request.SortBy) ||
+                                       string.Equals(request.SortBy, "popularity", StringComparison.OrdinalIgnoreCase));
 
-            // Use advanced search with pagination
+            var useAdvancedSearch = hasQueryParams || !isDefaultRequest;
+
+            if (!useAdvancedSearch)
+            {
+                var mentors = (await _mentorService.GetAllApprovedMentorsAsync()).ToList();
+
+                if (!mentors.Any())
+                {
+                    return NotFound(ApiResponse.Error("No mentors found", 404));
+                }
+
+                return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(
+                    mentors,
+                    "Mentors retrieved successfully"));
+            }
+
             var result = await _mentorService.SearchMentorsAsync(request);
 
             if (result.Mentors.Count == 0)
@@ -93,18 +111,11 @@ namespace CareerRoute.API.Controllers
                 return NotFound(ApiResponse.Error("No mentors found matching your criteria", 404));
             }
 
-            // Return paginated response if filters/pagination provided
-            if (hasFilters)
-            {
-                return Ok(new ApiResponse<MentorSearchResponseDto>(
-                    result,
-                    request.Keywords != null ? "Search completed successfully" : "Mentors retrieved successfully"));
-            }
+            var responseMessage = string.IsNullOrWhiteSpace(request.Keywords)
+                ? "Mentors retrieved successfully"
+                : "Search completed successfully";
 
-            // Return simple array for backward compatibility (no filters)
-            return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(
-                result.Mentors,
-                "Mentors retrieved successfully"));
+            return Ok(new ApiResponse<MentorSearchResponseDto>(result, responseMessage));
         }
 
         /// <summary>
@@ -161,6 +172,44 @@ namespace CareerRoute.API.Controllers
         // ============ AUTHENTICATED ENDPOINTS ============
 
         /// <summary>
+        /// Get current authenticated mentor's own profile
+        /// </summary>
+        /// <returns>Current mentor's profile information</returns>
+        /// <response code="200">Returns the mentor's profile</response>
+        /// <response code="401">User not authenticated</response>
+        /// <response code="404">Mentor profile not found</response>
+        /// <remarks>
+        /// **Authorization:** Requires authenticated user who has registered or applied as a mentor (IsMentor = true).
+        /// 
+        /// **Note:** Does NOT require Mentor role - users can access their mentor profile even while pending approval.
+        /// 
+        /// Returns the complete mentor profile for the currently authenticated mentor, including approval status.
+        /// </remarks>
+        [HttpGet("me")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<MentorProfileDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetMyMentorProfile()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+            }
+
+            _logger.LogInformation("User {UserId} requested their mentor profile", userId);
+
+            var mentor = await _mentorService.GetMentorProfileAsync(userId);
+
+            return Ok(new ApiResponse<MentorProfileDto>(
+                mentor,
+                "Mentor profile retrieved successfully"
+            ));
+        }
+
+        /// <summary>
         /// Apply to become a mentor (Authenticated)
         /// </summary>
         /// <param name="createDto">Mentor application details</param>
@@ -195,34 +244,50 @@ namespace CareerRoute.API.Controllers
                 new { id = createdMentor.Id },
                 new ApiResponse<MentorProfileDto>(
                     createdMentor,
-                    "Mentor application submitted successfully! Your application is pending approval."
+                    "Mentor application submitted successfully! Your application is pending approval.",
+                    StatusCodes.Status201Created
                 ));
         }
 
         /// <summary>
-        /// Update mentor profile (Authenticated - Own profile or Admin)
+        /// Update current authenticated mentor's own profile
         /// </summary>
-        /// <param name="id">Mentor ID</param>
         /// <param name="updateDto">Mentor profile fields to update (all fields optional)</param>
         /// <returns>Updated mentor profile</returns>
         /// <response code="200">Profile updated successfully</response>
-        /// <response code="400">Invalid update data</response>
+        /// <response code="400">Validation failed for one or more fields</response>
         /// <response code="401">User not authenticated</response>
-        /// <response code="403">User cannot update this mentor profile</response>
         /// <response code="404">Mentor not found</response>
         /// <remarks>
-        /// All fields are optional. Mentors can update their own profiles. Admins can update any profile.
+        /// **Authorization:** Requires authenticated user who has registered or applied as a mentor (IsMentor = true).
+        /// 
+        /// **Note:** Does NOT require Mentor role - users can update their mentor profile even while pending approval.
+        /// 
+        /// **All fields are optional** - only provided fields will be updated.
+        /// 
+        /// **User-related fields:**
+        /// - `firstName`: Min 2 chars, max 50 chars
+        /// - `lastName`: Min 2 chars, max 50 chars
+        /// - `phoneNumber`: Valid phone number format
+        /// - `profilePictureUrl`: Valid URL format, max 200 chars
+        /// 
+        /// **Mentor-specific fields:**
+        /// - `bio`: Max 2000 chars
+        /// - `expertiseTagIds`: Array of skill IDs (all must be valid and active)
+        /// - `yearsOfExperience`: Positive integer
+        /// - `certifications`: Max 1000 chars
+        /// - `rate30Min`: Session rate for 30 minutes
+        /// - `rate60Min`: Session rate for 60 minutes
+        /// - `isAvailable`: Availability status
+        /// - `categoryIds`: Array of category IDs
         /// </remarks>
-        [HttpPatch("{id}")]
+        [HttpPatch("me")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<MentorProfileDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> UpdateMentorProfile(
-            string id,
-            [FromBody] UpdateMentorProfileDto updateDto)
+        public async Task<ActionResult> UpdateMyMentorProfile([FromBody] UpdateMentorProfileDto updateDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -231,15 +296,9 @@ namespace CareerRoute.API.Controllers
                 return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
             }
 
-            // Allow admins to update any profile
-            var isAdmin = User.IsInRole("Admin");
-            if (userId != id && !isAdmin)
-            {
-                _logger.LogWarning("User {UserId} denied access to update mentor {MentorId} profile", userId, id);
-                return StatusCode(403, ApiResponse.Error("You can only update your own mentor profile", 403));
-            }
+            _logger.LogInformation("User {UserId} requested to update their mentor profile", userId);
 
-            var updatedMentor = await _mentorService.UpdateMentorProfileAsync(id, updateDto);
+            var updatedMentor = await _mentorService.UpdateMentorProfileAsync(userId, updateDto);
 
             return Ok(new ApiResponse<MentorProfileDto>(
                 updatedMentor,

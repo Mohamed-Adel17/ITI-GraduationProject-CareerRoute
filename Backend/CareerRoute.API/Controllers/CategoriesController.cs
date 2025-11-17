@@ -84,7 +84,10 @@ namespace CareerRoute.API.Controllers
             return CreatedAtAction(
                 nameof(GetCategoryById),
                 new { id = category.Id },
-                new ApiResponse<CategoryDto>(category, "Category created successfully"));
+                new ApiResponse<CategoryDto>(
+                    category,
+                    "Category created successfully",
+                    StatusCodes.Status201Created));
         }
 
         /// <summary>

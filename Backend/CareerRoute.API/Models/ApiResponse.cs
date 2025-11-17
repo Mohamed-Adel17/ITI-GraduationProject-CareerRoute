@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace CareerRoute.API.Models
 {
     /// <summary>
@@ -24,7 +26,7 @@ namespace CareerRoute.API.Models
         /// <summary>
         /// HTTP status code (included in error responses for frontend)
         /// </summary>
-        public int? StatusCode { get; set; }
+        public int? StatusCode { get; set; } = StatusCodes.Status200OK;
 
         /// <summary>
         /// Validation errors dictionary (field name -> error messages)
@@ -69,11 +71,12 @@ namespace CareerRoute.API.Models
         {
         }
 
-        public ApiResponse(T data, string? message = null)
+        public ApiResponse(T data, string? message = null, int statusCode = StatusCodes.Status200OK)
         {
             Success = true;
             Data = data;
             Message = message;
+            StatusCode = statusCode;
         }
     }
 }

@@ -164,4 +164,27 @@ export class HeaderComponent implements OnInit {
   hasRole(user: AuthUser | null, role: UserRole): boolean {
     return user?.roles?.includes(role) || false;
   }
+
+  /**
+   * Get the appropriate profile route based on user role
+   * @param user The authenticated user
+   * @returns Profile route path
+   */
+  getProfileRoute(user: AuthUser | null): string {
+    if (!user) return '/user/profile';
+
+    // If user has Mentor role (approved mentor), redirect to mentor profile
+    if (this.hasRole(user, UserRole.Mentor)) {
+      return '/mentor/profile';
+    }
+
+    // If user registered as mentor but doesn't have Mentor role yet (pending/incomplete application),
+    // redirect to mentor profile which will handle routing to application-pending or application form
+    if (user.isMentor) {
+      return '/mentor/profile';
+    }
+
+    // Otherwise, redirect to user profile
+    return '/user/profile';
+  }
 }

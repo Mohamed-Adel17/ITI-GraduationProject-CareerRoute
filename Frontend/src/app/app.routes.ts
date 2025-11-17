@@ -14,7 +14,8 @@ export const routes: Routes = [
   },
   {
     path: 'mentor',
-    canActivate: [mentorRoleGuard],
+    // Note: No parent guard here - guards are applied at child route level
+    // This allows both pending and approved mentors to access appropriate routes
     loadChildren: () => import('./features/mentor/mentor.routes').then(m => m.MENTOR_ROUTES)
   },
   {

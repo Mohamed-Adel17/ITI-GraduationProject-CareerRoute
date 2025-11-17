@@ -72,17 +72,18 @@ namespace CareerRoute.Infrastructure.Data.SeedData
                 }
 
                 // Step 3: Seed UserSkills (expertise tags)
-                var userSkillsExist = await context.UserSkills
-                    .AnyAsync(us => us.User.Email != null && us.User.Email.EndsWith("@test.com"));
-                
-                if (!userSkillsExist)
+                var testUsersMissingSkills = await context.Users
+                    .Where(u => u.Email != null && u.Email.EndsWith("@test.com"))
+                    .AnyAsync(u => !u.UserSkills.Any());
+
+                if (testUsersMissingSkills)
                 {
-                    logger.LogInformation("Step 3: Seeding user skills...");
+                    logger.LogInformation("Step 3: Seeding user skills for users missing assigned skills...");
                     await SeedUserSkillsAsync(context, logger);
                 }
                 else
                 {
-                    logger.LogInformation("Step 3: User skills already exist, skipping...");
+                    logger.LogInformation("Step 3: All test users already have skills assigned, skipping...");
                 }
 
                 // Step 4: Seed MentorCategories
@@ -332,16 +333,28 @@ namespace CareerRoute.Infrastructure.Data.SeedData
 
         private static async Task SeedUserSkillsAsync(ApplicationDbContext context, ILogger logger)
         {
-            // Get all mentor users
+            // Get all mentor users with their skills
             var mentorUsers = await context.Users
                 .Where(u => u.Email != null && u.Email.StartsWith("mentor") && u.Email.EndsWith("@test.com"))
+                .Include(u => u.UserSkills)
+                .OrderBy(u => u.Email)
+                .ToListAsync();
+
+            // Get all regular users with their skills
+            var regularUsers = await context.Users
+                .Where(u => u.Email != null && u.Email.StartsWith("user") && u.Email.EndsWith("@test.com"))
+                .Include(u => u.UserSkills)
                 .OrderBy(u => u.Email)
                 .ToListAsync();
 
             // Get all skills
-            var skills = await context.Skills.ToDictionaryAsync(s => s.Name, s => s.Id);
+            var skills = await context.Skills
+                .ToDictionaryAsync(s => s.Name, s => s.Id, StringComparer.OrdinalIgnoreCase);
 
-            var userSkills = new List<UserSkill>();
+            var userSkillsToAdd = new List<UserSkill>();
+            var missingSkillNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int mentorsUpdated = 0;
+            int regularUsersUpdated = 0;
 
             // Define skill sets for each mentor persona
             var mentorSkillSets = new[]
@@ -378,29 +391,108 @@ namespace CareerRoute.Infrastructure.Data.SeedData
                 new[] { "User Research", "UX/UI Design", "Prototyping", "Design Thinking" }
             };
 
-            for (int i = 0; i < mentorUsers.Count && i < mentorSkillSets.Length; i++)
+            // Define skill sets for regular users (same pattern as mentors)
+            var userSkillSets = new[]
+            {
+                new[] { "React", "Node.js", "AWS", "TypeScript", "System Design" },
+                new[] { "AWS", "Azure", "DevOps", "Docker", "Kubernetes" },
+                new[] { "Career Shifting", "Interview Preparation", "Resume Building", "Personal Branding" },
+                new[] { "Digital Marketing", "SEO", "Content Strategy", "Social Media Marketing" },
+                new[] { "Team Management", "Project Management", "Strategic Planning", "Change Management" },
+                new[] { "Financial Analysis", "Investment Strategy", "Risk Management", "Portfolio Management" },
+                new[] { "UX/UI Design", "Product Design", "User Research", "Prototyping" },
+                new[] { "Python", "System Design", "DevOps", "Docker" },
+                new[] { "Recruitment", "Training & Development", "Culture Building", "HR Strategy" },
+                new[] { "Project Management", "Strategic Planning", "Decision Making", "Performance Management" }
+            };
+
+            for (int i = 0; i < mentorUsers.Count; i++)
             {
                 var user = mentorUsers[i];
-                var skillSet = mentorSkillSets[i];
+                var skillSet = mentorSkillSets[i % mentorSkillSets.Length];
+                AssignSkillsToUser(user, skillSet, isMentor: true);
+            }
+
+            // Assign skills to regular users
+            for (int i = 0; i < regularUsers.Count; i++)
+            {
+                var user = regularUsers[i];
+                var skillSet = userSkillSets[i % userSkillSets.Length];
+                AssignSkillsToUser(user, skillSet, isMentor: false);
+            }
+
+            if (userSkillsToAdd.Count == 0)
+            {
+                logger.LogInformation("All test mentors and users already have the expected career interests. No user skills were added.");
+                return;
+            }
+
+            await context.UserSkills.AddRangeAsync(userSkillsToAdd);
+            await context.SaveChangesAsync();
+
+            logger.LogInformation(
+                "Seeded {Total} user-skill relationships ({MentorsUpdated} mentors updated, {RegularsUpdated} regular users updated)",
+                userSkillsToAdd.Count,
+                mentorsUpdated,
+                regularUsersUpdated);
+
+            if (missingSkillNames.Count > 0)
+            {
+                logger.LogWarning("The following skills were referenced in seed data but not found in the database: {MissingSkills}",
+                    string.Join(", ", missingSkillNames));
+            }
+
+            void AssignSkillsToUser(ApplicationUser user, string[] skillSet, bool isMentor)
+            {
+                if (skillSet.Length == 0)
+                    return;
+
+                var existingSkillIds = user.UserSkills
+                    .Select(us => us.SkillId)
+                    .ToHashSet();
+
+                var addedAny = false;
 
                 foreach (var skillName in skillSet)
                 {
-                    if (skills.ContainsKey(skillName))
+                    if (!skills.TryGetValue(skillName, out var skillId))
                     {
-                        userSkills.Add(new UserSkill
+                        if (missingSkillNames.Add(skillName))
                         {
-                            UserId = user.Id,
-                            SkillId = skills[skillName],
-                            CreatedAt = DateTime.UtcNow
-                        });
+                            logger.LogWarning(
+                                "Skill '{SkillName}' not found while assigning skills to user {UserEmail}",
+                                skillName,
+                                user.Email ?? user.Id);
+                        }
+                        continue;
                     }
+
+                    if (existingSkillIds.Contains(skillId))
+                        continue;
+
+                    existingSkillIds.Add(skillId);
+                    addedAny = true;
+
+                    userSkillsToAdd.Add(new UserSkill
+                    {
+                        UserId = user.Id,
+                        SkillId = skillId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+
+                if (!addedAny)
+                    return;
+
+                if (isMentor)
+                {
+                    mentorsUpdated++;
+                }
+                else
+                {
+                    regularUsersUpdated++;
                 }
             }
-
-            await context.UserSkills.AddRangeAsync(userSkills);
-            await context.SaveChangesAsync();
-
-            logger.LogInformation("Seeded {Count} user-skill relationships", userSkills.Count);
         }
 
         private static async Task SeedMentorCategoriesAsync(ApplicationDbContext context, ILogger logger)

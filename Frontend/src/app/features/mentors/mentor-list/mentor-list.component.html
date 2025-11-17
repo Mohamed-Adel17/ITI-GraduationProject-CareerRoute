@@ -52,18 +52,4 @@
       </app-mentor-card>
     </div>
   </div>
-
-  <!-- Pagination Controls -->
-  <div *ngIf="showPagination && hasData && totalCount > pageSize" class="pagination-wrapper">
-    <app-pagination
-      [totalItems]="totalCount"
-      [currentPage]="currentPage"
-      [pageSize]="pageSize"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[12, 24, 48]"
-      [maxVisiblePages]="5"
-      (pageChange)="onPageChange($event)"
-      (pageSizeChange)="onPageSizeChange($event)">
-    </app-pagination>
-  </div>
 </div>

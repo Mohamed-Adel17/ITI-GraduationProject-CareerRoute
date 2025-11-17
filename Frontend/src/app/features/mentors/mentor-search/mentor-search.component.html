@@ -179,13 +179,24 @@
         <!-- Mentor List -->
         <app-mentor-list
           [mentors]="mentors"
-          [totalCount]="totalCount"
-          [currentPage]="currentPage"
-          [pageSize]="pageSize"
           [loading]="loading"
-          (pageChange)="onPageChange($event)"
-          (pageSizeChange)="onPageSizeChange($event)">
+          [showPagination]="false">
         </app-mentor-list>
+
+        <!-- Pagination Controls (moved here from mentor-list) -->
+        <!-- Debug: loading={{loading}}, mentors.length={{mentors.length}}, totalCount={{totalCount}}, currentPage={{currentPage}}, pageSize={{pageSize}} -->
+        <div *ngIf="!loading && mentors.length > 0 && totalCount > 0" class="mt-8">
+          <app-pagination
+            [totalItems]="totalCount"
+            [currentPage]="currentPage"
+            [pageSize]="pageSize"
+            [showPageSizeSelector]="true"
+            [pageSizeOptions]="[12, 24, 48]"
+            [maxVisiblePages]="5"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)">
+          </app-pagination>
+        </div>
       </main>
     </div>
   </div>

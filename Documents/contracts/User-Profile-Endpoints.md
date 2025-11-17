@@ -12,9 +12,10 @@ User profile endpoints allow users to view, update, and manage their personal in
 
 **Authorization Rules:**
 - Users can view/update/delete their own profile via `/me` endpoints
-- Admins and Mentors can view any user profile
-- Admins can update any user profile
-- Admins and Mentors can view all users list
+- Admins and Mentors can **view** any user profile (read-only access)
+- Admins can update any user profile via `/api/users/{id}`
+- **Important:** User endpoints work ONLY on users where `IsMentor = false`
+- Users who register or apply as mentors (`IsMentor = true`) are managed through Mentor endpoints (see [Mentor-Endpoints.md](./Mentor-Endpoints.md))
 
 ## Related Documentation
 
@@ -24,6 +25,28 @@ User profile endpoints allow users to view, update, and manage their personal in
 - **Mentor Profiles**: See [Mentor-Endpoints.md](./Mentor-Endpoints.md) for mentor profiles (which use the same Skills system)
 
 **Important:** User `careerInterests` are managed via the Skills system. Update career interests using the `careerInterestIds` field in `PATCH /api/users/me` endpoint.
+
+---
+
+## User vs Mentor Separation
+
+**Users (IsMentor = false):**
+- Managed through `/api/users` endpoints
+- Can view and update their own profile via `/api/users/me`
+- Can be viewed by Admins and Mentors (read-only)
+
+**Mentors (IsMentor = true):**
+- Managed through `/api/mentors` endpoints (see [Mentor-Endpoints.md](./Mentor-Endpoints.md))
+- Cannot use `/api/users/me` - must use `/api/mentors/me` instead
+- Set `IsMentor = true` when:
+  - User registers with `RegisterAsMentor = true`
+  - User applies to become a mentor via `POST /api/mentors`
+- Receive Mentor role only after admin approval
+
+**Why Separate?**
+- Clear separation of concerns
+- Different data models (users have career goals, mentors have expertise/rates)
+- Different access patterns and permissions
 
 ---
 
@@ -56,8 +79,7 @@ User profile endpoints allow users to view, update, and manage their personal in
     "lastLoginDate": "2025-10-29T14:20:00Z",
     "isActive": true,
     "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null
+    "isMentor": false
   }
 }
 ```
@@ -132,8 +154,7 @@ User profile endpoints allow users to view, update, and manage their personal in
     "lastLoginDate": "2025-10-29T14:20:00Z",
     "isActive": true,
     "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null
+    "isMentor": false
   }
 }
 ```
@@ -215,6 +236,8 @@ User profile endpoints allow users to view, update, and manage their personal in
 **Requires:** `Authorization: Bearer {token}`
 **Roles:** Admin, Mentor
 
+**Important:** This endpoint returns ONLY users where `IsMentor = false`. Mentors are managed through separate endpoints.
+
 **Success Response (200):**
 ```json
 {
@@ -238,28 +261,26 @@ User profile endpoints allow users to view, update, and manage their personal in
       "lastLoginDate": "2025-10-29T14:20:00Z",
       "isActive": true,
       "roles": ["User"],
-      "isMentor": false,
-      "mentorId": null
+      "isMentor": false
     },
     {
       "id": "660e8400-e29b-41d4-a716-446655440001",
-      "email": "jane.doe@example.com",
+      "email": "jane.smith@example.com",
       "firstName": "Jane",
-      "lastName": "Doe",
+      "lastName": "Smith",
       "emailConfirmed": true,
       "phoneNumber": "+1234567891",
       "profilePictureUrl": "https://example.com/profiles/jane.jpg",
       "careerInterests": [
-        { "id": 35, "name": "Data Science", "categoryId": 9, "categoryName": "Data & Analytics" },
-        { "id": 36, "name": "Machine Learning", "categoryId": 9, "categoryName": "Data & Analytics" }
+        { "id": 8, "name": "Personal Branding", "categoryId": 2, "categoryName": "Professional Branding" },
+        { "id": 25, "name": "Leadership", "categoryId": 4, "categoryName": "Leadership & Management" }
       ],
-      "careerGoals": "Become a Data Scientist",
-      "registrationDate": "2025-01-10T08:15:00Z",
-      "lastLoginDate": "2025-10-30T09:45:00Z",
+      "careerGoals": "Develop leadership skills and build personal brand",
+      "registrationDate": "2024-06-10T08:15:00Z",
+      "lastLoginDate": "2025-11-15T09:30:00Z",
       "isActive": true,
-      "roles": ["Mentor"],
-      "isMentor": true,
-      "mentorId": null
+      "roles": ["User"],
+      "isMentor": false
     }
   ]
 }
@@ -296,7 +317,8 @@ User profile endpoints allow users to view, update, and manage their personal in
 
 **Backend Behavior:**
 - Verify user has Admin or Mentor role
-- Fetch all users from database
+- Fetch all users from database where `IsMentor = false`
+- **Read-only access**: Admins and Mentors can view but NOT modify user profiles
 - **Skills Integration**: Join each user's UserSkills to get careerInterests with full SkillDto structure
 - Return list of all users
 - Return 404 if no users exist
@@ -308,6 +330,8 @@ User profile endpoints allow users to view, update, and manage their personal in
 **Endpoint:** `GET /api/users/{id}`
 **Requires:** `Authorization: Bearer {token}`
 **Roles:** Admin, Mentor
+
+**Important:** This endpoint returns ONLY users where `IsMentor = false`. Use `/api/mentors/{id}` for mentor profiles.
 
 **Path Parameters:**
 - `id` (string, GUID): User ID to retrieve
@@ -335,8 +359,7 @@ User profile endpoints allow users to view, update, and manage their personal in
     "lastLoginDate": "2025-10-29T14:20:00Z",
     "isActive": true,
     "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null
+    "isMentor": false
   }
 }
 ```
@@ -372,10 +395,11 @@ User profile endpoints allow users to view, update, and manage their personal in
 
 **Backend Behavior:**
 - Verify user has Admin or Mentor role
-- Fetch user data by ID from database
+- Fetch user data by ID from database where `IsMentor = false`
+- **Read-only access**: Admins and Mentors can view but NOT modify user profiles
 - **Skills Integration**: Join user's UserSkills to get careerInterests with full SkillDto structure
 - Return 403 if user doesn't have required role
-- Return 404 if user doesn't exist
+- Return 404 if user doesn't exist or is a mentor (`IsMentor = true`)
 
 ---
 
@@ -384,6 +408,8 @@ User profile endpoints allow users to view, update, and manage their personal in
 **Endpoint:** `PATCH /api/users/{id}`
 **Requires:** `Authorization: Bearer {token}`
 **Roles:** Admin only
+
+**Important:** This endpoint works ONLY on users where `IsMentor = false`. Mentors update their own profiles via `/api/mentors/me`.
 
 **Path Parameters:**
 - `id` (string, GUID): User ID to update
@@ -433,8 +459,7 @@ User profile endpoints allow users to view, update, and manage their personal in
     "lastLoginDate": "2025-10-29T14:20:00Z",
     "isActive": true,
     "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null
+    "isMentor": false
   }
 }
 ```
@@ -484,10 +509,11 @@ User profile endpoints allow users to view, update, and manage their personal in
 **Backend Behavior:**
 - Verify user has Admin role
 - Validate all provided fields
-- Update user record in database
+- Update user record in database where `IsMentor = false`
 - **Note**: `careerInterests` are NOT updated via this endpoint - use dedicated Skills endpoint
 - **Skills Integration**: Join user's UserSkills to get careerInterests with full SkillDto structure in response
 - Return 403 if user doesn't have Admin role
+- Return 404 if user doesn't exist or is a mentor (`IsMentor = true`)
 - Return updated user data
 
 ---
@@ -509,15 +535,13 @@ User profile endpoints allow users to view, update, and manage their personal in
   "lastLoginDate": "ISO 8601 date string | null",
   "isActive": "boolean",
   "roles": "string[]",  // ["User"], ["Mentor"], or ["Admin"]
-  "isMentor": "boolean",
-  "mentorId": "string | null"
+  "isMentor": "boolean"
 }
 ```
 
 **Notes:** 
 - `roles` contains the user's assigned roles in the system
-- `isMentor` indicates if user has mentor status (approved mentor application)
-- `mentorId` is null for regular users, populated for mentees
+- `isMentor` indicates if user has mentor status (should always be false for users retrieved through these endpoints)
 - `careerInterests` is an array of SkillDto objects (see [Skills-Endpoints.md](./Skills-Endpoints.md) for SkillDto structure)
 - `careerInterests` represents areas where the user seeks guidance or consultation
 
