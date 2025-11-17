@@ -12,11 +12,9 @@ namespace CareerRoute.Core.Validators.Payments
                 .NotEmpty().WithMessage("SessionId is required.");
 
             RuleFor(x => x.PaymentMethod)
-                .NotEmpty()
                 .IsInEnum().WithMessage("PaymentMethod must be Stripe or Paymob.");
 
             RuleFor(x => x.PaymobPaymentMethod)
-                .NotEmpty().WithMessage("PaymobPaymentMethod is required.")
                 .IsInEnum().WithMessage("Invalid PaymobPaymentMethod value.")
                 .When(x => x.PaymentMethod == PaymentMethodOptions.Paymob);
         }

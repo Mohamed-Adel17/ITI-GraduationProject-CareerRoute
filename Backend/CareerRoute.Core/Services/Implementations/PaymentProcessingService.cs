@@ -66,6 +66,8 @@ namespace CareerRoute.Core.Services.Implementations
 
             if (session.Status != SessionStatusOptions.Pending)
                 throw new BusinessException($"Cannot create payment for session with status: {session.Status}");
+            if (session.PaymentId is not null)
+                throw new ConflictException("Session already has a payment associated");
             if (session.MenteeId != userId)
                 throw new UnauthorizedException($"Access Denied");
 
@@ -107,6 +109,7 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 Id = Guid.NewGuid().ToString(),
                 SessionId = request.SessionId,
+                MenteeId = mentee.Id,
                 PaymentMethod = request.PaymentMethod,
                 PaymentIntentId = providerResponse.PaymentIntentId,
                 ClientSecret = providerResponse.ClientSecret,
@@ -167,11 +170,17 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Payment", request.PaymentIntentId);
 
             // Verify payment is not already confirmed
-            if (payment.Status == PaymentStatusOptions.Captured)
+            if (payment.Status == PaymentStatusOptions.Confirmed)
                 throw new ConflictException("Payment has already been confirmed");
+            // Verify payment is already Captured
+            if (payment.Status != PaymentStatusOptions.Captured)
+                throw new PaymentException("Payment must be captured before it can be confirmed");
+
+
 
             // Get session
-            var session = await _sessionRepository.GetByIdAsync(payment.SessionId);
+            var session = payment.Session ??
+                          await _sessionRepository.GetByIdAsync(payment.SessionId);
             if (session == null)
                 throw new NotFoundException("Session", payment.SessionId);
 
@@ -239,6 +248,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             var payments = await _paymentRepository.GetPaymentHistoryWithSessionAsync(
                 userId, page, pageSize, status);
+            if (payments.Count() == 0) throw new NotFoundException("you don't have any payment history ");
             var totalCount = await _paymentRepository.GetPaymentHistoryCountAsync(userId, status);
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             var mentorIds = payments.Select(p => p.Session.MentorId).Distinct();
@@ -249,7 +259,7 @@ namespace CareerRoute.Core.Services.Implementations
             }
 
             foreach (var payment in payments)
-                payment.Session.Mentor = mentors[payment.Session.MenteeId];
+                payment.Session.Mentor = mentors[payment.Session.MentorId];
 
             var paymentDtos = _mapper.Map<IEnumerable<PaymentHistroyItemResponseDto>>(payments);
 

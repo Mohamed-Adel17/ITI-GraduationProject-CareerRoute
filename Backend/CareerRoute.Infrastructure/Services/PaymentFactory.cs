@@ -18,8 +18,8 @@ namespace CareerRoute.Infrastructure.Services
         {
             return option switch
             {
-                PaymentMethodOptions.Stripe => _serviceProvider.GetRequiredService<StripePaymentService>(),
-                PaymentMethodOptions.Paymob => _serviceProvider.GetRequiredService<PaymobPaymentService>(),
+                PaymentMethodOptions.Stripe => _serviceProvider.GetRequiredService<IStripePaymentService>(),
+                PaymentMethodOptions.Paymob => _serviceProvider.GetRequiredService<IPaymobPaymentService>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(option), option, "Invalid payment provider")
             };
         }
