@@ -36,16 +36,6 @@
       >
         Browse Mentors
       </button>
-
-      <!-- Secondary CTA - Only show if user is not already a mentor -->
-      <button
-        *ngIf="!isUserMentor"
-        (click)="becomeMentor()"
-        class="w-full sm:w-auto px-8 py-4 text-lg font-bold bg-white text-gray-800 rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl border-2 border-white transform hover:scale-105"
-        aria-label="Apply to become a mentor"
-      >
-        Become a Mentor
-      </button>
     </div>
 
     <!-- Trust Indicators -->

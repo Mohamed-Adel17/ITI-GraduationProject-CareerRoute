@@ -27,7 +27,6 @@ import { Category } from '../../../shared/models/category.model';
  * User Journeys:
  * 1. Browse Mentors → /mentors (search/filter)
  * 2. Explore Categories → /categories (category grid)
- * 3. Become a Mentor → /user/apply-mentor (requires auth)
  *
  * Access: Public (no authentication required)
  * Guards: None
@@ -64,13 +63,6 @@ export class HomeComponent implements OnInit, OnDestroy {
    * Loading state for categories
    */
   categoriesLoading = false;
-
-  /**
-   * Check if current user is already a mentor
-   */
-  get isUserMentor(): boolean {
-    return this.authService.isMentor();
-  }
 
   ngOnInit(): void {
     this.loadTopCategories();
@@ -117,14 +109,6 @@ export class HomeComponent implements OnInit, OnDestroy {
    */
   exploreCategories(): void {
     this.router.navigate(['/categories']);
-  }
-
-  /**
-   * Navigate to mentor application page
-   * Requires authentication - authGuard will handle redirect to login
-   */
-  becomeMentor(): void {
-    this.router.navigate(['/user/apply-mentor']);
   }
 
   /**
