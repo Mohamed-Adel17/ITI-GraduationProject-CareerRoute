@@ -128,8 +128,16 @@ export class EmailVerificationComponent implements OnInit {
           'Welcome to CareerRoute'
         );
 
-        // Start countdown and redirect to dashboard
-        this.startRedirectCountdown('/');
+        // Check if user registered as mentor and needs to complete application
+        const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
+
+        if (pendingMentorApplication === 'true') {
+          // Redirect to mentor application form for new mentors
+          this.startRedirectCountdown('/user/apply-mentor');
+        } else {
+          // Redirect to home page for regular users
+          this.startRedirectCountdown('/');
+        }
       },
       error: (error) => {
         console.error('Email verification failed:', error);

@@ -6,6 +6,7 @@ import { MentorService } from '../../../core/services/mentor.service';
 import { SkillService } from '../../../core/services/skill.service';
 import { CategoryService } from '../../../core/services/category.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { MentorApplication, MentorProfileUpdate } from '../../../shared/models/mentor.model';
 import { Skill } from '../../../shared/models/skill.model';
 import { Category } from '../../../shared/models/category.model';
@@ -43,6 +44,14 @@ import { forkJoin } from 'rxjs';
           <p class="text-lg text-gray-600 dark:text-gray-400">
             Share your expertise and help others grow their careers
           </p>
+          <!-- Skip button (shown only if canSkip is true) -->
+          <div *ngIf="canSkip" class="mt-4">
+            <button
+              (click)="onSkip()"
+              class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline">
+              Skip for now - I'll complete this later
+            </button>
+          </div>
         </div>
 
         <!-- Loading State -->
@@ -90,15 +99,24 @@ export class MentorApplicationComponent implements OnInit {
   isLoading = false;
   loadError: string | null = null;
 
+  // Skip functionality (allowed only when coming from registration)
+  canSkip = false;
+
   constructor(
     private mentorService: MentorService,
     private skillService: SkillService,
     private categoryService: CategoryService,
     private notificationService: NotificationService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    // Check if we can allow skipping (coming from registration)
+    // Check localStorage for pendingMentorApplication flag
+    const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
+    this.canSkip = pendingMentorApplication === 'true';
+
     this.loadData();
   }
 
@@ -149,8 +167,24 @@ export class MentorApplicationComponent implements OnInit {
             'Application submitted successfully! Your application is pending approval.',
             'Application Submitted'
           );
-          // Navigate to user dashboard or profile page
-          this.router.navigate(['/user/dashboard']);
+
+          // Clear the pending mentor application flag from localStorage
+          localStorage.removeItem('pendingMentorApplication');
+
+          // Refresh token to get updated JWT with isMentor flag and mentorId
+          this.authService.refreshToken().subscribe({
+            next: () => {
+              console.log('Token refreshed successfully after mentor application');
+              // Navigate to application pending page
+              this.router.navigate(['/mentor/application-pending']);
+            },
+            error: (refreshError) => {
+              console.error('Failed to refresh token after application:', refreshError);
+              // Even if refresh fails, navigate to pending page
+              // User might need to re-login to see updated token
+              this.router.navigate(['/mentor/application-pending']);
+            }
+          });
         },
         error: (error) => {
           // errorInterceptor handles most errors, but we can add custom handling here
@@ -189,8 +223,21 @@ export class MentorApplicationComponent implements OnInit {
    * Handle form cancellation
    * Navigate back to home page
    */
-
   onCancel(): void {
+    this.router.navigate(['/']);
+  }
+
+  /**
+   * Handle skip action (only available when coming from registration)
+   * Keeps pendingMentorApplication flag and navigates to dashboard with reminder
+   */
+  onSkip(): void {
+    // Keep the pendingMentorApplication flag in localStorage
+    // This will trigger the reminder banner on the dashboard
+    this.notificationService.info(
+      'You can complete your mentor application anytime from your dashboard.',
+      'Application Skipped'
+    );
     this.router.navigate(['/']);
   }
 }
