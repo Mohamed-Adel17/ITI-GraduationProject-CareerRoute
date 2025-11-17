@@ -191,13 +191,18 @@ export const notMentorGuard: CanActivateFn = createRoleGuard({
 });
 
 /**
- * Guard for mentor application form - blocks users who:
- * 1. Already have Mentor role (approved mentors)
- * 2. Have isMentor flag in token (pending mentors or those who already applied)
- * 3. Don't have pendingMentorApplication flag in localStorage (regular users)
+ * Guard for mentor application form - allows access only to users who:
+ * 1. Have isMentor flag in token (registered as mentor during signup)
+ * 2. Don't have Mentor role yet (not approved)
+ * 3. Have pendingMentorApplication flag in localStorage (not submitted yet)
  *
- * This ensures only users who registered as mentors during registration can access the application form.
- * Redirects approved mentors to dashboard, pending mentors to application status page, regular users to home.
+ * Blocks:
+ * - Approved mentors (have Mentor role) → Redirects to dashboard
+ * - Regular users (no isMentor flag) → Redirects to home
+ * - Users without localStorage flag (didn't register as mentor) → Redirects to home
+ *
+ * Note: isMentor flag is set during registration when user selects "mentor" type,
+ * NOT after submitting application. The localStorage flag is removed after submission.
  */
 export const canApplyAsMentorGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
@@ -233,26 +238,25 @@ export const canApplyAsMentorGuard: CanActivateFn = (
     return router.createUrlTree(['/mentor/dashboard']);
   }
 
-  // Check for isMentor flag (pending mentors or those who already applied)
+  // Check for isMentor flag (user registered as mentor)
   const isMentor = user['is_mentor'] === true || user['is_mentor'] === 'true' || user['isMentor'] === true;
 
-  if (isMentor) {
-    console.warn('Can Apply As Mentor Guard: User already has mentor profile, redirecting to application status');
-    return router.createUrlTree(['/mentor/application-pending']);
-  }
-
-  // At this point, user doesn't have Mentor role or isMentor flag
-  // Check localStorage for pending application flag (should match registration intent)
-  const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
-
-  if (pendingMentorApplication !== 'true') {
-    // User is a regular user who didn't register as mentor
-    console.warn('Can Apply As Mentor Guard: User did not register as mentor (no localStorage flag), redirecting to home');
+  if (!isMentor) {
+    // User didn't register as mentor
+    console.warn('Can Apply As Mentor Guard: User is not a mentor (no isMentor flag), redirecting to home');
     return router.createUrlTree(['/']);
   }
 
-  // User has localStorage flag but no isMentor in token - this should only happen if they registered as mentor
-  // Allow access to application form
+  // Check localStorage for pending application flag
+  const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
+
+  if (pendingMentorApplication !== 'true') {
+    // User already submitted application (flag removed) or didn't register properly
+    console.warn('Can Apply As Mentor Guard: User already submitted application or flag missing, redirecting to application status');
+    return router.createUrlTree(['/mentor/application-pending']);
+  }
+
+  // User has isMentor flag and localStorage flag - allow access to form
   console.info('Can Apply As Mentor Guard: Access granted (user registered as mentor, ready to apply)');
   return true;
 };
@@ -346,8 +350,19 @@ export const approvedMentorGuard: CanActivateFn = (
   const isMentor = user['is_mentor'] === true || user['is_mentor'] === 'true' || user['isMentor'] === true;
 
   if (isMentor) {
-    console.warn('Approved Mentor Guard: User is pending mentor, redirecting to application-pending page');
-    return router.createUrlTree(['/mentor/application-pending']);
+    // User registered as mentor but not approved yet
+    // Check if they have submitted application (localStorage flag removed) or not (flag exists)
+    const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
+
+    if (pendingMentorApplication === 'true') {
+      // User has not submitted application yet - redirect to application form
+      console.warn('Approved Mentor Guard: User has not submitted application, redirecting to application form');
+      return router.createUrlTree(['/user/apply-mentor']);
+    } else {
+      // User has submitted application - redirect to pending status page
+      console.warn('Approved Mentor Guard: User is pending mentor, redirecting to application-pending page');
+      return router.createUrlTree(['/mentor/application-pending']);
+    }
   }
 
   // User is not a mentor at all
