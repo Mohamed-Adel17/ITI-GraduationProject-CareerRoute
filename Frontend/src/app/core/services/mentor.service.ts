@@ -27,8 +27,9 @@ import {
  * 4. Get mentor profile details by ID
  *
  * **Authenticated Endpoints (Require Bearer Token):**
- * 7. Apply to become a mentor (requires expertiseTagIds and categoryIds)
- * 8. Update mentor profile (own profile or admin)
+ * 7. Get current mentor's own profile
+ * 8. Apply to become a mentor (requires expertiseTagIds and categoryIds)
+ * 9. Update current mentor's own profile
  *
  * Features:
  * - Browse all approved mentors with advanced filtering
@@ -69,12 +70,22 @@ import {
  *   (mentors) => this.searchResults = mentors
  * );
  *
+ * // Authenticated: Get current mentor's own profile
+ * this.mentorService.getCurrentMentorProfile().subscribe(
+ *   (mentor) => this.myProfile = mentor
+ * );
+ *
  * // Authenticated: Apply to become mentor
  * this.mentorService.applyToBecomeMentor(applicationData).subscribe(
  *   (mentor) => this.mentorProfile = mentor
  * );
  *
- * // Authenticated: Update mentor profile
+ * // Authenticated: Update current mentor's own profile
+ * this.mentorService.updateCurrentMentorProfile(updates).subscribe(
+ *   (mentor) => this.updatedProfile = mentor
+ * );
+ *
+ * // Authenticated (Admin): Update mentor profile by ID
  * this.mentorService.updateMentorProfile(mentorId, updates).subscribe(
  *   (mentor) => this.updatedProfile = mentor
  * );
@@ -294,10 +305,46 @@ export class MentorService {
   // ==================== Authenticated Endpoints ====================
 
   /**
+   * Get current mentor's own profile
+   *
+   * Endpoint: GET /api/mentors/me
+   * Based on Mentor-Endpoints.md - Endpoint #7
+   *
+   * @returns Observable of current mentor's profile
+   *
+   * @remarks
+   * - Requires authentication (Bearer token automatically added by authInterceptor)
+   * - Returns the logged-in user's mentor profile
+   * - Works for pending mentors (before admin approval)
+   * - Does NOT require Mentor role - users can access their mentor profile even while pending approval
+   * - Returns 404 if user doesn't have a mentor profile (IsMentor = false)
+   * - Includes full mentor details including approval status
+   *
+   * @example
+   * ```typescript
+   * // Get current mentor's own profile
+   * this.mentorService.getCurrentMentorProfile().subscribe(
+   *   (mentor) => {
+   *     this.myProfile = mentor;
+   *     console.log('Approval status:', mentor.approvalStatus);
+   *     console.log('Expertise tags:', mentor.expertiseTags);
+   *   }
+   * );
+   * ```
+   */
+  getCurrentMentorProfile(): Observable<Mentor> {
+    return this.http.get<ApiResponse<Mentor>>(
+      `${this.MENTORS_URL}/me`
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
    * Apply to become a mentor
    *
    * Endpoint: POST /api/mentors
-   * Based on Mentor-Endpoints.md - Endpoint #7
+   * Based on Mentor-Endpoints.md - Endpoint #8
    *
    * @param application - The mentor application data
    * @returns Observable of created Mentor profile
@@ -350,10 +397,98 @@ export class MentorService {
   }
 
   /**
-   * Update mentor profile
+   * Update current mentor's own profile
+   *
+   * Endpoint: PATCH /api/mentors/me
+   * Based on Mentor-Endpoints.md - Endpoint #9
+   *
+   * @param profileUpdate - The profile data to update (all fields optional)
+   * @returns Observable of updated Mentor profile
+   *
+   * @remarks
+   * - Requires authentication (Bearer token automatically added by authInterceptor)
+   * - Updates the logged-in user's mentor profile
+   * - Works for pending mentors (before admin approval)
+   * - Does NOT require Mentor role - users can update their mentor profile even while pending approval
+   * - Returns 404 if user doesn't have a mentor profile (IsMentor = false)
+   * - All fields are optional (PATCH semantics for partial updates)
+   * - Only provided fields will be updated
+   * - User-related fields update ApplicationUser entity (firstName, lastName, phoneNumber, profilePictureUrl)
+   * - Mentor-specific fields update Mentor entity (bio, yearsOfExperience, certifications, rates, isAvailable)
+   * - expertiseTagIds updates the mentor's expertise tags (Skills)
+   * - Empty array [] for expertiseTagIds clears all expertise tags
+   * - categoryIds updates the mentor's categories (1-5 categories)
+   *
+   * Field Requirements:
+   * - firstName: Optional, min 2 chars, max 50 chars
+   * - lastName: Optional, min 2 chars, max 50 chars
+   * - phoneNumber: Optional, valid phone format
+   * - profilePictureUrl: Optional, valid URL, max 200 chars
+   * - bio: Optional, min 50 chars, max 1000 chars
+   * - yearsOfExperience: Optional, min 0, integer
+   * - certifications: Optional, max 500 chars
+   * - rate30Min: Optional, min 0, max 10000
+   * - rate60Min: Optional, min 0, max 10000
+   * - isAvailable: Optional, boolean
+   * - expertiseTagIds: Optional, array of skill IDs (integers), all must be valid active skills
+   * - categoryIds: Optional, array of category IDs (integers), 1-5 categories
+   *
+   * @example
+   * ```typescript
+   * // Update user-related and mentor-specific fields
+   * const updates: MentorProfileUpdate = {
+   *   firstName: 'Sarah',
+   *   lastName: 'Johnson',
+   *   phoneNumber: '+1234567890',
+   *   profilePictureUrl: 'https://example.com/profiles/sarah-new.jpg',
+   *   bio: 'Updated bio with new achievements...',
+   *   yearsOfExperience: 9,
+   *   certifications: 'AWS Certified, Google Cloud Certified',
+   *   rate30Min: 30.00,
+   *   rate60Min: 50.00,
+   *   isAvailable: true,
+   *   expertiseTagIds: [5, 15, 20, 25, 30],  // Array of skill IDs
+   *   categoryIds: [1, 3]  // Array of category IDs
+   * };
+   *
+   * this.mentorService.updateCurrentMentorProfile(updates).subscribe(
+   *   (mentor) => {
+   *     this.notificationService.success('Profile updated successfully!', 'Success');
+   *     console.log('Updated profile:', mentor);
+   *     console.log('Expertise tags:', mentor.expertiseTags);
+   *   }
+   * );
+   *
+   * // Update only specific fields
+   * this.mentorService.updateCurrentMentorProfile({
+   *   bio: 'New bio...',
+   *   isAvailable: false
+   * }).subscribe(mentor => {
+   *   console.log('Profile updated');
+   * });
+   *
+   * // Clear all expertise tags
+   * this.mentorService.updateCurrentMentorProfile({
+   *   expertiseTagIds: []
+   * }).subscribe(mentor => {
+   *   console.log('Expertise tags cleared');
+   * });
+   * ```
+   */
+  updateCurrentMentorProfile(profileUpdate: MentorProfileUpdate): Observable<Mentor> {
+    return this.http.patch<ApiResponse<Mentor>>(
+      `${this.MENTORS_URL}/me`,
+      profileUpdate
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Update mentor profile by ID (Admin only)
    *
    * Endpoint: PATCH /api/mentors/{id}
-   * Based on Mentor-Endpoints.md - Endpoint #8
+   * Based on Mentor-Endpoints.md - Endpoint #8 (Admin functionality)
    *
    * @param mentorId - The ID of the mentor to update (GUID)
    * @param profileUpdate - The profile data to update (all fields optional)
@@ -361,22 +496,30 @@ export class MentorService {
    *
    * @remarks
    * - Requires authentication (Bearer token automatically added by authInterceptor)
-   * - Mentor can only update their own profile
    * - Admin can update any mentor profile
-   * - Returns 403 if trying to update another mentor's profile (non-admin)
+   * - Returns 403 if non-admin tries to update another mentor's profile
    * - Returns 404 if mentor not found
    * - All fields are optional (PATCH semantics for partial updates)
    * - Only provided fields will be updated
+   * - User-related fields update ApplicationUser entity (firstName, lastName, phoneNumber, profilePictureUrl)
+   * - Mentor-specific fields update Mentor entity (bio, yearsOfExperience, certifications, rates, isAvailable)
    * - expertiseTagIds updates the mentor's expertise tags (Skills)
    * - Empty array [] for expertiseTagIds clears all expertise tags
+   * - categoryIds updates the mentor's categories (1-5 categories)
    *
    * Field Requirements:
+   * - firstName: Optional, min 2 chars, max 50 chars
+   * - lastName: Optional, min 2 chars, max 50 chars
+   * - phoneNumber: Optional, valid phone format
+   * - profilePictureUrl: Optional, valid URL, max 200 chars
    * - bio: Optional, min 50 chars, max 1000 chars
    * - yearsOfExperience: Optional, min 0, integer
    * - certifications: Optional, max 500 chars
    * - rate30Min: Optional, min 0, max 10000
    * - rate60Min: Optional, min 0, max 10000
+   * - isAvailable: Optional, boolean
    * - expertiseTagIds: Optional, array of skill IDs (integers), all must be valid active skills
+   * - categoryIds: Optional, array of category IDs (integers), 1-5 categories
    *
    * @example
    * ```typescript
