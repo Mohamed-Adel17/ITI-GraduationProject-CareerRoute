@@ -186,8 +186,11 @@ export class LoginComponent implements OnInit {
    * @param isMentor Whether user has isMentor flag in JWT token
    */
   private checkAndRedirectMentor(isMentor: boolean): void {
-    // If user is not a mentor, navigate to returnUrl
+    // If user is not a mentor, clean up localStorage and navigate to returnUrl
     if (!isMentor) {
+      // Clean up any stale pendingMentorApplication flag from previous sessions
+      // This ensures regular users don't see mentor-related UI
+      localStorage.removeItem('pendingMentorApplication');
       this.router.navigate([this.returnUrl]);
       return;
     }
