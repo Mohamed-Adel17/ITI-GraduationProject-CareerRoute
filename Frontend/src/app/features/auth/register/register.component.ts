@@ -246,13 +246,20 @@ export class RegisterComponent implements OnInit {
           'Welcome!'
         );
 
+        // Store mentor registration intent if user registered as mentor
+        const registerAsMentor = this.registerForm.value.userType === 'mentor';
+        if (registerAsMentor) {
+          localStorage.setItem('pendingMentorApplication', 'true');
+        }
+
         // Email verification is always required
         // Backend automatically sends verification email during registration
         // Navigate to send-email-verification page with email and emailAlreadySent flag
         this.router.navigate(['/auth/send-email-verification'], {
           state: {
             email: response.email || this.registerForm.value.email,
-            emailAlreadySent: true  // Backend already sent the email
+            emailAlreadySent: true,  // Backend already sent the email
+            registerAsMentor: registerAsMentor  // Pass mentor registration flag
           }
         });
       },

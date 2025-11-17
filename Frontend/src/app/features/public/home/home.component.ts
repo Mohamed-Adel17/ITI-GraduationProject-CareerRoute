@@ -27,7 +27,6 @@ import { Category } from '../../../shared/models/category.model';
  * User Journeys:
  * 1. Browse Mentors → /mentors (search/filter)
  * 2. Explore Categories → /categories (category grid)
- * 3. Become a Mentor → /user/apply-mentor (requires auth)
  *
  * Access: Public (no authentication required)
  * Guards: None
@@ -66,14 +65,21 @@ export class HomeComponent implements OnInit, OnDestroy {
   categoriesLoading = false;
 
   /**
-   * Check if current user is already a mentor
+   * Whether to show mentor application reminder banner
+   * Only shown for authenticated users who started mentor registration but didn't complete application
    */
-  get isUserMentor(): boolean {
-    return this.authService.isMentor();
-  }
+  showMentorApplicationBanner = false;
 
   ngOnInit(): void {
     this.loadTopCategories();
+    this.checkPendingMentorApplication();
+
+    // Subscribe to auth state changes to update banner visibility
+    this.authService.authState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.checkPendingMentorApplication();
+      });
   }
 
   ngOnDestroy(): void {
@@ -120,14 +126,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Navigate to mentor application page
-   * Requires authentication - authGuard will handle redirect to login
-   */
-  becomeMentor(): void {
-    this.router.navigate(['/user/apply-mentor']);
-  }
-
-  /**
    * Navigate to category mentors page
    * @param categoryId - Category ID to view mentors for
    */
@@ -145,5 +143,63 @@ export class HomeComponent implements OnInit, OnDestroy {
       return 'No mentors';
     }
     return count === 1 ? '1 mentor' : `${count} mentors`;
+  }
+
+  /**
+   * Check if user has pending mentor application to show reminder banner
+   * Only shown if:
+   * - User is authenticated
+   * - User has pendingMentorApplication flag in localStorage
+   * - User does NOT have isMentor flag in token yet (hasn't submitted application)
+   *
+   * The flag is set when user registers as mentor and is removed when:
+   * - User completes application (mentor-application component)
+   * - User dismisses banner
+   * - User logs in as regular user (cleaned up in login component)
+   */
+  private checkPendingMentorApplication(): void {
+    // Check if user is authenticated
+    if (!this.authService.isAuthenticated()) {
+      this.showMentorApplicationBanner = false;
+      return;
+    }
+
+    // Check localStorage for pending mentor application flag
+    const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
+
+    if (pendingMentorApplication !== 'true') {
+      this.showMentorApplicationBanner = false;
+      return;
+    }
+
+    // Verify user doesn't already have isMentor flag (which means they already applied)
+    const user = this.authService.getUserFromToken();
+    const isMentor = user?.['is_mentor'] === true || user?.['is_mentor'] === 'true' || user?.['isMentor'] === true;
+
+    if (isMentor) {
+      // User already has mentor profile - clean up stale flag and hide banner
+      localStorage.removeItem('pendingMentorApplication');
+      this.showMentorApplicationBanner = false;
+      return;
+    }
+
+    // Show banner - user has flag but no mentor profile yet
+    this.showMentorApplicationBanner = true;
+  }
+
+  /**
+   * Navigate to mentor application form
+   */
+  applyAsMentor(): void {
+    this.router.navigate(['/user/apply-mentor']);
+  }
+
+  /**
+   * Dismiss mentor application banner
+   * Removes the pendingMentorApplication flag from localStorage
+   */
+  dismissMentorApplicationBanner(): void {
+    localStorage.removeItem('pendingMentorApplication');
+    this.showMentorApplicationBanner = false;
   }
 }
