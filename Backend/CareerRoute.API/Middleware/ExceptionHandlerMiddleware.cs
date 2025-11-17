@@ -72,6 +72,25 @@ namespace CareerRoute.API.Middleware
                     response = ApiResponse.Error(emailException.Message, 400);
                     _logger.LogWarning(emailException, $"Send Email exception: {emailException.Message}");
                     break;
+                case PaymentException paymentEx:
+                    var paymentErrorData = new Dictionary<string, string[]>();
+
+                    if (!string.IsNullOrWhiteSpace(paymentEx.PaymentProvider))
+                        paymentErrorData["paymentProvider"] = [paymentEx.PaymentProvider];
+
+                    if (!string.IsNullOrWhiteSpace(paymentEx.PaymentIntentId))
+                        paymentErrorData["paymentIntentId"] = [paymentEx.PaymentIntentId];
+
+                    response = ApiResponse.Error(paymentEx.Message, 400, paymentErrorData);
+
+                    _logger.LogWarning(paymentEx,
+                        "Payment exception from provider {Provider}, IntentId {IntentId}: {Message}",
+                        paymentEx.PaymentProvider,
+                        paymentEx.PaymentIntentId,
+                        paymentEx.Message);
+
+                    break;
+
                 default:
                     var message = _environment.IsDevelopment()
                         ? exception.Message

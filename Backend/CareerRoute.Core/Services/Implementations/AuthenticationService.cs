@@ -12,6 +12,7 @@ using CareerRoute.Core.Extentions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using CareerRoute.Core.Domain.Interfaces.Services;
 
 namespace CareerRoute.Core.Services.Implementations
 {

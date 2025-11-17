@@ -1,6 +1,5 @@
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Interfaces;
-using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
 using CareerRoute.Core.Settings;
 using CareerRoute.Infrastructure.Data;
@@ -10,6 +9,7 @@ using CareerRoute.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using CareerRoute.Core.Domain.Interfaces.Services;
 
 
 namespace CareerRoute.Infrastructure;
@@ -22,6 +22,7 @@ public static class DependencyInjection
     {
         services.Configure<JwtSettings>(configuration.GetSection(nameof(JwtSettings)));
         services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
+        services.Configure<PaymentSettings>(configuration.GetSection(nameof(PaymentSettings)));
         return services;
 
     }
@@ -37,7 +38,6 @@ public static class DependencyInjection
         );
 
         services.AddScoped<ITokenRepository, TokenRepository>();
-        services.AddScoped<IEmailService, SendGridEmailService>();
 
         // Repository Registration
         // Uncomment and add as you create repositories
@@ -45,14 +45,17 @@ public static class DependencyInjection
         services.AddScoped<IMentorRepository, MentorRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ISkillRepository, SkillRepository>();
-        // services.AddScoped<ISessionRepository, SessionRepository>();
+         services.AddScoped<ISessionRepository, SessionRepository>();
+         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
-
         // Infrastructure Service Registration
+        services.AddScoped<IEmailService, SendGridEmailService>();
+        services.AddScoped<IStripePaymentService, StripePaymentService>();
+        services.AddScoped<IPaymobPaymentService, PaymobPaymentService>();
+        services.AddScoped<IPaymentFactory, PaymentFactory>();
+        services.AddHttpClient();
         // Uncomment and add as you create services
-        // services.AddScoped<IEmailService, EmailService>();
-        // services.AddScoped<IPaymentService, StripePaymentService>();
         // services.AddScoped<IStorageService, AzureStorageService>();
 
         // Identity Configuration (if using)

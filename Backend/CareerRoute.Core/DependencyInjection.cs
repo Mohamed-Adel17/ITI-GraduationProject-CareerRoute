@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IMentorService, MentorService>();
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
         // services.AddScoped<ISessionService, SessionService>();
 
         services.AddAutoMapper(options =>

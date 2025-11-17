@@ -769,7 +769,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 - `sessionId` (required): Valid session GUID
 - `paymentMethod` (required): Enum - `Stripe` or `Paymob`
 
-**Success Response (200):**
+**Success Response (201):**
 ```json
 {
   "success": true,
@@ -796,6 +796,19 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
     "statusCode": 400
   }
   ```
+- **400 Bad Request:**
+  ```json
+  {
+    "success": false,
+    "message": "Payment Error",
+    "statusCode": 400,
+    "errors":{
+        "paymentProvider":"Stripe",
+        "paymentIntentId":"222"
+    }
+  }
+  ```
+
 
 - **404 Not Found:**
   ```json

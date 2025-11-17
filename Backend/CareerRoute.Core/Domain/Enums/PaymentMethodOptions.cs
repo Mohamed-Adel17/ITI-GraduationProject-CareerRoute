@@ -11,4 +11,9 @@ namespace CareerRoute.Core.Domain.Enums
         Paymob,
         Stripe
     }
+    public enum PaymobPaymentMethod
+    {
+        Card,
+        Wallet
+    }
 }

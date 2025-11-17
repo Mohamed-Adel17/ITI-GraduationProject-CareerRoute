@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CareerRoute.Core.Services.Interfaces
+namespace CareerRoute.Core.Domain.Interfaces.Services
 {
     public interface IEmailService
     {

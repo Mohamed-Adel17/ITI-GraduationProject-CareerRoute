@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Infrastructure.Data;
 
 namespace CareerRoute.Infrastructure.Repositories
 {
-    internal class SessionRepository
+    public class SessionRepository : GenericRepository<Session>, ISessionRepository
     {
+        public SessionRepository(ApplicationDbContext dbContext) : base(dbContext)
+        {
+        }
     }
 }

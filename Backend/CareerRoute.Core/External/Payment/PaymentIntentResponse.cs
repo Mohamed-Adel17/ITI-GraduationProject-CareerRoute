@@ -1,17 +1,16 @@
 ﻿using CareerRoute.Core.Domain.Enums;
 
-namespace CareerRoute.Core.DTOs.Payments
+namespace CareerRoute.Core.External.Payment
 {
-    public class PaymentIntentResponseDto
+    public class PaymentIntentResponse
     {
+        public bool Success { get; set; }
         public string PaymentIntentId { get; set; } = string.Empty;
         public string ClientSecret { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string Currency { get; set; } = string.Empty;
-        public string SessionId { get; set; } = string.Empty;
-        public PaymentMethodOptions PaymentMethod { get; set; }
+        public string PaymentMethod { get; set; } =string.Empty;
         public PaymobPaymentMethod? PaymobPaymentMethod { get; set; }
-        public PaymentStatusOptions Status { get; set; }
-
+        public string? ErrorMessage { get; set; }
     }
 }
