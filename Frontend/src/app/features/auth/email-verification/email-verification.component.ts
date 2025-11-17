@@ -129,13 +129,17 @@ export class EmailVerificationComponent implements OnInit {
         );
 
         // Check if user registered as mentor and needs to complete application
-        const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
+        // First check the JWT token (source of truth), then fallback to localStorage
+        const isMentor = response.user.isMentor;
 
-        if (pendingMentorApplication === 'true') {
+        if (isMentor) {
+          // User registered as mentor - ensure localStorage flag is set
+          localStorage.setItem('pendingMentorApplication', 'true');
           // Redirect to mentor application form for new mentors
           this.startRedirectCountdown('/user/apply-mentor');
         } else {
-          // Redirect to home page for regular users
+          // User is not a mentor - clean up any stale flag and redirect to home
+          localStorage.removeItem('pendingMentorApplication');
           this.startRedirectCountdown('/');
         }
       },

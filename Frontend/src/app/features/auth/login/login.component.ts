@@ -200,12 +200,16 @@ export class LoginComponent implements OnInit {
       next: (mentorProfile) => {
         // Mentor profile exists - navigate to returnUrl (could be /mentor/profile, etc.)
         console.log('Mentor profile exists, navigating to:', this.returnUrl);
+        // Clean up localStorage flag since application is already submitted
+        localStorage.removeItem('pendingMentorApplication');
         this.router.navigate([this.returnUrl]);
       },
       error: (error) => {
         // If 404, mentor profile doesn't exist - redirect to application form
         if (error.status === 404) {
           console.log('Mentor profile not found - redirecting to application form');
+          // Set localStorage flag to allow access to application form
+          localStorage.setItem('pendingMentorApplication', 'true');
           this.notificationService.info(
             'Please complete your mentor application to get started.',
             'Complete Your Profile'
