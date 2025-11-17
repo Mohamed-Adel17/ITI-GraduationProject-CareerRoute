@@ -64,8 +64,22 @@ export class HomeComponent implements OnInit, OnDestroy {
    */
   categoriesLoading = false;
 
+  /**
+   * Whether to show mentor application reminder banner
+   * Only shown for authenticated users who started mentor registration but didn't complete application
+   */
+  showMentorApplicationBanner = false;
+
   ngOnInit(): void {
     this.loadTopCategories();
+    this.checkPendingMentorApplication();
+
+    // Subscribe to auth state changes to update banner visibility
+    this.authService.authState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.checkPendingMentorApplication();
+      });
   }
 
   ngOnDestroy(): void {
@@ -129,5 +143,46 @@ export class HomeComponent implements OnInit, OnDestroy {
       return 'No mentors';
     }
     return count === 1 ? '1 mentor' : `${count} mentors`;
+  }
+
+  /**
+   * Check if user has pending mentor application to show reminder banner
+   * Only shown if:
+   * - User is authenticated
+   * - User has pendingMentorApplication flag in localStorage
+   *
+   * The flag is set when user registers as mentor and is removed when:
+   * - User completes application (mentor-application component)
+   * - User dismisses banner
+   * - User skips application after email verification
+   */
+  private checkPendingMentorApplication(): void {
+    // Check if user is authenticated
+    if (!this.authService.isAuthenticated()) {
+      this.showMentorApplicationBanner = false;
+      return;
+    }
+
+    // Check localStorage for pending mentor application flag
+    const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
+
+    // Show banner if flag exists
+    this.showMentorApplicationBanner = pendingMentorApplication === 'true';
+  }
+
+  /**
+   * Navigate to mentor application form
+   */
+  applyAsMentor(): void {
+    this.router.navigate(['/user/apply-mentor']);
+  }
+
+  /**
+   * Dismiss mentor application banner
+   * Removes the pendingMentorApplication flag from localStorage
+   */
+  dismissMentorApplicationBanner(): void {
+    localStorage.removeItem('pendingMentorApplication');
+    this.showMentorApplicationBanner = false;
   }
 }
