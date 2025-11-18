@@ -111,10 +111,10 @@ namespace CareerRoute.Core.Services.Implementations
                 Id = Guid.NewGuid().ToString(),
                 SessionId = request.SessionId,
                 PaymentProvider = request.PaymentProvider,
-                PaymentIntentId = providerResponse.PaymentIntentId,
-                ClientSecret = providerResponse.ClientSecret,
+                PaymentIntentId = providerResponse.PaymentIntentId ?? string.Empty,
+                ClientSecret = providerResponse.ClientSecret ?? string.Empty,
                 Amount = session.Price,
-                Currency = providerResponse.Currency,
+                Currency = providerResponse.Currency ?? "USD",
                 Status = PaymentStatusOptions.Pending,
                 PlatformCommission = 0.15m,
                 CreatedAt = DateTime.UtcNow,
@@ -135,7 +135,7 @@ namespace CareerRoute.Core.Services.Implementations
                 Amount = payment.Amount,
                 Currency = payment.Currency,
                 SessionId = payment.SessionId,
-                PaymentMethod = payment.PaymentMethod,
+                PaymentProvider = payment.PaymentProvider,
                 PaymobPaymentMethod = payment.PaymobPaymentMethod,
                 Status = payment.Status
             };
@@ -143,7 +143,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task HandleStripeWebhookAsync(string payload, string signature)
         {
-            var stripeService = _paymentFactory.GetService(PaymentMethodOptions.Stripe);
+            var stripeService = _paymentFactory.GetService(PaymentProviderOptions.Stripe);
             var callbackResult = stripeService.HandleCallback(payload);
 
             await ProcessPaymentCallbackAsync(callbackResult, "Stripe");
@@ -152,7 +152,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task HandlePaymobWebhookAsync(string payload, string signature)
         {
-            var paymobService = _paymentFactory.GetService(PaymentMethodOptions.Paymob);
+            var paymobService = _paymentFactory.GetService(PaymentProviderOptions.Paymob);
             var callbackResult = paymobService.HandleCallback(payload, signature);
 
             await ProcessPaymentCallbackAsync(callbackResult, "Paymob");
@@ -179,7 +179,7 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Session", payment.SessionId);
 
             // Get payment service to verify with provider
-            var paymentService = _paymentFactory.GetService(payment.PaymentMethod);
+            var paymentService = _paymentFactory.GetService(payment.PaymentProvider);
 
 
             // Verify payment status with provider (implementation depends on your provider SDK)

@@ -4,7 +4,7 @@ namespace CareerRoute.Core.Domain.Entities
     public class Payment
     {
 
-        public string Id { get; set; }               
+        public string Id { get; set; } = string.Empty;               
        
         // ---------- Payment Provider ----------
         public PaymentProviderOptions PaymentProvider { get; set; }
