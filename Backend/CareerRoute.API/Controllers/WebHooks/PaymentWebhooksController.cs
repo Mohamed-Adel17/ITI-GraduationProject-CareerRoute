@@ -68,8 +68,8 @@ namespace CareerRoute.API.Controllers.WebHooks
                 var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
 
                 // Paymob might use a different header name for signature/HMAC
-                var paymobSignature = Request.Headers["X-Paymob-Signature"].ToString();
-                //var paymobSignature = Request.Query["hmac"].ToString(); 
+                //var paymobSignature = Request.Headers["X-Paymob-Signature"].ToString();
+                var paymobSignature = Request.Query["hmac"].ToString();
 
                 if (string.IsNullOrEmpty(paymobSignature))
                 {

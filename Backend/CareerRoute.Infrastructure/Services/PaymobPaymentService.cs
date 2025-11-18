@@ -239,7 +239,7 @@ namespace CareerRoute.Infrastructure.Services
                     delivery_needed = false,
                     amount_cents = (int)(request.Amount * 100),
                     currency = request.Currency,
-                    merchant_order_id = request.SessionId
+                    merchant_order_id = $"{request.SessionId}_{Guid.NewGuid()}"
                 };
 
                 var content = new StringContent(

@@ -8,13 +8,13 @@ namespace CareerRoute.Core.Domain.Enums
 {
     public enum PaymentProviderOptions
     {
-        Stripe,
+        Stripe=1,
         Paymob
     }
     
     public enum PaymobPaymentMethodOptions
     {
-        Card,
+        Card=1,
         EWallet
     }
 }

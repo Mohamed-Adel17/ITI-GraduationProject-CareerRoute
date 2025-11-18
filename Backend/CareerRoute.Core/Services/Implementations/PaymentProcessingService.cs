@@ -82,7 +82,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             // Determine currency based on provider
             var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
-            
+
             // Get the appropriate payment service
             var paymentService = _paymentFactory.GetService(request.PaymentProvider);
 
@@ -148,7 +148,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task HandleStripeWebhookAsync(string payload, string signature)
         {
             var stripeService = _paymentFactory.GetService(PaymentProviderOptions.Stripe);
-            var callbackResult = stripeService.HandleCallback(payload);
+            var callbackResult = stripeService.HandleCallback(payload, signature);
 
             await ProcessPaymentCallbackAsync(callbackResult, "Stripe");
             await _paymentRepository.SaveChangesAsync();
@@ -174,8 +174,8 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Payment", request.PaymentIntentId);
 
             // Verify payment is not already confirmed
-            if (payment.Status == PaymentStatusOptions.Confirmed)
-                throw new ConflictException("Payment has already been confirmed");
+            if (payment.Session.Status == SessionStatusOptions.Confirmed)
+                throw new ConflictException("Session has already been confirmed");
             // Verify payment is already Captured
             if (payment.Status != PaymentStatusOptions.Captured)
                 throw new PaymentException("Payment must be captured before it can be confirmed");
@@ -209,7 +209,7 @@ namespace CareerRoute.Core.Services.Implementations
             var mentorPayout = payment.Amount * (1 - payment.PlatformCommission);
 
             // Update payment status
-            payment.Status = PaymentStatusOptions.Captured;
+            //payment.Status = PaymentStatusOptions.Captured;
             payment.UpdatedAt = DateTime.UtcNow;
             payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72); // Release after 72 hours
             _paymentRepository.Update(payment);
@@ -335,6 +335,7 @@ namespace CareerRoute.Core.Services.Implementations
 
                 if (callbackResult.Status == PaymentStatusOptions.Captured)
                 {
+                    payment.PaidAt = DateTime.UtcNow;
                     payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72);
                 }
 
