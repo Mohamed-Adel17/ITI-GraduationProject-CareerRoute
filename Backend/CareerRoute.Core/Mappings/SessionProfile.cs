@@ -40,10 +40,41 @@ namespace CareerRoute.Core.Mappings
                 opt => opt.MapFrom(src =>(src.ScheduledStartTime - DateTime.UtcNow).TotalHours))
                 .ForMember(dest => dest.CanCancel,opt => opt.MapFrom(src =>src.Status == SessionStatusOptions.Confirmed ))
                 .ForMember(dest => dest.CanReschedule,opt => opt.MapFrom(src =>(src.ScheduledStartTime - DateTime.UtcNow).TotalHours > 24 &&src.Status == SessionStatusOptions.Confirmed));
-       
-        
-        
-        
+
+
+            CreateMap<Session, UpCommingSessionsResponseDto>()
+                .ForMember(dest => dest.MenteeId, opt => opt.MapFrom(src => src.MenteeId))
+                .ForMember(dest => dest.MenteeFirstName, opt => opt.MapFrom(src => src.Mentee.FirstName))
+                .ForMember(dest => dest.MenteeLastName, opt => opt.MapFrom(src => src.Mentee.LastName))
+
+                .ForMember(dest => dest.MentorId, opt => opt.MapFrom(src => src.MentorId))
+                .ForMember(dest => dest.MentorFirstName, opt => opt.MapFrom(src => src.Mentor.User.FirstName))
+                .ForMember(dest => dest.MentorLastName, opt => opt.MapFrom(src => src.Mentor.User.LastName))
+                .ForMember(dest => dest.MentorProfilePictureUrl, opt => opt.MapFrom(src => src.Mentor.User.ProfilePictureUrl))
+
+                // Enum to String Mappings
+                .ForMember(dest => dest.SessionType, opt => opt.MapFrom(src => src.SessionType.ToString()))
+                .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+
+                // Computed fields
+                .ForMember(dest => dest.HoursUntilSession, opt => opt.MapFrom(src => //Need To be Background Task
+                (src.ScheduledStartTime - DateTime.UtcNow).TotalHours));
+
+
+            CreateMap<Session, PastSessionsResponseDto >()  
+                .ForMember(dest => dest.MenteeFirstName, opt => opt.MapFrom(src => src.Mentee.FirstName))
+                .ForMember(dest => dest.MenteeLastName, opt => opt.MapFrom(src => src.Mentee.LastName))
+                .ForMember(dest => dest.MentorFirstName,opt => opt.MapFrom(src => src.Mentor.User.FirstName))
+                .ForMember(dest => dest.MentorLastName,opt => opt.MapFrom(src => src.Mentor.User.LastName))
+                .ForMember(dest => dest.MentorProfilePictureUrl, opt => opt.MapFrom(src => src.Mentor.User.ProfilePictureUrl))
+
+                .ForMember(dest => dest.SessionType,opt => opt.MapFrom(src => src.SessionType.ToString()))
+                .ForMember(dest => dest.Duration,opt => opt.MapFrom(src => src.Duration.ToString()))
+                .ForMember(dest => dest.Status,opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.HasReview, opt => opt.MapFrom(src => src.Review != null));
+
+
         }   
     }
 }

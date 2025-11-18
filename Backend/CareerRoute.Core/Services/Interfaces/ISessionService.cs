@@ -1,4 +1,5 @@
-﻿using CareerRoute.Core.DTOs.Sessions;
+﻿using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.DTOs.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +11,14 @@ namespace CareerRoute.Core.Services.Interfaces
     public interface ISessionService
     {
        
-        Task<BookSessionResponseDto> BookSessionByIdAsync(string MenteeId, BookSessionRequestDto dto);
+        Task<BookSessionResponseDto> BookSessionAsync(string MenteeId, BookSessionRequestDto dto);
         Task<SessionDetailsResponseDto> GetSessionDetailsAsync(string sessionId);
+
+        Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync();
+        Task<List<PastSessionsResponseDto>> GetPastSessionsAsync();
+
+
+
 
 
     }

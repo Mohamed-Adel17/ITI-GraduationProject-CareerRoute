@@ -3,6 +3,7 @@ using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using SendGrid.Helpers.Mail;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,6 +35,25 @@ namespace CareerRoute.Infrastructure.Repositories
                 .ThenInclude(m => m.User)   //  Include the User entity inside Mentor
                 .Include(s => s.Payment)
                 .FirstOrDefaultAsync(s => s.Id == sessionId);
+        }
+
+        public async Task<List<Session>> GetUpcomingSessionsAsync() //I think should be 3 functions one for mentor , other for mentee , other for admin 
+        {
+            var now = DateTime.UtcNow;
+
+            return await dbContext.Sessions
+        .Where(s => s.ScheduledStartTime >= now && 
+                    s.Status == SessionStatusOptions.Confirmed || s.Status== SessionStatusOptions.Pending) 
+        .ToListAsync();
+        }
+
+        public async Task<List<Session>> GetPastSessionsAsync() //I think should be 3 functions one for mentor , other for mentee , other for admin 
+        {
+            var now = DateTime.UtcNow;
+
+            return await dbContext.Sessions
+                .Where(s => s.ScheduledStartTime < now)
+                .ToListAsync();
         }
 
 

@@ -8,6 +8,7 @@ using CareerRoute.Core.Extentions;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Validators.Sessions;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -41,7 +42,7 @@ namespace CareerRoute.Core.Services.Implementations
             _bookSessionRequestValidator = bookSessionRequestValidator;
         }
 
-        public async Task<BookSessionResponseDto> BookSessionByIdAsync(string menteeId, BookSessionRequestDto dto)
+        public async Task<BookSessionResponseDto> BookSessionAsync(string menteeId, BookSessionRequestDto dto)
         {
 
             await _bookSessionRequestValidator.ValidateAndThrowCustomAsync(dto);
@@ -112,6 +113,35 @@ namespace CareerRoute.Core.Services.Implementations
 
             var dto = _mapper.Map<SessionDetailsResponseDto>(session);
             return dto;
+        }
+        
+
+        public async Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync()
+        {
+            
+            var allUpcomingSessions = await _sessionRepository.GetUpcomingSessionsAsync();
+
+            //Empty List 
+            if (allUpcomingSessions.Count == 0)
+                throw new NotFoundException("No Upcomming Sessions ");
+
+
+            var response = _mapper.Map<List<UpCommingSessionsResponseDto>>(allUpcomingSessions);
+
+            return response;
+        }
+
+
+        public async Task<List<PastSessionsResponseDto>> GetPastSessionsAsync()
+        {
+            var allPastSessions = await _sessionRepository.GetPastSessionsAsync();
+
+            if (allPastSessions.Count == 0)
+
+                throw new NotFoundException("No Past Sessions ");
+            var response = _mapper.Map<List<PastSessionsResponseDto>>(allPastSessions);
+
+            return response;
         }
     }
 }

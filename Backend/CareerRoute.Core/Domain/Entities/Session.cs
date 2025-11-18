@@ -55,6 +55,8 @@ namespace CareerRoute.Core.Domain.Entities
         public virtual Mentor Mentor { get; set; } = null!;
         public virtual TimeSlot? TimeSlot { get; set; }
         public Payment? Payment { get; set; }
+        public ReviewSession? Review { get; set; }
+
 
     }
 }

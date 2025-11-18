@@ -16,6 +16,9 @@ namespace CareerRoute.Core.Domain.Interfaces
 
         Task <Session?> GetByIdWithRelationsAsync(string sessionId);
 
+        Task<List<Session>> GetUpcomingSessionsAsync();
+        Task<List<Session>> GetPastSessionsAsync();
+
 
     }
 }

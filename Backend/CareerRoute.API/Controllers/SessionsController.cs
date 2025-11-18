@@ -37,7 +37,7 @@ namespace CareerRoute.API.Controllers
 
             _logger.LogInformation("MenteeId {menteeId} requested to update their mentor profile", menteeId);
 
-            var bookedSession = await _sessionService.BookSessionByIdAsync(menteeId, dto);
+            var bookedSession = await _sessionService.BookSessionAsync(menteeId, dto);
 
             return Created(string.Empty, new ApiResponse<BookSessionResponseDto>(
                 bookedSession,
@@ -57,11 +57,7 @@ namespace CareerRoute.API.Controllers
                 throw new UnauthenticatedException("Invalid authentication token");
 
             // Get session details
-            var session = await _sessionService.GetSessionDetailsAsync(id);
-
-            if (session == null)
-                throw new NotFoundException("Session", id);
-
+            var session = await _sessionService.GetSessionDetailsAsync(id);       
             // Check if user is allowed: mentee, mentor, or admin
             var isParticipant = (userRole == "User" && session.MenteeId == userId) ||
                                 (userRole == "Mentor" && session.MentorId == userId) ||
@@ -72,6 +68,53 @@ namespace CareerRoute.API.Controllers
 
             return Ok(new ApiResponse<SessionDetailsResponseDto>(session, "Session retrieved successfully"));
         }
+        [HttpGet("upcoming")]
+        [Authorize(Roles = "User,Mentor")]
+        public async Task<ActionResult> GetUpcomingSessions()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+            }
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} requested upcoming sessions", userId, userRole);
+
+            var upcomingSessions = await _sessionService.GetUpcomingSessionsAsync();
+
+            return Ok(new ApiResponse<List<UpCommingSessionsResponseDto>>(
+                upcomingSessions,
+                "Upcoming sessions retrieved successfully"
+            ));
+        }
+
+        [HttpGet("past")]
+        [Authorize(Roles = "User,Mentor")]
+        public async Task<ActionResult> GetPastSessions()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+            }
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} requested past sessions", userId, userRole);
+
+            // Pass the necessary context (ID and Role) to the service for filtering
+            var pastSessions = await _sessionService.GetPastSessionsAsync();
+
+            return Ok(new ApiResponse<List<PastSessionsResponseDto>>(
+                pastSessions,
+                "Past sessions retrieved successfully"
+            ));
+        }
+
+
+
     }
 
 }
