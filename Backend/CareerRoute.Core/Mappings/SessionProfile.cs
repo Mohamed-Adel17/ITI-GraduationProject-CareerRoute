@@ -1,4 +1,7 @@
 ﻿using AutoMapper;
+using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.DTOs.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +12,38 @@ namespace CareerRoute.Core.Mappings
 {
     public class SessionProfile : Profile
     {
+        public SessionProfile()
+        {
+            CreateMap<BookSessionRequestDto, Session>();
 
+            CreateMap<Session, BookSessionResponseDto>()
+               .ForMember(dest => dest.MenteeFirstName, opt => opt.MapFrom(src => src.Mentee.FirstName))
+               .ForMember(dest => dest.MenteeLastName, opt => opt.MapFrom(src => src.Mentee.LastName))
+               .ForMember(dest => dest.MentorFirstName, opt => opt.MapFrom(src => src.Mentor.User.FirstName))
+               .ForMember(dest => dest.MentorLastName, opt => opt.MapFrom(src => src.Mentor.User.LastName));
+
+
+            CreateMap<Session, SessionDetailsResponseDto>()
+                .ForMember(dest => dest.MenteeFirstName, opt => opt.MapFrom(src => src.Mentee.FirstName))
+                .ForMember(dest => dest.MenteeLastName, opt => opt.MapFrom(src => src.Mentee.LastName))
+                .ForMember(dest => dest.MenteeProfilePictureUrl, opt => opt.MapFrom(src => src.Mentee.ProfilePictureUrl))
+                .ForMember(dest => dest.MentorFirstName, opt => opt.MapFrom(src => src.Mentor.User.FirstName))
+                .ForMember(dest => dest.MentorLastName, opt => opt.MapFrom(src => src.Mentor.User.LastName))
+                .ForMember(dest => dest.MentorProfilePictureUrl, opt => opt.MapFrom(src => src.Mentor.User.ProfilePictureUrl))
+                // Enums → String Otherwise Will Be int
+                .ForMember(dest => dest.SessionType, opt => opt.MapFrom(src => src.SessionType.ToString()))
+                .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.Payment.Status.ToString()))
+                // Computed fields
+                .ForMember(dest => dest.HoursUntilSession, //Need To be Background Task
+                opt => opt.MapFrom(src =>(src.ScheduledStartTime - DateTime.UtcNow).TotalHours))
+                .ForMember(dest => dest.CanCancel,opt => opt.MapFrom(src =>src.Status == SessionStatusOptions.Confirmed ))
+                .ForMember(dest => dest.CanReschedule,opt => opt.MapFrom(src =>(src.ScheduledStartTime - DateTime.UtcNow).TotalHours > 24 &&src.Status == SessionStatusOptions.Confirmed));
+       
+        
+        
+        
+        }   
     }
 }

@@ -1,3 +1,4 @@
+using CareerRoute.Core.Domain.Enums;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
@@ -16,6 +17,8 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime StartDateTime { get; set; }
         
         public int DurationMinutes { get; set; }
+        
+        //Type => OneOnOne / Group 
         
         public bool IsBooked { get; set; } = false;
         
