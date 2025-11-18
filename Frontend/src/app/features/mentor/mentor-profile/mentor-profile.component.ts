@@ -115,8 +115,6 @@ export class MentorProfileComponent implements OnInit, OnDestroy {
 
         // If 404 Not Found, redirect to application form
         if (err.status === 404) {
-          // Set localStorage flag to allow access to application form
-          localStorage.setItem('pendingMentorApplication', 'true');
           this.notificationService.warning(
             'Please complete your mentor application first.',
             'Application Required'

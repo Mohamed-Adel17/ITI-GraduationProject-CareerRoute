@@ -149,15 +149,13 @@ export class HomeComponent implements OnInit, OnDestroy {
    * Check if user has pending mentor application to show reminder banner
    * Only shown if:
    * - User is authenticated
-   * - User has pendingMentorApplication flag in localStorage
+   * - User does NOT have isMentor flag (hasn't applied yet)
+   * - User does NOT have Mentor role (not approved)
    *
-   * The flag is set when user registers as mentor and is removed when:
-   * - User completes application (mentor-application component)
-   * - User dismisses banner
-   * - User logs in as regular user (cleaned up in login component)
-   *
-   * Note: We don't check isMentor flag here because it's set during registration,
-   * not after application submission. The flag is the source of truth for "needs to apply".
+   * Note: Banner is NOT shown for users who:
+   * - Already applied (have isMentor flag)
+   * - Are approved mentors (have Mentor role)
+   * - Are regular users who never intended to become mentors
    */
   private checkPendingMentorApplication(): void {
     // Check if user is authenticated
@@ -166,11 +164,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Check localStorage for pending mentor application flag
-    const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
-
-    // Show banner only if flag exists
-    this.showMentorApplicationBanner = pendingMentorApplication === 'true';
+    // Don't show banner - users should use navigation to apply
+    // The guards will handle proper redirects based on token claims
+    this.showMentorApplicationBanner = false;
   }
 
   /**
@@ -182,10 +178,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   /**
    * Dismiss mentor application banner
-   * Removes the pendingMentorApplication flag from localStorage
    */
   dismissMentorApplicationBanner(): void {
-    localStorage.removeItem('pendingMentorApplication');
     this.showMentorApplicationBanner = false;
   }
 }
