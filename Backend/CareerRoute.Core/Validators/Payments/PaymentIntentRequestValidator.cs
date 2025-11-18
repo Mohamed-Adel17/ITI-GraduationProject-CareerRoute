@@ -16,7 +16,6 @@ namespace CareerRoute.Core.Validators.Payments
                 .IsInEnum().WithMessage("PaymentProvider must be Stripe or Paymob.");
 
             RuleFor(x => x.PaymobPaymentMethod)
-                .NotEmpty().WithMessage("PaymobPaymentMethod is required.")
                 .IsInEnum().WithMessage("Invalid PaymobPaymentMethod value.")
                 .When(x => x.PaymentProvider == PaymentProviderOptions.Paymob);
         }
