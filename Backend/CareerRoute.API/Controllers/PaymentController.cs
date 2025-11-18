@@ -105,5 +105,4 @@ namespace CareerRoute.API.Controllers
         }
 
     }
-
 }

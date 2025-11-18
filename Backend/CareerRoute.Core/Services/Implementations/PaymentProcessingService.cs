@@ -80,14 +80,17 @@ namespace CareerRoute.Core.Services.Implementations
 
 
 
+            // Determine currency based on provider
+            var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
+            
             // Get the appropriate payment service
-            var paymentService = _paymentFactory.GetService(request.PaymentMethod);
+            var paymentService = _paymentFactory.GetService(request.PaymentProvider);
 
             // Create payment intent request
             var paymentIntentRequest = new PaymentIntentRequest
             {
                 Amount = session.Price,
-                Currency = "EGP", // or session.Currency if you have it
+                Currency = currency,
                 SessionId = request.SessionId,
                 MenteeEmail = mentee.Email,
                 MenteeFirstName = mentee.FirstName,
@@ -110,11 +113,12 @@ namespace CareerRoute.Core.Services.Implementations
                 Id = Guid.NewGuid().ToString(),
                 SessionId = request.SessionId,
                 MenteeId = mentee.Id,
-                PaymentMethod = request.PaymentMethod,
-                PaymentIntentId = providerResponse.PaymentIntentId,
-                ClientSecret = providerResponse.ClientSecret,
+                PaymentProvider = request.PaymentProvider,
+                PaymobPaymentMethod = request.PaymobPaymentMethod,
+                PaymentIntentId = providerResponse.PaymentIntentId ?? string.Empty,
+                ClientSecret = providerResponse.ClientSecret ?? string.Empty,
                 Amount = session.Price,
-                Currency = providerResponse.Currency,
+                Currency = providerResponse.Currency ?? currency,
                 Status = PaymentStatusOptions.Pending,
                 PlatformCommission = 0.15m,
                 CreatedAt = DateTime.UtcNow,
@@ -135,7 +139,7 @@ namespace CareerRoute.Core.Services.Implementations
                 Amount = payment.Amount,
                 Currency = payment.Currency,
                 SessionId = payment.SessionId,
-                PaymentMethod = payment.PaymentMethod,
+                PaymentProvider = payment.PaymentProvider,
                 PaymobPaymentMethod = payment.PaymobPaymentMethod,
                 Status = payment.Status
             };
@@ -143,7 +147,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task HandleStripeWebhookAsync(string payload, string signature)
         {
-            var stripeService = _paymentFactory.GetService(PaymentMethodOptions.Stripe);
+            var stripeService = _paymentFactory.GetService(PaymentProviderOptions.Stripe);
             var callbackResult = stripeService.HandleCallback(payload);
 
             await ProcessPaymentCallbackAsync(callbackResult, "Stripe");
@@ -152,7 +156,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task HandlePaymobWebhookAsync(string payload, string signature)
         {
-            var paymobService = _paymentFactory.GetService(PaymentMethodOptions.Paymob);
+            var paymobService = _paymentFactory.GetService(PaymentProviderOptions.Paymob);
             var callbackResult = paymobService.HandleCallback(payload, signature);
 
             await ProcessPaymentCallbackAsync(callbackResult, "Paymob");
@@ -185,7 +189,7 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Session", payment.SessionId);
 
             // Get payment service to verify with provider
-            var paymentService = _paymentFactory.GetService(payment.PaymentMethod);
+            var paymentService = _paymentFactory.GetService(payment.PaymentProvider);
 
 
             // Verify payment status with provider (implementation depends on your provider SDK)
@@ -207,7 +211,7 @@ namespace CareerRoute.Core.Services.Implementations
             // Update payment status
             payment.Status = PaymentStatusOptions.Captured;
             payment.UpdatedAt = DateTime.UtcNow;
-            payment.PaymentReleaseDate = DateTime.UtcNow.AddDays(7); // Release after 7 days
+            payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72); // Release after 72 hours
             _paymentRepository.Update(payment);
             // Update session status
             session.Status = SessionStatusOptions.Confirmed;
@@ -331,7 +335,7 @@ namespace CareerRoute.Core.Services.Implementations
 
                 if (callbackResult.Status == PaymentStatusOptions.Captured)
                 {
-                    payment.PaymentReleaseDate = DateTime.UtcNow.AddDays(7);
+                    payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72);
                 }
 
                 _paymentRepository.Update(payment);

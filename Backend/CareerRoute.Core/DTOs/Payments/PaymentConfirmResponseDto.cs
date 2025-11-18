@@ -10,7 +10,7 @@ namespace CareerRoute.Core.DTOs.Payments
         public decimal Amount { get; set; }
         public decimal PlatformCommission { get; set; }
         public decimal MentorPayoutAmount { get; set; }
-        public PaymentMethodOptions PaymentMethod { get; set; }
+        public PaymentProviderOptions PaymentProvider { get; set; }
         public PaymentStatusOptions Status { get; set; }
         public string TransactionId { get; set; } = string.Empty;
         public DateTime PaidAt { get; set; }

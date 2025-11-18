@@ -9,7 +9,7 @@ namespace CareerRoute.API.Controllers.WebHooks
     /// This controller does NOT require authentication as it receives callbacks from external services
     /// </summary>
     [ApiController]
-    [Route("api/webhooks/payments")]
+    [Route("api/payments/webhooks")]
     public class PaymentWebhooksController : ControllerBase
     {
         private readonly IPaymentProcessingService _paymentService;

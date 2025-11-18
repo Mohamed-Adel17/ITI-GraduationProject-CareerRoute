@@ -781,13 +781,19 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ```json
 {
   "sessionId": "44444444-e29b-41d4-a716-446655440014",
-  "paymentMethod": "Stripe"
+  "paymentProvider": "Stripe",
+  "paymobPaymentMethod": "Card"
 }
 ```
 
 **Field Requirements:**
 - `sessionId` (required): Valid session GUID
-- `paymentMethod` (required): Enum - `Stripe` or `Paymob`
+- `paymentProvider` (required): Enum - `Stripe` or `Paymob`
+- `paymobPaymentMethod` (optional): Enum - `Card` or `EWallet` (required when paymentProvider = Paymob)
+
+**Payment Provider Logic:**
+- When `paymentProvider` = `Stripe`: Currency = USD, supports international card payments
+- When `paymentProvider` = `Paymob`: Currency = EGP, supports local Egyptian payment methods
 
 **Success Response (201):**
 ```json
@@ -800,7 +806,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
     "amount": 45.00,
     "currency": "USD",
     "sessionId": "44444444-e29b-41d4-a716-446655440014",
-    "paymentMethod": "Stripe",
+    "paymentProvider": "Stripe",
     "status": "RequiresPaymentMethod"
   }
 }
@@ -877,7 +883,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
     "amount": 45.00,
     "platformCommission": 6.75,
     "mentorPayoutAmount": 38.25,
-    "paymentMethod": "Visa",
+    "paymentProvider": "Stripe",
     "status": "Captured",
     "transactionId": "txn_1234567890abcdef",
     "paidAt": "2025-11-09T10:35:00Z",
@@ -956,7 +962,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
         "mentorName": "Sarah Johnson",
         "sessionTopic": "System Design Interview Preparation",
         "amount": 45.00,
-        "paymentMethod": "Visa",
+        "paymentProvider": "Stripe",
         "status": "Captured",
         "transactionId": "txn_1234567890abcdef",
         "paidAt": "2025-11-09T10:35:00Z",
@@ -969,7 +975,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
         "mentorName": "Michael Chen",
         "sessionTopic": "Career Strategy",
         "amount": 35.00,
-        "paymentMethod": "Meeza",
+        "paymentProvider": "Paymob",
         "status": "Refunded",
         "transactionId": "txn_9876543210zyxwvu",
         "paidAt": "2025-10-01T14:20:00Z",
@@ -1099,7 +1105,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
   "amount": "decimal",
   "platformCommission": "decimal",
   "mentorPayoutAmount": "decimal",
-  "paymentMethod": "string (enum: Visa, MasterCard, Meeza, InstaPay, VodafoneCash, PayPal)",
+  "paymentProvider": "string (enum: Stripe, Paymob)",
   "status": "string (enum: Pending, Authorized, Captured, Refunded, Failed)",
   "transactionId": "string",
   "refundAmount": "decimal | null",
@@ -1142,8 +1148,11 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 **PaymentStatus:**
 `Pending | Authorized | Captured | Refunded | Failed`
 
-**PaymentMethod:**
-`Visa | MasterCard | Meeza | InstaPay | VodafoneCash | PayPal`
+**PaymentProvider:**
+`Stripe | Paymob`
+
+**PaymobPaymentMethod:**
+`Card | EWallet`
 
 **Duration:**
 `ThirtyMinutes | SixtyMinutes`
@@ -1179,7 +1188,8 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ### Payment
 - amount: Must match session price (rate30Min or rate60Min)
 - Platform commission: Always 15% of amount
-- Payment method: Must be supported enum value
+- Payment provider: Must be Stripe or Paymob
+- Paymob payment method: Required when provider = Paymob (Card or EWallet)
 
 ---
 

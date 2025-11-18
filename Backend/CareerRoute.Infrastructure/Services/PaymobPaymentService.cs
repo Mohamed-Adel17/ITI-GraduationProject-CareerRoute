@@ -296,8 +296,8 @@ namespace CareerRoute.Infrastructure.Services
             {
                 var integrationId = request.PaymentMethod switch
                 {
-                    PaymobPaymentMethod.Wallet => _paymentSettings.Paymob.WalletIntegrationId,
-                    PaymobPaymentMethod.Card => _paymentSettings.Paymob.IntegrationId,
+                    PaymobPaymentMethodOptions.EWallet => _paymentSettings.Paymob.WalletIntegrationId,
+                    PaymobPaymentMethodOptions.Card => _paymentSettings.Paymob.IntegrationId,
                     _ => _paymentSettings.Paymob.IntegrationId
                 };
 

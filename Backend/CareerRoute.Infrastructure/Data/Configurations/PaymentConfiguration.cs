@@ -26,7 +26,7 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                 .HasPrecision(5, 2);
 
             // Make Enums Stored as string 
-            builder.Property(p => p.PaymentMethod)
+            builder.Property(p => p.PaymentProvider)
                 .HasConversion<string>();
 
             builder.Property(p => p.Status)

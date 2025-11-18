@@ -32,7 +32,7 @@ namespace CareerRoute.Core.Mappings
             CreateMap<Payment, PaymentHistroyItemResponseDto>()
                 .ForMember(dest => dest.MentorName, opt => opt.MapFrom(src => src.Session.Mentor.User.FullName))
                 .ForMember(dest => dest.SessionTopic, opt => opt.MapFrom(src => src.Session.Topic))
-                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
+                .ForMember(dest => dest.PaymentProvider, opt => opt.MapFrom(src => src.PaymentProvider.ToString()))
                 .ForMember(dest => dest.TransactionId, opt => opt.MapFrom(src => src.ProviderTransactionId));
         }
     }
