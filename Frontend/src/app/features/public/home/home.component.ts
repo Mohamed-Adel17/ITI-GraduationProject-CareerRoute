@@ -15,7 +15,7 @@ import { Category } from '../../../shared/models/category.model';
  * Sections (Phase 1 - MVP):
  * - Hero Section: Background image, headline, CTAs, trust indicators
  * - How It Works: 3-step process explanation
- * - Browse Categories: Top 8 categories linking to /categories
+ * - Browse Categories: Top 8 categories linking to /mentors with category filter
  * - Final CTA: Conversion section before footer
  *
  * Future sections (Phase 2):
@@ -26,7 +26,8 @@ import { Category } from '../../../shared/models/category.model';
  *
  * User Journeys:
  * 1. Browse Mentors → /mentors (search/filter)
- * 2. Explore Categories → /categories (category grid)
+ * 2. Browse All Categories → /categories (category grid)
+ * 3. View Category Mentors → /mentors?categoryId={id}&categoryName={name}
  *
  * Access: Public (no authentication required)
  * Guards: None
@@ -64,22 +65,8 @@ export class HomeComponent implements OnInit, OnDestroy {
    */
   categoriesLoading = false;
 
-  /**
-   * Whether to show mentor application reminder banner
-   * Only shown for authenticated users who started mentor registration but didn't complete application
-   */
-  showMentorApplicationBanner = false;
-
   ngOnInit(): void {
     this.loadTopCategories();
-    this.checkPendingMentorApplication();
-
-    // Subscribe to auth state changes to update banner visibility
-    this.authService.authState$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.checkPendingMentorApplication();
-      });
   }
 
   ngOnDestroy(): void {
@@ -126,11 +113,21 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Navigate to category mentors page
-   * @param categoryId - Category ID to view mentors for
+   * Navigate to mentor list with category filter
+   * @param category - Category to view mentors for
    */
-  viewCategory(categoryId: number): void {
-    this.router.navigate(['/categories', categoryId, 'mentors']);
+  viewCategory(category: Category): void {
+    if (!category?.id) {
+      console.error('Invalid category selected');
+      return;
+    }
+
+    // Navigate to mentor list with category filter
+    this.router.navigate(['/mentors'], {
+      queryParams: {
+        categoryId: category.id,
+      }
+    });
   }
 
   /**
@@ -143,43 +140,5 @@ export class HomeComponent implements OnInit, OnDestroy {
       return 'No mentors';
     }
     return count === 1 ? '1 mentor' : `${count} mentors`;
-  }
-
-  /**
-   * Check if user has pending mentor application to show reminder banner
-   * Only shown if:
-   * - User is authenticated
-   * - User does NOT have isMentor flag (hasn't applied yet)
-   * - User does NOT have Mentor role (not approved)
-   *
-   * Note: Banner is NOT shown for users who:
-   * - Already applied (have isMentor flag)
-   * - Are approved mentors (have Mentor role)
-   * - Are regular users who never intended to become mentors
-   */
-  private checkPendingMentorApplication(): void {
-    // Check if user is authenticated
-    if (!this.authService.isAuthenticated()) {
-      this.showMentorApplicationBanner = false;
-      return;
-    }
-
-    // Don't show banner - users should use navigation to apply
-    // The guards will handle proper redirects based on token claims
-    this.showMentorApplicationBanner = false;
-  }
-
-  /**
-   * Navigate to mentor application form
-   */
-  applyAsMentor(): void {
-    this.router.navigate(['/user/apply-mentor']);
-  }
-
-  /**
-   * Dismiss mentor application banner
-   */
-  dismissMentorApplicationBanner(): void {
-    this.showMentorApplicationBanner = false;
   }
 }
