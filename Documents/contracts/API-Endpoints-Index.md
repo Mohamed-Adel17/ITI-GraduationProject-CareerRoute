@@ -1,6 +1,6 @@
 # API Endpoints Documentation Index
 
-**Last Updated:** 2025-11-16  
+**Last Updated:** 2025-11-19
 **Base URL:** `http://localhost:5000/api`
 
 ---
@@ -97,7 +97,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 ---
 
-### Sessions (8 endpoints)
+### Sessions (10 endpoints)
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
@@ -109,6 +109,8 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies<br/>Releases TimeSlot |
 | `POST` | `/api/sessions/{id}/join` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#7-join-session-get-video-link)** | ✅ Authoritative<br/>Get video conference link |
 | `PATCH` | `/api/sessions/{id}/complete` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#8-complete-session)** | ✅ Authoritative<br/>Trigger payment release |
+| `GET` | `/api/sessions/{id}/recording` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#12-get-session-recording)** | ✅ Authoritative<br/>🎥 Zoom recording access |
+| `GET` | `/api/sessions/{id}/transcript` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#13-get-session-transcript)** | ✅ Authoritative<br/>📝 AI transcript access |
 
 ---
 
@@ -227,10 +229,10 @@ Mentor-Endpoints.md (REFERENCES)
 | Skills | 5 | 2 | 0 | 3 | 0 |
 | Mentors | 10 | 4 | 3 | 3 | 0 |
 | Users | 6 | 0 | 4 | 2 | 0 |
-| Sessions | 8 | 0 | 8 | 0 | 0 |
+| Sessions | 10 | 0 | 10 | 0 | 0 |
 | Payments | 3 | 0 | 3 | 0 | 0 |
 | Webhooks | 2 | 0 | 0 | 0 | 2 |
-| **TOTAL** | **48** | **15** | **19** | **12** | **2** |
+| **TOTAL** | **49** | **15** | **20** | **12** | **2** |
 
 **Notes:**
 - **System**: Webhook endpoints called by payment gateways (Stripe, Paymob), not by frontend applications
@@ -538,10 +540,10 @@ Mentor-Endpoints.md (REFERENCES)
 4. Update the statistics section
 5. Add to Common Use Cases if applicable
 
-**Last Review:** 2025-11-16  
+**Last Review:** 2025-11-19
 
 ---
 
-**Total Documented Endpoints:** 48  
-**Total Contract Files:** 6  
+**Total Documented Endpoints:** 49
+**Total Contract Files:** 6
 **Documentation Status:** ✅ Complete & Synchronized

@@ -76,7 +76,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 **Request Body:**
 ```json
 {
-  "timeSlotId": 123,
+  "timeSlotId": "ts_123",
   "topic": "System Design Interview Preparation",
   "notes": "Focusing on distributed systems and scalability patterns"
 }
@@ -102,7 +102,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
     "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
     "mentorFirstName": "Sarah",
     "mentorLastName": "Johnson",
-    "timeSlotId": 123,
+    "timeSlotId": "ts_123",
     "sessionType": "OneOnOne",
     "duration": "SixtyMinutes",
     "scheduledStartTime": "2025-11-15T14:00:00Z",
@@ -1293,7 +1293,7 @@ Authorization: Bearer {access-token}
 Content-Type: application/json
 
 {
-  "timeSlotId": 123,
+  "timeSlotId": "ts_123",
   "topic": "System Design Interview Preparation",
   "notes": "Focusing on distributed systems"
 }
