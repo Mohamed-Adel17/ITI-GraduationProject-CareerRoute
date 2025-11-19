@@ -5,6 +5,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { CategoryService } from '../../../core/services/category.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Category } from '../../../shared/models/category.model';
+import { UserRole } from '../../../shared/models/user.model';
 
 /**
  * HomeComponent - Landing Page
@@ -65,6 +66,32 @@ export class HomeComponent implements OnInit, OnDestroy {
    */
   categoriesLoading = false;
 
+  /**
+   * Determines whether to show the "Become a Mentor" button
+   * Shows if user is authenticated AND (has isMentor flag OR doesn't have Mentor role yet)
+   * Hides if user is not authenticated OR already has Mentor role (approved)
+   */
+  get showBecomeAMentorButton(): boolean {
+    // Only show for authenticated users
+    if (!this.authService.isAuthenticated()) {
+      return false;
+    }
+
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      return false;
+    }
+
+    // Show button if:
+    // 1. User has isMentor flag (registered as mentor but not submitted application OR submitted but not approved)
+    // 2. User doesn't have Mentor role yet (not approved)
+    const hasIsMentorFlag = this.authService.isMentor();
+    const hasMentorRole = this.authService.hasRole(UserRole.Mentor);
+
+    // Show if user is a mentor (isMentor=true) but not approved yet (no Mentor role)
+    return hasIsMentorFlag && !hasMentorRole;
+  }
+
   ngOnInit(): void {
     this.loadTopCategories();
   }
@@ -102,6 +129,14 @@ export class HomeComponent implements OnInit, OnDestroy {
    */
   browseMentors(): void {
     this.router.navigate(['/mentors']);
+  }
+
+  /**
+   * Navigate to mentor application page
+   * Requires authentication (protected by authGuard on route)
+   */
+  becomeMentor(): void {
+    this.router.navigate(['/user/apply-mentor']);
   }
 
   /**
