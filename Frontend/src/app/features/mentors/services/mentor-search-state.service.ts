@@ -298,6 +298,9 @@ export class MentorSearchStateService implements OnDestroy {
         this.totalCountSubject$.next(totalCount);
         this.loadingSubject$.next(false);
 
+        // Clear error on successful response
+        this.errorSubject$.next(null);
+
         // Sync to URL if enabled
         if (this.urlSyncEnabled) {
           this.syncStateToUrl();

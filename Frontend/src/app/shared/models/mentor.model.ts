@@ -16,11 +16,12 @@ import { Skill } from './skill.model';
 
 /**
  * Mentor approval status enum
+ * Backend sends numeric values: 0 = Pending, 1 = Approved, 2 = Rejected
  */
 export enum MentorApprovalStatus {
-  Pending = 'Pending',
-  Approved = 'Approved',
-  Rejected = 'Rejected'
+  Pending = 0,
+  Approved = 1,
+  Rejected = 2
 }
 
 /**
@@ -205,14 +206,29 @@ export interface MentorDetail {
 /**
  * Mentor profile update data (UpdateMentorProfileDto)
  * All fields are optional - only provided fields will be updated
+ * Based on Mentor-Endpoints.md - Endpoint #9: PATCH /api/mentors/me
+ *
+ * @remarks
+ * - User-related fields update the ApplicationUser entity (firstName, lastName, phoneNumber, profilePictureUrl)
+ * - Mentor-specific fields update the Mentor entity (bio, yearsOfExperience, certifications, rates, isAvailable, expertiseTagIds, categoryIds)
+ * - Empty array [] for expertiseTagIds clears all expertise tags
  */
 export interface MentorProfileUpdate {
+  // User-related fields
+  firstName?: string; // Min 2 chars, max 50 chars
+  lastName?: string; // Min 2 chars, max 50 chars
+  phoneNumber?: string; // Valid phone number format
+  profilePictureUrl?: string; // Valid URL format, max 200 chars
+
+  // Mentor-specific fields
   bio?: string; // Min 50 chars, max 1000 chars
   yearsOfExperience?: number; // Min 0, integer
   certifications?: string; // Max 500 chars
   rate30Min?: number; // Min 0, max 10000
   rate60Min?: number; // Min 0, max 10000
+  isAvailable?: boolean; // Availability status
   expertiseTagIds?: number[]; // Array of skill IDs, empty array [] clears all
+  categoryIds?: number[]; // Array of category IDs, 1-5 categories
 }
 
 /**
@@ -418,6 +434,23 @@ export function getApprovalStatusColor(status: MentorApprovalStatus): string {
       return 'danger'; // Red
     default:
       return 'secondary'; // Gray
+  }
+}
+
+/**
+ * Helper function to get approval status display text
+ * Converts numeric enum value to readable string
+ */
+export function getApprovalStatusText(status: MentorApprovalStatus): string {
+  switch (status) {
+    case MentorApprovalStatus.Approved:
+      return 'Approved';
+    case MentorApprovalStatus.Pending:
+      return 'Pending';
+    case MentorApprovalStatus.Rejected:
+      return 'Rejected';
+    default:
+      return 'Unknown';
   }
 }
 

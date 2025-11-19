@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LoginRequest } from '../../../shared/models/auth.model';
 
@@ -39,6 +40,8 @@ export class LoginComponent implements OnInit {
   errorMessage: string | null = null;
   showPassword = false;
   returnUrl: string = '/';
+
+  private readonly mentorService = inject(MentorService);
 
   constructor(
     private fb: FormBuilder,
@@ -129,8 +132,8 @@ export class LoginComponent implements OnInit {
           'Login Successful'
         );
 
-        // Navigate to returnUrl or dashboard
-        this.router.navigate([this.returnUrl]);
+        // Check if user registered as mentor but hasn't completed application
+        this.checkAndRedirectMentor(response.user.isMentor);
       },
       error: (error) => {
         // Login failed
@@ -176,6 +179,49 @@ export class LoginComponent implements OnInit {
       state: { email }
     });
     this.loading = false;
+  }
+
+  /**
+   * Checks if user registered as mentor and redirects appropriately
+   * @param isMentor Whether user has isMentor flag in JWT token
+   */
+  private checkAndRedirectMentor(isMentor: boolean): void {
+    // If user is not a mentor, clean up localStorage and navigate to returnUrl
+    if (!isMentor) {
+      // Clean up any stale pendingMentorApplication flag from previous sessions
+      // This ensures regular users don't see mentor-related UI
+      localStorage.removeItem('pendingMentorApplication');
+      this.router.navigate([this.returnUrl]);
+      return;
+    }
+
+    // User registered as mentor - check if they have a mentor profile
+    this.mentorService.getCurrentMentorProfile().subscribe({
+      next: (mentorProfile) => {
+        // Mentor profile exists - navigate to returnUrl (could be /mentor/profile, etc.)
+        console.log('Mentor profile exists, navigating to:', this.returnUrl);
+        // Clean up localStorage flag since application is already submitted
+        localStorage.removeItem('pendingMentorApplication');
+        this.router.navigate([this.returnUrl]);
+      },
+      error: (error) => {
+        // If 404, mentor profile doesn't exist - redirect to application form
+        if (error.status === 404) {
+          console.log('Mentor profile not found - redirecting to application form');
+          // Set localStorage flag to allow access to application form
+          localStorage.setItem('pendingMentorApplication', 'true');
+          this.notificationService.info(
+            'Please complete your mentor application to get started.',
+            'Complete Your Profile'
+          );
+          this.router.navigate(['/user/apply-mentor']);
+        } else {
+          // Other error - just navigate to returnUrl
+          console.error('Error checking mentor profile:', error);
+          this.router.navigate([this.returnUrl]);
+        }
+      }
+    });
   }
 
   /**

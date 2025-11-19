@@ -1,4 +1,5 @@
 ﻿using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,15 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             return await dbContext.Categories
                 .AnyAsync(c => c.Name.ToLower() == name.ToLower());
+        }
+
+        public async Task<Dictionary<int, int>> GetMentorCountsAsync()
+        {
+            return await dbContext.MentorCategories
+                .Where(mc => mc.Mentor.ApprovalStatus == MentorApprovalStatus.Approved)
+                .GroupBy(mc => mc.CategoryId)
+                .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.CategoryId, x => x.Count);
         }
     }
 }

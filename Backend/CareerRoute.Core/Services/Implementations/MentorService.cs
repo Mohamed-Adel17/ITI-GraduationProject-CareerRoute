@@ -27,6 +27,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IMentorRepository _mentorRepository;
         private readonly IUserRepository _userRepository;
         private readonly ISkillService _skillService;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IValidator<CreateMentorProfileDto> _createValidator;
         private readonly IValidator<UpdateMentorProfileDto> _updateValidator;
         private readonly IValidator<RejectMentorDto> _rejectValidator;
@@ -36,6 +37,7 @@ namespace CareerRoute.Core.Services.Implementations
             IMentorRepository mentorRepository,
             IUserRepository userRepository,
             ISkillService skillService,
+            ICategoryRepository categoryRepository,
             IMapper mapper,
             ILogger<MentorService> logger,
             IValidator<CreateMentorProfileDto> createValidator,
@@ -46,6 +48,7 @@ namespace CareerRoute.Core.Services.Implementations
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
             _skillService = skillService;
+            _categoryRepository = categoryRepository;
             _mapper = mapper;
             _logger = logger;
             _createValidator = createValidator;
@@ -128,9 +131,55 @@ namespace CareerRoute.Core.Services.Implementations
             if(updatedDto.IsAvailable.HasValue)
                 mentor.IsAvailable = updatedDto.IsAvailable.Value;
 
-            // TODO: Handle CategoryIds when MentorCategory junction table is implemented
-            // if (updateDto.CategoryIds != null && updateDto.CategoryIds.Any())
-            //     await UpdateMentorCategories(mentorId, updateDto.CategoryIds);
+            // Update mentor categories if provided
+            if (updatedDto.CategoryIds != null)
+            {
+                // Validate category IDs
+                if (updatedDto.CategoryIds.Any())
+                {
+                    var validCategories = await _categoryRepository.GetAllActiveAsync();
+                    var validCategoryIds = validCategories.Select(c => c.Id).ToList();
+                    var invalidIds = updatedDto.CategoryIds.Except(validCategoryIds).ToList();
+                    
+                    if (invalidIds.Any())
+                    {
+                        throw new Exceptions.ValidationException(new Dictionary<string, string[]>
+                        {
+                            ["CategoryIds"] = new[] { $"One or more category IDs are invalid or inactive: {string.Join(", ", invalidIds)}" }
+                        });
+                    }
+                }
+                
+                // Remove existing categories
+                var existingCategories = mentor.MentorCategories.ToList();
+                foreach (var mentorCategory in existingCategories)
+                {
+                    mentor.MentorCategories.Remove(mentorCategory);
+                }
+                
+                // Add new categories
+                foreach (var categoryId in updatedDto.CategoryIds)
+                {
+                    mentor.MentorCategories.Add(new MentorCategory
+                    {
+                        MentorId = mentorId,
+                        CategoryId = categoryId
+                    });
+                }
+            }
+
+            // Update User-related fields if provided
+            if (updatedDto.FirstName != null)
+                mentor.User.FirstName = updatedDto.FirstName;
+                
+            if (updatedDto.LastName != null)
+                mentor.User.LastName = updatedDto.LastName;
+                
+            if (updatedDto.PhoneNumber != null)
+                mentor.User.PhoneNumber = updatedDto.PhoneNumber;
+                
+            if (updatedDto.ProfilePictureUrl != null)
+                mentor.User.ProfilePictureUrl = updatedDto.ProfilePictureUrl;
 
             mentor.UpdatedAt = DateTime.UtcNow;
             _mentorRepository.Update(mentor);
@@ -171,6 +220,19 @@ namespace CareerRoute.Core.Services.Implementations
                 }
             }
 
+            // Set IsMentor flag if not already set
+            if (!user.IsMentor)
+            {
+                user.IsMentor = true;
+                var userUpdateResult = await _userManager.UpdateAsync(user);
+                if (!userUpdateResult.Succeeded)
+                {
+                    var errors = string.Join(", ", userUpdateResult.Errors.Select(e => e.Description));
+                    throw new BusinessException($"Failed to update user IsMentor flag: {errors}");
+                }
+                _logger.LogInformation("IsMentor flag set to true for user {UserId} during mentor application", userId);
+            }
+
             var mentor = new Mentor
             {
                 Id = userId, // Same as User ID (one-to-one relationship)
@@ -208,8 +270,33 @@ namespace CareerRoute.Core.Services.Implementations
                 await _userRepository.SaveChangesAsync();
             }
 
-            // TODO: Handle CategoryIds when MentorCategory junction table is implemented
-            // await AssignMentorCategories(userId, createDto.CategoryIds);
+            // Assign categories to mentor if provided
+            if (createdDto.CategoryIds != null && createdDto.CategoryIds.Any())
+            {
+                // Validate category IDs
+                var validCategories = await _categoryRepository.GetAllActiveAsync();
+                var validCategoryIds = validCategories.Select(c => c.Id).ToList();
+                var invalidIds = createdDto.CategoryIds.Except(validCategoryIds).ToList();
+                
+                if (invalidIds.Any())
+                {
+                    throw new Exceptions.ValidationException(new Dictionary<string, string[]>
+                    {
+                        ["CategoryIds"] = new[] { $"One or more category IDs are invalid or inactive: {string.Join(", ", invalidIds)}" }
+                    });
+                }
+                
+                foreach (var categoryId in createdDto.CategoryIds)
+                {
+                    mentor.MentorCategories.Add(new MentorCategory
+                    {
+                        MentorId = userId,
+                        CategoryId = categoryId
+                    });
+                }
+                await _mentorRepository.SaveChangesAsync();
+            }
+            
             _logger.LogInformation("Mentor profile created successfully for user ID: {UserId}", userId);
 
             var createdMentor = await _mentorRepository.GetMentorWithUserByIdAsync(userId);
@@ -309,6 +396,19 @@ namespace CareerRoute.Core.Services.Implementations
                     throw new BusinessException("Failed to assign Mentor role");
                 }
                 _logger.LogInformation("Mentor role assigned to user {UserId}", user.Id);
+            }
+
+            // Ensure IsMentor flag is set (should already be true from registration or application)
+            if (!user.IsMentor)
+            {
+                user.IsMentor = true;
+                var userUpdateResult = await _userManager.UpdateAsync(user);
+                if (!userUpdateResult.Succeeded)
+                {
+                    var errors = string.Join(", ", userUpdateResult.Errors.Select(e => e.Description));
+                    throw new BusinessException($"Failed to update user IsMentor flag: {errors}");
+                }
+                _logger.LogWarning("IsMentor flag was not set for user {UserId}, set during approval", user.Id);
             }
 
             _mentorRepository.Update(mentor);

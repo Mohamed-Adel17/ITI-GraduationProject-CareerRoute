@@ -9,5 +9,6 @@ namespace CareerRoute.Core.Domain.Interfaces
         Task<Category?> GetByIdWithSkillsAsync(int id);
         Task<bool> ExistsAsync(string name);
         Task<Category?> GetByIdAsync(int id);
+        Task<Dictionary<int, int>> GetMentorCountsAsync();
     }
 }
