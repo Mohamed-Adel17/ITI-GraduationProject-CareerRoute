@@ -185,6 +185,13 @@ export class LoginComponent implements OnInit {
   /**
    * Checks if user registered as mentor and redirects appropriately
    * Uses token claims to determine mentor status
+   *
+   * Flow:
+   * 1. Regular user (no isMentor flag) → returnUrl
+   * 2. Approved mentor (has Mentor role) → returnUrl
+   * 3. Pending mentor with submitted application (has mentor profile) → home page
+   * 4. Pending mentor without application (no mentor profile) → application form
+   *
    * @param isMentor Whether user has isMentor flag in JWT token
    */
   private checkAndRedirectMentor(isMentor: boolean): void {
@@ -205,9 +212,10 @@ export class LoginComponent implements OnInit {
       // User has applied but not approved yet - check if they have submitted application
       this.mentorService.getCurrentMentorProfile().subscribe({
         next: (mentorProfile) => {
-          // Mentor profile exists (application submitted) - show pending status
-          console.log('Mentor application submitted, navigating to pending page');
-          this.router.navigate(['/mentor/application-pending']);
+          // Mentor profile exists (application submitted and pending approval)
+          // Redirect to home page - they can use "Become a Mentor" button if needed
+          console.log('Mentor application submitted and pending approval, navigating to home');
+          this.router.navigate(['/']);
         },
         error: (error) => {
           // If 404, mentor profile doesn't exist - redirect to application form
