@@ -446,14 +446,7 @@ namespace CareerRoute.Core.Services.Implementations
                 }
             }
 
-            // Set IsMentor flag to false
-            user.IsMentor = false;
-            var userUpdateResult = await _userManager.UpdateAsync(user);
-            if (!userUpdateResult.Succeeded)
-            {
-                var errors = string.Join(", ", userUpdateResult.Errors.Select(e => e.Description));
-                _logger.LogWarning("Failed to update user IsMentor flag for user {UserId}: {Errors}", user.Id, errors);
-            }
+            // Keep IsMentor flag as true to allow reapplication
 
             // Delete the mentor record
             _mentorRepository.Delete(mentor);
