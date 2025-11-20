@@ -430,12 +430,9 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Mentor", mentorId);
             }
 
-            mentor.ApprovalStatus = MentorApprovalStatus.Rejected;
-            mentor.IsAvailable = false;
-            mentor.UpdatedAt = DateTime.UtcNow;
-            
-            // Remove Mentor role if user had it (in case of re-rejection)
             var user = mentor.User;
+            
+            // Remove Mentor role if user had it
             if (await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
             {
                 var roleResult = await _userManager.RemoveFromRoleAsync(user, AppRoles.Mentor);
@@ -449,10 +446,20 @@ namespace CareerRoute.Core.Services.Implementations
                 }
             }
 
-            _mentorRepository.Update(mentor);
+            // Set IsMentor flag to false
+            user.IsMentor = false;
+            var userUpdateResult = await _userManager.UpdateAsync(user);
+            if (!userUpdateResult.Succeeded)
+            {
+                var errors = string.Join(", ", userUpdateResult.Errors.Select(e => e.Description));
+                _logger.LogWarning("Failed to update user IsMentor flag for user {UserId}: {Errors}", user.Id, errors);
+            }
+
+            // Delete the mentor record
+            _mentorRepository.Delete(mentor);
             await _mentorRepository.SaveChangesAsync();
 
-            _logger.LogInformation("Mentor {MentorId} rejected with reason: {Reason}", mentorId, rejectDto.Reason);
+            _logger.LogInformation("Mentor {MentorId} rejected and record deleted. Reason: {Reason}", mentorId, rejectDto.Reason);
 
             // TODO: Send rejection email with reason
             // await _emailService.SendMentorRejectionEmailAsync(
