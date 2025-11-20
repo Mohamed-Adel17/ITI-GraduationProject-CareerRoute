@@ -83,7 +83,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ```
 
 **Field Requirements:**
-- `timeSlotId` (required): Integer, must reference an existing available TimeSlot (isBooked = false)
+- `timeSlotId` (required): String, must reference an existing available TimeSlot (isBooked = false)
 - `topic` (optional): Max 200 characters
 - `notes` (optional): Max 1000 characters
 
@@ -1056,7 +1056,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
   "mentorFirstName": "string",
   "mentorLastName": "string",
   "mentorProfilePictureUrl": "string | null",
-  "timeSlotId": "number | null",                // NEW: Reference to TimeSlot
+  "timeSlotId": "string | null",                // NEW: Reference to TimeSlot
   "sessionType": "string (enum: OneOnOne, Group)",
   "duration": "string (enum: ThirtyMinutes, SixtyMinutes)",
   "scheduledStartTime": "ISO 8601 datetime",
@@ -1100,7 +1100,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ### BookSessionRequestDto
 ```typescript
 {
-  "timeSlotId": "number (required)",           // Changed from mentorId + duration + scheduledStartTime
+  "timeSlotId": "string (required)",           // Changed from mentorId + duration + scheduledStartTime
   "topic": "string | optional",
   "notes": "string | optional"
 }
