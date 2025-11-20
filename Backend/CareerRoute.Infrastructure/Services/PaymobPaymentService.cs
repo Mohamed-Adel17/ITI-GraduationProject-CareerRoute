@@ -303,12 +303,11 @@ namespace CareerRoute.Infrastructure.Services
 
                 if (string.IsNullOrEmpty(integrationId))
                     throw new BusinessException($"Paymob integration ID not configured for payment method: {request.PaymentMethod}");
-
                 var paymentKeyData = new
                 {
                     auth_token = authToken,
                     amount_cents = (int)(request.Amount * 100),
-                    expiration = 3600,
+                    expiration = _paymentSettings.ExpirationMinutes * 60,
                     order_id = orderId,
                     billing_data = new
                     {

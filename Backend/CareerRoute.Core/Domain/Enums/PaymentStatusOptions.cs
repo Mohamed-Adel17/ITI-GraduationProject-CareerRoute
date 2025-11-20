@@ -12,6 +12,7 @@ namespace CareerRoute.Core.Domain.Enums
         Captured,
         Confirmed,
         Failed,
-        Refunded
+        Refunded,
+        Canceled
     }
 }

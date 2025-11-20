@@ -5,6 +5,7 @@ namespace CareerRoute.Core.Settings
     {
         public Stripe Stripe { get; set; } = new Stripe();
         public Paymob Paymob { get; set; } = new Paymob();
+        public int ExpirationMinutes { get; set; } = 15;
     }
 
     public class Stripe

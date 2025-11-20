@@ -50,9 +50,9 @@ namespace CareerRoute.Infrastructure.Services
                     Amount = (long)(request.Amount * 100), // Stripe uses cents
                     Currency = request.Currency.ToLower(),
                     Metadata = new Dictionary<string, string>
-                {
-                    { "order_id", request.SessionId }
-                },
+                    {
+                        { "order_id", request.SessionId }
+                    },
                     ReceiptEmail = request.MenteeEmail,
                     AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
                     {
@@ -112,6 +112,32 @@ namespace CareerRoute.Infrastructure.Services
             {
                 throw new PaymentException(
                     "An unexpected error occurred while creating Stripe payment intent",
+                    ProviderName,
+                    ex);
+            }
+        }
+
+        public async Task<PaymentIntentResponse> CancelPaymentIntentAsync(string paymentIntentId)
+        {
+            try
+            {
+                var service = new PaymentIntentService();
+                var intent = await service.CancelAsync(paymentIntentId);
+
+                return new PaymentIntentResponse
+                {
+                    Success = true,
+                    PaymentIntentId = intent.Id,
+                    ClientSecret = intent.ClientSecret,
+                    Amount = intent.Amount / 100m,
+                    Currency = intent.Currency.ToUpper(),
+                    PaymentMethod = intent.PaymentMethodTypes.FirstOrDefault(),
+                };
+            }
+            catch (StripeException ex)
+            {
+                throw new PaymentException(
+                    $"Failed to cancel Stripe payment intent: {ex.Message}",
                     ProviderName,
                     ex);
             }
@@ -251,7 +277,7 @@ namespace CareerRoute.Infrastructure.Services
                 PaymentIntentId = paymentIntent.Id,
                 TransactionId = paymentIntent.Id,
                 OrderId = paymentIntent.Metadata.GetValueOrDefault("order_id") ?? string.Empty,
-                Status = PaymentStatusOptions.Failed,
+                Status = PaymentStatusOptions.Canceled,
                 Amount = paymentIntent.Amount / 100m,
                 Currency = paymentIntent.Currency.ToUpper(),
                 ErrorMessage = "Payment was canceled",

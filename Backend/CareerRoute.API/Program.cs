@@ -14,6 +14,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.VisualBasic;
 using System.Reflection;
 using System.Text;
+using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -154,6 +155,8 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 //Authentication then Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseHangfireDashboard();
 
 
 app.MapControllers();

@@ -19,6 +19,7 @@ namespace CareerRoute.Core.Domain.Entities
 
         public string Currency { get; set; } = "USD";
         public DateTime? PaidAt { get; set; }
+        public DateTime ExpiresAt { get; set; }
 
 
         // ---------- Payment Status ----------

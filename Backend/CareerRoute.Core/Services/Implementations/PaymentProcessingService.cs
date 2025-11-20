@@ -14,6 +14,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Hangfire;
 
 namespace CareerRoute.Core.Services.Implementations
 {
@@ -29,6 +30,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<PaymentConfirmRequestDto> _paymentConfirmValidator;
         private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly PaymentSettings _paymentSettings;
 
         public PaymentProcessingService(
             IPaymentRepository paymentRepository,
@@ -48,6 +50,7 @@ namespace CareerRoute.Core.Services.Implementations
             _mentorRepository = mentorRepository;
             _emailService = emailService;
             _paymentFactory = paymentFactory;
+            _paymentSettings = paymentSettings?.Value ?? throw new ArgumentNullException(nameof(paymentSettings));
             _logger = logger;
             _paymentIntentValidator = paymentIntentValidator;
             _paymentConfirmValidator = paymentConfirmValidator;
@@ -122,7 +125,8 @@ namespace CareerRoute.Core.Services.Implementations
                 Status = PaymentStatusOptions.Pending,
                 PlatformCommission = 0.15m,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_paymentSettings.ExpirationMinutes)
             };
 
             await _paymentRepository.AddAsync(payment);
@@ -132,6 +136,9 @@ namespace CareerRoute.Core.Services.Implementations
                 "Payment intent created. PaymentId: {PaymentId}, SessionId: {SessionId}, Provider: {Provider}",
                 payment.Id, request.SessionId, paymentService.ProviderName);
 
+            BackgroundJob.Schedule<IPaymentProcessingService>(
+                x => x.CheckAndCancelPaymentAsync(payment.Id),
+                TimeSpan.FromMinutes(_paymentSettings.ExpirationMinutes));
             return new PaymentIntentResponseDto
             {
                 PaymentIntentId = payment.PaymentIntentId,
@@ -298,6 +305,35 @@ namespace CareerRoute.Core.Services.Implementations
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(session!.MentorId);
             payment.Session.Mentor = mentor!;
             return _mapper.Map<PaymentHistroyItemResponseDto>(payment);
+        }
+
+        public async Task CheckAndCancelPaymentAsync(string paymentId)
+        {
+            var payment = await _paymentRepository.GetByIdAsync(paymentId);
+            if (payment == null) return;
+
+            if (payment.Status == PaymentStatusOptions.Pending || payment.Status == PaymentStatusOptions.Failed)
+            {
+                if (payment.PaymentProvider == PaymentProviderOptions.Stripe)
+                {
+                    try
+                    {
+                        var stripeService = (IStripePaymentService)_paymentFactory.GetService(PaymentProviderOptions.Stripe);
+                        await stripeService.CancelPaymentIntentAsync(payment.PaymentIntentId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to cancel Stripe payment intent for payment {PaymentId}", paymentId);
+                    }
+                }
+
+                payment.Status = PaymentStatusOptions.Canceled;
+                payment.UpdatedAt = DateTime.UtcNow;
+                _paymentRepository.Update(payment);
+                await _paymentRepository.SaveChangesAsync();
+
+                _logger.LogInformation("Payment {PaymentId} was automatically canceled due to expiration", paymentId);
+            }
         }
 
         // ==================== Private Helper Methods ====================
