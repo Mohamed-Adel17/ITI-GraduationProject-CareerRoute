@@ -8,13 +8,14 @@ using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Data.SeedData;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.VisualBasic;
 using System.Reflection;
 using System.Text;
 using Hangfire;
+using CareerRoute.Core.Services.Interfaces;
+using CareerRoute.API.Services;
+using CareerRoute.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -88,6 +89,8 @@ builder.Services.AddAuthorization(options =>
 
 // API Layer Services
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IPaymentNotificationService, SignalRPaymentNotificationService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -153,11 +156,13 @@ app.UseCors("AllowFrontend");
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 //Authentication then Authorization
+app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHangfireDashboard();
+app.MapHangfireDashboard();
 
+app.MapHub<PaymentHub>("hub/payment");
 
 app.MapControllers();
 

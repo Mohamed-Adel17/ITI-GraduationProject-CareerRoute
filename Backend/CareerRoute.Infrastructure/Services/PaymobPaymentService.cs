@@ -2,6 +2,7 @@
 using CareerRoute.Core.Domain.Interfaces.Services;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.External.Payment;
+using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Settings;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +21,7 @@ namespace CareerRoute.Infrastructure.Services
         private readonly HttpClient _httpClient;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<PaymobPaymentService> _logger;
+        private readonly IPaymentNotificationService _paymentNotificationService;
 
         public string ProviderName => "Paymob";
 
@@ -28,13 +30,15 @@ namespace CareerRoute.Infrastructure.Services
             HttpClient httpClient,
             IConfiguration configuration,
             IWebHostEnvironment environment,
-            ILogger<PaymobPaymentService> logger)
+            ILogger<PaymobPaymentService> logger,
+            IPaymentNotificationService paymentNotificationService)
         {
             _paymentSettings = paymentSettings?.Value ?? throw new ArgumentNullException(nameof(paymentSettings));
             _environment = environment ?? throw new ArgumentNullException(nameof(environment));
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _httpClient.BaseAddress = new Uri("https://accept.paymob.com/api/");
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _paymentNotificationService = paymentNotificationService;
         }
 
         public async Task<PaymentIntentResponse> CreatePaymentIntentAsync(PaymentIntentRequest request)
@@ -136,6 +140,9 @@ namespace CareerRoute.Infrastructure.Services
                 }
 
                 var status = callbackData.Obj.Success ? PaymentStatusOptions.Captured : PaymentStatusOptions.Failed;
+
+                // Notify client via SignalR
+                _paymentNotificationService.NotifyPaymentStatusAsync(callbackData.Obj.Order.Id.ToString(), status);
 
                 return new PaymentCallbackResult
                 {

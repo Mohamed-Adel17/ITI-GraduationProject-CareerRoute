@@ -2,6 +2,7 @@
 using CareerRoute.Core.Domain.Interfaces.Services;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.External.Payment;
+using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Settings;
 using Microsoft.Extensions.Options;
 using Stripe;
@@ -10,12 +11,14 @@ namespace CareerRoute.Infrastructure.Services
     public class StripePaymentService : IStripePaymentService
     {
         private readonly PaymentSettings _paymentSettings;
+        private readonly IPaymentNotificationService _paymentNotificationService;
 
         public string ProviderName => _paymentSettings.Stripe.Provider ?? "Stripe";
 
-        public StripePaymentService(IOptions<PaymentSettings> paymentSettings)
+        public StripePaymentService(IOptions<PaymentSettings> paymentSettings, IPaymentNotificationService paymentNotificationService)
         {
             _paymentSettings = paymentSettings?.Value ?? throw new ArgumentNullException(nameof(paymentSettings));
+            _paymentNotificationService = paymentNotificationService;
 
             if (string.IsNullOrEmpty(_paymentSettings.Stripe.SecretKey))
                 throw new BusinessException("Stripe secret key is not configured");
@@ -222,6 +225,9 @@ namespace CareerRoute.Infrastructure.Services
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
 
+            // Notify client via SignalR
+            _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Captured);
+
             return new PaymentCallbackResult
             {
                 Success = true,
@@ -245,6 +251,9 @@ namespace CareerRoute.Infrastructure.Services
 
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
+
+            // Notify client via SignalR
+            _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Failed);
 
             return new PaymentCallbackResult
             {
@@ -270,6 +279,9 @@ namespace CareerRoute.Infrastructure.Services
 
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
+
+            // Notify client via SignalR
+            _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Canceled);
 
             return new PaymentCallbackResult
             {
