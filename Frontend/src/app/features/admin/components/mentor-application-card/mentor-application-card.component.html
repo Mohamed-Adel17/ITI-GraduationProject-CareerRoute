@@ -1,0 +1,155 @@
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col h-full">
+  <!-- Card Header -->
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-start space-x-4">
+      <!-- Profile Picture or Initials Avatar -->
+      <div class="flex-shrink-0">
+        <img
+          *ngIf="hasProfilePicture"
+          [src]="profilePictureUrl"
+          [alt]="application.fullName"
+          class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-700"
+        />
+        <div
+          *ngIf="!hasProfilePicture"
+          class="w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold text-xl ring-2 ring-gray-200 dark:ring-gray-700 bg-gradient-to-br from-indigo-500 to-purple-600"
+          [attr.aria-label]="application.fullName + ' initials'"
+        >
+          {{ initials }}
+        </div>
+      </div>
+
+      <!-- Name and Email -->
+      <div class="flex-1 min-w-0">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
+          {{ application.fullName }}
+        </h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 truncate">
+          {{ application.email }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+          Applied {{ applicationDate }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Body -->
+  <div class="p-6 flex-1 overflow-auto">
+    <!-- Bio -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Bio
+      </label>
+      <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+        {{ isBioExpanded ? application.bio : truncatedBio }}
+      </p>
+      <button
+        *ngIf="shouldTruncateBio"
+        (click)="toggleBio()"
+        class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 mt-1 font-medium"
+      >
+        {{ isBioExpanded ? 'Show less' : 'Read more' }}
+      </button>
+    </div>
+
+    <!-- Experience -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Experience
+      </label>
+      <p class="text-sm text-gray-900 dark:text-gray-100">
+        {{ experienceText }}
+      </p>
+    </div>
+
+    <!-- Certifications -->
+    <div class="mb-4" *ngIf="application.certifications">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Certifications
+      </label>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        {{ application.certifications }}
+      </p>
+    </div>
+
+    <!-- Expertise Tags -->
+    <div class="mb-4" *ngIf="application.expertiseTags && application.expertiseTags.length > 0">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Expertise
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <span
+          *ngFor="let tag of application.expertiseTags"
+          class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+        >
+          {{ tag.name }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="mb-4" *ngIf="application.categories && application.categories.length > 0">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Categories
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <span
+          *ngFor="let category of application.categories"
+          class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+        >
+          {{ category.name }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Rates -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Session Rates
+      </label>
+      <div class="flex items-center space-x-4 text-sm">
+        <div class="flex items-center">
+          <span class="text-gray-600 dark:text-gray-400 mr-1">30min:</span>
+          <span class="font-semibold text-gray-900 dark:text-gray-100">
+            ${{ application.rate30Min }}
+          </span>
+        </div>
+        <div class="text-gray-300 dark:text-gray-600">|</div>
+        <div class="flex items-center">
+          <span class="text-gray-600 dark:text-gray-400 mr-1">60min:</span>
+          <span class="font-semibold text-gray-900 dark:text-gray-100">
+            ${{ application.rate60Min }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Actions -->
+  <div class="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex space-x-3">
+      <!-- Approve Button -->
+      <button
+        (click)="onApproveClick()"
+        class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+      >
+        <svg class="w-4 h-4 inline mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Approve
+      </button>
+
+      <!-- Reject Button -->
+      <button
+        (click)="onRejectClick()"
+        class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+      >
+        <svg class="w-4 h-4 inline mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Reject
+      </button>
+    </div>
+  </div>
+</div>

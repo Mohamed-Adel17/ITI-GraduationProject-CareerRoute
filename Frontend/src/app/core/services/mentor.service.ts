@@ -11,7 +11,8 @@ import {
   MentorSearchParams,
   MentorSearchResponse,
   MentorApplication,
-  MentorProfileUpdate
+  MentorProfileUpdate,
+  RejectMentorRequest
 } from '../../shared/models/mentor.model';
 
 /**
@@ -30,6 +31,11 @@ import {
  * 7. Get current mentor's own profile
  * 8. Apply to become a mentor (requires expertiseTagIds and categoryIds)
  * 9. Update current mentor's own profile
+ *
+ * **Admin Endpoints (Require Admin Role):**
+ * 10. Get all pending mentor applications
+ * 11. Approve mentor application
+ * 12. Reject mentor application with reason
  *
  * Features:
  * - Browse all approved mentors with advanced filtering
@@ -552,6 +558,137 @@ export class MentorService {
     return this.http.patch<ApiResponse<Mentor>>(
       `${this.MENTORS_URL}/${mentorId}`,
       profileUpdate
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  // ==================== Admin Endpoints ====================
+
+  /**
+   * Get all pending mentor applications (Admin only)
+   *
+   * Endpoint: GET /api/mentors/pending
+   * Based on Mentor-Endpoints.md - Endpoint #10
+   *
+   * @returns Observable of pending mentor applications
+   *
+   * @remarks
+   * - Requires authentication with Admin role (Bearer token automatically added by authInterceptor)
+   * - Returns all mentor profiles with approvalStatus: "Pending"
+   * - Ordered by createdAt DESC (newest first)
+   * - Returns empty array if no pending applications
+   * - Returns 401 if not authenticated
+   * - Returns 403 if user is not Admin
+   *
+   * @example
+   * ```typescript
+   * // Get all pending applications
+   * this.mentorService.getPendingMentorApplications().subscribe(
+   *   (applications) => {
+   *     this.pendingApplications = applications;
+   *     console.log(`${applications.length} applications pending review`);
+   *   }
+   * );
+   * ```
+   */
+  getPendingMentorApplications(): Observable<MentorListItem[]> {
+    return this.http.get<ApiResponse<MentorListItem[]>>(
+      `${this.MENTORS_URL}/pending`
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Approve a mentor application (Admin only)
+   *
+   * Endpoint: PATCH /api/mentors/{id}/approve
+   * Based on Mentor-Endpoints.md - Endpoint #11
+   *
+   * @param mentorId - The ID of the mentor to approve (GUID)
+   * @returns Observable that completes when approval is successful
+   *
+   * @remarks
+   * - Requires authentication with Admin role (Bearer token automatically added by authInterceptor)
+   * - Updates approvalStatus to "Approved"
+   * - Sets isVerified: true and isAvailable: true
+   * - Adds "Mentor" role to user account
+   * - Sends approval notification email to mentor
+   * - Returns 400 if mentor is already approved
+   * - Returns 401 if not authenticated
+   * - Returns 403 if user is not Admin
+   * - Returns 404 if mentor not found
+   *
+   * @example
+   * ```typescript
+   * // Approve a mentor application
+   * this.mentorService.approveMentorApplication(mentorId).subscribe({
+   *   next: () => {
+   *     this.notificationService.success('Mentor approved successfully!', 'Success');
+   *     this.refreshPendingList();
+   *   },
+   *   error: (error) => {
+   *     // Error handling delegated to errorInterceptor
+   *   }
+   * });
+   * ```
+   */
+  approveMentorApplication(mentorId: string): Observable<void> {
+    return this.http.patch<ApiResponse<void>>(
+      `${this.MENTORS_URL}/${mentorId}/approve`,
+      {}
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Reject a mentor application (Admin only)
+   *
+   * Endpoint: PATCH /api/mentors/{id}/reject
+   * Based on Mentor-Endpoints.md - Endpoint #12
+   *
+   * @param mentorId - The ID of the mentor to reject (GUID)
+   * @param request - Rejection request containing reason
+   * @returns Observable that completes when rejection is successful
+   *
+   * @remarks
+   * - Requires authentication with Admin role (Bearer token automatically added by authInterceptor)
+   * - Updates approvalStatus to "Rejected"
+   * - Stores rejection reason
+   * - Sends rejection notification email to user with reason
+   * - Reason requirements: min 10 chars, max 500 chars
+   * - Returns 400 if reason is invalid or mentor already processed
+   * - Returns 401 if not authenticated
+   * - Returns 403 if user is not Admin
+   * - Returns 404 if mentor not found
+   *
+   * Field Requirements:
+   * - reason: Required, min 10 chars, max 500 chars, should be professional and constructive
+   *
+   * @example
+   * ```typescript
+   * // Reject a mentor application with reason
+   * const rejectRequest: RejectMentorRequest = {
+   *   reason: 'Profile does not meet our minimum experience requirements. Please reapply with more detailed certifications.'
+   * };
+   *
+   * this.mentorService.rejectMentorApplication(mentorId, rejectRequest).subscribe({
+   *   next: () => {
+   *     this.notificationService.success('Mentor application rejected', 'Success');
+   *     this.refreshPendingList();
+   *   },
+   *   error: (error) => {
+   *     // Error handling delegated to errorInterceptor
+   *   }
+   * });
+   * ```
+   */
+  rejectMentorApplication(mentorId: string, request: RejectMentorRequest): Observable<void> {
+    return this.http.patch<ApiResponse<void>>(
+      `${this.MENTORS_URL}/${mentorId}/reject`,
+      request
     ).pipe(
       map(response => unwrapResponse(response))
     );
