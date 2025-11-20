@@ -56,6 +56,49 @@ namespace CareerRoute.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<bool> IsMentorSessionAvailableAsync(string mentorId, DateTime newStart, int durationMinutes)
+        {
+
+            // Logic:
+            // 1. No active session exists for this mentor ( Excluding Cancelled and NoShow sessions)
+            // 2. Overlap check applied on start + end time
+
+            var newEnd = newStart.AddMinutes(durationMinutes);
+
+            bool hasConflict = await dbContext.Sessions.AnyAsync(s =>
+                s.MentorId == mentorId &&
+                s.Status != SessionStatusOptions.Cancelled &&
+                s.Status != SessionStatusOptions.NoShow &&
+                s.ScheduledStartTime < newEnd &&
+                newStart < s.ScheduledEndTime
+            );
+
+            return !hasConflict;
+        }
+
+        public async Task<bool> IsMenteeAvailableAsync(string menteeId, DateTime newStart, int durationMinutes)
+        {
+            // Logic:
+            // 1. No active session exists for this mentee ( Excluding Cancelled and NoShow sessions)
+            // 2. Overlap check applied on start + end time
+
+
+            var newEnd = newStart.AddMinutes(durationMinutes);
+
+            bool hasConflict = await dbContext.Sessions.AnyAsync(s =>
+                s.MenteeId == menteeId &&
+                s.Status != SessionStatusOptions.Cancelled &&
+                s.Status != SessionStatusOptions.NoShow &&
+                (
+                    s.ScheduledStartTime < newEnd &&
+                    newStart < s.ScheduledEndTime
+                )
+            );
+
+            // Mentee is available when there is NO conflict
+            return !hasConflict;
+        }
+
 
 
 

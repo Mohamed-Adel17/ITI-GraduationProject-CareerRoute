@@ -13,10 +13,10 @@ namespace CareerRoute.Core.Services.Interfaces
        
         Task<BookSessionResponseDto> BookSessionAsync(string MenteeId, BookSessionRequestDto dto);
         Task<SessionDetailsResponseDto> GetSessionDetailsAsync(string sessionId);
-
         Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync();
         Task<List<PastSessionsResponseDto>> GetPastSessionsAsync();
-
+        public Task<RescheduleSessionResponseDto> RescheduleSessionAsync(string sessionId, RescheduleSessionRequestDto dto,
+                                                                                string userId, string role);
 
 
 

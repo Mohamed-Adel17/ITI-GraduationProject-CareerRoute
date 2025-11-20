@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<PaymentIntentRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<PaymentConfirmRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<BookSessionRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<RescheduleSessionRequestValidator>();
 
 
         return services;

@@ -7,10 +7,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Domain.Interfaces
 {
-    public interface ITimeSlotRepository : IBaseRepository<TimeSlot>
-
+    public interface IRescheduleSessionRepository : IBaseRepository<RescheduleSession>
     {
-        public Task<bool> IsAvailableTimeSlotAsync(string mentorId, DateTime newStart, int durationMinutes);
-
     }
 }

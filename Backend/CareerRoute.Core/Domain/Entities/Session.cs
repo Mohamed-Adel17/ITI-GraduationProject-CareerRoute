@@ -56,7 +56,8 @@ namespace CareerRoute.Core.Domain.Entities
         public virtual TimeSlot? TimeSlot { get; set; }
         public Payment? Payment { get; set; }
         public ReviewSession? Review { get; set; }
-
+        public CancelSession? Cancellation { get; set; }
+        public RescheduleSession? Reschedule { get; set; }
 
     }
 }

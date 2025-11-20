@@ -18,6 +18,9 @@ namespace CareerRoute.Core.Domain.Interfaces
 
         Task<List<Session>> GetUpcomingSessionsAsync();
         Task<List<Session>> GetPastSessionsAsync();
+        public Task<bool> IsMentorSessionAvailableAsync(string mentorId, DateTime newStart, int durationMinutes);
+        public Task<bool> IsMenteeAvailableAsync(string menteeId, DateTime newStart, int durationMinutes);
+
 
 
     }

@@ -113,9 +113,35 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
+        [HttpPatch("{id}/reschedule")]
+        [Authorize(Roles = "User,Mentor")]
+        public async Task<IActionResult> RescheduleSession(
+                [FromRoute] string id,
+                [FromBody] RescheduleSessionRequestDto dto)
+        {
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+            }
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} requested rescheduling ", userId, userRole);
 
 
+            var rescheduledSession = await _sessionService.RescheduleSessionAsync(id, dto, userId, userRole);
+
+            return Ok(new ApiResponse<RescheduleSessionResponseDto>(
+                rescheduledSession,
+                "Reschedule request submitted successfully. Waiting for approval/Rejection from Email."
+            ));
+        }
+          
     }
 
 }
+
+
 

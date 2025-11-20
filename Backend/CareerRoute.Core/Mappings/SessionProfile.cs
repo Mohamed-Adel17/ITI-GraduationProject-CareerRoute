@@ -75,6 +75,17 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.HasReview, opt => opt.MapFrom(src => src.Review != null));
 
 
-        }   
+            CreateMap<RescheduleSessionRequestDto, RescheduleSession>() //src , dest 
+                .ForMember(dest => dest.ReschudelReason, opt => opt.MapFrom(src => src.Reason));
+
+
+            CreateMap<RescheduleSession, RescheduleSessionResponseDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.RequestedStartTime, opt => opt.MapFrom(src => src.NewScheduledStartTime));
+
+
+
+
+        }
     }
 }
