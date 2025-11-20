@@ -117,12 +117,45 @@ export class MentorApplicationCardComponent {
   }
 
   /**
-   * Get profile picture URL or default avatar
+   * Check if profile picture exists
    *
-   * @returns Profile picture URL or default placeholder
+   * @returns True if profilePictureUrl is available
    */
-  get profilePictureUrl(): string {
-    return this.application.profilePictureUrl || 'assets/images/default-avatar.png';
+  get hasProfilePicture(): boolean {
+    return !!this.application.profilePictureUrl;
+  }
+
+  /**
+   * Get profile picture URL
+   *
+   * @returns Profile picture URL if available
+   */
+  get profilePictureUrl(): string | null {
+    return this.application.profilePictureUrl || null;
+  }
+
+  /**
+   * Get initials from full name for avatar fallback
+   *
+   * @returns Two-letter initials from the mentor's name
+   */
+  get initials(): string {
+    if (!this.application.fullName) {
+      return '??';
+    }
+
+    const nameParts = this.application.fullName.trim().split(/\s+/);
+
+    if (nameParts.length === 1) {
+      // Single name: take first two letters
+      return nameParts[0].substring(0, 2).toUpperCase();
+    }
+
+    // Multiple names: take first letter of first and last name
+    const firstInitial = nameParts[0].charAt(0).toUpperCase();
+    const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
+
+    return firstInitial + lastInitial;
   }
 
   /**

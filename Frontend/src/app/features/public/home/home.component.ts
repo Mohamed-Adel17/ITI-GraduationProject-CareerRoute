@@ -1,9 +1,11 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, filter } from 'rxjs';
 import { CategoryService } from '../../../core/services/category.service';
+import { MentorService } from '../../../core/services/mentor.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { Category } from '../../../shared/models/category.model';
 import { UserRole } from '../../../shared/models/user.model';
 
@@ -43,7 +45,10 @@ import { UserRole } from '../../../shared/models/user.model';
 export class HomeComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly categoryService = inject(CategoryService);
+  private readonly mentorService = inject(MentorService);
   private readonly authService = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
   /**
@@ -67,9 +72,20 @@ export class HomeComponent implements OnInit, OnDestroy {
   categoriesLoading = false;
 
   /**
+   * Loading state for approval status check
+   */
+  checkingApprovalStatus = false;
+
+  /**
+   * Indicates whether user has submitted mentor application
+   * null = not checked yet, true = submitted, false = not submitted
+   */
+  private hasMentorProfile: boolean | null = null;
+
+  /**
    * Determines whether to show the "Become a Mentor" button
-   * Shows if user is authenticated AND (has isMentor flag OR doesn't have Mentor role yet)
-   * Hides if user is not authenticated OR already has Mentor role (approved)
+   * Shows if user registered as mentor (isMentor=true) but hasn't submitted application yet
+   * Excludes admins and already-approved mentors
    */
   get showBecomeAMentorButton(): boolean {
     // Only show for authenticated users
@@ -77,28 +93,119 @@ export class HomeComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    const user = this.authService.getCurrentUser();
-    if (!user) {
+    // Don't show for admins (they use admin dashboard, not mentor flow)
+    const isAdmin = this.authService.hasRole(UserRole.Admin);
+    if (isAdmin) {
       return false;
     }
 
-    // Show button if:
-    // 1. User has isMentor flag (registered as mentor but not submitted application OR submitted but not approved)
-    // 2. User doesn't have Mentor role yet (not approved)
+    // Must have isMentor flag but not Mentor role
     const hasIsMentorFlag = this.authService.isMentor();
     const hasMentorRole = this.authService.hasRole(UserRole.Mentor);
 
-    // Show if user is a mentor (isMentor=true) but not approved yet (no Mentor role)
-    return hasIsMentorFlag && !hasMentorRole;
+    if (!hasIsMentorFlag || hasMentorRole) {
+      return false;
+    }
+
+    // Show only if user hasn't submitted application (no mentor profile)
+    return this.hasMentorProfile === false;
+  }
+
+  /**
+   * Determines whether to show the "Check Approval Status" button
+   * Shows if user has submitted mentor application but not approved yet
+   * Excludes admins and already-approved mentors
+   */
+  get showCheckApprovalButton(): boolean {
+    // Only show for authenticated users
+    if (!this.authService.isAuthenticated()) {
+      return false;
+    }
+
+    // Don't show for admins (they use admin dashboard, not mentor flow)
+    const isAdmin = this.authService.hasRole(UserRole.Admin);
+    if (isAdmin) {
+      return false;
+    }
+
+    // Must have isMentor flag but not Mentor role
+    const hasIsMentorFlag = this.authService.isMentor();
+    const hasMentorRole = this.authService.hasRole(UserRole.Mentor);
+
+    if (!hasIsMentorFlag || hasMentorRole) {
+      return false;
+    }
+
+    // Show only if user has submitted application (has mentor profile)
+    return this.hasMentorProfile === true;
   }
 
   ngOnInit(): void {
     this.loadTopCategories();
+    this.checkMentorProfileStatus();
+
+    // Re-check mentor profile status when navigating back to home page
+    // This ensures button visibility is updated after visiting other pages
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        filter(event => (event as NavigationEnd).url === '/' || (event as NavigationEnd).url.startsWith('/?')),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.checkMentorProfileStatus();
+        this.cdr.detectChanges();
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Check if authenticated user has submitted mentor application
+   * Sets hasMentorProfile based on API response (404 = not submitted, 200 = submitted)
+   */
+  private checkMentorProfileStatus(): void {
+    // Only check for users with isMentor flag who aren't approved yet
+    if (!this.authService.isAuthenticated()) {
+      return;
+    }
+
+    // Don't check for admins - they don't have mentor profiles
+    const isAdmin = this.authService.hasRole(UserRole.Admin);
+    if (isAdmin) {
+      return;
+    }
+
+    const hasIsMentorFlag = this.authService.isMentor();
+    const hasMentorRole = this.authService.hasRole(UserRole.Mentor);
+
+    // Only check for pending mentors (Type 2 or 3)
+    if (!hasIsMentorFlag || hasMentorRole) {
+      return;
+    }
+
+    // Try to fetch mentor profile
+    this.mentorService.getCurrentMentorProfile()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (profile) => {
+          // Type 3: Has mentor profile (application submitted)
+          this.hasMentorProfile = true;
+        },
+        error: (error) => {
+          if (error.status === 404) {
+            // Type 2: No mentor profile (no application submitted)
+            this.hasMentorProfile = false;
+          } else {
+            // Other errors, default to not showing buttons
+            console.error('Error checking mentor profile:', error);
+            this.hasMentorProfile = null;
+          }
+        }
+      });
   }
 
   /**
@@ -175,5 +282,62 @@ export class HomeComponent implements OnInit, OnDestroy {
       return 'No mentors';
     }
     return count === 1 ? '1 mentor' : `${count} mentors`;
+  }
+
+  /**
+   * Check approval status by refreshing the authentication token
+   *
+   * This method refreshes the JWT token to get the latest user roles from the backend.
+   * If the user has been approved as a mentor by an admin, the refreshed token will
+   * include the 'Mentor' role, and the UI will update automatically.
+   *
+   * Use case: Pending mentors can click "Check Approval Status" to see if they've been approved
+   * without needing to log out and log back in.
+   */
+  checkApprovalStatus(): void {
+    this.checkingApprovalStatus = true;
+
+    this.authService.refreshToken()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.checkingApprovalStatus = false;
+
+          // Check if user now has Mentor role
+          const hasMentorRole = this.authService.hasRole(UserRole.Mentor);
+
+          if (hasMentorRole) {
+            // User has been approved!
+            this.notificationService.success(
+              'Congratulations! Your mentor application has been approved. You now have access to mentor features.',
+              'Application Approved!',
+              10000 // Show for 10 seconds
+            );
+
+            // Update button visibility
+            this.hasMentorProfile = null; // Hide both buttons
+
+            // Navigate to mentor dashboard
+            setTimeout(() => {
+              this.router.navigate(['/']);
+            }, 2000); // Give user time to read the message
+          } else {
+            // Still pending
+            this.notificationService.info(
+              'Your mentor application is still pending review. We will notify you once it has been reviewed.',
+              'Status: Pending',
+              6000
+            );
+          }
+        },
+        error: (error) => {
+          this.checkingApprovalStatus = false;
+          console.error('Error checking approval status:', error);
+          this.notificationService.error(
+            'Unable to check approval status. Please try again later.',
+            'Error'
+          );
+        }
+      });
   }
 }

@@ -2,13 +2,22 @@
   <!-- Card Header -->
   <div class="p-6 border-b border-gray-200 dark:border-gray-700">
     <div class="flex items-start space-x-4">
-      <!-- Profile Picture -->
-      <img
-        [src]="profilePictureUrl"
-        [alt]="application.fullName"
-        class="w-16 h-16 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200 dark:ring-gray-700"
-        onerror="this.src='assets/images/default-avatar.png'"
-      />
+      <!-- Profile Picture or Initials Avatar -->
+      <div class="flex-shrink-0">
+        <img
+          *ngIf="hasProfilePicture"
+          [src]="profilePictureUrl"
+          [alt]="application.fullName"
+          class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-700"
+        />
+        <div
+          *ngIf="!hasProfilePicture"
+          class="w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold text-xl ring-2 ring-gray-200 dark:ring-gray-700 bg-gradient-to-br from-indigo-500 to-purple-600"
+          [attr.aria-label]="application.fullName + ' initials'"
+        >
+          {{ initials }}
+        </div>
+      </div>
 
       <!-- Name and Email -->
       <div class="flex-1 min-w-0">

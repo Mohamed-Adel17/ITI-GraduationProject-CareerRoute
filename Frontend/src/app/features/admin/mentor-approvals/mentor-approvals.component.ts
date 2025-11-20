@@ -106,16 +106,18 @@ export class MentorApprovalsComponent implements OnInit {
 
     this.mentorService.approveMentorApplication(mentorId).subscribe({
       next: () => {
-        // Show success notification
+        // Show success notification with refresh info
         this.notificationService.success(
-          `${mentorName}'s application has been approved!`,
-          'Mentor Approved'
+          `${mentorName}'s application has been approved! Note: They need to refresh their session to access mentor features.`,
+          'Mentor Approved',
+          8000 // Show for 8 seconds
         );
 
         // Remove from list immediately
         this.applications = this.applications.filter(app => app.id !== mentorId);
 
         console.log(`✅ Approved mentor: ${mentorName} (${mentorId})`);
+        console.log('ℹ️  Note: User needs to refresh their browser or wait for automatic token refresh');
       },
       error: (error) => {
         // Error notification handled by errorInterceptor
