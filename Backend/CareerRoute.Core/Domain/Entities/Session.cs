@@ -15,7 +15,7 @@ namespace CareerRoute.Core.Domain.Entities
         [MaxLength(450), Required]
         public required string MentorId { get; set; }
         
-        public int? TimeSlotId { get; set; }
+        public string? TimeSlotId { get; set; }
         
         public string? PaymentId { get; set; }
         
