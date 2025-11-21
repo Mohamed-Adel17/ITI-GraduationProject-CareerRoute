@@ -1421,6 +1421,480 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 
 ---
 
+## TimeSlot Availability Management
+
+### 13. Get Available Time Slots for Mentor (Public)
+
+**Endpoint:** `GET /api/mentors/{mentorId}/available-slots`
+**Requires:** None (public access)
+**Roles:** Public
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+
+**Query Parameters:**
+- `startDate` (datetime, optional): Filter slots from this date (default: 24 hours from now)
+- `endDate` (datetime, optional): Filter slots until this date (default: startDate + 90 days, max range: 90 days)
+- `durationMinutes` (integer, optional): Filter by slot duration (30 or 60)
+
+**Default Behavior (No Query Parameters):**
+- Returns all available slots starting **24 hours from now** (respects advance booking rule)
+- Extends up to **90 days** into the future
+- Only includes unbooked slots (`IsBooked = false`)
+- Automatically filters out slots less than 24 hours away
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Available slots retrieved successfully",
+  "data": {
+    "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+    "mentorName": "Sarah Johnson",
+    "availableSlots": [
+      {
+        "id": "ts_123456789",
+        "startDateTime": "2025-12-15T14:00:00Z",
+        "endDateTime": "2025-12-15T15:00:00Z",
+        "durationMinutes": 60,
+        "price": 45.00
+      },
+      {
+        "id": "ts_987654321",
+        "startDateTime": "2025-12-15T16:00:00Z",
+        "endDateTime": "2025-12-15T16:30:00Z",
+        "durationMinutes": 30,
+        "price": 25.00
+      }
+    ],
+    "totalCount": 12,
+    "dateRange": {
+      "startDate": "2025-11-22",
+      "endDate": "2026-02-20"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request (Invalid Parameters):**
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed",
+    "errors": {
+      "StartDate": ["Start date must be before end date"],
+      "DurationMinutes": ["Duration must be 30 or 60 minutes"],
+      "DateRange": ["Date range cannot exceed 90 days"]
+    },
+    "statusCode": 400
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "No available slots found for the specified date range",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Validate mentor exists and is approved
+- Default start date: **24 hours from current time** (not midnight, ensures 24-hour advance booking)
+- Default end date: **90 days from start date**
+- Only return slots where `IsBooked = false`
+- **Always enforce 24-hour minimum advance booking** (even if user provides earlier startDate)
+- Filter by date range and duration if provided
+- Calculate price from mentor's `rate30Min` or `rate60Min` based on duration
+- Order by `startDateTime` ASC
+- Return 404 if no available slots found
+
+---
+
+### 14. Create Time Slot(s) for Mentor
+
+**Endpoint:** `POST /api/mentors/{mentorId}/time-slots`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Mentor (owner) or Admin
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+
+**Request Body (Single Slot):**
+```json
+{
+  "startDateTime": "2025-12-15T14:00:00Z",
+  "durationMinutes": 60
+}
+```
+
+**Request Body (Batch - Max 50 Slots):**
+```json
+{
+  "slots": [
+    {
+      "startDateTime": "2025-12-15T14:00:00Z",
+      "durationMinutes": 60
+    },
+    {
+      "startDateTime": "2025-12-15T16:00:00Z",
+      "durationMinutes": 30
+    }
+  ]
+}
+```
+
+**Field Requirements:**
+- `startDateTime` (required): ISO 8601 datetime, must be at least 24 hours in the future
+- `durationMinutes` (required): Integer, must be 30 or 60
+- `slots` (for batch): Array of slot objects, min 1, max 50
+
+**Success Response (201) - Single Slot:**
+```json
+{
+  "success": true,
+  "message": "Time slot created successfully",
+  "data": {
+    "id": "ts_123456789",
+    "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+    "startDateTime": "2025-12-15T14:00:00Z",
+    "endDateTime": "2025-12-15T15:00:00Z",
+    "durationMinutes": 60,
+    "isBooked": false,
+    "sessionId": null,
+    "createdAt": "2025-11-21T10:00:00Z",
+    "canDelete": true
+  },
+  "statusCode": 201
+}
+```
+
+**Success Response (201) - Batch:**
+```json
+{
+  "success": true,
+  "message": "5 time slots created successfully",
+  "data": [
+    {
+      "id": "ts_123456789",
+      "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+      "startDateTime": "2025-12-15T14:00:00Z",
+      "endDateTime": "2025-12-15T15:00:00Z",
+      "durationMinutes": 60,
+      "isBooked": false,
+      "sessionId": null,
+      "createdAt": "2025-11-21T10:00:00Z",
+      "canDelete": true
+    }
+  ],
+  "statusCode": 201
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request (Validation):**
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed",
+    "errors": {
+      "StartDateTime": ["Time slot must be at least 24 hours in the future"],
+      "DurationMinutes": ["Duration must be 30 or 60 minutes"],
+      "Slots": ["Cannot create more than 50 slots in one request"]
+    },
+    "statusCode": 400
+  }
+  ```
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You can only manage time slots for your own mentor profile",
+    "statusCode": 403
+  }
+  ```
+
+- **409 Conflict (Duplicate):**
+  ```json
+  {
+    "success": false,
+    "message": "A time slot already exists at 2025-12-15 14:00",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token
+- Verify user is mentor owner or admin
+- Validate all slots are at least 24 hours in future
+- Validate duration is 30 or 60 minutes
+- Check for duplicate slots at same time
+- For batch: validate all slots before creating any (atomic operation)
+- Create TimeSlot entities with `IsBooked = false`, `SessionId = null`
+- Return created slot(s) with calculated `endDateTime` and `canDelete` flag
+
+---
+
+### 15. Get Mentor's All Time Slots
+
+**Endpoint:** `GET /api/mentors/{mentorId}/time-slots`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Mentor (owner) or Admin
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+
+**Query Parameters:**
+- `startDate` (datetime, optional): Filter slots from this date (default: today)
+- `endDate` (datetime, optional): Filter slots until this date (default: startDate + 30 days, max range: 90 days)
+- `isBooked` (boolean, optional): Filter by booking status (true = booked, false = available, null = all)
+- `page` (integer, optional): Page number (default: 1, min: 1)
+- `pageSize` (integer, optional): Items per page (default: 20, min: 1, max: 100)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Time slots retrieved successfully",
+  "data": {
+    "timeSlots": [
+      {
+        "id": "ts_123456789",
+        "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+        "startDateTime": "2025-12-15T14:00:00Z",
+        "endDateTime": "2025-12-15T15:00:00Z",
+        "durationMinutes": 60,
+        "isBooked": true,
+        "sessionId": "session_abc123",
+        "session": {
+          "id": "session_abc123",
+          "menteeFirstName": "John",
+          "menteeLastName": "Doe",
+          "status": "Confirmed",
+          "topic": "System Design Interview Prep"
+        },
+        "createdAt": "2025-11-21T10:00:00Z",
+        "canDelete": false
+      },
+      {
+        "id": "ts_987654321",
+        "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+        "startDateTime": "2025-12-15T16:00:00Z",
+        "endDateTime": "2025-12-15T16:30:00Z",
+        "durationMinutes": 30,
+        "isBooked": false,
+        "sessionId": null,
+        "session": null,
+        "createdAt": "2025-11-21T10:00:00Z",
+        "canDelete": true
+      }
+    ],
+    "pagination": {
+      "totalCount": 45,
+      "currentPage": 1,
+      "pageSize": 20,
+      "totalPages": 3,
+      "hasNextPage": true,
+      "hasPreviousPage": false
+    },
+    "summary": {
+      "totalSlots": 45,
+      "availableSlots": 32,
+      "bookedSlots": 13
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request:**
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed",
+    "errors": {
+      "Page": ["Page must be greater than or equal to 1"],
+      "PageSize": ["Page size must be between 1 and 100"],
+      "DateRange": ["Date range cannot exceed 90 days"]
+    },
+    "statusCode": 400
+  }
+  ```
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You can only manage time slots for your own mentor profile",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "No time slots found",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token
+- Verify user is mentor owner or admin
+- Default date range: today to 30 days from today
+- Filter by date range, booking status if provided
+- Include session details for booked slots (mentee name, status, topic)
+- Calculate `canDelete` flag (true if not booked)
+- Order by `startDateTime` ASC
+- Apply pagination
+- Calculate summary statistics (total, available, booked counts)
+- Return 404 if no slots found
+
+---
+
+### 16. Delete Time Slot
+
+**Endpoint:** `DELETE /api/mentors/{mentorId}/time-slots/{slotId}`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Mentor (owner) or Admin
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+- `slotId` (string, GUID): Time slot ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Time slot deleted successfully"
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You can only manage time slots for your own mentor profile",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Time slot not found",
+    "statusCode": 404
+  }
+  ```
+
+- **409 Conflict (Booked Slot):**
+  ```json
+  {
+    "success": false,
+    "message": "Cannot delete a booked time slot. Please cancel the session first.",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token
+- Verify user is mentor owner or admin
+- Validate slot exists and belongs to this mentor
+- Check slot is not booked (`IsBooked = false`)
+- Return 409 if slot is booked
+- Delete slot from database
+- Return success message
+
+**Note:** When a session is cancelled, the associated TimeSlot is automatically released (`IsBooked = false`, `SessionId = null`) and becomes available for booking again.
+
+---
+
+## Testing Checklist
+
+### GET /api/mentors/{mentorId}/available-slots (Public)
+- [ ] Get available slots without filters
+- [ ] Filter by date range (startDate, endDate)
+- [ ] Filter by duration (30 or 60 minutes)
+- [ ] Invalid date range (startDate > endDate) (400)
+- [ ] Date range exceeds 90 days (400)
+- [ ] Invalid duration (not 30 or 60) (400)
+- [ ] Mentor not found (404)
+- [ ] No available slots (404)
+- [ ] Verify only slots >24h in future are returned
+- [ ] Verify only IsBooked=false slots are returned
+- [ ] Verify price calculated from mentor's rates
+
+### POST /api/mentors/{mentorId}/time-slots (Authenticated)
+- [ ] Create single slot successfully
+- [ ] Create batch slots (2-50 slots)
+- [ ] Create slot <24h in future (400)
+- [ ] Create slot with invalid duration (400)
+- [ ] Create batch with >50 slots (400)
+- [ ] Create duplicate slot (409)
+- [ ] Create as non-owner mentor (403)
+- [ ] Create without authentication (401)
+- [ ] Verify admin can create for any mentor
+- [ ] Verify batch is atomic (all or nothing)
+
+### GET /api/mentors/{mentorId}/time-slots (Authenticated)
+- [ ] Get all slots with pagination
+- [ ] Filter by date range
+- [ ] Filter by isBooked status
+- [ ] Invalid pagination parameters (400)
+- [ ] Get as non-owner mentor (403)
+- [ ] Get without authentication (401)
+- [ ] Verify session details included for booked slots
+- [ ] Verify summary statistics are correct
+- [ ] Verify admin can view any mentor's slots
+
+### DELETE /api/mentors/{mentorId}/time-slots/{slotId} (Authenticated)
+- [ ] Delete available slot successfully
+- [ ] Delete booked slot (409)
+- [ ] Delete non-existent slot (404)
+- [ ] Delete as non-owner mentor (403)
+- [ ] Delete without authentication (401)
+- [ ] Verify admin can delete any mentor's slots
+- [ ] Verify slot belongs to specified mentor
+
+---
+
 ## Sample API Requests
 
 **Get All Mentors (Simple):**
