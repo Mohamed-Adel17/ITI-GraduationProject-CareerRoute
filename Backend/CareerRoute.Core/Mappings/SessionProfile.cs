@@ -87,14 +87,16 @@ namespace CareerRoute.Core.Mappings
             CreateMap<CancelSessionRequestDto, CancelSession>();
 
             CreateMap<CancelSession, CancelSessionResponseDto>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-            .ForMember(dest => dest.RefundStatus, opt => opt.MapFrom(src => src.RefundStatus.ToString()));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.RefundStatus, opt => opt.MapFrom(src => src.RefundStatus.ToString()));
 
             CreateMap<Session, JoinSessionResponseDto>()
-            .ForMember(dest => dest.SessionId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Provider, opt => opt.MapFrom(src => "Zoom")) 
-            .ForMember(dest => dest.Instructions, opt => opt.MapFrom(src =>
-                "Click the link to join the session. Please join 5 minutes early to test your audio and video."));
+                .ForMember(dest => dest.SessionId, opt => opt.MapFrom(src => src.Id));
+
+            CreateMap<Session,CompleteSessionResponseDto>()
+                .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Duration, opt => opt.MapFrom(s => s.Duration.ToString()))
+                .ForMember(d => d.PaymentReleaseDate,  opt => opt.MapFrom(s => s.Payment.PaymentReleaseDate));
 
         }
     }

@@ -30,6 +30,7 @@ namespace CareerRoute.Infrastructure.Repositories
         public async Task<Session?> GetByIdWithRelationsAsync(string sessionId)
         {
             return await dbContext.Sessions
+                 .Include(s => s.Payment)
                 .Include(s => s.Mentee)
                 .Include(s => s.Mentor) // Include first-level Mentor entity
                 .ThenInclude(m => m.User)   //  Include the User entity inside Mentor

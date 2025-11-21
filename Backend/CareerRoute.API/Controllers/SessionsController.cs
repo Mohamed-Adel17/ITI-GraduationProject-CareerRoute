@@ -143,7 +143,7 @@ namespace CareerRoute.API.Controllers
 
         [HttpPatch("{id}/cancel")]
         [Authorize(Roles = "User,Mentor,Admin")]
-        public async Task<IActionResult> CancelSession([FromRoute] string id, [FromBody] CancelSessionRequestDto dto)
+        public async Task<ActionResult> CancelSession([FromRoute] string id, [FromBody] CancelSessionRequestDto dto)
         {
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -168,7 +168,7 @@ namespace CareerRoute.API.Controllers
 
         [HttpPost("{id}/join")]
         [Authorize(Roles = "User,Mentor")]
-        public async Task<IActionResult> JoinSession([FromRoute] string id)
+        public async Task<ActionResult> JoinSession([FromRoute] string id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -189,8 +189,35 @@ namespace CareerRoute.API.Controllers
           ));
 
         }
+
+        [HttpPatch("{id}/complete")]
+        [Authorize(Roles = "Mentor,Admin")]
+        public async Task<ActionResult> CompleteSession(string id)
+        {
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthenticatedException("Invalid authentication token");
+            }
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} marks completed ", userId, userRole);
+
+
+            var completeSession = await _sessionService.CompleteSessionAsync(id, userId, userRole);
+
+            return Ok(new ApiResponse<CompleteSessionResponseDto>(
+              completeSession,
+              "Session is marked completed successfully."
+          ));
+        }
+
+
     }
 }
+
 
 
 

@@ -18,9 +18,12 @@ namespace CareerRoute.Core.Services.Interfaces
         Task<RescheduleSessionResponseDto> RescheduleSessionAsync(string sessionId, RescheduleSessionRequestDto dto,
                                                                                 string userId, string role);
 
-
         Task<CancelSessionResponseDto> CancelSessionAsync(string sessionId, CancelSessionRequestDto dto,
                                                                        string userId, string role);
+        Task<JoinSessionResponseDto> JoinSessionAsync(string sessionId, string userId);
+
+        Task<CompleteSessionResponseDto> CompleteSessionAsync(string sessionId, string userId, string role);
+
 
     }
 }

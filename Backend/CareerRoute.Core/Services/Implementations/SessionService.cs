@@ -379,11 +379,39 @@ namespace CareerRoute.Core.Services.Implementations
         */
 
 
+        public async Task<CompleteSessionResponseDto> CompleteSessionAsync(string sessionId, string userId, string role)
+        {
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null)
+                throw new NotFoundException("Session not found.");
 
-        /*
-              public DateTime? CompletedAt { get; set; }
-        */
+            bool isMentor = session.MentorId == userId;
+            bool isAdmin = role == "Admin";
 
+            if (!isMentor && !isAdmin)
+                throw new UnauthorizedException("Only the mentor or admin can mark session as completed.");
+
+            if (session.Status == SessionStatusOptions.Completed)
+                throw new ConflictException("Session is already marked as completed.");
+
+            session.Status = SessionStatusOptions.Completed;
+            session.CompletedAt = DateTime.UtcNow;
+
+            //session.ActualDurationMinutes = recorded? 
+
+            session.Payment.PaymentReleaseDate = session.CompletedAt.Value.AddHours(72); //Include ? 
+
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+
+
+            await SendCompletionEmailAsync(session.Mentee.Email, session);
+
+            var dto = _mapper.Map<CompleteSessionResponseDto>(session);
+            return dto;
+
+        }
 
 
         private async Task SendRescheduleRequestEmailAsync(string receiverEmail, string receiverName,
@@ -509,6 +537,22 @@ namespace CareerRoute.Core.Services.Implementations
         }
 
 
+        private async Task SendCompletionEmailAsync(string menteeEmail, Session session)
+        {
+
+            string htmlContent = $"<p>Hi {session.Mentee.FirstName},</p>" +
+                                 $"<p>Your session with <strong>{session.Mentor.User.FirstName}</strong> scheduled on <strong>{session.ScheduledStartTime:yyyy-MM-dd HH:mm}</strong> has been completed.</p>" +
+                                 $"<p>You can now review the session ir provide feedback.</p>" +
+                                 $"<p>Thank you for using our platform!</p>";
+
+            // Send the email
+            await _emailService.SendEmailAsync(
+                menteeEmail,
+                 "Session Completed",
+                 "Your session is Completed .",
+                htmlContent
+            );
+        }
 
 
     }
