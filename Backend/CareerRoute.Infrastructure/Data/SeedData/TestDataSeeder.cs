@@ -100,6 +100,20 @@ namespace CareerRoute.Infrastructure.Data.SeedData
                     logger.LogInformation("Step 4: Mentor categories already exist, skipping...");
                 }
 
+                // Step 5: Seed TimeSlots
+                var timeSlotsExist = await context.TimeSlots
+                    .AnyAsync(ts => ts.Mentor.User.Email != null && ts.Mentor.User.Email.EndsWith("@test.com"));
+                
+                if (!timeSlotsExist)
+                {
+                    logger.LogInformation("Step 5: Seeding time slots...");
+                    await SeedTestTimeSlotsAsync(context, logger);
+                }
+                else
+                {
+                    logger.LogInformation("Step 5: Time slots already exist, skipping...");
+                }
+
                 logger.LogInformation("=== Test Data Seeding Completed Successfully! ===");
                 logger.LogInformation("Admin Login: admin@careerroute.com / Password: Admin@123");
                 logger.LogInformation("Test Mentors: mentor1-30@test.com / Password: Test@123");
@@ -585,6 +599,87 @@ namespace CareerRoute.Infrastructure.Data.SeedData
             await context.SaveChangesAsync();
 
             logger.LogInformation("Seeded {Count} mentor-category relationships", mentorCategories.Count);
+        }
+
+        private static async Task SeedTestTimeSlotsAsync(ApplicationDbContext context, ILogger logger)
+        {
+            // Get all mentors
+            var mentors = await context.Mentors
+                .Include(m => m.User)
+                .Where(m => m.User.Email != null && m.User.Email.EndsWith("@test.com"))
+                .ToListAsync();
+
+            var timeSlots = new List<TimeSlot>();
+            var startDate = DateTime.UtcNow.AddDays(1).Date; // Start from tomorrow
+            var random = new Random();
+
+            foreach (var mentor in mentors)
+            {
+                // Generate slots for the next 14 days
+                for (int day = 0; day < 14; day++)
+                {
+                    var currentDate = startDate.AddDays(day);
+                    
+                    // Skip weekends randomly (some mentors work weekends)
+                    if ((currentDate.DayOfWeek == DayOfWeek.Saturday || currentDate.DayOfWeek == DayOfWeek.Sunday) && random.Next(2) == 0)
+                    {
+                        continue;
+                    }
+
+                    // Create 2-5 slots per day
+                    int slotsPerDay = random.Next(2, 6);
+                    int startHour = random.Next(9, 17); // Between 9 AM and 5 PM
+
+                    for (int i = 0; i < slotsPerDay; i++)
+                    {
+                        var duration = random.Next(2) == 0 ? 30 : 60;
+                        var slotStart = currentDate.AddHours(startHour).AddMinutes(random.Next(0, 2) * 30);
+                        
+                        // Ensure we don't overlap with previous slot (simple check)
+                        if (i > 0)
+                        {
+                            var lastSlot = timeSlots.Last();
+                            if (lastSlot.StartDateTime.AddMinutes(lastSlot.DurationMinutes) > slotStart)
+                            {
+                                slotStart = lastSlot.StartDateTime.AddMinutes(lastSlot.DurationMinutes).AddMinutes(15); // 15 min break
+                            }
+                        }
+
+                        // Ensure 24-hour rule (though starting from tomorrow usually covers it)
+                        if (slotStart <= DateTime.UtcNow.AddHours(24))
+                        {
+                            continue;
+                        }
+
+                        // 10% chance of being already booked
+                        bool isBooked = random.Next(10) == 0;
+
+                        timeSlots.Add(new TimeSlot
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            MentorId = mentor.Id,
+                            StartDateTime = slotStart,
+                            DurationMinutes = duration,
+                            IsBooked = isBooked,
+                            CreatedAt = DateTime.UtcNow
+                        });
+
+                        // Advance start hour for next slot
+                        startHour += duration / 60 + 1;
+                    }
+                }
+            }
+
+            if (timeSlots.Count > 0)
+            {
+                await context.TimeSlots.AddRangeAsync(timeSlots);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Seeded {Count} time slots for {MentorCount} mentors", timeSlots.Count, mentors.Count);
+            }
+            else
+            {
+                logger.LogWarning("No time slots were generated.");
+            }
         }
     }
 }
