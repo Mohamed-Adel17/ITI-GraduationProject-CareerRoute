@@ -95,11 +95,12 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Mentor", mentorId);
             }
 
-            // Check for duplicate slot
-            var exists = await _timeSlotRepository.CheckSlotExistsAsync(mentorId, createDto.StartDateTime);
-            if (exists)
+            // Check for overlapping slot
+            var endTime = createDto.StartDateTime.AddMinutes(createDto.DurationMinutes);
+            var hasOverlap = await _timeSlotRepository.HasOverlapAsync(mentorId, createDto.StartDateTime, endTime);
+            if (hasOverlap)
             {
-                throw new ConflictException("A time slot already exists at this date/time");
+                throw new ConflictException("The time slot overlaps with an existing slot (booked or available).");
             }
 
             // Create time slot
@@ -137,13 +138,28 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Mentor", mentorId);
             }
 
-            // Check for duplicate slots (all or nothing)
+            // Check for internal overlaps in the batch
+            var sortedSlots = batchDto.Slots.OrderBy(s => s.StartDateTime).ToList();
+            for (int i = 0; i < sortedSlots.Count - 1; i++)
+            {
+                var current = sortedSlots[i];
+                var next = sortedSlots[i + 1];
+                var currentEnd = current.StartDateTime.AddMinutes(current.DurationMinutes);
+
+                if (next.StartDateTime < currentEnd)
+                {
+                    throw new ConflictException($"The batch contains overlapping slots: {current.StartDateTime} overlaps with {next.StartDateTime}");
+                }
+            }
+
+            // Check for overlaps with existing slots
             foreach (var slotDto in batchDto.Slots)
             {
-                var exists = await _timeSlotRepository.CheckSlotExistsAsync(mentorId, slotDto.StartDateTime);
-                if (exists)
+                var endTime = slotDto.StartDateTime.AddMinutes(slotDto.DurationMinutes);
+                var hasOverlap = await _timeSlotRepository.HasOverlapAsync(mentorId, slotDto.StartDateTime, endTime);
+                if (hasOverlap)
                 {
-                    throw new ConflictException($"A time slot already exists at {slotDto.StartDateTime:yyyy-MM-dd HH:mm}");
+                    throw new ConflictException($"The time slot at {slotDto.StartDateTime:yyyy-MM-dd HH:mm} overlaps with an existing slot.");
                 }
             }
 

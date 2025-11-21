@@ -116,5 +116,13 @@ namespace CareerRoute.Infrastructure.Repositories
             return await dbContext.TimeSlots
                 .AnyAsync(ts => ts.MentorId == mentorId && ts.StartDateTime == startDateTime);
         }
+
+        public async Task<bool> HasOverlapAsync(string mentorId, DateTime start, DateTime end)
+        {
+            return await dbContext.TimeSlots
+                .AnyAsync(ts => ts.MentorId == mentorId && 
+                                ts.StartDateTime < end && 
+                                start < ts.StartDateTime.AddMinutes(ts.DurationMinutes));
+        }
     }
 }

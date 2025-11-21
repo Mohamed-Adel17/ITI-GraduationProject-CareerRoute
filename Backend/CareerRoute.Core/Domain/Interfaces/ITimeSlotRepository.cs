@@ -43,5 +43,10 @@ namespace CareerRoute.Core.Domain.Interfaces
         /// Check if a slot already exists at the same time for a mentor
         /// </summary>
         Task<bool> CheckSlotExistsAsync(string mentorId, DateTime startDateTime);
+
+        /// <summary>
+        /// Check if the given time range overlaps with any existing slot for the mentor
+        /// </summary>
+        Task<bool> HasOverlapAsync(string mentorId, DateTime start, DateTime end);
     }
 }
