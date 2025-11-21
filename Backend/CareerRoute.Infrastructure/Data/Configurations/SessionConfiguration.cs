@@ -27,7 +27,8 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                 .HasMaxLength(450);
 
             builder.Property(s => s.TimeSlotId)
-                .IsRequired(false); // Nullable for backward compatibility
+                .IsRequired(false) // Nullable for backward compatibility
+                .HasMaxLength(450);
 
             builder.Property(s => s.PaymentId)
                 .IsRequired(false); // Nullable

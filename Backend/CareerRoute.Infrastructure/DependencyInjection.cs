@@ -7,6 +7,7 @@ using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using CareerRoute.Infrastructure.Services;
+using CareerRoute.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,12 +46,14 @@ public static class DependencyInjection
         services.AddScoped<IMentorRepository, MentorRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ISkillRepository, SkillRepository>();
+        services.AddScoped<ITimeSlotRepository, TimeSlotRepository>();
         // services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
 
         // Infrastructure Service Registration
         // Uncomment and add as you create services
+        // services.AddScoped<ITimeSlotService, TimeSlotService>();
         // services.AddScoped<IEmailService, EmailService>();
         // services.AddScoped<IPaymentService, StripePaymentService>();
         // services.AddScoped<IStorageService, AzureStorageService>();

@@ -48,20 +48,26 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 **Important:** Session booking now uses a **TimeSlot-based system**. Before booking a session, mentees must select from available time slots created by mentors.
 
+**📖 TimeSlot Management Endpoints:** See [Mentor-Endpoints.md - TimeSlot Availability Management](./Mentor-Endpoints.md#timeslot-availability-management) for complete documentation of:
+- GET `/api/mentors/{mentorId}/available-slots` (Public - view available slots)
+- POST `/api/mentors/{mentorId}/time-slots` (Mentor/Admin - create slots)
+- GET `/api/mentors/{mentorId}/time-slots` (Mentor/Admin - manage all slots)
+- DELETE `/api/mentors/{mentorId}/time-slots/{slotId}` (Mentor/Admin - delete slot)
+
 **Booking Flow:**
-1. **Mentor creates availability** → POST `/api/mentors/{mentorId}/time-slots` (creates TimeSlot records)
-2. **Mentee views available slots** → GET `/api/mentors/{mentorId}/available-slots` (public endpoint)
+1. **Mentor creates availability** → POST `/api/mentors/{mentorId}/time-slots` (see [Mentor-Endpoints.md#14](./Mentor-Endpoints.md#14-create-time-slots-for-mentor))
+2. **Mentee views available slots** → GET `/api/mentors/{mentorId}/available-slots` (see [Mentor-Endpoints.md#13](./Mentor-Endpoints.md#13-get-available-time-slots-for-mentor-public))
 3. **Mentee books session** → POST `/api/sessions` with `timeSlotId` (this document, Endpoint 1)
 4. **TimeSlot marked as booked** → `isBooked = true`, `sessionId` set to new session ID
 5. **Mentee creates payment intent** → POST `/api/payments/create-intent` with `sessionId`
 6. **Payment confirmed** → Session status changes to "Confirmed", video link generated
 
 **TimeSlot-Session Relationship:**
-- Each Session is linked to one TimeSlot via `timeSlotId`
+- Each Session is linked to one TimeSlot via `timeSlotId` (string GUID)
 - TimeSlot stores: `startDateTime`, `durationMinutes`, mentor's `rate30Min` or `rate60Min`
 - When session is cancelled, TimeSlot is released (`isBooked = false`, `sessionId = null`)
 - Session price, duration, and schedule are derived from the TimeSlot
-- TimeSlots are created by mentors through their availability management endpoints
+- TimeSlots are created by mentors through their availability management endpoints (see [Mentor-Endpoints.md](./Mentor-Endpoints.md#timeslot-availability-management))
 
 ---
 
