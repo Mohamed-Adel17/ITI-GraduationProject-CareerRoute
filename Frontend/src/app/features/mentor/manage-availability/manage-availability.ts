@@ -74,9 +74,17 @@ export class ManageAvailabilityComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load time slots';
-        this.notificationService.error('Failed to load your availability');
-        this.loading = false;
+        // 404 means no slots found - this is OK, just show empty calendar
+        if (err.status === 404) {
+          this.timeSlots = [];
+          this.generateCalendar();
+          this.loading = false;
+        } else {
+          // Other errors are actual failures
+          this.error = 'Failed to load time slots';
+          this.notificationService.error('Failed to load your availability');
+          this.loading = false;
+        }
       }
     });
   }
