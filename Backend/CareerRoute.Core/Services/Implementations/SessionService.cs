@@ -199,11 +199,7 @@ namespace CareerRoute.Core.Services.Implementations
             if (!mentorTimeSlotAvailable)
                 throw new ConflictException("Mentor has no available time at the requested slot.");
 
-            bool mentorSessionAvailable = await _sessionRepository.IsMentorSessionAvailableAsync(session.MentorId,
-                                            dto.NewScheduledStartTime,
-                                            (int)(session.Duration));
-            if (!mentorSessionAvailable)
-                throw new ConflictException("Mentor has another session at this time.");
+           
 
             bool menteeAvailable = await _sessionRepository.IsMenteeAvailableAsync(session.MentorId,
                                             dto.NewScheduledStartTime,
@@ -256,7 +252,7 @@ namespace CareerRoute.Core.Services.Implementations
             //_sessionRepository.Update(session);
             //await _sessionRepository.SaveChangesAsync();
 
-            //time slot updates if old in session was already a time slot 
+            //time slot updates => free the old , create new with booked = true  
 
         }
 
@@ -311,7 +307,6 @@ namespace CareerRoute.Core.Services.Implementations
             await _cancelSessionRepository.SaveChangesAsync();
 
             session.Status = SessionStatusOptions.Cancelled;
-            session.CancellationId = cancel.Id;
             session.CancellationReason = dto.Reason;
             session.TimeSlotId = null;
             _sessionRepository.Update(session);
