@@ -92,42 +92,13 @@ namespace CareerRoute.Core.Services.Implementations
             string currentUserId,
             CreateTimeSlotDto createDto)
         {
-            // Validate authorization
-            await ValidateOwnershipAsync(mentorId, currentUserId);
-
-            // Validate mentor exists and is approved
-            var mentor = await _mentorRepository.GetByIdAsync(mentorId);
-            if (mentor == null)
+            var batchDto = new BatchCreateTimeSlotsDto
             {
-                throw new NotFoundException("Mentor", mentorId);
-            }
-
-            // Check for overlapping slot
-            var endTime = createDto.StartDateTime.AddMinutes(createDto.DurationMinutes);
-            var hasOverlap = await _timeSlotRepository.HasOverlapAsync(mentorId, createDto.StartDateTime, endTime);
-            if (hasOverlap)
-            {
-                throw new ConflictException("The time slot overlaps with an existing slot (booked or available).");
-            }
-
-            // Create time slot
-            var timeSlot = new TimeSlot
-            {
-                Id = Guid.NewGuid().ToString(),
-                MentorId = mentorId,
-                StartDateTime = createDto.StartDateTime,
-                DurationMinutes = createDto.DurationMinutes,
-                IsBooked = false,
-                SessionId = null,
-                CreatedAt = DateTime.UtcNow
+                Slots = new List<CreateTimeSlotDto> { createDto }
             };
 
-            await _timeSlotRepository.AddAsync(timeSlot);
-            await _timeSlotRepository.SaveChangesAsync();
-
-            // Reload with mentor for mapping
-            var createdSlot = await _timeSlotRepository.GetSlotByIdAsync(timeSlot.Id);
-            return _mapper.Map<TimeSlotDto>(createdSlot);
+            var results = await CreateTimeSlotsAsync(mentorId, currentUserId, batchDto);
+            return results.First();
         }
 
         public async Task<List<TimeSlotDto>> CreateTimeSlotsAsync(
