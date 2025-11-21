@@ -17,23 +17,17 @@ namespace CareerRoute.Infrastructure.Repositories
             DateTime? endDate = null,
             int? durationMinutes = null)
         {
-            // Minimum bookable time: 24 hours from now
-            var minimumDateTime = DateTime.UtcNow.AddHours(24);
-
-            // Default start: 24 hours from now (respects the 24-hour advance booking rule)
-            var start = startDate ?? minimumDateTime;
+            // Default start: Now (if not specified)
+            var start = startDate ?? DateTime.UtcNow;
             
-            // Default end: 90 days from start (or no limit if not specified)
-            // If user provides startDate but no endDate, use 90 days from start
-            // If user provides neither, use 90 days from minimumDateTime
+            // Default end: 90 days from start
             var end = endDate ?? start.AddDays(90);
 
             var query = dbContext.TimeSlots
                 .Include(ts => ts.Mentor)
                 .Where(ts => ts.MentorId == mentorId)
                 .Where(ts => !ts.IsBooked)
-                .Where(ts => ts.StartDateTime >= start && ts.StartDateTime <= end)
-                .Where(ts => ts.StartDateTime > minimumDateTime); // Always enforce 24-hour rule
+                .Where(ts => ts.StartDateTime >= start && ts.StartDateTime <= end);
 
             // Filter by duration if specified
             if (durationMinutes.HasValue)

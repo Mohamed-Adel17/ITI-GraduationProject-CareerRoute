@@ -49,22 +49,29 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException($"This mentor is not currently accepting bookings (Status: {mentor.ApprovalStatus})");
             }
 
-            // Get available slots
+            // Enforce 24-hour advance booking rule
+            var minimumBookableTime = DateTime.UtcNow.AddHours(24);
+
+            // Determine effective start date
+            // If user provides a date, use it but clamp it to minimumBookableTime
+            // If user doesn't provide a date, default to minimumBookableTime
+            var requestedStartDate = query.StartDate ?? minimumBookableTime;
+            var effectiveStartDate = requestedStartDate < minimumBookableTime ? minimumBookableTime : requestedStartDate;
+
+            // Determine effective end date
+            var effectiveEndDate = query.EndDate ?? effectiveStartDate.AddDays(90);
+
+            // Get available slots using the effective range
             var slots = await _timeSlotRepository.GetAvailableSlotsForMentorAsync(
                 mentorId,
-                query.StartDate,
-                query.EndDate,
+                effectiveStartDate,
+                effectiveEndDate,
                 query.DurationMinutes);
 
             var slotsList = slots.ToList();
 
             // Map to DTOs
             var availableSlots = _mapper.Map<List<AvailableSlotDto>>(slotsList);
-
-            // Build response with actual date range used
-            var minimumDateTime = DateTime.UtcNow.AddHours(24);
-            var startDate = query.StartDate ?? minimumDateTime;
-            var endDate = query.EndDate ?? startDate.AddDays(90);
 
             return new AvailableSlotsResponseDto
             {
@@ -74,8 +81,8 @@ namespace CareerRoute.Core.Services.Implementations
                 TotalCount = availableSlots.Count,
                 DateRange = new DateRangeDto
                 {
-                    StartDate = startDate.ToString("yyyy-MM-dd"),
-                    EndDate = endDate.ToString("yyyy-MM-dd")
+                    StartDate = effectiveStartDate.ToString("yyyy-MM-dd"),
+                    EndDate = effectiveEndDate.ToString("yyyy-MM-dd")
                 }
             };
         }
