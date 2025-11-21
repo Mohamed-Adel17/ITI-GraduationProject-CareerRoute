@@ -72,6 +72,12 @@ namespace CareerRoute.API.Middleware
                     response = ApiResponse.Error(emailException.Message, 400);
                     _logger.LogWarning(emailException, $"Send Email exception: {emailException.Message}");
                     break;
+
+                case GoneException goneException:
+                    response  = ApiResponse.Error(goneException.Message, 410);
+                    _logger.LogWarning(goneException, $"Gone exception: {goneException.Message}");
+                    break;
+
                 default:
                     var message = _environment.IsDevelopment()
                         ? exception.Message

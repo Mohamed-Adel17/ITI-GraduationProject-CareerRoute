@@ -75,7 +75,7 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.HasReview, opt => opt.MapFrom(src => src.Review != null));
 
 
-            CreateMap<RescheduleSessionRequestDto, RescheduleSession>() //src , dest 
+            CreateMap<RescheduleSessionRequestDto, RescheduleSession>() 
                 .ForMember(dest => dest.ReschudelReason, opt => opt.MapFrom(src => src.Reason));
 
 
@@ -84,7 +84,17 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.RequestedStartTime, opt => opt.MapFrom(src => src.NewScheduledStartTime));
 
 
+            CreateMap<CancelSessionRequestDto, CancelSession>();
 
+            CreateMap<CancelSession, CancelSessionResponseDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.RefundStatus, opt => opt.MapFrom(src => src.RefundStatus.ToString()));
+
+            CreateMap<Session, JoinSessionResponseDto>()
+            .ForMember(dest => dest.SessionId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Provider, opt => opt.MapFrom(src => "Zoom")) 
+            .ForMember(dest => dest.Instructions, opt => opt.MapFrom(src =>
+                "Click the link to join the session. Please join 5 minutes early to test your audio and video."));
 
         }
     }

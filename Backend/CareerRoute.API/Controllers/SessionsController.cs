@@ -6,6 +6,7 @@ using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SendGrid.Helpers.Errors.Model;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -57,14 +58,14 @@ namespace CareerRoute.API.Controllers
                 throw new UnauthenticatedException("Invalid authentication token");
 
             // Get session details
-            var session = await _sessionService.GetSessionDetailsAsync(id);       
+            var session = await _sessionService.GetSessionDetailsAsync(id);
             // Check if user is allowed: mentee, mentor, or admin
             var isParticipant = (userRole == "User" && session.MenteeId == userId) ||
                                 (userRole == "Mentor" && session.MentorId == userId) ||
                                 (userRole == "Admin");
 
             if (!isParticipant)
-                throw new UnauthorizedException("You don't have permission to view this session");
+                throw new Core.Exceptions.UnauthorizedException("You don't have permission to view this session");
 
             return Ok(new ApiResponse<SessionDetailsResponseDto>(session, "Session retrieved successfully"));
         }
@@ -99,7 +100,7 @@ namespace CareerRoute.API.Controllers
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+                throw new UnauthenticatedException("Invalid authentication token");
             }
 
             _logger.LogInformation("UserId {userId} with Role {userRole} requested past sessions", userId, userRole);
@@ -115,7 +116,7 @@ namespace CareerRoute.API.Controllers
 
         [HttpPatch("{id}/reschedule")]
         [Authorize(Roles = "User,Mentor")]
-        public async Task<IActionResult> RescheduleSession(
+        public async Task<ActionResult> RescheduleSession(
                 [FromRoute] string id,
                 [FromBody] RescheduleSessionRequestDto dto)
         {
@@ -125,7 +126,7 @@ namespace CareerRoute.API.Controllers
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+                throw new UnauthenticatedException("Invalid authentication token");
             }
 
             _logger.LogInformation("UserId {userId} with Role {userRole} requested rescheduling ", userId, userRole);
@@ -138,9 +139,57 @@ namespace CareerRoute.API.Controllers
                 "Reschedule request submitted successfully. Waiting for approval/Rejection from Email."
             ));
         }
-          
-    }
 
+
+        [HttpPatch("{id}/cancel")]
+        [Authorize(Roles = "User,Mentor,Admin")]
+        public async Task<IActionResult> CancelSession([FromRoute] string id, [FromBody] CancelSessionRequestDto dto)
+        {
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthenticatedException("Invalid authentication token");
+            }
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} requested cancelling ", userId, userRole);
+
+
+            var cancelledSession = await _sessionService.CancelSessionAsync(id, dto, userId, userRole);
+
+            return Ok(new ApiResponse<CancelSessionResponseDto>(
+                cancelledSession,
+                "Session cancelled successfully. Refund processed according to cancellation policy."
+            ));
+
+        }
+
+        [HttpPost("{id}/join")]
+        [Authorize(Roles = "User,Mentor")]
+        public async Task<IActionResult> JoinSession([FromRoute] string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthenticatedException("Invalid authentication token");
+            }
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} requested joining ", userId, userRole);
+
+
+            var joinSession = await _sessionService.JoinSessionAsync(id, userId);
+
+            return Ok(new ApiResponse<JoinSessionResponseDto>(
+              joinSession,
+              "Your video conference link retrieved successfully."
+          ));
+
+        }
+    }
 }
 
 

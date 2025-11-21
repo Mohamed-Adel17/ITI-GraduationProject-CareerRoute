@@ -15,7 +15,7 @@ namespace CareerRoute.Infrastructure.Data.Configurations
         public void Configure(EntityTypeBuilder<RescheduleSession> builder)
         {
 
-            builder.ToTable("Sessions", t =>
+            builder.ToTable("RescheduleSession", t =>
             {
                 t.HasCheckConstraint("CK_Reschedule_Reason_MinLength", "LEN(ReschudelReason) >= 10");
             }); 

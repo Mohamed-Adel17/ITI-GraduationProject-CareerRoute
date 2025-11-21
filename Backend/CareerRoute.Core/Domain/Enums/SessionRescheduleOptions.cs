@@ -9,7 +9,8 @@ namespace CareerRoute.Core.Domain.Enums
     public enum SessionRescheduleOptions
     {
         Pending,
-        Confirmed
+        Confirmed,
+        Rejected
              
     }
 }

@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<ITimeSlotRepository, TimeSlotRepository>();
         services.AddScoped<IRescheduleSessionRepository, RescheduleSessionRepository>();
+        services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
 

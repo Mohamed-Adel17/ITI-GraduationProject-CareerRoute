@@ -15,7 +15,7 @@ namespace CareerRoute.Core.Domain.Entities
         [MaxLength(450), Required]
         public required string MentorId { get; set; }
         
-        public int? TimeSlotId { get; set; }
+        public string TimeSlotId { get; set; }
         
         public string? PaymentId { get; set; }
         
@@ -56,8 +56,11 @@ namespace CareerRoute.Core.Domain.Entities
         public virtual TimeSlot? TimeSlot { get; set; }
         public Payment? Payment { get; set; }
         public ReviewSession? Review { get; set; }
-        public CancelSession? Cancellation { get; set; }
+        public string RescheduleId { get; set; }
+        public string CancellationId { get; set; }
+
         public RescheduleSession? Reschedule { get; set; }
+        public CancelSession? Cancellation { get; set; }
 
     }
 }
