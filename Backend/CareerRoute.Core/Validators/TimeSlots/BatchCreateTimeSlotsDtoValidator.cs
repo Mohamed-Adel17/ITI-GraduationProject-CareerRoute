@@ -1,7 +1,7 @@
 using CareerRoute.Core.DTOs.TimeSlots;
 using FluentValidation;
 
-namespace CareerRoute.Core.Validators
+namespace CareerRoute.Core.Validators.TimeSlots
 {
     public class BatchCreateTimeSlotsDtoValidator : AbstractValidator<BatchCreateTimeSlotsDto>
     {

@@ -1,7 +1,7 @@
 using CareerRoute.Core.DTOs.Mentors;
 using FluentValidation;
 
-namespace CareerRoute.Core.Validators
+namespace CareerRoute.Core.Validators.Mentors
 {
     public class MentorSearchRequestValidator : AbstractValidator<MentorSearchRequestDto>
     {
