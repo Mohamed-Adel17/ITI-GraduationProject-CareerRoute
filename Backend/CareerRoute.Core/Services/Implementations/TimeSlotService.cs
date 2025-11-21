@@ -7,7 +7,7 @@ using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
-namespace CareerRoute.Infrastructure.Services.Implementations
+namespace CareerRoute.Core.Services.Implementations
 {
     public class TimeSlotService : ITimeSlotService
     {

@@ -27,7 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<ICategoryService, CategoryService>();
         // services.AddScoped<ISessionService, SessionService>();
-        // TimeSlotService is registered in Infrastructure layer
+        services.AddScoped<ITimeSlotService, TimeSlotService>();
 
         services.AddAutoMapper(options =>
         {

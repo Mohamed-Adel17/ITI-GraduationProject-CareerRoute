@@ -7,7 +7,7 @@ using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using CareerRoute.Infrastructure.Services;
-using CareerRoute.Infrastructure.Services.Implementations;
+using CareerRoute.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,7 +53,7 @@ public static class DependencyInjection
 
         // Infrastructure Service Registration
         // Uncomment and add as you create services
-        services.AddScoped<ITimeSlotService, TimeSlotService>();
+        // services.AddScoped<ITimeSlotService, TimeSlotService>();
         // services.AddScoped<IEmailService, EmailService>();
         // services.AddScoped<IPaymentService, StripePaymentService>();
         // services.AddScoped<IStorageService, AzureStorageService>();
