@@ -115,7 +115,7 @@ namespace CareerRoute.API.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
         public async Task<ActionResult> CreateTimeSlots(
             string mentorId,
-            [FromBody] object requestBody)
+            [FromBody] System.Text.Json.JsonElement requestBody)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -123,15 +123,14 @@ namespace CareerRoute.API.Controllers
                 return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
             }
 
-            // Try to deserialize as batch first, then as single
-            var requestJson = System.Text.Json.JsonSerializer.Serialize(requestBody);
-            
-            try
+            var jsonOptions = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            // Check if it's a batch request (has "slots" array)
+            if (requestBody.TryGetProperty("slots", out _))
             {
-                // Try batch creation
                 var batchDto = System.Text.Json.JsonSerializer.Deserialize<BatchCreateTimeSlotsDto>(
-                    requestJson,
-                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    requestBody.GetRawText(),
+                    jsonOptions);
 
                 if (batchDto?.Slots != null && batchDto.Slots.Any())
                 {
@@ -149,15 +148,11 @@ namespace CareerRoute.API.Controllers
                             StatusCodes.Status201Created));
                 }
             }
-            catch
-            {
-                // If batch deserialization fails, try single
-            }
 
-            // Try single slot creation
+            // Otherwise, treat as single slot request
             var singleDto = System.Text.Json.JsonSerializer.Deserialize<CreateTimeSlotDto>(
-                requestJson,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                requestBody.GetRawText(),
+                jsonOptions);
 
             if (singleDto != null)
             {
