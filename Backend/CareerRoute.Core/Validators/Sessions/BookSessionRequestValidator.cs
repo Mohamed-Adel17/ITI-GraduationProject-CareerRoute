@@ -25,8 +25,9 @@ namespace CareerRoute.Core.Validators.Sessions
 
 
             RuleFor(x => x.Notes)
-                .MaximumLength(200)
-                .WithMessage("Notes must not exceed 200 char");
+                .MaximumLength(1000)
+                .WithMessage("Notes must not exceed 1000 char");
+
 
 
         }

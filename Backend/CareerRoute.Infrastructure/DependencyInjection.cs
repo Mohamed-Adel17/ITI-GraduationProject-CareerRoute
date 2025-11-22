@@ -10,6 +10,7 @@ using CareerRoute.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using CareerRoute.Infrastructure.BackgroundJobs;
 
 
 namespace CareerRoute.Infrastructure;
@@ -51,6 +52,9 @@ public static class DependencyInjection
         services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
+
+        //BackGround Jobs
+        services.AddScoped<SessionBackgroundJobs>();
 
         // Infrastructure Service Registration
         // Uncomment and add as you create services

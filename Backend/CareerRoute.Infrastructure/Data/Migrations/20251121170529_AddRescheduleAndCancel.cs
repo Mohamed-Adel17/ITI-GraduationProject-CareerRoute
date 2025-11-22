@@ -25,7 +25,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CancellationReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    CancelationReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     CancelledBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     Status = table.Column<int>(type: "int", nullable: false),

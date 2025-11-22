@@ -49,7 +49,8 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
         
         public DateTime? CompletedAt { get; set; }
-        
+        public int HoursUntilSession { get; set; }
+
         // Navigation properties
         public virtual ApplicationUser Mentee { get; set; } = null!;
         public virtual Mentor Mentor { get; set; } = null!;

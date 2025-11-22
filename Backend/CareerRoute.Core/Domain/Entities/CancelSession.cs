@@ -11,7 +11,7 @@ namespace CareerRoute.Core.Domain.Entities
     public  class CancelSession
     {
         public string Id { get; set; }   
-        public string CancellationReason { get; set; } 
+        public string CancelationReason { get; set; } 
         public string CancelledBy { get; set; }
         public DateTime CancelledAt { get; set; } = DateTime.UtcNow;
         public SessionStatusOptions Status { get; set; }

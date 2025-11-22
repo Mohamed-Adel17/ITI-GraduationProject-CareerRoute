@@ -27,7 +27,7 @@ namespace CareerRoute.Core.DTOs.Sessions
         public string VideoConferenceLink { get; set; }
         public string? Topic { get; set; }
 
-        public double HoursUntilSession { get; set; }
+        public int HoursUntilSession { get; set; }
 
 
     }

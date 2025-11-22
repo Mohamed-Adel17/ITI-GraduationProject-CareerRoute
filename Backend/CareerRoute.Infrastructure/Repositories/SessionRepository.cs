@@ -1,6 +1,7 @@
 ﻿using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using SendGrid.Helpers.Mail;
@@ -37,27 +38,66 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(s => s.Payment)
                 .FirstOrDefaultAsync(s => s.Id == sessionId);
         }
-
-        public async Task<List<Session>> GetUpcomingSessionsAsync() //I think should be 3 functions one for mentor , other for mentee , other for admin 
+        public async Task<List<Session>> GetSessionsStartingBetweenAsync(DateTime start, DateTime end) //For Background job 
         {
-            var now = DateTime.UtcNow;
-
             return await dbContext.Sessions
-        .Where(s => s.ScheduledStartTime >= now && 
-                    s.Status == SessionStatusOptions.Confirmed || s.Status== SessionStatusOptions.Pending) 
-        .ToListAsync();
-        }
-
-        public async Task<List<Session>> GetPastSessionsAsync() //I think should be 3 functions one for mentor , other for mentee , other for admin 
-        {
-            var now = DateTime.UtcNow;
-
-            return await dbContext.Sessions
-                .Where(s => s.ScheduledStartTime < now)
+                .Where(s => s.Status == SessionStatusOptions.Confirmed
+                            && s.ScheduledStartTime > start
+                            && s.ScheduledStartTime <= end)
                 .ToListAsync();
         }
 
-       
+
+        public async Task<List<Session>> GetUpcomingSessionsAsync(string userId, string userRole)
+        {
+            var now = DateTime.UtcNow;
+
+            var query = dbContext.Sessions.AsQueryable();
+
+            // Filter by user role
+            if (userRole == "User")
+                query = query.Where(s => s.MenteeId == userId);
+            else if (userRole == "Mentor")
+                query = query.Where(s => s.MentorId == userId);
+            // Admin can see all, no filter
+
+            // Filter by status and future sessions
+            query = query.Where(s => (s.Status == SessionStatusOptions.Confirmed
+                                      || s.Status == SessionStatusOptions.Pending)
+                                      && s.ScheduledStartTime >= now);
+
+            // Order by start time
+            query = query.OrderBy(s => s.ScheduledStartTime);
+
+            return await query.ToListAsync();
+        }
+
+
+        public async Task<List<Session>> GetPastSessionsAsync(string userId, string userRole)
+        {
+            var now = DateTime.UtcNow;
+
+            var query = dbContext.Sessions.AsQueryable();
+
+            // Filter by user role
+            if (userRole == "User")
+                query = query.Where(s => s.MenteeId == userId);
+            else if (userRole == "Mentor")
+                query = query.Where(s => s.MentorId == userId);
+            // Admin can see all sessions
+
+            // Filter by past status: Completed or Cancelled
+            query = query.Where(s => s.Status == SessionStatusOptions.Completed
+                                     || s.Status == SessionStatusOptions.Cancelled);
+
+            
+            query = query.OrderByDescending(s => s.ScheduledStartTime);
+
+            return await query.ToListAsync();
+        }
+
+
+
 
         public async Task<bool> IsMenteeAvailableAsync(string menteeId, DateTime newStart, int durationMinutes)
         {

@@ -27,6 +27,8 @@ using System.Threading.Tasks;
 using static Microsoft.AspNetCore.Internal.AwaitableThreadPool;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
+using Hangfire;
+
 
 namespace CareerRoute.Core.Services.Implementations
 {
@@ -90,7 +92,6 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new ConflictException("TimeSlot must be booked at least 24 hours in advance.");
 
 
-
             var mentor = await _mentorRepository.GetByIdAsync(timeSlot.MentorId);
             if (mentor == null)
                 throw new NotFoundException("Mentor not found.");
@@ -122,6 +123,7 @@ namespace CareerRoute.Core.Services.Implementations
             session.CreatedAt = DateTime.UtcNow;
             session.TimeSlotId = dto.TimeSlotId;
 
+
             await _sessionRepository.AddAsync(session);
             await _sessionRepository.SaveChangesAsync();
 
@@ -136,21 +138,32 @@ namespace CareerRoute.Core.Services.Implementations
 
 
 
-        public async Task<SessionDetailsResponseDto> GetSessionDetailsAsync(string sessionId)
+        public async Task<SessionDetailsResponseDto> GetSessionDetailsAsync(string sessionId, string userId, string userRole)
         {
             var session = await _sessionRepository.GetByIdWithRelationsAsync(sessionId);
+
             if (session == null)
                 throw new NotFoundException("Session", sessionId);
 
+            var isParticipant = (userRole == "User" && session.MenteeId == userId) ||
+                                (userRole == "Mentor" && session.MentorId == userId) ||
+                                (userRole == "Admin");
+
+            if (!isParticipant)
+                throw new UnauthorizedException("You don't have permission to view this session");
+
             var dto = _mapper.Map<SessionDetailsResponseDto>(session);
+
             return dto;
         }
 
 
-        public async Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync()
+
+        public async Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync(string userId, string userRole)
         {
 
-            var allUpcomingSessions = await _sessionRepository.GetUpcomingSessionsAsync();
+            var allUpcomingSessions = await _sessionRepository.GetUpcomingSessionsAsync( userId,  userRole);
+
 
             //Empty List 
             if (allUpcomingSessions.Count == 0)
@@ -163,9 +176,9 @@ namespace CareerRoute.Core.Services.Implementations
         }
 
 
-        public async Task<List<PastSessionsResponseDto>> GetPastSessionsAsync()
+        public async Task<List<PastSessionsResponseDto>> GetPastSessionsAsync(string userId, string userRole)
         {
-            var allPastSessions = await _sessionRepository.GetPastSessionsAsync();
+            var allPastSessions = await _sessionRepository.GetPastSessionsAsync(userId, userRole);
 
             if (allPastSessions.Count == 0)
 
@@ -219,7 +232,9 @@ namespace CareerRoute.Core.Services.Implementations
             await _rescheduleSessionRepository.AddAsync(rescheduleRequest);
             await _rescheduleSessionRepository.SaveChangesAsync();
 
-
+            BackgroundJob.Schedule<IRescheduleSessionService>(
+            service => service.HandlePendingRescheduleAsync(rescheduleRequest.Id), // Implement => HandlePendingRescheduleAsync
+            TimeSpan.FromHours(48));
 
 
             string receiverEmail;
@@ -358,7 +373,7 @@ namespace CareerRoute.Core.Services.Implementations
             var dto = _mapper.Map<JoinSessionResponseDto>(session);
 
 
-            dto.MinutesUntilStart = Math.Max(0, (int)(session.ScheduledStartTime - DateTime.UtcNow).TotalMinutes);
+            dto.MinutesUntilStart = session.HoursUntilSession * 60;
             dto.CanJoinNow = DateTime.UtcNow >= earlyJoinLimit && DateTime.UtcNow <= lateJoinLimit && session.Status == SessionStatusOptions.Confirmed;
             dto.VideoConferenceLink = session.VideoConferenceLink; 
             dto.Provider =  "Zoom"; //may be changed 
@@ -372,6 +387,7 @@ namespace CareerRoute.Core.Services.Implementations
         Mark attendance when participant joins
         Update session status to "InProgress" when first participant joins
         */
+
 
 
         public async Task<CompleteSessionResponseDto> CompleteSessionAsync(string sessionId, string userId, string role)
@@ -403,6 +419,9 @@ namespace CareerRoute.Core.Services.Implementations
 
             await SendCompletionEmailAsync(session.Mentee.Email, session);
 
+            //Trigger 72 - hour payment hold(release after 3 days if no disputes)
+            //Trigger review request email to mentee after 24 hours
+            //Activate 3 - day chat window between mentor and mentee
             var dto = _mapper.Map<CompleteSessionResponseDto>(session);
             return dto;
 

@@ -1,6 +1,8 @@
 ﻿public class SessionDetailsResponseDto
 {
+
     public string Id { get; set; }
+
     public string MenteeId { get; set; }
     public string MenteeFirstName { get; set; }
     public string MenteeLastName { get; set; }
@@ -27,12 +29,15 @@
     public string PaymentId { get; set; }
     public string PaymentStatus { get; set; }
 
-    //public string? CancellationReason { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+    public string? CancellationReason { get; set; }
 
     public bool CanReschedule { get; set; }
     public bool CanCancel { get; set; }
-    public double HoursUntilSession { get; set; }
-  
+    public int HoursUntilSession { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
+
+
+

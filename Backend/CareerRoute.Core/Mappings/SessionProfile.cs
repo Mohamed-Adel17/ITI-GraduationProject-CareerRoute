@@ -35,11 +35,9 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.ToString()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.Payment.Status.ToString()))
-                // Computed fields
-                .ForMember(dest => dest.HoursUntilSession, //Need To be Background Task
-                opt => opt.MapFrom(src =>(src.ScheduledStartTime - DateTime.UtcNow).TotalHours))
-                .ForMember(dest => dest.CanCancel,opt => opt.MapFrom(src =>src.Status == SessionStatusOptions.Confirmed ))
-                .ForMember(dest => dest.CanReschedule,opt => opt.MapFrom(src =>(src.ScheduledStartTime - DateTime.UtcNow).TotalHours > 24 &&src.Status == SessionStatusOptions.Confirmed));
+               // Computed fields
+               .ForMember(dest => dest.CanReschedule, opt => opt.MapFrom(src => (src.ScheduledStartTime - DateTime.UtcNow).TotalHours > 24 && src.Status == SessionStatusOptions.Confirmed))
+               .ForMember(dest => dest.CanCancel, opt => opt.MapFrom(src => src.Status == SessionStatusOptions.Confirmed && src.CompletedAt == null));
 
 
             CreateMap<Session, UpCommingSessionsResponseDto>()
@@ -55,11 +53,7 @@ namespace CareerRoute.Core.Mappings
                 // Enum to String Mappings
                 .ForMember(dest => dest.SessionType, opt => opt.MapFrom(src => src.SessionType.ToString()))
                 .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.ToString()))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-
-                // Computed fields
-                .ForMember(dest => dest.HoursUntilSession, opt => opt.MapFrom(src => //Need To be Background Task
-                (src.ScheduledStartTime - DateTime.UtcNow).TotalHours));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
 
             CreateMap<Session, PastSessionsResponseDto >()  
