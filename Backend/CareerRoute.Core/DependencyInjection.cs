@@ -4,6 +4,7 @@ using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Validators.Mentors;
 using CareerRoute.Core.Validators.Payments;
+using CareerRoute.Core.Validators.Sessions;
 using CareerRoute.Core.Validators.Users;
 
 using FluentValidation;
@@ -26,7 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IMentorService, MentorService>();
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<ICategoryService, CategoryService>();
-        // services.AddScoped<ISessionService, SessionService>();
+        services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<ITimeSlotService, TimeSlotService>();
 
         services.AddAutoMapper(options =>
@@ -37,6 +38,7 @@ public static class DependencyInjection
             options.AddProfile<CategoryMappingProfile>();
             options.AddProfile<PaymentProfile>();
             options.AddProfile<TimeSlotMappingProfile>();
+            options.AddProfile<SessionProfile>();
         });
 
 
@@ -45,6 +47,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<UpdateMentorProfileValidator>();
         services.AddValidatorsFromAssemblyContaining<PaymentIntentRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<PaymentConfirmRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<BookSessionRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<RescheduleSessionRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<CancelSessionRequestValidator>();
 
 
         return services;

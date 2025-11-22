@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Domain.Enums
 {
-    public enum RefundStatus
+    public enum SessionRescheduleOptions
     {
         Pending,
-        Processing,
-         Completed,
-         Failed
+        Confirmed,
+        Rejected
+             
     }
 }

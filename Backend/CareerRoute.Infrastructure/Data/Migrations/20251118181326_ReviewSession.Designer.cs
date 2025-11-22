@@ -4,6 +4,7 @@ using CareerRoute.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CareerRoute.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251118181326_ReviewSession")]
+    partial class ReviewSession
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -115,53 +118,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.CancelSession", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("CancelationReason")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("CancelledAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("CancelledBy")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal>("RefundAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("RefundPercentage")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RefundStatus")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SessionId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SessionId")
-                        .IsUnique();
-
-                    b.ToTable("CancelSession", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Cancelation_Reason_MinLength", "LEN(CancelationReason) >= 10");
-                        });
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Category", b =>
@@ -418,43 +374,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RescheduleSession", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("NewScheduledStartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("OriginalStartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("RequestedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RequestedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReschudelReason")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SessionId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SessionId")
-                        .IsUnique();
-
-                    b.ToTable("RescheduledSessions");
-                });
-
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.ReviewSession", b =>
                 {
                     b.Property<string>("Id")
@@ -494,9 +413,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<int>("HoursUntilSession")
-                        .HasColumnType("int");
-
                     b.Property<string>("MenteeId")
                         .IsRequired()
                         .HasMaxLength(450)
@@ -533,9 +449,8 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<string>("TimeSlotId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int?>("TimeSlotId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Topic")
                         .HasMaxLength(200)
@@ -811,17 +726,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.CancelSession", b =>
-                {
-                    b.HasOne("CareerRoute.Core.Domain.Entities.Session", "Session")
-                        .WithOne("Cancellation")
-                        .HasForeignKey("CareerRoute.Core.Domain.Entities.CancelSession", "SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Session");
-                });
-
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Mentor", b =>
                 {
                     b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "User")
@@ -872,17 +776,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RescheduleSession", b =>
-                {
-                    b.HasOne("CareerRoute.Core.Domain.Entities.Session", "Session")
-                        .WithOne("Reschedule")
-                        .HasForeignKey("CareerRoute.Core.Domain.Entities.RescheduleSession", "SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Session");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.ReviewSession", b =>
@@ -1037,11 +930,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Session", b =>
                 {
-                    b.Navigation("Cancellation");
-
                     b.Navigation("Payment");
-
-                    b.Navigation("Reschedule");
 
                     b.Navigation("Review");
 

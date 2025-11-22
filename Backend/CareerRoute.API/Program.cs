@@ -4,8 +4,10 @@ using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Setting;
 using CareerRoute.Infrastructure;
+using CareerRoute.Infrastructure.BackgroundJobs;
 using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Data.SeedData;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -135,7 +137,28 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+
+
+//HangFire 
+builder.Services.AddHangfire(config => config.UseSqlServerStorage("connection strings"));
+builder.Services.AddHangfireServer();
+builder.Services.AddScoped<SessionBackgroundJobs>();
+
 var app = builder.Build();
+
+
+// Get Hangfire's recurring job manager from DI
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    // Schedule the recurring job
+    recurringJobManager.AddOrUpdate<SessionBackgroundJobs>(
+        "UpdateHoursUntilSessionJob",                      // job ID
+        job => job.UpdateHoursUntilSessionAsync(),         // method to call
+        Cron.Minutely                                      // schedule
+    );
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
