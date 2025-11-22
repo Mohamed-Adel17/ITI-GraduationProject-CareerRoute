@@ -14,8 +14,8 @@ namespace CareerRoute.Core.Domain.Entities
         
         [MaxLength(450), Required]
         public required string MentorId { get; set; }
-        
-        public string TimeSlotId { get; set; }
+
+        public string? TimeSlotId { get; set; }
         
         public string? PaymentId { get; set; }
         
@@ -49,7 +49,6 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
         
         public DateTime? CompletedAt { get; set; }
-        public int HoursUntilSession { get; set; }
 
         // Navigation properties
         public virtual ApplicationUser Mentee { get; set; } = null!;

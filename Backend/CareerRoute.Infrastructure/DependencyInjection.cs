@@ -7,11 +7,10 @@ using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using CareerRoute.Infrastructure.Services;
-using CareerRoute.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using CareerRoute.Infrastructure.BackgroundJobs;
+using Hangfire;
 
 
 namespace CareerRoute.Infrastructure;
@@ -55,7 +54,7 @@ public static class DependencyInjection
 
 
         //BackGround Jobs
-        services.AddScoped<SessionBackgroundJobs>();
+        //services.AddScoped<SessionBackgroundJobs>();
 
         // Infrastructure Service Registration
         // Uncomment and add as you create services
@@ -77,6 +76,15 @@ public static class DependencyInjection
         })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+        services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
+
+        services.AddHangfireServer();
+
 
         return services;
     }

@@ -122,7 +122,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("CancelationReason")
+                    b.Property<string>("CancellationReason")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -493,9 +493,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("HoursUntilSession")
-                        .HasColumnType("int");
 
                     b.Property<string>("MenteeId")
                         .IsRequired()

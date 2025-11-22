@@ -6,27 +6,8 @@ using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Extentions;
 using CareerRoute.Core.Services.Interfaces;
-using CareerRoute.Core.Validators.Sessions;
 using FluentValidation;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Drawing;
-using System.Linq;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Threading.Channels;
-using System.Threading.Tasks;
-using static Microsoft.AspNetCore.Internal.AwaitableThreadPool;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using static System.Net.WebRequestMethods;
 using Hangfire;
 
 
@@ -162,7 +143,7 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync(string userId, string userRole)
         {
 
-            var allUpcomingSessions = await _sessionRepository.GetUpcomingSessionsAsync( userId,  userRole);
+            var allUpcomingSessions = await _sessionRepository.GetUpcomingSessionsAsync(userId, userRole);
 
 
             //Empty List 
@@ -205,14 +186,17 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new UnauthorizedException("You don't have permission to view this session as You are not a participant of this session.");
 
 
-            bool mentorTimeSlotAvailable = await _timeSlotRepository.IsAvailableTimeSlotAsync(session.MentorId,
+            bool mentorTimeSlotAvailable = await _timeSlotRepository.HasOverlapAsync(
+                                            session.MentorId,
                                             dto.NewScheduledStartTime,
-                                            (int)(session.Duration));
+                                            dto.NewScheduledStartTime.AddMinutes((int)session.Duration)
+                                            );
 
+  
             if (!mentorTimeSlotAvailable)
                 throw new ConflictException("Mentor has no available time at the requested slot.");
 
-           
+
 
             bool menteeAvailable = await _sessionRepository.IsMenteeAvailableAsync(session.MentorId,
                                             dto.NewScheduledStartTime,
@@ -363,7 +347,7 @@ namespace CareerRoute.Core.Services.Implementations
             var earlyJoinLimit = session.ScheduledStartTime.AddMinutes(-15);
             var lateJoinLimit = session.ScheduledEndTime.AddMinutes(15);
 
-           
+
             if (DateTime.UtcNow < earlyJoinLimit)
                 throw new ConflictException("Session has not started yet. You can join 15 minutes before scheduled time.");
 
@@ -373,10 +357,11 @@ namespace CareerRoute.Core.Services.Implementations
             var dto = _mapper.Map<JoinSessionResponseDto>(session);
 
 
-            dto.MinutesUntilStart = session.HoursUntilSession * 60;
+            dto.MinutesUntilStart =(int) (session.ScheduledStartTime - DateTime.UtcNow).TotalMinutes;
+            //dto.MinutesUntilStart = session.HoursUntilSession * 60;
             dto.CanJoinNow = DateTime.UtcNow >= earlyJoinLimit && DateTime.UtcNow <= lateJoinLimit && session.Status == SessionStatusOptions.Confirmed;
-            dto.VideoConferenceLink = session.VideoConferenceLink; 
-            dto.Provider =  "Zoom"; //may be changed 
+            dto.VideoConferenceLink = session.VideoConferenceLink??string.Empty;
+            dto.Provider = "Zoom"; //may be changed 
             dto.Instructions = "Click the link to join the session. Please join 5 minutes early to test your audio and video.";
 
             return dto;

@@ -22,7 +22,7 @@ namespace CareerRoute.Infrastructure.Data.Configurations
             // Primary key
             builder.HasKey(c => c.Id);
 
-            builder.Property(c => c.CancelationReason)
+            builder.Property(c => c.CancellationReason)
                    .IsRequired()
                    .HasMaxLength(500);
 

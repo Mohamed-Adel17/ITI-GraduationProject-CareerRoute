@@ -10,13 +10,13 @@ namespace CareerRoute.Core.Domain.Entities
 {
     public  class CancelSession
     {
-        public string Id { get; set; }   
-        public string CancelationReason { get; set; } 
-        public string CancelledBy { get; set; }
+        public string Id { get; set; } = null!;
+        public string CancellationReason { get; set; } = string.Empty;
+        public string CancelledBy { get; set; } = string.Empty;
         public DateTime CancelledAt { get; set; } = DateTime.UtcNow;
         public SessionStatusOptions Status { get; set; }
-        public string SessionId { get; set; }
-        public Session Session { get; set; } 
+        public string SessionId { get; set; } = null!;
+        public virtual Session Session { get; set; } 
 
         // Refund details
         public decimal RefundAmount { get; set; } 

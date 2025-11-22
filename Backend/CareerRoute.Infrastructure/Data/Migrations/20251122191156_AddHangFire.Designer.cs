@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CareerRoute.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251122013835_AddHoursUntilSessionField")]
-    partial class AddHoursUntilSessionField
+    [Migration("20251122191156_AddHangFire")]
+    partial class AddHangFire
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -125,7 +125,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("CancelationReason")
+                    b.Property<string>("CancellationReason")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -497,9 +497,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<int>("HoursUntilSession")
-                        .HasColumnType("int");
-
                     b.Property<string>("MenteeId")
                         .IsRequired()
                         .HasMaxLength(450)
@@ -537,7 +534,8 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("TimeSlotId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Topic")
                         .HasMaxLength(200)
