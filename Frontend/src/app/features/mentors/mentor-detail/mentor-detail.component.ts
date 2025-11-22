@@ -7,6 +7,7 @@ import { MentorService } from '../../../core/services/mentor.service';
 import { TimeslotService } from '../../../core/services/timeslot.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { RatingDisplay } from '../../../shared/components/rating-display/rating-display';
+import { BookingCalendarModalComponent } from './booking-calendar-modal/booking-calendar-modal.component';
 import {
   MentorDetail,
   getMentorFullName,
@@ -60,7 +61,7 @@ import { BookSessionRequest, BookingRules } from '../../../shared/models/booking
 @Component({
   selector: 'app-mentor-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent],
   templateUrl: './mentor-detail.component.html',
   styleUrls: ['./mentor-detail.component.css']
 })
@@ -78,6 +79,9 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
   selectedSlot: AvailableSlot | null = null;
   bookingForm!: FormGroup;
   submittingBooking: boolean = false;
+
+  // Calendar modal state
+  showCalendarModal: boolean = false;
 
   private subscription?: Subscription;
   private slotsSubscription?: Subscription;
@@ -318,6 +322,56 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
    */
   getResponseTime(): string {
     return this.mentor?.responseTime || 'Not specified';
+  }
+
+  // ==========================================================================
+  // CALENDAR MODAL METHODS
+  // ==========================================================================
+
+  /**
+   * Open the calendar modal for booking
+   */
+  openCalendarModal(): void {
+    this.showCalendarModal = true;
+  }
+
+  /**
+   * Close the calendar modal
+   */
+  closeCalendarModal(): void {
+    this.showCalendarModal = false;
+  }
+
+  /**
+   * Handle booking confirmation from calendar modal
+   */
+  handleBookingConfirm(data: { slot: AvailableSlot; topic?: string; notes?: string }): void {
+    if (!this.mentor) return;
+
+    const request: BookSessionRequest = {
+      timeSlotId: data.slot.id,
+      topic: data.topic,
+      notes: data.notes
+    };
+
+    this.submittingBooking = true;
+
+    // TODO: Replace with actual SessionService when implemented
+    // For now, we'll simulate the booking flow
+    // this.sessionService.bookSession(request).subscribe({ ... });
+
+    // Temporary: Navigate to user area (will be replaced with actual booking API call)
+    setTimeout(() => {
+      this.submittingBooking = false;
+      this.showCalendarModal = false;
+      this.notificationService.success(
+        'Session booked successfully! Redirecting to payment...',
+        'Booking Confirmed'
+      );
+      // In real implementation, navigate to payment with sessionId
+      // this.router.navigate(['/user/payment'], { queryParams: { sessionId: response.data.id }});
+      this.router.navigate(['/user/sessions']); // Temporary
+    }, 1000);
   }
 
   // ==========================================================================
