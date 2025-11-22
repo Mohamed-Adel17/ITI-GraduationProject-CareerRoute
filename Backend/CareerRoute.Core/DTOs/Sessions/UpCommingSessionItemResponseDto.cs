@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace CareerRoute.Core.DTOs.Sessions
 {
-    public class UpCommingSessionsResponseDto
+    public class UpCommingSessionItemResponseDto
     {
         public string Id { get; set; }
         public string MenteeId { get; set; }

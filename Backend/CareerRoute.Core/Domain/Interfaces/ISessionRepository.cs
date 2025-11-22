@@ -18,9 +18,9 @@ namespace CareerRoute.Core.Domain.Interfaces
 
         Task<List<Session>> GetSessionsStartingBetweenAsync(DateTime start, DateTime end); //For Background job 
 
-        Task<List<Session>> GetUpcomingSessionsAsync(string userId, string userRole);
+        Task<(List<Session> Items, int TotalCount)> GetUpcomingSessionsAsync(string userId, string userRole, int page, int pageSize);
 
-        Task<List<Session>> GetPastSessionsAsync(string userId, string userRole);
+        Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize);
         Task<bool> IsMenteeAvailableAsync(string menteeId, DateTime newStart, int durationMinutes);
 
 

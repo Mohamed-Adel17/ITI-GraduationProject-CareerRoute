@@ -123,7 +123,7 @@ namespace CareerRoute.API.Controllers
 
         [HttpGet("upcoming")]
         [Authorize(Roles = "User,Mentor,Admin")]
-        [ProducesResponseType(typeof(ApiResponse<UpcomingSessionsApiResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UpcomingSessionsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetUpcomingSessions([FromQuery] PaginationRequestDto request)
@@ -138,45 +138,12 @@ namespace CareerRoute.API.Controllers
 
             _logger.LogInformation("UserId {userId} with Role {userRole} requested upcoming sessions", userId, userRole);
 
-            // Detect if query params are default
-            var hasQueryParams = Request.Query.Count > 0;
-            var isDefaultRequest = request.Page == 1 && request.PageSize == 10;
+            var response = await _sessionService.GetUpcomingSessionsAsync(userId, userRole, request.Page, request.PageSize);
 
-            var useAdvancedPagination = hasQueryParams || !isDefaultRequest;
-
-
-            var allUpcomingfilteredSessions = await _sessionService.GetUpcomingSessionsAsync(userId, userRole);
-
-            if (!allUpcomingfilteredSessions.Any())
+            if (!response.Sessions.Any())
                 return NotFound(ApiResponse.Error("No upcoming sessions found", 404));
-      
 
-            // Apply pagination
-            var pagedSessions = useAdvancedPagination
-                ? allUpcomingfilteredSessions.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToList()
-                : allUpcomingfilteredSessions;
-
-            var pagination = new PaginationDto
-            {
-                TotalCount = allUpcomingfilteredSessions.Count,
-                CurrentPage = request.Page,
-                PageSize = request.PageSize,
-                TotalPages = (int)Math.Ceiling(allUpcomingfilteredSessions.Count / (double)request.PageSize),
-                HasNextPage = request.Page * request.PageSize < allUpcomingfilteredSessions.Count,
-                HasPreviousPage = request.Page > 1
-            };
-
-            var response = new UpcomingSessionsApiResponse
-            {
-                Sessions = pagedSessions,
-                Pagination = pagination
-            };
-
-            var responseMessage = useAdvancedPagination
-                ? "Upcoming sessions retrieved successfully"
-                : "Upcoming sessions retrieved successfully";
-
-            return Ok(new ApiResponse<UpcomingSessionsApiResponse>(response, responseMessage));
+            return Ok(new ApiResponse<UpcomingSessionsResponse>(response, "Upcoming sessions retrieved successfully"));
 
         }
 
@@ -199,7 +166,7 @@ namespace CareerRoute.API.Controllers
 
         [HttpGet("past")]
         [Authorize(Roles = "User,Mentor,Admin")]
-        [ProducesResponseType(typeof(ApiResponse<PastSessionsApiResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PastSessionsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetPastSessions([FromQuery] PaginationRequestDto request)
@@ -215,35 +182,12 @@ namespace CareerRoute.API.Controllers
             _logger.LogInformation("UserId {userId} with Role {userRole} requested past sessions", userId, userRole);
 
             // Fetch all past sessions filtered by user
-            var allPastfilteredSessions = await _sessionService.GetPastSessionsAsync(userId, userRole);
+            var response = await _sessionService.GetPastSessionsAsync(userId, userRole, request.Page, request.PageSize);
 
-            if (!allPastfilteredSessions.Any())
+            if (!response.Sessions.Any())
                 return NotFound(ApiResponse.Error("No past sessions found", 404));
 
-           
-            // Pagination
-            var pagedSessions = allPastfilteredSessions
-                .Skip((request.Page - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ToList();
-
-            var pagination = new PaginationDto
-            {
-                TotalCount = allPastfilteredSessions.Count,
-                CurrentPage = request.Page,
-                PageSize = request.PageSize,
-                TotalPages = (int)Math.Ceiling(allPastfilteredSessions.Count / (double)request.PageSize),
-                HasNextPage = request.Page * request.PageSize < allPastfilteredSessions.Count,
-                HasPreviousPage = request.Page > 1
-            };
-
-            var response = new PastSessionsApiResponse
-            {
-                Sessions = pagedSessions,
-                Pagination = pagination
-            };
-
-            return Ok(new ApiResponse<PastSessionsApiResponse>(response, "Past sessions retrieved successfully"));
+            return Ok(new ApiResponse<PastSessionsResponse>(response, "Past sessions retrieved successfully"));
         }
 
 

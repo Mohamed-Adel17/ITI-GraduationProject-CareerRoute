@@ -40,7 +40,7 @@ namespace CareerRoute.Core.Mappings
                .ForMember(dest => dest.CanCancel, opt => opt.MapFrom(src => src.Status == SessionStatusOptions.Confirmed && src.CompletedAt == null));
 
 
-            CreateMap<Session, UpCommingSessionsResponseDto>()
+            CreateMap<Session, UpCommingSessionItemResponseDto>()
                 .ForMember(dest => dest.MenteeId, opt => opt.MapFrom(src => src.MenteeId))
                 .ForMember(dest => dest.MenteeFirstName, opt => opt.MapFrom(src => src.Mentee.FirstName))
                 .ForMember(dest => dest.MenteeLastName, opt => opt.MapFrom(src => src.Mentee.LastName))
@@ -56,7 +56,7 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
 
-            CreateMap<Session, PastSessionsResponseDto >()  
+            CreateMap<Session, PastSessionItemResponseDto >()  
                 .ForMember(dest => dest.MenteeFirstName, opt => opt.MapFrom(src => src.Mentee.FirstName))
                 .ForMember(dest => dest.MenteeLastName, opt => opt.MapFrom(src => src.Mentee.LastName))
                 .ForMember(dest => dest.MentorFirstName,opt => opt.MapFrom(src => src.Mentor.User.FirstName))

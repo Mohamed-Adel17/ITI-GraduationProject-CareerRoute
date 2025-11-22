@@ -24,6 +24,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .AnyAsync(s =>
                     s.MenteeId == menteeId &&
                     s.Status != SessionStatusOptions.Cancelled &&      // ignore cancelled sessions
+                    s.Status != SessionStatusOptions.NoShow &&      // ignore noShow sessions
                     s.ScheduledStartTime < end &&                      // existing.start < new.end
                     s.ScheduledEndTime > start                         // existing.end > new.start
                 );
@@ -48,11 +49,15 @@ namespace CareerRoute.Infrastructure.Repositories
         }
 
 
-        public async Task<List<Session>> GetUpcomingSessionsAsync(string userId, string userRole)
+        public async Task<(List<Session> Items, int TotalCount)> GetUpcomingSessionsAsync(string userId, string userRole, int page, int pageSize)
         {
             var now = DateTime.UtcNow;
 
-            var query = dbContext.Sessions.AsQueryable();
+            var query = dbContext.Sessions
+                .Include(s => s.Mentee)
+                .Include(s => s.Mentor)
+                .ThenInclude(m => m.User)
+                .AsQueryable();
 
             // Filter by user role
             if (userRole == "User")
@@ -69,15 +74,26 @@ namespace CareerRoute.Infrastructure.Repositories
             // Order by start time
             query = query.OrderBy(s => s.ScheduledStartTime);
 
-            return await query.ToListAsync();
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
         }
 
 
-        public async Task<List<Session>> GetPastSessionsAsync(string userId, string userRole)
+        public async Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize)
         {
             var now = DateTime.UtcNow;
 
-            var query = dbContext.Sessions.AsQueryable();
+            var query = dbContext.Sessions
+                .Include(s => s.Mentee)
+                .Include(s => s.Mentor)
+                .ThenInclude(m => m.User)
+                .AsQueryable();
 
             // Filter by user role
             if (userRole == "User")
@@ -93,7 +109,14 @@ namespace CareerRoute.Infrastructure.Repositories
             
             query = query.OrderByDescending(s => s.ScheduledStartTime);
 
-            return await query.ToListAsync();
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
         }
 
 

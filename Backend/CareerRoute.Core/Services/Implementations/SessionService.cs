@@ -2,13 +2,15 @@
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.DTOs;
 using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Extentions;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
-using Microsoft.Extensions.Logging;
 using Hangfire;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 
 namespace CareerRoute.Core.Services.Implementations
@@ -26,7 +28,8 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<BookSessionRequestDto> _bookSessionRequestValidator;
         private readonly IValidator<RescheduleSessionRequestDto> _rescheduleSessionValidator;
         private readonly IValidator<CancelSessionRequestDto> _cancelSessionValidator;
-
+        private readonly string _baseUrl;
+        private readonly IConfiguration _configuration;
 
         public SessionService(
             ILogger<SessionService> logger,
@@ -39,7 +42,9 @@ namespace CareerRoute.Core.Services.Implementations
             IRescheduleSessionRepository rescheduleSessionRepository,
             IValidator<BookSessionRequestDto> bookSessionRequestValidator,
             IValidator<RescheduleSessionRequestDto> rescheduleSessionValidator,
-            IValidator<CancelSessionRequestDto> cancelSessionValidator)
+            IValidator<CancelSessionRequestDto> cancelSessionValidator
+            , IConfiguration configuration
+            )
 
         {
             _logger = logger;
@@ -53,7 +58,10 @@ namespace CareerRoute.Core.Services.Implementations
             _rescheduleSessionValidator = rescheduleSessionValidator;
             _cancelSessionRepository = cancelSessionRepository;
             _cancelSessionValidator = cancelSessionValidator;
+            _baseUrl = configuration["BackendBaseUrl"]!;
+            _configuration = configuration;
         }
+
 
         public async Task<BookSessionResponseDto> BookSessionAsync(string menteeId, BookSessionRequestDto dto)
         {
@@ -90,6 +98,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             var session = _mapper.Map<Session>(dto);
 
+            session.Id = Guid.NewGuid().ToString();
             session.MentorId = timeSlot.MentorId;
             session.MenteeId = menteeId;
             session.ScheduledStartTime = timeSlot.StartDateTime;
@@ -113,6 +122,11 @@ namespace CareerRoute.Core.Services.Implementations
 
             _timeSlotRepository.Update(timeSlot);
             await _timeSlotRepository.SaveChangesAsync();
+
+            var bookingPeriodMinutes = _configuration.GetValue<int>("BookingPeriodMinutes", 15);
+            BackgroundJob.Schedule<ISessionService>(
+                service => service.ReleaseUnpaidSessionAsync(session.Id),
+                TimeSpan.FromMinutes(bookingPeriodMinutes));
 
             return _mapper.Map<BookSessionResponseDto>(session);
         }
@@ -140,10 +154,10 @@ namespace CareerRoute.Core.Services.Implementations
 
 
 
-        public async Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync(string userId, string userRole)
+        public async Task<UpcomingSessionsResponse> GetUpcomingSessionsAsync(string userId, string userRole, int page, int pageSize)
         {
 
-            var allUpcomingSessions = await _sessionRepository.GetUpcomingSessionsAsync(userId, userRole);
+            var (allUpcomingSessions, totalCount) = await _sessionRepository.GetUpcomingSessionsAsync(userId, userRole, page, pageSize);
 
 
             //Empty List 
@@ -151,22 +165,51 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("No Upcomming Sessions ");
 
 
-            var response = _mapper.Map<List<UpCommingSessionsResponseDto>>(allUpcomingSessions);
+            var sessionDtos = _mapper.Map<List<UpCommingSessionItemResponseDto>>(allUpcomingSessions);
 
-            return response;
+            var paginationMetadata = new PaginationMetadataDto
+            {
+                TotalCount = totalCount,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                HasNextPage = page * pageSize < totalCount,
+                HasPreviousPage = page > 1
+            };
+
+            return new UpcomingSessionsResponse
+            {
+                Sessions = sessionDtos,
+                Pagination = paginationMetadata
+            };
         }
 
 
-        public async Task<List<PastSessionsResponseDto>> GetPastSessionsAsync(string userId, string userRole)
+        public async Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize)
         {
-            var allPastSessions = await _sessionRepository.GetPastSessionsAsync(userId, userRole);
+            var (allPastSessions, totalCount) = await _sessionRepository.GetPastSessionsAsync(userId, userRole, page, pageSize);
 
             if (allPastSessions.Count == 0)
 
                 throw new NotFoundException("No Past Sessions ");
-            var response = _mapper.Map<List<PastSessionsResponseDto>>(allPastSessions);
+            
+            var sessionDtos = _mapper.Map<List<PastSessionItemResponseDto>>(allPastSessions);
 
-            return response;
+            var paginationMetadata = new PaginationMetadataDto
+            {
+                TotalCount = totalCount,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                HasNextPage = page * pageSize < totalCount,
+                HasPreviousPage = page > 1
+            };
+
+            return new PastSessionsResponse
+            {
+                Sessions = sessionDtos,
+                Pagination = paginationMetadata
+            };
         }
 
 
@@ -175,7 +218,7 @@ namespace CareerRoute.Core.Services.Implementations
         {
             await _rescheduleSessionValidator.ValidateAndThrowCustomAsync(dto);
 
-            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            var session = await _sessionRepository.GetByIdWithRelationsAsync(sessionId);
             if (session == null)
                 throw new NotFoundException("Session not found.");
 
@@ -192,7 +235,7 @@ namespace CareerRoute.Core.Services.Implementations
                                             dto.NewScheduledStartTime.AddMinutes((int)session.Duration)
                                             );
 
-  
+
             if (!mentorTimeSlotAvailable)
                 throw new ConflictException("Mentor has no available time at the requested slot.");
 
@@ -206,18 +249,19 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new ConflictException("Mentee has another session at this time.");
 
 
-            var rescheduleRequest = _mapper.Map<RescheduleSession>(dto);
-            rescheduleRequest.SessionId = session.Id;
-            rescheduleRequest.OriginalStartTime = session.ScheduledStartTime;
-            rescheduleRequest.RequestedBy = role;
-            rescheduleRequest.Status = SessionRescheduleOptions.Pending;
+            var rescheduleSession = _mapper.Map<RescheduleSession>(dto);
+            rescheduleSession.Id = Guid.NewGuid().ToString();
+            rescheduleSession.SessionId = session.Id;
+            rescheduleSession.OriginalStartTime = session.ScheduledStartTime;
+            rescheduleSession.RequestedBy = role;
+            rescheduleSession.Status = SessionRescheduleOptions.Pending;
 
 
-            await _rescheduleSessionRepository.AddAsync(rescheduleRequest);
+            await _rescheduleSessionRepository.AddAsync(rescheduleSession);
             await _rescheduleSessionRepository.SaveChangesAsync();
 
             BackgroundJob.Schedule<IRescheduleSessionService>(
-            service => service.HandlePendingRescheduleAsync(rescheduleRequest.Id), // Implement => HandlePendingRescheduleAsync
+            service => service.HandlePendingRescheduleAsync(rescheduleSession.Id), // Implement => HandlePendingRescheduleAsync
             TimeSpan.FromHours(48));
 
 
@@ -238,9 +282,9 @@ namespace CareerRoute.Core.Services.Implementations
                 requesterName = session.Mentee.FirstName;
             }
 
-            await SendRescheduleRequestEmailAsync(receiverEmail, receiverName, requesterName, session, rescheduleRequest);
+            await SendRescheduleRequestEmailAsync(receiverEmail, receiverName, requesterName, session, rescheduleSession);
 
-            return _mapper.Map<RescheduleSessionResponseDto>(rescheduleRequest);
+            return _mapper.Map<RescheduleSessionResponseDto>(rescheduleSession);
 
             //confirmation ?
             //rejection ?
@@ -261,7 +305,7 @@ namespace CareerRoute.Core.Services.Implementations
         {
             await _cancelSessionValidator.ValidateAndThrowCustomAsync(dto);
 
-            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            var session = await _sessionRepository.GetByIdWithRelationsAsync(sessionId);
             if (session == null)
                 throw new NotFoundException("Session not found.");
 
@@ -269,8 +313,8 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Cannot cancel completed session.");
 
 
-            bool isMentorRequester = session.Mentor.User.Id == userId;
-            bool isMenteeRequester = session.Mentee.Id == userId;
+            bool isMentorRequester = session.MentorId == userId;
+            bool isMenteeRequester = session.MenteeId == userId;
             bool isAdmin = role == "Admin";
 
             if (!isMentorRequester && !isMenteeRequester && !isAdmin)
@@ -294,6 +338,7 @@ namespace CareerRoute.Core.Services.Implementations
             var refundAmount = Math.Round((session.Price * refundPercentage / 100m), 2);
 
             var cancel = _mapper.Map<CancelSession>(dto);
+            cancel.Id = Guid.NewGuid().ToString();
             cancel.SessionId = session.Id;
             cancel.CancelledBy = role;
             cancel.Status = SessionStatusOptions.Cancelled;
@@ -322,7 +367,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             }
 
-            await SendCancellationEmailsAsync(session.Mentee.Email, session.Mentor.User.Email, session, cancel);
+            await SendCancellationEmailsAsync(session.Mentee.Email!, session.Mentor.User.Email!, session, cancel);
 
             return _mapper.Map<CancelSessionResponseDto>(cancel);
 
@@ -357,10 +402,10 @@ namespace CareerRoute.Core.Services.Implementations
             var dto = _mapper.Map<JoinSessionResponseDto>(session);
 
 
-            dto.MinutesUntilStart =(int) (session.ScheduledStartTime - DateTime.UtcNow).TotalMinutes;
+            dto.MinutesUntilStart = (int)(session.ScheduledStartTime - DateTime.UtcNow).TotalMinutes;
             //dto.MinutesUntilStart = session.HoursUntilSession * 60;
             dto.CanJoinNow = DateTime.UtcNow >= earlyJoinLimit && DateTime.UtcNow <= lateJoinLimit && session.Status == SessionStatusOptions.Confirmed;
-            dto.VideoConferenceLink = session.VideoConferenceLink??string.Empty;
+            dto.VideoConferenceLink = session.VideoConferenceLink ?? string.Empty;
             dto.Provider = "Zoom"; //may be changed 
             dto.Instructions = "Click the link to join the session. Please join 5 minutes early to test your audio and video.";
 
@@ -402,7 +447,7 @@ namespace CareerRoute.Core.Services.Implementations
 
 
 
-            await SendCompletionEmailAsync(session.Mentee.Email, session);
+            await SendCompletionEmailAsync(session.Mentee.Email!, session);
 
             //Trigger 72 - hour payment hold(release after 3 days if no disputes)
             //Trigger review request email to mentee after 24 hours
@@ -416,8 +461,8 @@ namespace CareerRoute.Core.Services.Implementations
         private async Task SendRescheduleRequestEmailAsync(string receiverEmail, string receiverName,
                              string requesterName, Session session, RescheduleSession rescheduleRequest)
         {
-            var approveLink = $"https://localhost:7062/sessions/{session.Id}/reschedule/approve?requestId={rescheduleRequest.Id}";
-            var rejectLink = $"https://localhost:7062/sessions/{session.Id}/reschedule/reject?requestId={rescheduleRequest.Id}";
+            var approveLink = $"{_baseUrl}/sessions/{session.Id}/reschedule/approve?requestId={rescheduleRequest.Id}";
+            var rejectLink = $"{_baseUrl}/sessions/{session.Id}/reschedule/reject?requestId={rescheduleRequest.Id}";
 
             string htmlContent = $@"
             <h2>Session Reschedule Request</h2>
@@ -554,6 +599,35 @@ namespace CareerRoute.Core.Services.Implementations
         }
 
 
+        public async Task ReleaseUnpaidSessionAsync(string sessionId)
+        {
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null) return;
+
+            if (session.Status == SessionStatusOptions.Pending && string.IsNullOrEmpty(session.PaymentId))
+            {
+                var timeSlotId = session.TimeSlotId; // Capture ID before nulling
+
+                session.Status = SessionStatusOptions.Cancelled;
+                session.CancellationReason = "Payment timeout";
+                session.TimeSlotId = null; // Release the slot relation
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+
+                // Release the TimeSlot
+                if (!string.IsNullOrEmpty(timeSlotId))
+                {
+                    var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
+                    if (timeSlot != null)
+                    {
+                        timeSlot.IsBooked = false;
+                        timeSlot.SessionId = null;
+                        _timeSlotRepository.Update(timeSlot);
+                        await _timeSlotRepository.SaveChangesAsync();
+                    }
+                }
+            }
+        }
     }
 
 

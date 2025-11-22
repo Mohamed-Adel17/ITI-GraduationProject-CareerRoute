@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.DTOs.Sessions
 {
-    public class PastSessionsResponseDto
+    public class PastSessionItemResponseDto
     {
         
             public string Id { get; set; }

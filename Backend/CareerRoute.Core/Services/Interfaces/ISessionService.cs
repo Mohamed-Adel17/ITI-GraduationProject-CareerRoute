@@ -15,8 +15,8 @@ namespace CareerRoute.Core.Services.Interfaces
         Task<BookSessionResponseDto> BookSessionAsync(string MenteeId, BookSessionRequestDto dto);
 
         Task<SessionDetailsResponseDto> GetSessionDetailsAsync(string sessionId, string userId, string userRole);
-        Task<List<UpCommingSessionsResponseDto>> GetUpcomingSessionsAsync(string userId, string userRole);
-        Task<List<PastSessionsResponseDto>> GetPastSessionsAsync(string userId, string userRole);
+        Task<UpcomingSessionsResponse> GetUpcomingSessionsAsync(string userId, string userRole, int page, int pageSize);
+        Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize);
 
         Task<RescheduleSessionResponseDto> RescheduleSessionAsync(string sessionId, RescheduleSessionRequestDto dto,
                                                                                 string userId, string role);
@@ -26,6 +26,7 @@ namespace CareerRoute.Core.Services.Interfaces
         Task<JoinSessionResponseDto> JoinSessionAsync(string sessionId, string userId);
 
         Task<CompleteSessionResponseDto> CompleteSessionAsync(string sessionId, string userId, string role);
+        Task ReleaseUnpaidSessionAsync(string sessionId);
 
 
     }
