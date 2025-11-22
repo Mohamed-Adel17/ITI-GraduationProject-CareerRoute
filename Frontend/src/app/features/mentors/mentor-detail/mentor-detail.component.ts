@@ -1,10 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { MentorService } from '../../../core/services/mentor.service';
+import { TimeslotService } from '../../../core/services/timeslot.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { RatingDisplay } from '../../../shared/components/rating-display/rating-display';
+import { BookingCalendarModalComponent } from './booking-calendar-modal/booking-calendar-modal.component';
 import {
   MentorDetail,
   getMentorFullName,
@@ -13,6 +16,16 @@ import {
   getPriceRange,
   formatSessionCount
 } from '../../../shared/models/mentor.model';
+import {
+  AvailableSlot,
+  AvailableSlotsResponse,
+  formatSlotTime,
+  formatSlotDuration,
+  groupSlotsByDate,
+  formatSlotDate,
+  TIMESLOT_ERROR_MESSAGES
+} from '../../../shared/models/timeslot.model';
+import { BookSessionRequest, BookingRules } from '../../../shared/models/booking.model';
 
 /**
  * MentorDetailComponent
@@ -48,7 +61,7 @@ import {
 @Component({
   selector: 'app-mentor-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, RatingDisplay],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent],
   templateUrl: './mentor-detail.component.html',
   styleUrls: ['./mentor-detail.component.css']
 })
@@ -58,14 +71,31 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
   notFound: boolean = false;
   error: string | null = null;
 
+  // Timeslot booking properties
+  availableSlots: AvailableSlot[] = [];
+  groupedSlots: Map<string, AvailableSlot[]> = new Map();
+  loadingSlots: boolean = false;
+  slotsError: string | null = null;
+  selectedSlot: AvailableSlot | null = null;
+  bookingForm!: FormGroup;
+  submittingBooking: boolean = false;
+
+  // Calendar modal state
+  showCalendarModal: boolean = false;
+
   private subscription?: Subscription;
+  private slotsSubscription?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private formBuilder: FormBuilder,
     private mentorService: MentorService,
+    private timeslotService: TimeslotService,
     private notificationService: NotificationService
-  ) {}
+  ) {
+    this.initializeBookingForm();
+  }
 
   ngOnInit(): void {
     // Get mentor ID from route params
@@ -78,12 +108,26 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
     }
 
     this.loadMentorProfile(mentorId);
+    this.loadAvailableSlots(mentorId);
   }
 
   ngOnDestroy(): void {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
+    if (this.slotsSubscription) {
+      this.slotsSubscription.unsubscribe();
+    }
+  }
+
+  /**
+   * Initialize booking form with validators
+   */
+  private initializeBookingForm(): void {
+    this.bookingForm = this.formBuilder.group({
+      topic: ['', [Validators.maxLength(BookingRules.TOPIC_MAX_LENGTH)]],
+      notes: ['', [Validators.maxLength(BookingRules.NOTES_MAX_LENGTH)]]
+    });
   }
 
   /**
@@ -278,5 +322,217 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
    */
   getResponseTime(): string {
     return this.mentor?.responseTime || 'Not specified';
+  }
+
+  // ==========================================================================
+  // CALENDAR MODAL METHODS
+  // ==========================================================================
+
+  /**
+   * Open the calendar modal for booking
+   */
+  openCalendarModal(): void {
+    this.showCalendarModal = true;
+  }
+
+  /**
+   * Close the calendar modal
+   */
+  closeCalendarModal(): void {
+    this.showCalendarModal = false;
+  }
+
+  /**
+   * Handle booking confirmation from calendar modal
+   */
+  handleBookingConfirm(data: { slot: AvailableSlot; topic?: string; notes?: string }): void {
+    if (!this.mentor) return;
+
+    const request: BookSessionRequest = {
+      timeSlotId: data.slot.id,
+      topic: data.topic,
+      notes: data.notes
+    };
+
+    this.submittingBooking = true;
+
+    // TODO: Replace with actual SessionService when implemented
+    // For now, we'll simulate the booking flow
+    // this.sessionService.bookSession(request).subscribe({ ... });
+
+    // Temporary: Navigate to user area (will be replaced with actual booking API call)
+    setTimeout(() => {
+      this.submittingBooking = false;
+      this.showCalendarModal = false;
+      this.notificationService.success(
+        'Session booked successfully! Redirecting to payment...',
+        'Booking Confirmed'
+      );
+      // In real implementation, navigate to payment with sessionId
+      // this.router.navigate(['/user/payment'], { queryParams: { sessionId: response.data.id }});
+      this.router.navigate(['/user/sessions']); // Temporary
+    }, 1000);
+  }
+
+  // ==========================================================================
+  // TIMESLOT BOOKING METHODS
+  // ==========================================================================
+
+  /**
+   * Load available time slots for the mentor
+   */
+  private loadAvailableSlots(mentorId: string): void {
+    this.loadingSlots = true;
+    this.slotsError = null;
+
+    this.slotsSubscription = this.timeslotService.getAvailableSlots(mentorId).subscribe({
+      next: (response) => {
+        this.availableSlots = response.data.availableSlots;
+        this.groupedSlots = groupSlotsByDate(this.availableSlots);
+        this.loadingSlots = false;
+      },
+      error: (err) => {
+        this.loadingSlots = false;
+        if (err.status === 404) {
+          // No slots available - this is not an error, just empty state
+          this.availableSlots = [];
+          this.groupedSlots = new Map();
+        } else {
+          this.slotsError = TIMESLOT_ERROR_MESSAGES.NETWORK_ERROR;
+          console.error('Error loading available slots:', err);
+        }
+      }
+    });
+  }
+
+  /**
+   * Select a time slot for booking
+   */
+  selectSlot(slot: AvailableSlot): void {
+    this.selectedSlot = slot;
+    // Reset form when selecting a new slot
+    this.bookingForm.reset();
+  }
+
+  /**
+   * Cancel slot selection and hide booking form
+   */
+  cancelSelection(): void {
+    this.selectedSlot = null;
+    this.bookingForm.reset();
+  }
+
+  /**
+   * Confirm booking and create session
+   */
+  confirmBooking(): void {
+    if (!this.selectedSlot || !this.mentor) {
+      return;
+    }
+
+    if (this.bookingForm.invalid) {
+      this.notificationService.error('Please check your form for errors', 'Validation Error');
+      return;
+    }
+
+    const request: BookSessionRequest = {
+      timeSlotId: this.selectedSlot.id,
+      topic: this.bookingForm.value.topic?.trim() || undefined,
+      notes: this.bookingForm.value.notes?.trim() || undefined
+    };
+
+    this.submittingBooking = true;
+
+    // TODO: Replace with actual SessionService when implemented
+    // For now, we'll simulate the booking flow
+    // this.sessionService.bookSession(request).subscribe({ ... });
+
+    // Temporary: Navigate to user area (will be replaced with actual booking API call)
+    setTimeout(() => {
+      this.submittingBooking = false;
+      this.notificationService.success(
+        'Session booked successfully! Redirecting to payment...',
+        'Booking Confirmed'
+      );
+      // In real implementation, navigate to payment with sessionId
+      // this.router.navigate(['/user/payment'], { queryParams: { sessionId: response.data.id }});
+      this.router.navigate(['/user/sessions']); // Temporary
+    }, 1000);
+  }
+
+  /**
+   * Retry loading slots after error
+   */
+  retryLoadSlots(): void {
+    const mentorId = this.route.snapshot.paramMap.get('id');
+    if (mentorId) {
+      this.loadAvailableSlots(mentorId);
+    }
+  }
+
+  /**
+   * Format slot time using helper function
+   */
+  formatTime(slot: AvailableSlot): string {
+    return formatSlotTime(slot);
+  }
+
+  /**
+   * Format slot duration using helper function
+   */
+  formatDuration(minutes: number): string {
+    return formatSlotDuration(minutes);
+  }
+
+  /**
+   * Format date for slot group headers
+   */
+  formatDate(dateString: string): string {
+    return formatSlotDate(dateString);
+  }
+
+  /**
+   * Check if there are any available slots
+   */
+  hasAvailableSlots(): boolean {
+    return this.availableSlots.length > 0;
+  }
+
+  /**
+   * Get array of grouped slots for template iteration
+   * (Angular's keyvalue pipe requires array conversion for Map)
+   */
+  getGroupedSlotsArray(): Array<{ key: string; value: AvailableSlot[] }> {
+    return Array.from(this.groupedSlots.entries()).map(([key, value]) => ({ key, value }));
+  }
+
+  /**
+   * Check if booking form topic field has error
+   */
+  hasTopicError(): boolean {
+    const topicControl = this.bookingForm.get('topic');
+    return !!(topicControl?.invalid && topicControl?.touched);
+  }
+
+  /**
+   * Check if booking form notes field has error
+   */
+  hasNotesError(): boolean {
+    const notesControl = this.bookingForm.get('notes');
+    return !!(notesControl?.invalid && notesControl?.touched);
+  }
+
+  /**
+   * Get topic character count for display
+   */
+  getTopicCharCount(): number {
+    return this.bookingForm.get('topic')?.value?.length || 0;
+  }
+
+  /**
+   * Get notes character count for display
+   */
+  getNotesCharCount(): number {
+    return this.bookingForm.get('notes')?.value?.length || 0;
   }
 }
