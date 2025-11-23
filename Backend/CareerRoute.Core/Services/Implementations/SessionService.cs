@@ -6,6 +6,7 @@ using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Domain.Interfaces.Services;
 using CareerRoute.Core.DTOs;
 using CareerRoute.Core.DTOs.Sessions;
+using CareerRoute.Core.DTOs.Zoom;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Extentions;
 using CareerRoute.Core.Services.Interfaces;
@@ -13,6 +14,11 @@ using FluentValidation;
 using Hangfire;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 namespace CareerRoute.Core.Services.Implementations
@@ -34,6 +40,17 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<CancelSessionRequestDto> _cancelSessionValidator;
         private readonly IConfiguration _configuration;
 
+        // Zoom / media dependencies
+        private readonly IUserRepository _userRepository;
+        private readonly IZoomService _zoomService;
+        private readonly ICalendarService _calendarService;
+        private readonly IDeepgramService _deepgramService;
+        private readonly IBlobStorageService _blobStorageService;
+        private readonly IJobScheduler _jobScheduler;
+
+        // Semaphore for sequential processing of reschedule requests
+        private static readonly SemaphoreSlim _rescheduleLock = new SemaphoreSlim(1, 1);
+
         public SessionService(
             ILogger<SessionService> logger,
             IMapper mapper,
@@ -48,7 +65,13 @@ namespace CareerRoute.Core.Services.Implementations
             IValidator<BookSessionRequestDto> bookSessionRequestValidator,
             IValidator<RescheduleSessionRequestDto> rescheduleSessionValidator,
             IValidator<CancelSessionRequestDto> cancelSessionValidator,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IUserRepository userRepository,
+            IZoomService zoomService,
+            ICalendarService calendarService,
+            IDeepgramService deepgramService,
+            IBlobStorageService blobStorageService,
+            IJobScheduler jobScheduler)
         {
             _logger = logger;
             _mapper = mapper;
@@ -64,6 +87,13 @@ namespace CareerRoute.Core.Services.Implementations
             _cancelSessionRepository = cancelSessionRepository;
             _cancelSessionValidator = cancelSessionValidator;
             _configuration = configuration;
+
+            _userRepository = userRepository;
+            _zoomService = zoomService;
+            _calendarService = calendarService;
+            _deepgramService = deepgramService;
+            _blobStorageService = blobStorageService;
+            _jobScheduler = jobScheduler;
         }
 
 
@@ -559,20 +589,6 @@ namespace CareerRoute.Core.Services.Implementations
             return dto;
 
         }
-
-
-        private async Task SendRescheduleRequestEmailAsync(string receiverEmail, string receiverName, string requesterName, RescheduleSession rescheduleRequest, Session session)
-        {
-            string htmlContent = _emailTemplateService.GenerateRescheduleRequestEmail(session, rescheduleRequest, receiverName, requesterName);
-
-            await _emailService.SendEmailAsync(
-                    receiverEmail,
-                    "Session Reschedule Request",
-                    "A session reschedule request has been submitted.",
-                    htmlContent
-            );
-        }
-
         private async Task SendCancellationEmailsAsync(string menteeEmail, string mentorEmail, Session session, CancelSession cancel)
         {
             string menteeEmailTemplate = _emailTemplateService.GenerateCancellationEmail(session, cancel, true);
@@ -791,6 +807,571 @@ namespace CareerRoute.Core.Services.Implementations
                 throw;
             }
         }
+
+        #region Zoom and media workflows
+
+        public async Task CreateZoomMeetingForSessionAsync(string sessionId)
+        {
+            _logger.LogInformation("[Session] Creating Zoom meeting for session: {SessionId}", sessionId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null)
+            {
+                _logger.LogError("[Session] Session not found: {SessionId}", sessionId);
+                throw new NotFoundException("Session", sessionId);
+            }
+
+            if (session.ZoomMeetingId.HasValue)
+            {
+                _logger.LogWarning("[Session] Session {SessionId} already has a Zoom meeting: {MeetingId}", sessionId, session.ZoomMeetingId.Value);
+                return;
+            }
+
+            int maxRetries = 3;
+            int attempt = 0;
+            Exception? lastException = null;
+
+            while (attempt < maxRetries)
+            {
+                try
+                {
+                    attempt++;
+                    _logger.LogInformation("[Session] Attempting to create Zoom meeting for session {SessionId}, attempt {Attempt}/{MaxRetries}", sessionId, attempt, maxRetries);
+
+                    var createRequest = new CreateZoomMeetingRequest
+                    {
+                        Topic = session.Topic ?? $"Mentorship Session - {session.Id}",
+                        StartTime = session.ScheduledStartTime,
+                        DurationMinutes = (int)(session.ScheduledEndTime - session.ScheduledStartTime).TotalMinutes,
+                        Timezone = "UTC"
+                    };
+
+                    var zoomMeeting = await _zoomService.CreateMeetingAsync(createRequest, sessionId);
+
+                    session.ZoomMeetingId = zoomMeeting.Id;
+                    session.VideoConferenceLink = zoomMeeting.JoinUrl;
+                    session.ZoomMeetingPassword = zoomMeeting.Password;
+
+                    _sessionRepository.Update(session);
+                    await _sessionRepository.SaveChangesAsync();
+
+                    _logger.LogInformation("[Session] Zoom meeting created for session {SessionId}: MeetingId={MeetingId}", sessionId, zoomMeeting.Id);
+
+                    var bufferMinutes = 2;
+                    var delay = session.ScheduledEndTime.AddMinutes(bufferMinutes) - DateTime.UtcNow;
+                    if (delay < TimeSpan.Zero) delay = TimeSpan.Zero;
+                    _jobScheduler.ScheduleJob(() => AutoTerminateSessionAsync(session.Id), delay);
+
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    _logger.LogWarning(ex, "[Session] Attempt {Attempt} to create Zoom meeting failed for session {SessionId}", attempt, sessionId);
+                    await Task.Delay(TimeSpan.FromSeconds(2 * attempt));
+                }
+            }
+
+            _logger.LogError(lastException, "[Session] Failed to create Zoom meeting for session {SessionId} after {MaxRetries} attempts", sessionId, maxRetries);
+            throw new BusinessException("Failed to create Zoom meeting after multiple attempts.");
+        }
+
+        public async Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId)
+        {
+            _logger.LogInformation("[Session] Fetching recording for session {SessionId} by user {UserId}", sessionId, userId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            if (session.MentorId != userId && session.MenteeId != userId)
+            {
+                throw new UnauthorizedException("You are not authorized to view this recording.");
+            }
+
+            if (string.IsNullOrEmpty(session.RecordingPlayUrl))
+            {
+                throw new NotFoundException("Recording not available yet");
+            }
+
+            return new SessionRecordingDto
+            {
+                SessionId = session.Id,
+                PlayUrl = session.RecordingPlayUrl,
+                AvailableAt = session.RecordingAvailableAt ?? session.CompletedAt ?? session.UpdatedAt ?? session.CreatedAt,
+                Transcript = session.Transcript
+            };
+        }
+
+        public async Task<string> GetSessionTranscriptAsync(string sessionId, string userId)
+        {
+            _logger.LogInformation("[Session] Fetching transcript for session {SessionId} by user {UserId}", sessionId, userId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            if (session.MentorId != userId && session.MenteeId != userId)
+            {
+                throw new UnauthorizedException("You are not authorized to view this transcript.");
+            }
+
+            if (string.IsNullOrEmpty(session.Transcript))
+            {
+                throw new NotFoundException("Transcript not available yet");
+            }
+
+            return session.Transcript;
+        }
+
+        public async Task CancelSessionAsync(string sessionId, string cancellationReason)
+        {
+            _logger.LogInformation("[Session] Cancelling session {SessionId} with Zoom integration", sessionId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            if (session.Status == SessionStatusOptions.Completed || session.Status == SessionStatusOptions.Cancelled)
+            {
+                _logger.LogWarning("[Session] Session {SessionId} is already {Status}", sessionId, session.Status);
+                return;
+            }
+
+            session.Status = SessionStatusOptions.Cancelled;
+            session.CancellationReason = cancellationReason;
+            session.TimeSlotId = null;
+
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+            if (session.ZoomMeetingId.HasValue)
+            {
+                try
+                {
+                    await _zoomService.DeleteMeetingAsync(session.ZoomMeetingId.Value, session.Id);
+                    _logger.LogInformation("[Session] Deleted Zoom meeting for session {SessionId}", sessionId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[Session] Failed to delete Zoom meeting for session {SessionId}", sessionId);
+                }
+            }
+        }
+
+        public async Task RescheduleSessionAsync(string sessionId, DateTime newStartTime, DateTime newEndTime)
+        {
+            _logger.LogInformation("[Session] Rescheduling session {SessionId} to {Start} - {End}", sessionId, newStartTime, newEndTime);
+
+            await _rescheduleLock.WaitAsync();
+            try
+            {
+                var session = await _sessionRepository.GetByIdAsync(sessionId);
+                if (session == null) throw new NotFoundException("Session", sessionId);
+
+                session.ScheduledStartTime = newStartTime;
+                session.ScheduledEndTime = newEndTime;
+                session.Status = SessionStatusOptions.Scheduled;
+                session.UpdatedAt = DateTime.UtcNow;
+
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+
+                if (session.ZoomMeetingId.HasValue)
+                {
+                    try
+                    {
+                        await _zoomService.UpdateMeetingAsync(session.ZoomMeetingId.Value, session.Id, newStartTime, newEndTime);
+                        _logger.LogInformation("[Session] Updated Zoom meeting for session {SessionId}", sessionId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[Session] Failed to update Zoom meeting for session {SessionId}", sessionId);
+                    }
+                }
+
+                await SendCalendarInvitationsAsync(session);
+            }
+            finally
+            {
+                _rescheduleLock.Release();
+            }
+        }
+
+        public async Task<VideoLinkDto> GetVideoLinkAsync(string sessionId, string userId)
+        {
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            if (session.MentorId != userId && session.MenteeId != userId)
+            {
+                throw new UnauthorizedException("You are not authorized to access this session.");
+            }
+
+            if (string.IsNullOrEmpty(session.VideoConferenceLink))
+            {
+                throw new NotFoundException("Video conference link not available");
+            }
+
+            return new VideoLinkDto
+            {
+                JoinUrl = session.VideoConferenceLink,
+                Password = session.ZoomMeetingPassword,
+                AvailableFrom = session.ScheduledStartTime.AddMinutes(-10),
+                AvailableUntil = session.ScheduledEndTime.AddMinutes(30)
+            };
+        }
+
+        public async Task EndSessionAsync(string sessionId, string userId)
+        {
+            _logger.LogInformation("[Session] Request to end session {SessionId} by user {UserId}", sessionId, userId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            if (session.MentorId != userId)
+            {
+                throw new UnauthorizedException("Only the assigned Mentor can end the session.");
+            }
+
+            if (!session.ZoomMeetingId.HasValue)
+            {
+                _logger.LogWarning("[Session] Cannot end session {SessionId}: No active Zoom meeting ID", sessionId);
+                throw new BusinessException("No active Zoom meeting found for this session.");
+            }
+
+            try
+            {
+                var success = await _zoomService.EndMeetingAsync(session.ZoomMeetingId.Value, sessionId, $"Ended by Mentor {userId}");
+
+                if (!success)
+                {
+                    throw new BusinessException("Failed to end the meeting via Zoom. It may have already ended or is invalid.");
+                }
+
+                _logger.LogInformation("[Session] Successfully ended Zoom meeting for session {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Error while ending session {SessionId}", sessionId);
+                throw new BusinessException($"Failed to end session: {ex.Message}");
+            }
+        }
+
+        public async Task AutoTerminateSessionAsync(string sessionId)
+        {
+            _logger.LogInformation("[Session] Executing automatic termination check for session {SessionId}", sessionId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null)
+            {
+                _logger.LogWarning("[Session] Auto-termination failed: Session {SessionId} not found", sessionId);
+                return;
+            }
+
+            if (session.Status == SessionStatusOptions.Completed || session.Status == SessionStatusOptions.Cancelled)
+            {
+                _logger.LogInformation("[Session] Auto-termination skipped: Session {SessionId} is already {Status}", sessionId, session.Status);
+                return;
+            }
+
+            if (DateTime.UtcNow < session.ScheduledEndTime.AddMinutes(2))
+            {
+                _logger.LogInformation("[Session] Auto-termination skipped: Session {SessionId} is not yet due for termination. ScheduledEndTime: {EndTime}", sessionId, session.ScheduledEndTime);
+                return;
+            }
+
+            if (!session.ZoomMeetingId.HasValue)
+            {
+                _logger.LogWarning("[Session] Auto-termination skipped: Session {SessionId} has no Zoom meeting ID", sessionId);
+                return;
+            }
+
+            try
+            {
+                var reason = "Automatic termination - Session exceeded scheduled end time";
+                var success = await _zoomService.EndMeetingAsync(session.ZoomMeetingId.Value, sessionId, reason);
+
+                if (success)
+                {
+                    session.Status = SessionStatusOptions.Completed;
+                    session.CompletedAt = DateTime.UtcNow;
+                    session.UpdatedAt = DateTime.UtcNow;
+
+                    _sessionRepository.Update(session);
+                    await _sessionRepository.SaveChangesAsync();
+
+                    _logger.LogInformation("[Session] Successfully auto-terminated session {SessionId}", sessionId);
+                }
+                else
+                {
+                    _logger.LogWarning("[Session] Auto-termination: Zoom API reported failure to end meeting for session {SessionId}", sessionId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Auto-termination failed for session {SessionId}", sessionId);
+                throw;
+            }
+        }
+
+        public async Task ProcessRecordingCompletedAsync(long meetingId, List<ZoomRecordingFileDto> recordingFiles, string? downloadAccessToken = null)
+        {
+            _logger.LogInformation("[Session] Processing recording completion for Zoom meeting: {MeetingId}", meetingId);
+
+            var sessions = await _sessionRepository.GetAllAsync();
+            var session = sessions.FirstOrDefault(s => s.ZoomMeetingId == meetingId);
+
+            if (session == null)
+            {
+                _logger.LogWarning("[Session] No session found for Zoom meeting ID: {MeetingId}", meetingId);
+                return;
+            }
+
+            var recordingData = await _zoomService.GetMeetingRecordingsAsync(meetingId, session.Id);
+            var apiFiles = recordingData.RecordingFiles ?? new List<ZoomRecordingFileDto>();
+
+            var videoPlayFile = apiFiles.FirstOrDefault(f => f.FileType.Equals("MP4", StringComparison.OrdinalIgnoreCase));
+            if (videoPlayFile != null && !string.IsNullOrEmpty(videoPlayFile.PlayUrl))
+            {
+                session.RecordingPlayUrl = videoPlayFile.PlayUrl;
+                session.RecordingAvailableAt = DateTime.UtcNow;
+            }
+
+            await ProcessVideoStorageAsync(session, apiFiles, downloadAccessToken);
+
+            bool transcriptProcessed = await ProcessTranscriptionAsync(session);
+
+            if (!transcriptProcessed && !session.TranscriptProcessed)
+            {
+                _logger.LogInformation("[Session] No transcript generated for session {SessionId}. Initializing retry tracking.", session.Id);
+                session.TranscriptProcessed = false;
+                session.TranscriptRetrievalAttempts = 1;
+                session.LastTranscriptRetrievalAttempt = DateTime.UtcNow;
+            }
+
+            session.RecordingProcessed = true;
+            session.Status = SessionStatusOptions.Completed;
+            session.CompletedAt = DateTime.UtcNow;
+            session.UpdatedAt = DateTime.UtcNow;
+
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+            _logger.LogInformation("[Session] Successfully processed recording completion for session {SessionId}. Status updated to Completed.", session.Id);
+        }
+
+        private async Task ProcessVideoStorageAsync(Session session, List<ZoomRecordingFileDto> files, string? downloadToken)
+        {
+            var videoFile = files.FirstOrDefault(f => f.FileType.Equals("MP4", StringComparison.OrdinalIgnoreCase));
+
+            if (videoFile == null || string.IsNullOrEmpty(videoFile.DownloadUrl))
+            {
+                _logger.LogWarning("[Session] No downloadable MP4 file found for session {SessionId}", session.Id);
+                return;
+            }
+
+            try
+            {
+                _logger.LogInformation("[Session] Downloading video content for session {SessionId}", session.Id);
+
+                using var videoStream = await _zoomService.DownloadFileStreamAsync(videoFile.DownloadUrl, downloadToken);
+
+                var fileName = $"{session.Id}.mp4";
+                var key = await _blobStorageService.UploadAsync(videoStream, fileName, "video/mp4", videoFile.FileSize);
+
+                session.VideoStorageKey = key;
+
+                _logger.LogInformation("[Session] Stored video content in R2 for session {SessionId}, Key: {Key}", session.Id, key);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to download/store video content for session {SessionId}", session.Id);
+            }
+        }
+
+        private async Task<bool> ProcessTranscriptionAsync(Session session)
+        {
+            if (string.IsNullOrEmpty(session.VideoStorageKey))
+            {
+                _logger.LogWarning("[Session] No video storage key available for transcription for session {SessionId}", session.Id);
+                return false;
+            }
+
+            try
+            {
+                _logger.LogInformation("[Session] Starting Deepgram transcription via R2 URL for session {SessionId}", session.Id);
+
+                var presignedUrl = _blobStorageService.GetPresignedUrl(session.VideoStorageKey, TimeSpan.FromMinutes(60));
+
+                var transcript = await _deepgramService.TranscribeAudioUrlAsync(presignedUrl);
+
+                if (!string.IsNullOrEmpty(transcript))
+                {
+                    session.Transcript = transcript;
+                    session.TranscriptProcessed = true;
+
+                    _logger.LogInformation("[Session] Deepgram transcription successful for session {SessionId}", session.Id);
+
+                    await TriggerAISummaryGenerationEventAsync(session);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to generate Deepgram transcript for session {SessionId}", session.Id);
+            }
+
+            return false;
+        }
+
+        private async Task SendCalendarInvitationsAsync(Session session)
+        {
+            try
+            {
+                _logger.LogInformation("[Session] Sending calendar invitations for session {SessionId}", session.Id);
+
+                var mentee = await _userRepository.GetByIdAsync(session.MenteeId);
+                var mentor = await _userRepository.GetByIdAsync(session.MentorId);
+
+                if (mentee == null || mentor == null)
+                {
+                    _logger.LogError("[Session] Cannot send calendar invitations for session {SessionId}: Mentee or Mentor not found", session.Id);
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(mentee.Email) || string.IsNullOrEmpty(mentor.Email))
+                {
+                    _logger.LogError("[Session] Cannot send calendar invitations for session {SessionId}: Mentee or Mentor email is missing", session.Id);
+                    return;
+                }
+
+                var topic = session.Topic ?? $"Mentorship Session - {session.Id}";
+                var location = session.VideoConferenceLink ?? "Video Conference Link TBD";
+                var description = $"Mentorship Session\n\n" +
+                                $"Mentee: {mentee.FullName}\n" +
+                                $"Mentor: {mentor.FullName}\n" +
+                                $"Duration: {(int)(session.ScheduledEndTime - session.ScheduledStartTime).TotalMinutes} minutes\n\n" +
+                                $"Join URL: {location}";
+
+                if (!string.IsNullOrEmpty(session.ZoomMeetingPassword))
+                {
+                    description += $"\nPassword: {session.ZoomMeetingPassword}";
+                }
+
+                var attendeeEmails = new List<string> { mentee.Email, mentor.Email };
+
+                var calendarContent = _calendarService.GenerateCalendarInvitation(
+                    session.Id,
+                    topic,
+                    session.ScheduledStartTime,
+                    session.ScheduledEndTime,
+                    location,
+                    description,
+                    attendeeEmails,
+                    mentor.Email,
+                    mentor.FullName);
+
+                var menteeEmailSubject = $"Updated: {topic}";
+                var menteeEmailBody = $"Hello {mentee.FirstName},\n\n" +
+                                     $"Your mentorship session has been rescheduled.\n\n" +
+                                     $"New Date & Time: {session.ScheduledStartTime:f} UTC\n" +
+                                     $"Duration: {(int)(session.ScheduledEndTime - session.ScheduledStartTime).TotalMinutes} minutes\n" +
+                                     $"Mentor: {mentor.FullName}\n\n" +
+                                     $"Join URL: {location}\n";
+
+                if (!string.IsNullOrEmpty(session.ZoomMeetingPassword))
+                {
+                    menteeEmailBody += $"Password: {session.ZoomMeetingPassword}\n";
+                }
+
+                menteeEmailBody += "\nPlease find the updated calendar invitation attached.\n\n" +
+                                  "Best regards,\nCareerRoute Team";
+
+                var menteeEmailHtml = $"<p>Hello {mentee.FirstName},</p>" +
+                                     $"<p>Your mentorship session has been rescheduled.</p>" +
+                                     $"<p><strong>New Date & Time:</strong> {session.ScheduledStartTime:f} UTC<br>" +
+                                     $"<strong>Duration:</strong> {(int)(session.ScheduledEndTime - session.ScheduledStartTime).TotalMinutes} minutes<br>" +
+                                     $"<strong>Mentor:</strong> {mentor.FullName}</p>" +
+                                     $"<p><strong>Join URL:</strong> <a href=\"{location}\">{location}</a><br>";
+
+                if (!string.IsNullOrEmpty(session.ZoomMeetingPassword))
+                {
+                    menteeEmailHtml += $"<strong>Password:</strong> {session.ZoomMeetingPassword}<br>";
+                }
+
+                menteeEmailHtml += "</p><p>Please find the updated calendar invitation attached.</p>" +
+                                  "<p>Best regards,<br>CareerRoute Team</p>";
+
+                await _emailService.SendEmailWithCalendarAsync(
+                    mentee.Email,
+                    menteeEmailSubject,
+                    menteeEmailBody,
+                    menteeEmailHtml,
+                    calendarContent);
+
+                var mentorEmailSubject = $"Updated: {topic}";
+                var mentorEmailBody = $"Hello {mentor.FirstName},\n\n" +
+                                     $"Your mentorship session has been rescheduled.\n\n" +
+                                     $"New Date & Time: {session.ScheduledStartTime:f} UTC\n" +
+                                     $"Duration: {(int)(session.ScheduledEndTime - session.ScheduledStartTime).TotalMinutes} minutes\n" +
+                                     $"Mentee: {mentee.FullName}\n\n" +
+                                     $"Join URL: {location}\n";
+
+                if (!string.IsNullOrEmpty(session.ZoomMeetingPassword))
+                {
+                    mentorEmailBody += $"Password: {session.ZoomMeetingPassword}\n";
+                }
+
+                mentorEmailBody += "\nPlease find the updated calendar invitation attached.\n\n" +
+                                  "Best regards,\nCareerRoute Team";
+
+                var mentorEmailHtml = $"<p>Hello {mentor.FirstName},</p>" +
+                                     $"<p>Your mentorship session has been rescheduled.</p>" +
+                                     $"<p><strong>New Date & Time:</strong> {session.ScheduledStartTime:f} UTC<br>" +
+                                     $"<strong>Duration:</strong> {(int)(session.ScheduledEndTime - session.ScheduledStartTime).TotalMinutes} minutes<br>" +
+                                     $"<strong>Mentee:</strong> {mentee.FullName}</p>" +
+                                     $"<p><strong>Join URL:</strong> <a href=\"{location}\">{location}</a><br>";
+
+                if (!string.IsNullOrEmpty(session.ZoomMeetingPassword))
+                {
+                    mentorEmailHtml += $"<strong>Password:</strong> {session.ZoomMeetingPassword}<br>";
+                }
+
+                mentorEmailHtml += "</p><p>Please find the updated calendar invitation attached.</p>" +
+                                  "<p>Best regards,<br>CareerRoute Team</p>";
+
+                await _emailService.SendEmailWithCalendarAsync(
+                    mentor.Email,
+                    mentorEmailSubject,
+                    mentorEmailBody,
+                    mentorEmailHtml,
+                    calendarContent);
+
+                _logger.LogInformation("[Session] Successfully sent calendar invitations for session {SessionId}", session.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to send calendar invitations for session {SessionId}. Session was rescheduled successfully.", session.Id);
+            }
+        }
+
+        private Task TriggerAISummaryGenerationEventAsync(Session session)
+        {
+            _logger.LogInformation("[Session] [AUDIT] AI summary generation event triggered for session {SessionId}", session.Id);
+            return Task.CompletedTask;
+        }
+
+        private async Task SendRescheduleRequestEmailAsync(string receiverEmail, string receiverName, string requesterName, RescheduleSession rescheduleSession, Session session)
+        {
+            var subject = "Session Reschedule Requested";
+            var body = $"Hello {receiverName},\n\n" +
+                       $"{requesterName} requested to reschedule the session scheduled at {session.ScheduledStartTime:f} UTC.\n\n" +
+                       $"New Proposed Time: {rescheduleSession.NewScheduledStartTime:f} UTC\n\n" +
+                       "Please log in to approve or reject this request.\n\n" +
+                       "Best regards,\nCareerRoute Team";
+
+            await _emailService.SendEmailAsync(receiverEmail, subject, body, body);
+        }
+
+        #endregion
     }
 
 
