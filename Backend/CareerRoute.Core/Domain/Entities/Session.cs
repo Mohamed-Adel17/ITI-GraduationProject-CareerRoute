@@ -49,6 +49,30 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
         
         public DateTime? CompletedAt { get; set; }
+        
+        // Zoom integration fields
+        public long? ZoomMeetingId { get; set; }
+        
+        [MaxLength(100)]
+        public string? ZoomMeetingPassword { get; set; }
+        
+        [MaxLength(500)]
+        public string? RecordingPlayUrl { get; set; }
+        
+        public string? Transcript { get; set; }
+        
+        public DateTime? RecordingAvailableAt { get; set; }
+        
+        public bool RecordingProcessed { get; set; } = false;
+        
+        public bool TranscriptProcessed { get; set; } = false;
+        
+        public int TranscriptRetrievalAttempts { get; set; } = 0;
+        
+        public DateTime? LastTranscriptRetrievalAttempt { get; set; }
+        
+        [MaxLength(500)]
+        public string? VideoStorageKey { get; set; }
 
         // Navigation properties
         public virtual ApplicationUser Mentee { get; set; } = null!;
