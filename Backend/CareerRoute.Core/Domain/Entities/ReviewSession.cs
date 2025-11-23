@@ -12,7 +12,7 @@ namespace CareerRoute.Core.Domain.Entities
 
 
             public string SessionId { get; set; } 
-            public Session Session { get; set; }
+            public Session Session { get; set; } = null!;
         
 
     }

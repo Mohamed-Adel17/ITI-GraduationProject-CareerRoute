@@ -8,6 +8,6 @@ namespace CareerRoute.Core.DTOs.Sessions
 {
     public class CancelSessionRequestDto
     {
-        public string Reason { get; set; }
+        public string Reason { get; set; } = null!;
     }
 }

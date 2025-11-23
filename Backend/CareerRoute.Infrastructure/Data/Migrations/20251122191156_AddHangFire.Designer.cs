@@ -163,7 +163,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
                     b.ToTable("CancelSession", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Cancelation_Reason_MinLength", "LEN(CancelationReason) >= 10");
+                            t.HasCheckConstraint("CK_Cancellation_Reason_MinLength", "LEN(CancellationReason) >= 10");
                         });
                 });
 
@@ -439,7 +439,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ReschudelReason")
+                    b.Property<string>("RescheduleReason")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

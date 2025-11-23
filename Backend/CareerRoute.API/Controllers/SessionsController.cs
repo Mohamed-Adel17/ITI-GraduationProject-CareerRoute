@@ -7,7 +7,6 @@ using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SendGrid.Helpers.Errors.Model;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -59,9 +58,7 @@ namespace CareerRoute.API.Controllers
             var menteeId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(menteeId))
-            {
-                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
-            }
+                throw new UnauthenticatedException("Invalid authentication token");
 
             _logger.LogInformation("Mentee with Id {menteeId} requested to book a session", menteeId);
 
@@ -240,6 +237,76 @@ namespace CareerRoute.API.Controllers
 
 
         /// <summary>
+        /// Approve a reschedule request (Mentor, Mentee, or Admin).
+        /// </summary>
+        /// <param name="rescheduleId">The unique identifier of the reschedule request.</param>
+        /// <response code="200">Reschedule request approved successfully.</response>
+        /// <response code="401">User not authenticated.</response>
+        /// <response code="403">User not authorized to approve this request.</response>
+        /// <response code="404">Reschedule request not found.</response>
+        /// <response code="409">Reschedule request already processed.</response>
+        [HttpPost("reschedule/{rescheduleId}/approve")]
+        [Authorize(Roles = "User,Mentor,Admin")]
+        [ProducesResponseType(typeof(ApiResponse<RescheduleSessionResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
+        public async Task<ActionResult> ApproveReschedule([FromRoute] string rescheduleId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} approving reschedule {rescheduleId}", userId, userRole, rescheduleId);
+
+            var result = await _sessionService.ApproveRescheduleAsync(rescheduleId, userId, userRole);
+
+            return Ok(new ApiResponse<RescheduleSessionResponseDto>(
+                result,
+                "Reschedule request approved successfully. Session has been updated."
+            ));
+        }
+
+        /// <summary>
+        /// Reject a reschedule request (Mentor, Mentee, or Admin).
+        /// </summary>
+        /// <param name="rescheduleId">The unique identifier of the reschedule request.</param>
+        /// <response code="200">Reschedule request rejected successfully.</response>
+        /// <response code="401">User not authenticated.</response>
+        /// <response code="403">User not authorized to reject this request.</response>
+        /// <response code="404">Reschedule request not found.</response>
+        /// <response code="409">Reschedule request already processed.</response>
+        [HttpPost("reschedule/{rescheduleId}/reject")]
+        [Authorize(Roles = "User,Mentor,Admin")]
+        [ProducesResponseType(typeof(ApiResponse<RescheduleSessionResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
+        public async Task<ActionResult> RejectReschedule([FromRoute] string rescheduleId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            _logger.LogInformation("UserId {userId} with Role {userRole} rejecting reschedule {rescheduleId}", userId, userRole, rescheduleId);
+
+            var result = await _sessionService.RejectRescheduleAsync(rescheduleId, userId, userRole);
+
+            return Ok(new ApiResponse<RescheduleSessionResponseDto>(
+                result,
+                "Reschedule request rejected successfully. Session remains at original time."
+            ));
+        }
+
+
+
+        /// <summary>
         /// Cancel a session by the mentee, mentor, or admin.
         /// </summary>
         /// <param name="id">The unique identifier of the session to cancel.</param>
@@ -325,7 +392,6 @@ namespace CareerRoute.API.Controllers
         /// <summary>
         /// Marks a session as completed (Mentor or Admin only).
         /// </summary>
-        /// </remarks>
         /// <param name="id">The unique identifier of the session to mark as completed.</param>
         /// <response code="200">Session marked as completed successfully.</response>
         /// <response code="401">User is not authenticated or JWT is invalid.</response>

@@ -40,7 +40,7 @@ namespace CareerRoute.Core.Mappings
                .ForMember(dest => dest.CanCancel, opt => opt.MapFrom(src => src.Status == SessionStatusOptions.Confirmed && src.CompletedAt == null));
 
 
-            CreateMap<Session, UpCommingSessionItemResponseDto>()
+            CreateMap<Session, UpcomingSessionItemResponseDto>()
                 .ForMember(dest => dest.MenteeId, opt => opt.MapFrom(src => src.MenteeId))
                 .ForMember(dest => dest.MenteeFirstName, opt => opt.MapFrom(src => src.Mentee.FirstName))
                 .ForMember(dest => dest.MenteeLastName, opt => opt.MapFrom(src => src.Mentee.LastName))
@@ -70,7 +70,7 @@ namespace CareerRoute.Core.Mappings
 
 
             CreateMap<RescheduleSessionRequestDto, RescheduleSession>() 
-                .ForMember(dest => dest.ReschudelReason, opt => opt.MapFrom(src => src.Reason));
+                .ForMember(dest => dest.RescheduleReason, opt => opt.MapFrom(src => src.Reason));
 
 
             CreateMap<RescheduleSession, RescheduleSessionResponseDto>()
@@ -78,7 +78,8 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.RequestedStartTime, opt => opt.MapFrom(src => src.NewScheduledStartTime));
 
 
-            CreateMap<CancelSessionRequestDto, CancelSession>();
+            CreateMap<CancelSessionRequestDto, CancelSession>()
+                .ForMember(dest => dest.CancellationReason, opt => opt.MapFrom(src => src.Reason));
 
             CreateMap<CancelSession, CancelSessionResponseDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))

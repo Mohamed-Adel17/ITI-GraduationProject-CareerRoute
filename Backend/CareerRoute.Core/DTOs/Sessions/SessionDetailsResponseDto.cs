@@ -1,33 +1,33 @@
 ﻿public class SessionDetailsResponseDto
 {
 
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
 
-    public string MenteeId { get; set; }
-    public string MenteeFirstName { get; set; }
-    public string MenteeLastName { get; set; }
+    public string MenteeId { get; set; } = null!;
+    public string MenteeFirstName { get; set; } = null!;
+    public string MenteeLastName { get; set; } = null!;
     public string? MenteeProfilePictureUrl { get; set; }
 
-    public string MentorId { get; set; }
-    public string MentorFirstName { get; set; }
-    public string MentorLastName { get; set; }
+    public string MentorId { get; set; } = null!;
+    public string MentorFirstName { get; set; } = null!;
+    public string MentorLastName { get; set; } = null!;
     public string? MentorProfilePictureUrl { get; set; }
 
-    public string SessionType { get; set; }
-    public string Duration { get; set; }
+    public string SessionType { get; set; } = null!;
+    public string Duration { get; set; } = null!;
 
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
-    public string Status { get; set; }
+    public string Status { get; set; } = null!;
 
-    public string VideoConferenceLink { get; set; }
+    public string VideoConferenceLink { get; set; } = null!;
     public string? Topic { get; set; }
     public string? Notes { get; set; }
 
     public decimal Price { get; set; }
 
-    public string PaymentId { get; set; }
-    public string PaymentStatus { get; set; }
+    public string PaymentId { get; set; } = null!;
+    public string PaymentStatus { get; set; } = null!;
 
     public string? CancellationReason { get; set; }
 

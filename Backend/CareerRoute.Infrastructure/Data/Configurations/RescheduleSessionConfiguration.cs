@@ -18,7 +18,7 @@ namespace CareerRoute.Infrastructure.Data.Configurations
 
             builder.ToTable("RescheduleSession", t =>
             {
-                t.HasCheckConstraint("CK_Reschedule_Reason_MinLength", "LEN(ReschudelReason) >= 10");
+                t.HasCheckConstraint("CK_Reschedule_Reason_MinLength", "LEN(RescheduleReason) >= 10");
             }); 
 
             builder.HasKey(r => r.Id);
@@ -26,7 +26,7 @@ namespace CareerRoute.Infrastructure.Data.Configurations
             builder.Property(r => r.NewScheduledStartTime)
                    .IsRequired();
 
-            builder.Property(r => r.ReschudelReason)
+            builder.Property(r => r.RescheduleReason)
                    .HasMaxLength(500)
                    .IsRequired();
 

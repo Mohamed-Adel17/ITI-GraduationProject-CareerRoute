@@ -9,7 +9,7 @@ namespace CareerRoute.Core.DTOs.Sessions
     public class RescheduleSessionRequestDto
     {
         public DateTime NewScheduledStartTime { get; set; }
-        public string Reason { get; set; }
+        public string Reason { get; set; } = null!;
 
     }
 }

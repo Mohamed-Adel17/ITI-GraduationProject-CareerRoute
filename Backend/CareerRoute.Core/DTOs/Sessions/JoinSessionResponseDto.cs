@@ -9,14 +9,14 @@ namespace CareerRoute.Core.DTOs.Sessions
     public class JoinSessionResponseDto
     {
 
-        public string SessionId { get; set; }
-        public string VideoConferenceLink { get; set; }
-        public string Provider { get; set; }
+        public string SessionId { get; set; } = null!;
+        public string VideoConferenceLink { get; set; } = null!;
+        public string Provider { get; set; } = null!;
         public DateTime ScheduledStartTime { get; set; }
         public DateTime ScheduledEndTime { get; set; }
         public bool CanJoinNow { get; set; }
         public int MinutesUntilStart { get; set; }
-        public string Instructions { get; set; }
+        public string Instructions { get; set; } = null!;
 
 
 

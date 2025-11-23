@@ -25,7 +25,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CancelationReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    CancellationReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     CancelledBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     Status = table.Column<int>(type: "int", nullable: false),
@@ -37,7 +37,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CancelSession", x => x.Id);
-                    table.CheckConstraint("CK_Cancelation_Reason_MinLength", "LEN(CancelationReason) >= 10");
+                    table.CheckConstraint("CK_Cancellation_Reason_MinLength", "LEN(CancellationReason) >= 10");
                     table.ForeignKey(
                         name: "FK_CancelSession_Sessions_SessionId",
                         column: x => x.SessionId,
@@ -55,7 +55,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     OriginalStartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     NewScheduledStartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     RequestedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ReschudelReason = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RescheduleReason = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RequestedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     SessionId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },

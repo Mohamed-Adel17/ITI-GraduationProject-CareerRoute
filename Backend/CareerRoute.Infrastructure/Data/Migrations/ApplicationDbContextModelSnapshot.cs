@@ -160,7 +160,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
                     b.ToTable("CancelSession", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Cancelation_Reason_MinLength", "LEN(CancelationReason) >= 10");
+                            t.HasCheckConstraint("CK_Cancellation_Reason_MinLength", "LEN(CancellationReason) >= 10");
                         });
                 });
 
@@ -436,7 +436,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ReschudelReason")
+                    b.Property<string>("RescheduleReason")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -547,14 +547,11 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Status")
-                        .HasDatabaseName("IX_Sessions_Status");
+                    b.HasIndex("MenteeId", "Status", "ScheduledStartTime")
+                        .HasDatabaseName("IX_Sessions_MenteeId_Status_Time");
 
-                    b.HasIndex("MenteeId", "ScheduledStartTime")
-                        .HasDatabaseName("IX_Sessions_MenteeId_ScheduledStartTime");
-
-                    b.HasIndex("MentorId", "ScheduledStartTime")
-                        .HasDatabaseName("IX_Sessions_MentorId_ScheduledStartTime");
+                    b.HasIndex("MentorId", "Status", "ScheduledStartTime")
+                        .HasDatabaseName("IX_Sessions_MentorId_Status_Time");
 
                     b.ToTable("Sessions", null, t =>
                         {

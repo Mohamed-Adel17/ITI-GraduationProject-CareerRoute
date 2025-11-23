@@ -16,7 +16,7 @@ namespace CareerRoute.Infrastructure.Data.Configurations
 
             builder.ToTable("CancelSession", t =>
             {
-                t.HasCheckConstraint("CK_Cancelation_Reason_MinLength", "LEN(CancelationReason) >= 10");
+                t.HasCheckConstraint("CK_Cancellation_Reason_MinLength", "LEN(CancellationReason) >= 10");
             });
 
             // Primary key

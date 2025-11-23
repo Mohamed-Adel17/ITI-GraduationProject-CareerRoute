@@ -9,14 +9,14 @@ namespace CareerRoute.Core.DTOs.Sessions
 {
     public class BookSessionResponseDto
     {
-        public string Id { get; set; }
-        public string MenteeId { get; set; }
-        public string MenteeFirstName { get; set; }
-        public string MenteeLastName { get; set; }
-        public string MentorId { get; set; }  
-        public string MentorFirstName { get; set; }
-        public string MentorLastName { get; set; }
-        public string TimeSlotId { get; set; }
+        public string Id { get; set; } = null!;
+        public string MenteeId { get; set; } = null!;
+        public string MenteeFirstName { get; set; } = null!;
+        public string MenteeLastName { get; set; } = null!;
+        public string MentorId { get; set; } = null!;  
+        public string MentorFirstName { get; set; } = null!;
+        public string MentorLastName { get; set; } = null!;
+        public string TimeSlotId { get; set; } = null!;
 
         public SessionTypeOptions SessionType { get; set; }
         public DurationOptions Duration { get; set; }
