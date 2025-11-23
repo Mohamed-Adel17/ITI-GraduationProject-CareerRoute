@@ -1,13 +1,25 @@
-﻿using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Domain.Interfaces.Services;
+using CareerRoute.Core.DTOs.Payments;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.External.Payment;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Settings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 namespace CareerRoute.Infrastructure.Services
 {
+    /// <summary>
+    /// Stripe payment provider implementation.
+    /// </summary>
     public class StripePaymentService : IStripePaymentService
     {
         private readonly PaymentSettings _paymentSettings;
@@ -109,7 +121,7 @@ namespace CareerRoute.Infrastructure.Services
             }
             catch (ValidationException)
             {
-                throw; // Re-throw validation exceptions as-is
+                throw;
             }
             catch (Exception ex)
             {
@@ -257,15 +269,15 @@ namespace CareerRoute.Infrastructure.Services
             }
             catch (PaymentException)
             {
-                throw; // Re-throw payment exceptions
+                throw;
             }
             catch (ValidationException)
             {
-                throw; // Re-throw validation exceptions
+                throw;
             }
             catch (UnauthenticatedException)
             {
-                throw; // Re-throw authentication exceptions
+                throw;
             }
             catch (Exception ex)
             {
@@ -283,7 +295,6 @@ namespace CareerRoute.Infrastructure.Services
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
 
-            // Notify client via SignalR
             _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Captured);
 
             return new PaymentCallbackResult
@@ -296,10 +307,10 @@ namespace CareerRoute.Infrastructure.Services
                 Amount = paymentIntent.Amount / 100m,
                 Currency = paymentIntent.Currency.ToUpper(),
                 RawData = new Dictionary<string, object>
-            {
-                { "stripe_event", stripeEvent.Type },
-                { "payment_method", paymentIntent.PaymentMethodTypes.FirstOrDefault() ?? "unknown" }
-            }
+                {
+                    { "stripe_event", stripeEvent.Type },
+                    { "payment_method", paymentIntent.PaymentMethodTypes.FirstOrDefault() ?? "unknown" }
+                }
             };
         }
 
@@ -310,7 +321,6 @@ namespace CareerRoute.Infrastructure.Services
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
 
-            // Notify client via SignalR
             _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Failed);
 
             return new PaymentCallbackResult
@@ -324,10 +334,10 @@ namespace CareerRoute.Infrastructure.Services
                 Currency = paymentIntent.Currency.ToUpper(),
                 ErrorMessage = paymentIntent.LastPaymentError?.Message ?? "Payment failed",
                 RawData = new Dictionary<string, object>
-            {
-                { "stripe_event", stripeEvent.Type },
-                { "failure_code", paymentIntent.LastPaymentError?.Code ?? "unknown" }
-            }
+                {
+                    { "stripe_event", stripeEvent.Type },
+                    { "failure_code", paymentIntent.LastPaymentError?.Code ?? "unknown" }
+                }
             };
         }
 
@@ -338,7 +348,6 @@ namespace CareerRoute.Infrastructure.Services
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
 
-            // Notify client via SignalR
             _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Canceled);
 
             return new PaymentCallbackResult
@@ -352,10 +361,109 @@ namespace CareerRoute.Infrastructure.Services
                 Currency = paymentIntent.Currency.ToUpper(),
                 ErrorMessage = "Payment was canceled",
                 RawData = new Dictionary<string, object>
+                {
+                    { "stripe_event", stripeEvent.Type },
+                    { "cancellation_reason", paymentIntent.CancellationReason ?? "unknown" }
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Coordinates payment confirmation with session Zoom meeting creation.
+    /// </summary>
+    public class PaymentService : IPaymentService
+    {
+        private readonly IBaseRepository<Payment> _paymentRepository;
+        private readonly IBaseRepository<Session> _sessionRepository;
+        private readonly ISessionService _sessionService;
+        private readonly ILogger<PaymentService> _logger;
+
+        public PaymentService(
+            IBaseRepository<Payment> paymentRepository,
+            IBaseRepository<Session> sessionRepository,
+            ISessionService sessionService,
+            ILogger<PaymentService> logger)
+        {
+            _paymentRepository = paymentRepository;
+            _sessionRepository = sessionRepository;
+            _sessionService = sessionService;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Confirms a payment and triggers Zoom meeting creation for the associated session.
+        /// </summary>
+        public async Task<PaymentConfirmResponseDto> ConfirmPaymentAsync(PaymentConfirmRequestDto request)
+        {
+            _logger.LogInformation(
+                "Starting payment confirmation for PaymentIntentId: {PaymentIntentId}, SessionId: {SessionId}",
+                request.PaymentIntentId, request.SessionId);
+
+            var session = await _sessionRepository.GetByIdAsync(request.SessionId);
+            if (session == null)
             {
-                { "stripe_event", stripeEvent.Type },
-                { "cancellation_reason", paymentIntent.CancellationReason ?? "unknown" }
+                _logger.LogError("Session not found: {SessionId}", request.SessionId);
+                throw new NotFoundException("Session", request.SessionId);
             }
+
+            var payment = (await _paymentRepository.GetAllAsync())
+                .FirstOrDefault(p => p.PaymentIntentId == request.PaymentIntentId);
+
+            if (payment == null)
+            {
+                _logger.LogError("Payment not found for PaymentIntentId: {PaymentIntentId}", request.PaymentIntentId);
+                throw new NotFoundException($"Payment intent {request.PaymentIntentId} not found");
+            }
+
+            if (payment.Status == PaymentStatusOptions.Captured)
+            {
+                _logger.LogWarning("Payment {PaymentId} has already been processed", payment.Id);
+                throw new BusinessException("Payment has already been processed");
+            }
+
+            if (payment.SessionId != request.SessionId)
+            {
+                _logger.LogError("Payment {PaymentId} does not belong to session {SessionId}", payment.Id, request.SessionId);
+                throw new BusinessException("Payment does not belong to the specified session");
+            }
+
+            payment.Status = PaymentStatusOptions.Captured;
+            payment.UpdatedAt = DateTime.UtcNow;
+            payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72);
+
+            _paymentRepository.Update(payment);
+            await _paymentRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Payment {PaymentId} confirmed successfully. Status updated to Captured.", payment.Id);
+
+            try
+            {
+                _logger.LogInformation("Initiating Zoom meeting creation for session {SessionId} after payment confirmation", request.SessionId);
+                await _sessionService.CreateZoomMeetingForSessionAsync(request.SessionId);
+                _logger.LogInformation("Zoom meeting creation completed for session {SessionId}", request.SessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error during Zoom meeting creation for session {SessionId}. Payment confirmation succeeded; meeting creation may need intervention.",
+                    request.SessionId);
+            }
+
+            session = await _sessionRepository.GetByIdAsync(request.SessionId)
+                ?? throw new NotFoundException("Session", request.SessionId);
+
+            return new PaymentConfirmResponseDto
+            {
+                PaymentId = payment.Id,
+                SessionId = session.Id,
+                Amount = payment.Amount,
+                PlatformCommission = payment.Amount * payment.PlatformCommission,
+                MentorPayoutAmount = payment.MentorPayoutAmount,
+                PaymentMethod = payment.PaymentMethod,
+                Status = payment.Status.ToString(),
+                TransactionId = payment.ProviderTransactionId ?? payment.PaymentIntentId,
+                PaidAt = payment.UpdatedAt
             };
         }
     }
