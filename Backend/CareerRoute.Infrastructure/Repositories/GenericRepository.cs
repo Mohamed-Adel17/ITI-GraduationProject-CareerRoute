@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CareerRoute.Core.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using CareerRoute.Infrastructure.Data;
 namespace CareerRoute.Infrastructure.Repositories
 {
@@ -45,6 +46,11 @@ namespace CareerRoute.Infrastructure.Repositories
         public async Task<int> SaveChangesAsync()
         {
             return await dbContext.SaveChangesAsync();
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await dbContext.Database.BeginTransactionAsync();
         }
 
     }

@@ -1,4 +1,4 @@
-namespace CareerRoute.Core.DTOs.Mentors
+namespace CareerRoute.Core.DTOs
 {
     /// <summary>
     /// Pagination metadata for search results

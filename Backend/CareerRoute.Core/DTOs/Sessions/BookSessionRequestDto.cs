@@ -12,9 +12,7 @@ namespace CareerRoute.Core.DTOs.Sessions
     public class BookSessionRequestDto
     {
 
-        public required string MentorId { get; set; }
-        public DurationOptions Duration { get; set; }
-        public DateTime ScheduledStartTime { get; set; }
+        public string TimeSlotId { get; set; } = null!;
         public string? Topic { get; set; }
         public string? Notes { get; set; }
 

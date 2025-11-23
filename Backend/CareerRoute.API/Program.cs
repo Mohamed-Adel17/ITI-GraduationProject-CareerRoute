@@ -8,10 +8,8 @@ using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Data.SeedData;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.VisualBasic;
 using System.Reflection;
 using System.Text;
 
@@ -136,6 +134,20 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+
+// Get Hangfire's recurring job manager from DI
+//using (var scope = app.Services.CreateScope())
+//{
+//    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+//    // Schedule the recurring job
+//    recurringJobManager.AddOrUpdate<SessionBackgroundJobs>(
+//        "UpdateHoursUntilSessionJob",                      // job ID
+//        job => job.UpdateHoursUntilSessionAsync(),         // method to call
+//        Cron.Minutely                                      // schedule
+//    );
+//}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -16,7 +16,7 @@ namespace CareerRoute.Infrastructure.Repositories
             DateTime? startDate = null,
             DateTime? endDate = null,
             int? durationMinutes = null)
-        {
+    {
             // Default start: Now (if not specified)
             var start = startDate ?? DateTime.UtcNow;
             
@@ -31,9 +31,9 @@ namespace CareerRoute.Infrastructure.Repositories
 
             // Filter by duration if specified
             if (durationMinutes.HasValue)
-            {
+        {
                 query = query.Where(ts => ts.DurationMinutes == durationMinutes.Value);
-            }
+        }
 
             return await query
                 .OrderBy(ts => ts.StartDateTime)
@@ -61,7 +61,7 @@ namespace CareerRoute.Infrastructure.Repositories
 
             // Filter by booking status if specified
             if (isBooked.HasValue)
-            {
+        {
                 query = query.Where(ts => ts.IsBooked == isBooked.Value);
             }
 
@@ -82,7 +82,7 @@ namespace CareerRoute.Infrastructure.Repositories
             // Default date range: today to 30 days from today
             var start = startDate ?? DateTime.UtcNow.Date;
             var end = endDate ?? start.AddDays(30);
-
+            
             var query = dbContext.TimeSlots
                 .Where(ts => ts.MentorId == mentorId)
                 .Where(ts => ts.StartDateTime >= start && ts.StartDateTime <= end);
@@ -103,7 +103,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(ts => ts.Session)
                     .ThenInclude(s => s.Mentee)
                 .FirstOrDefaultAsync(ts => ts.Id == slotId);
-        }
+    }
 
         public async Task<bool> CheckSlotExistsAsync(string mentorId, DateTime startDateTime)
         {

@@ -540,7 +540,155 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 6. Cancel Session
+### 6. Approve Reschedule Request
+
+**Endpoint:** `POST /api/sessions/reschedule/{rescheduleId}/approve`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** User (mentee), Mentor, Admin
+
+**Path Parameters:**
+- `rescheduleId` (string, GUID): The unique identifier of the reschedule request
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Reschedule request approved successfully. Session has been updated.",
+  "data": {
+    "id": "44444444-e29b-41d4-a716-446655440014",
+    "status": "Confirmed",
+    "originalStartTime": "2025-11-15T14:00:00Z",
+    "requestedStartTime": "2025-11-16T15:00:00Z",
+    "requestedBy": "mentee",
+    "rescheduleReason": "Conflict with another meeting",
+    "requestedAt": "2025-11-09T12:00:00Z",
+    "isApproved": true
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "User not authorized to approve this request",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request not found",
+    "statusCode": 404
+  }
+  ```
+
+- **409 Conflict:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request already processed",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Validate reschedule request exists
+- Verify user is authorized (participant or admin)
+- Update session scheduled start time
+- Update reschedule request status to Approved
+- Notify other participant
+
+---
+
+### 7. Reject Reschedule Request
+
+**Endpoint:** `POST /api/sessions/reschedule/{rescheduleId}/reject`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** User (mentee), Mentor, Admin
+
+**Path Parameters:**
+- `rescheduleId` (string, GUID): The unique identifier of the reschedule request
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Reschedule request rejected successfully. Session remains at original time.",
+  "data": {
+    "id": "44444444-e29b-41d4-a716-446655440014",
+    "status": "Confirmed",
+    "originalStartTime": "2025-11-15T14:00:00Z",
+    "requestedStartTime": "2025-11-16T15:00:00Z",
+    "requestedBy": "mentee",
+    "rescheduleReason": "Conflict with another meeting",
+    "requestedAt": "2025-11-09T12:00:00Z",
+    "isApproved": false
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "User not authorized to reject this request",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request not found",
+    "statusCode": 404
+  }
+  ```
+
+- **409 Conflict:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request already processed",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Validate reschedule request exists
+- Verify user is authorized (participant or admin)
+- Update reschedule request status to Rejected
+- Session remains at original time
+- Notify other participant
+
+---
+
+### 8. Cancel Session
 
 **Endpoint:** `PATCH /api/sessions/{id}/cancel`
 **Requires:** `Authorization: Bearer {token}`
@@ -633,7 +781,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 7. Join Session (Get Video Link)
+### 9. Join Session (Get Video Link)
 
 **Endpoint:** `POST /api/sessions/{id}/join`
 **Requires:** `Authorization: Bearer {token}`
@@ -709,7 +857,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 8. Complete Session
+### 10. Complete Session
 
 **Endpoint:** `PATCH /api/sessions/{id}/complete`
 **Requires:** `Authorization: Bearer {token}`
@@ -777,7 +925,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ## Payment Management Endpoints
 
-### 9. Create Payment Intent
+### 11. Create Payment Intent
 
 **Endpoint:** `POST /api/payments/create-intent`
 **Requires:** `Authorization: Bearer {token}`
@@ -860,7 +1008,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 10. Confirm Payment
+### 12. Confirm Payment
 
 **Endpoint:** `POST /api/payments/confirm`
 **Requires:** `Authorization: Bearer {token}`
@@ -944,7 +1092,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 11. Get Payment History
+### 13. Get Payment History
 
 **Endpoint:** `GET /api/payments/history`
 **Requires:** `Authorization: Bearer {token}`

@@ -7,10 +7,10 @@ using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using CareerRoute.Infrastructure.Services;
-using CareerRoute.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Hangfire;
 
 
 namespace CareerRoute.Infrastructure;
@@ -46,14 +46,18 @@ public static class DependencyInjection
         services.AddScoped<IMentorRepository, MentorRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ISkillRepository, SkillRepository>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<ITimeSlotRepository, TimeSlotRepository>();
-        // services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<IRescheduleSessionRepository, RescheduleSessionRepository>();
+        services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
 
+        //BackGround Jobs
+        //services.AddScoped<SessionBackgroundJobs>();
+
         // Infrastructure Service Registration
         // Uncomment and add as you create services
-        // services.AddScoped<ITimeSlotService, TimeSlotService>();
         // services.AddScoped<IEmailService, EmailService>();
         // services.AddScoped<IPaymentService, StripePaymentService>();
         // services.AddScoped<IStorageService, AzureStorageService>();
@@ -72,6 +76,15 @@ public static class DependencyInjection
         })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+        services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
+
+        services.AddHangfireServer();
+
 
         return services;
     }

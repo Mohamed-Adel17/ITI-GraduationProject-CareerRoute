@@ -1,6 +1,6 @@
-﻿using CareerRoute.API.Models;
+using CareerRoute.API.Models;
 using CareerRoute.Core.Exceptions;
-
+using Microsoft.EntityFrameworkCore;
 
 namespace CareerRoute.API.Middleware
 {
@@ -72,6 +72,37 @@ namespace CareerRoute.API.Middleware
                     response = ApiResponse.Error(emailException.Message, 400);
                     _logger.LogWarning(emailException, $"Send Email exception: {emailException.Message}");
                     break;
+
+                case GoneException goneException:
+                    response  = ApiResponse.Error(goneException.Message, 410);
+                    _logger.LogWarning(goneException, $"Gone exception: {goneException.Message}");
+                    break;
+
+                case DbUpdateException dbUpdateEx:
+                    var dbMessage = dbUpdateEx.InnerException?.Message ?? dbUpdateEx.Message;
+                    if (dbMessage.Contains("CK_Cancellation_Reason_MinLength") || dbMessage.Contains("CK_Reschedule_Reason_MinLength"))
+                    {
+                        response = ApiResponse.Error("Reason must be at least 10 characters.", 400);
+                    }
+                    else if (dbMessage.Contains("CHECK constraint"))
+                    {
+                        response = ApiResponse.Error("Data validation failed. Please check your input.", 400);
+                    }
+                    else if (dbMessage.Contains("UNIQUE constraint") || dbMessage.Contains("duplicate key"))
+                    {
+                        response = ApiResponse.Error("A record with this information already exists.", 409);
+                    }
+                    else if (dbMessage.Contains("FOREIGN KEY constraint"))
+                    {
+                        response = ApiResponse.Error("Referenced record does not exist.", 400);
+                    }
+                    else
+                    {
+                        response = ApiResponse.Error("Database operation failed. Please try again.", 500);
+                    }
+                    _logger.LogError(dbUpdateEx, "Database update exception: {Message}", dbMessage);
+                    break;
+
                 default:
                     var message = _environment.IsDevelopment()
                         ? exception.Message

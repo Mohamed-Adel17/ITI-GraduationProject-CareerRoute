@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.DTOs.Sessions
 {
-    internal class SessionDto
+    public class CancelSessionRequestDto
     {
+        public string Reason { get; set; } = null!;
     }
 }
