@@ -146,6 +146,36 @@ namespace CareerRoute.Infrastructure.Services
             }
         }
 
+        public async Task<PaymentRefundResponse> RefundAsync(string paymentIntentId, decimal amount, string? transactionId = null)
+        {
+            try
+            {
+                var options = new RefundCreateOptions
+                {
+                    PaymentIntent = paymentIntentId,
+                    Amount = (long)(amount * 100), // Stripe uses cents
+                };
+
+                var service = new RefundService();
+                var refund = await service.CreateAsync(options);
+
+                return new PaymentRefundResponse
+                {
+                    Success = true,
+                    TransactionId = refund.Id,
+                    RefundedAmount = refund.Amount / 100m,
+                    Currency = refund.Currency.ToUpper()
+                };
+            }
+            catch (StripeException ex)
+            {
+                throw new PaymentException(
+                    $"Failed to refund Stripe payment: {ex.Message}",
+                    ProviderName,
+                    ex);
+            }
+        }
+
         public PaymentCallbackResult HandleCallback(string payload, string? signature)
         {
             if (string.IsNullOrEmpty(payload))

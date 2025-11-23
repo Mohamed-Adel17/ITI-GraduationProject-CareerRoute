@@ -38,5 +38,13 @@ namespace CareerRoute.Core.Services.Interfaces
         /// </summary>
         Task<PaymentHistroyItemResponseDto> GetPaymentByIdAsync(string paymentId);
         Task CheckAndCancelPaymentAsync(string paymentId);
+
+        /// <summary>
+        /// Refunds a payment by a specific percentage
+        /// </summary>
+        /// <param name="paymentId">The payment ID</param>
+        /// <param name="percentage">The percentage to refund (1-100)</param>
+        /// <returns>Refund details</returns>
+        Task<PaymentRefundResponseDto> RefundPaymentAsync(string paymentId, decimal percentage);
     }
 }

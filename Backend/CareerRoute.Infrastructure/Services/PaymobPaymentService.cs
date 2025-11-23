@@ -458,6 +458,80 @@ namespace CareerRoute.Infrastructure.Services
                 return false;
             }
         }
+
+        public async Task<PaymentRefundResponse> RefundAsync(string paymentIntentId, decimal amount, string? transactionId = null)
+        {
+            if (string.IsNullOrEmpty(transactionId))
+                throw new ValidationException(new Dictionary<string, string[]>
+                {
+                    { nameof(transactionId), new[] { "Transaction ID is required for Paymob refund" } }
+                });
+
+            try
+            {
+                // Step 1: Get auth token
+                var authToken = await GetAuthTokenAsync();
+
+                // Step 2: Prepare refund request
+                var refundRequest = new
+                {
+                    auth_token = authToken,
+                    transaction_id = transactionId,
+                    amount_cents = (int)(amount * 100)
+                };
+
+                var content = new StringContent(
+                    JsonSerializer.Serialize(refundRequest),
+                    Encoding.UTF8,
+                    "application/json"
+                );
+
+                // Step 3: Call Paymob refund API
+                var response = await _httpClient.PostAsync("acceptance/void_refund/refund", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Paymob refund failed. Status: {Status}, Response: {Response}",
+                        response.StatusCode, errorContent);
+                    throw new PaymentException(
+                        $"Failed to refund payment with Paymob. Status: {response.StatusCode}",
+                        ProviderName);
+                }
+
+                var result = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(result);
+                var root = doc.RootElement;
+
+                // Paymob returns the transaction object directly
+                var success = root.GetProperty("success").GetBoolean();
+                var id = root.GetProperty("id").GetInt32();
+                var amountCents = root.GetProperty("amount_cents").GetInt32();
+
+                if (!success)
+                    throw new PaymentException("Paymob refund request was not successful", ProviderName);
+
+                return new PaymentRefundResponse
+                {
+                    Success = true,
+                    TransactionId = id.ToString(),
+                    RefundedAmount = amountCents / 100m,
+                    Currency = "EGP" // Paymob usually defaults to EGP
+                };
+            }
+            catch (PaymentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error processing Paymob refund");
+                throw new PaymentException(
+                    "Failed to process refund with Paymob",
+                    ProviderName,
+                    ex);
+            }
+        }
     }
 
 }

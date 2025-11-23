@@ -19,6 +19,14 @@ namespace CareerRoute.Core.Domain.Interfaces.Services
         PaymentCallbackResult HandleCallback(string payload, string? signature = null);
 
         /// <summary>
+        /// Refunds a payment by a specific amount
+        /// </summary>
+        /// <param name="paymentIntentId">The payment intent ID to refund</param>
+        /// <param name="amount">The amount to refund</param>
+        /// <returns>Refund response details</returns>
+        Task<PaymentRefundResponse> RefundAsync(string paymentIntentId, decimal amount, string? transactionId = null);
+
+        /// <summary>
         /// Gets the payment provider name
         /// </summary>
         string ProviderName { get; }

@@ -31,6 +31,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly PaymentSettings _paymentSettings;
+        private readonly IPaymentNotificationService _paymentNotificationService;
 
         public PaymentProcessingService(
             IPaymentRepository paymentRepository,
@@ -43,7 +44,8 @@ namespace CareerRoute.Core.Services.Implementations
             IValidator<PaymentIntentRequestDto> paymentIntentValidator,
             IValidator<PaymentConfirmRequestDto> paymentConfirmValidator,
             UserManager<ApplicationUser> userManager,
-            IMapper mapper)
+            IMapper mapper,
+            IPaymentNotificationService paymentNotificationService)
         {
             _paymentRepository = paymentRepository;
             _sessionRepository = sessionRepository;
@@ -56,6 +58,7 @@ namespace CareerRoute.Core.Services.Implementations
             _paymentConfirmValidator = paymentConfirmValidator;
             _userManager = userManager;
             _mapper = mapper;
+            _paymentNotificationService = paymentNotificationService;
         }
 
         public async Task<PaymentIntentResponseDto> CreatePaymentIntentAsync(PaymentIntentRequestDto request, string userId)
@@ -85,6 +88,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             // Determine currency based on provider
             var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
+            var amount = request.PaymentProvider == PaymentProviderOptions.Stripe ? session.Price/50 : session.Price;
 
             // Get the appropriate payment service
             var paymentService = _paymentFactory.GetService(request.PaymentProvider);
@@ -92,7 +96,7 @@ namespace CareerRoute.Core.Services.Implementations
             // Create payment intent request
             var paymentIntentRequest = new PaymentIntentRequest
             {
-                Amount = session.Price,
+                Amount = amount,
                 Currency = currency,
                 SessionId = request.SessionId,
                 MenteeEmail = mentee.Email,
@@ -149,6 +153,68 @@ namespace CareerRoute.Core.Services.Implementations
                 PaymentProvider = payment.PaymentProvider,
                 PaymobPaymentMethod = payment.PaymobPaymentMethod,
                 Status = payment.Status
+            };
+        }
+
+        public async Task<PaymentRefundResponseDto> RefundPaymentAsync(string paymentId, decimal percentage)
+        {
+            if (percentage <= 0 || percentage > 100)
+                throw new BusinessException("Refund percentage must be between 1 and 100");
+
+            var payment = await _paymentRepository.GetByIdAsync(paymentId);
+            if (payment == null)
+                throw new NotFoundException("Payment", paymentId);
+
+            if (payment.Status != PaymentStatusOptions.Captured)
+                throw new BusinessException($"Cannot refund payment with status: {payment.Status}. Only captured payments can be refunded.");
+
+            if (payment.IsRefunded && payment.RefundPercentage >= 100)
+                throw new BusinessException("Payment is already fully refunded");
+
+            // Calculate refund amount
+            var refundAmount = payment.Amount * (percentage / 100m);
+
+            // Check if previous partial refunds exist (if you support multiple partial refunds, logic would be more complex)
+            // For now, assuming simple refund logic or single refund per payment for simplicity unless specified otherwise.
+            // But let's handle the case where we might want to check total refunded amount if we were to support multiple.
+            // Current requirement is "refund by percentage", implying a single action or cumulative. 
+            // Let's assume this action sets the refund state.
+
+            var paymentService = _paymentFactory.GetService(payment.PaymentProvider);
+
+            // Call provider
+            var refundResponse = await paymentService.RefundAsync(payment.PaymentIntentId, refundAmount, payment.ProviderTransactionId);
+
+            if (!refundResponse.Success)
+                throw new PaymentException(refundResponse.ErrorMessage ?? "Refund failed", paymentService.ProviderName);
+
+            // Update payment record
+            payment.IsRefunded = true;
+            payment.RefundAmount = (payment.RefundAmount ?? 0) + refundResponse.RefundedAmount;
+            payment.RefundPercentage = (payment.RefundPercentage ?? 0) + percentage;
+            payment.RefundStatus = RefundStatus.Completed;
+            payment.Status = PaymentStatusOptions.Refunded;
+            payment.RefundedAt = DateTime.UtcNow;
+            payment.UpdatedAt = DateTime.UtcNow;
+
+            
+            _paymentRepository.Update(payment);
+            await _paymentRepository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Payment refunded. PaymentId: {PaymentId}, Amount: {Amount}, Percentage: {Percentage}%",
+                payment.Id, refundResponse.RefundedAmount, percentage);
+
+            // Notify client via SignalR
+            await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, payment.Status);
+
+            return new PaymentRefundResponseDto
+            {
+                PaymentId = payment.Id,
+                RefundAmount = refundResponse.RefundedAmount,
+                RefundPercentage = percentage,
+                Status = payment.Status,
+                RefundedAt = payment.RefundedAt.Value
             };
         }
 
@@ -245,6 +311,9 @@ namespace CareerRoute.Core.Services.Implementations
             _logger.LogInformation(
                 "Payment confirmed. PaymentId: {PaymentId}, SessionId: {SessionId}, Amount: {Amount}",
                 payment.Id, session.Id, payment.Amount);
+
+            // Notify client via SignalR
+            await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, PaymentStatusOptions.Captured);
 
             return _mapper.Map<PaymentConfirmResponseDto>(payment);
         }
@@ -554,7 +623,6 @@ namespace CareerRoute.Core.Services.Implementations
         <p>Please be ready for the session at the scheduled time.</p>
     ";
         }
-
 
     }
 }

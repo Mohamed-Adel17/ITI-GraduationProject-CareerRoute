@@ -104,5 +104,24 @@ namespace CareerRoute.API.Controllers
             return Ok(new ApiResponse<PaymentHistroyItemResponseDto> { Data = result });
         }
 
+        /// <summary>
+        /// Refund a payment by percentage
+        /// </summary>
+        /// <param name="paymentId">Payment ID</param>
+        /// <param name="request">Refund request details</param>
+        /// <returns>Refund details</returns>
+        [HttpPost("{paymentId}/refund")]
+        [Authorize()] // Assuming only admins can refund, or add logic for mentors/mentees if needed
+        [ProducesResponseType(typeof(ApiResponse<PaymentRefundResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ApiResponse<PaymentRefundResponseDto>>> RefundPayment(
+            string paymentId,
+            [FromBody] PaymentRefundRequestDto request)
+        {
+            var result = await _paymentService.RefundPaymentAsync(paymentId, request.Percentage);
+            return Ok(new ApiResponse<PaymentRefundResponseDto>(result, "Payment refunded successfully"));
+        }
+
     }
 }
