@@ -10,10 +10,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using Hangfire;
 using CareerRoute.Infrastructure.Hubs;
+using Hangfire.Dashboard;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,23 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+
+// Configure Hangfire
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new Hangfire.SqlServer.SqlServerStorageOptions
+    {
+        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+        QueuePollInterval = TimeSpan.Zero,
+        UseRecommendedIsolationLevel = true,
+        DisableGlobalLocks = true
+    }));
+
+// Add the processing server as IHostedService
+builder.Services.AddHangfireServer();
 
 // Add services to the container.
 // Clean Architecture Layers
@@ -157,8 +176,12 @@ app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHangfireDashboard();
+var hangfireDashboardOptions = new DashboardOptions
+{
+    Authorization = new[] { new HangfireDashboardAuthorizationFilter(app.Environment) }
+};
 
+app.UseHangfireDashboard("/hangfire", hangfireDashboardOptions);
 app.MapHub<PaymentHub>("hub/payment");
 
 app.MapControllers();
@@ -241,4 +264,40 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Start the meeting termination background timer (REMOVED - Replaced by Hangfire)
+// var meetingTerminationTimer = app.Services.GetRequiredService<CareerRoute.Infrastructure.Services.MeetingTerminationTimer>();
+// meetingTerminationTimer.Start();
+
+// Start the transcript retry background timer
+// var transcriptRetryTimer = app.Services.GetRequiredService<CareerRoute.Infrastructure.Services.TranscriptRetryTimer>();
+// transcriptRetryTimer.Start();
+
 app.Run();
+
+internal sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizationFilter
+{
+    private readonly IWebHostEnvironment _environment;
+
+    public HangfireDashboardAuthorizationFilter(IWebHostEnvironment environment)
+    {
+        _environment = environment;
+    }
+
+    public bool Authorize(DashboardContext context)
+    {
+        var httpContext = context.GetHttpContext();
+        if (httpContext == null)
+        {
+            return false;
+        }
+
+        if (_environment.IsDevelopment())
+        {
+            var remoteIp = httpContext.Connection.RemoteIpAddress;
+            return remoteIp != null && IPAddress.IsLoopback(remoteIp);
+        }
+
+        var user = httpContext.User;
+        return user?.Identity?.IsAuthenticated == true && user.IsInRole(AppRoles.Admin);
+    }
+}
