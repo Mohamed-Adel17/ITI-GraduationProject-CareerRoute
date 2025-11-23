@@ -46,7 +46,10 @@ public static class DependencyInjection
         services.AddScoped<IMentorRepository, MentorRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ISkillRepository, SkillRepository>();
-         services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<ITimeSlotRepository, TimeSlotRepository>();
+        services.AddScoped<IRescheduleSessionRepository, RescheduleSessionRepository>();
+        services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
          services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
@@ -74,7 +77,6 @@ public static class DependencyInjection
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-        // Hangfire Configuration
         services.AddHangfire(config => config
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
@@ -82,6 +84,7 @@ public static class DependencyInjection
             .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddHangfireServer();
+
 
         return services;
     }

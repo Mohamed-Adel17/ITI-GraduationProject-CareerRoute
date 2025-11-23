@@ -12,12 +12,12 @@ import { pendingMentorGuard, approvedMentorGuard } from '../../core/guards/role.
  * - application-pending: Application status page for pending mentors
  * - profile: Mentor profile view (own profile, read-only) - APPROVED ONLY
  * - profile/edit: Edit mentor profile - APPROVED ONLY
+ * - manage-availability: Manage time slots and availability - APPROVED ONLY
  *
  * Future routes to implement:
  * - dashboard: Mentor dashboard
  * - sessions: Session management
  * - bookings: Booking requests
- * - availability: Availability calendar
  * - earnings: Earnings/payments
  * - reviews: Reviews received
  * - settings: Mentor settings
@@ -40,6 +40,12 @@ export const MENTOR_ROUTES: Routes = [
     loadComponent: () => import('./edit-mentor-profile/edit-mentor-profile.component').then(m => m.EditMentorProfileComponent),
     canActivate: [approvedMentorGuard],
     title: 'Edit Mentor Profile - CareerRoute'
+  },
+  {
+    path: 'manage-availability',
+    loadComponent: () => import('./manage-availability/manage-availability').then(m => m.ManageAvailabilityComponent),
+    canActivate: [approvedMentorGuard],
+    title: 'Manage Availability - CareerRoute'
   },
 
   // TODO: Add more mentor routes here as components are created

@@ -27,7 +27,8 @@
            class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
           Categories
         </a>
-        <a routerLink="/sessions"
+        <a *ngIf="!hasRole((currentUser$ | async), UserRole.Admin)"
+           routerLink="/sessions"
            routerLinkActive="text-primary"
            class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
           Sessions
@@ -114,7 +115,7 @@
               </div>
 
               <!-- Menu Items -->
-              <a 
+              <!-- <a 
                 routerLink="/user/dashboard"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -125,7 +126,7 @@
                   </svg>
                   Dashboard
                 </span>
-              </a>
+              </a> -->
 
               <a
                 *ngIf="currentUser$ | async as user"
@@ -141,7 +142,7 @@
                 </span>
               </a>
 
-              <a 
+              <!-- <a 
                 routerLink="/user/bookings"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -152,9 +153,10 @@
                   </svg>
                   My Bookings
                 </span>
-              </a>
+              </a> -->
 
-              <a 
+              <a
+                *ngIf="!hasRole((currentUser$ | async), UserRole.Admin)"
                 routerLink="/user/sessions"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -168,7 +170,7 @@
               </a>
 
               <!-- Mentor Dashboard (if user is mentor) -->
-              <a 
+              <!-- <a 
                 *ngIf="hasRole((currentUser$ | async), UserRole.Mentor)"
                 routerLink="/mentor/dashboard"
                 (click)="closeMenus()"
@@ -180,12 +182,12 @@
                   </svg>
                   Mentor Dashboard
                 </span>
-              </a>
+              </a> -->
 
               <!-- Admin Dashboard (if user is admin) -->
               <a 
                 *ngIf="hasRole((currentUser$ | async), UserRole.Admin)"
-                routerLink="/admin/dashboard"
+                routerLink="/admin"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-primary dark:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
                 role="menuitem">
@@ -200,7 +202,7 @@
 
               <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
-              <a 
+              <!-- <a 
                 routerLink="/user/settings"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -212,7 +214,7 @@
                   </svg>
                   Settings
                 </span>
-              </a>
+              </a> -->
 
               <button 
                 (click)="onLogout()"
@@ -276,7 +278,8 @@
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
           Categories
         </a>
-        <a routerLink="/sessions"
+        <a *ngIf="!hasRole((currentUser$ | async), UserRole.Admin)"
+           routerLink="/sessions"
            (click)="closeMenus()"
            routerLinkActive="bg-primary/10 text-primary"
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CareerRoute.Core.Domain.Interfaces
 {
@@ -14,6 +15,7 @@ namespace CareerRoute.Core.Domain.Interfaces
         void Update(T entity);
         void Delete(T entity);
         Task<int> SaveChangesAsync();
+        Task<IDbContextTransaction> BeginTransactionAsync();
     }
 
 

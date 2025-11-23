@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LoginRequest } from '../../../shared/models/auth.model';
+import { UserRole } from '../../../shared/models/user.model';
 
 /**
  * LoginComponent
@@ -183,45 +184,56 @@ export class LoginComponent implements OnInit {
 
   /**
    * Checks if user registered as mentor and redirects appropriately
+   * Uses token claims to determine mentor status
+   *
+   * Flow:
+   * 1. Regular user (no isMentor flag) → returnUrl
+   * 2. Approved mentor (has Mentor role) → returnUrl
+   * 3. Pending mentor with submitted application (has mentor profile) → home page
+   * 4. Pending mentor without application (no mentor profile) → application form
+   *
    * @param isMentor Whether user has isMentor flag in JWT token
    */
   private checkAndRedirectMentor(isMentor: boolean): void {
-    // If user is not a mentor, clean up localStorage and navigate to returnUrl
+    // If user is not a mentor, navigate to returnUrl
     if (!isMentor) {
-      // Clean up any stale pendingMentorApplication flag from previous sessions
-      // This ensures regular users don't see mentor-related UI
-      localStorage.removeItem('pendingMentorApplication');
       this.router.navigate([this.returnUrl]);
       return;
     }
 
-    // User registered as mentor - check if they have a mentor profile
-    this.mentorService.getCurrentMentorProfile().subscribe({
-      next: (mentorProfile) => {
-        // Mentor profile exists - navigate to returnUrl (could be /mentor/profile, etc.)
-        console.log('Mentor profile exists, navigating to:', this.returnUrl);
-        // Clean up localStorage flag since application is already submitted
-        localStorage.removeItem('pendingMentorApplication');
-        this.router.navigate([this.returnUrl]);
-      },
-      error: (error) => {
-        // If 404, mentor profile doesn't exist - redirect to application form
-        if (error.status === 404) {
-          console.log('Mentor profile not found - redirecting to application form');
-          // Set localStorage flag to allow access to application form
-          localStorage.setItem('pendingMentorApplication', 'true');
-          this.notificationService.info(
-            'Please complete your mentor application to get started.',
-            'Complete Your Profile'
-          );
-          this.router.navigate(['/user/apply-mentor']);
-        } else {
-          // Other error - just navigate to returnUrl
-          console.error('Error checking mentor profile:', error);
-          this.router.navigate([this.returnUrl]);
+    // User has isMentor flag - check if they have Mentor role (approved)
+    const hasMentorRole = this.authService.hasRole(UserRole.Mentor);
+
+    if (hasMentorRole) {
+      // User is approved mentor - navigate to returnUrl or mentor dashboard
+      console.log('User is approved mentor, navigating to:', this.returnUrl);
+      this.router.navigate([this.returnUrl]);
+    } else {
+      // User has applied but not approved yet - check if they have submitted application
+      this.mentorService.getCurrentMentorProfile().subscribe({
+        next: (mentorProfile) => {
+          // Mentor profile exists (application submitted and pending approval)
+          // Redirect to home page - they can use "Become a Mentor" button if needed
+          console.log('Mentor application submitted and pending approval, navigating to home');
+          this.router.navigate(['/']);
+        },
+        error: (error) => {
+          // If 404, mentor profile doesn't exist - redirect to application form
+          if (error.status === 404) {
+            console.log('Mentor profile not found - redirecting to application form');
+            this.notificationService.info(
+              'Please complete your mentor application to get started.',
+              'Complete Your Profile'
+            );
+            this.router.navigate(['/user/apply-mentor']);
+          } else {
+            // Other error - just navigate to returnUrl
+            console.error('Error checking mentor profile:', error);
+            this.router.navigate([this.returnUrl]);
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   /**

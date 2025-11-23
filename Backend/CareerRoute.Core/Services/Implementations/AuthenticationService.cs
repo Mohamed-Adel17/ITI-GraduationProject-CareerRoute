@@ -59,7 +59,7 @@ namespace CareerRoute.Core.Services.Implementations
             _emailService = emailService;
             _mapper = mapper;
             _jwtSettings = jwtSettings.Value;
-            _frontendUrl = configuration["FrontendUrl"] ?? "https://localhost:4200";
+            _frontendUrl = configuration["FrontendUrl"] ?? "http://localhost:4200";
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
             _emailValidator = emailValidator;

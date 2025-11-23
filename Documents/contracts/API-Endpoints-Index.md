@@ -1,6 +1,6 @@
 # API Endpoints Documentation Index
 
-**Last Updated:** 2025-11-16  
+**Last Updated:** 2025-11-19
 **Base URL:** `http://localhost:5000/api`
 
 ---
@@ -67,7 +67,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 ---
 
-### Mentors (10 endpoints)
+### Mentors (14 endpoints)
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
@@ -75,9 +75,13 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `GET` | `/api/mentors/search` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#2-search-mentors-by-keywords)** | ✅ Authoritative<br/>Simple keyword search |
 | `GET` | `/api/mentors/top-rated` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#3-get-top-rated-mentors)** | ✅ Authoritative |
 | `GET` | `/api/mentors/{id}` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#4-get-mentor-profile-by-id)** | ✅ Authoritative |
+| `GET` | `/api/mentors/{mentorId}/available-slots` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#13-get-available-time-slots-for-mentor-public)** | ✅ Authoritative<br/>View available TimeSlots<br/>📖 Referenced in [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#timeslot-integration) |
 | `GET` | `/api/mentors/me` | User | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#7-get-current-mentors-own-profile)** | ✅ Authoritative<br/>No Mentor role required |
 | `POST` | `/api/mentors` | User | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#8-apply-to-become-a-mentor)** | ✅ Authoritative<br/>Application pending approval |
 | `PATCH` | `/api/mentors/me` | User | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#9-update-current-mentors-own-profile)** | ✅ Authoritative<br/>Includes user & mentor fields<br/>No Mentor role required |
+| `POST` | `/api/mentors/{mentorId}/time-slots` | Mentor/Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#14-create-time-slots-for-mentor)** | ✅ Authoritative<br/>Create single or batch (max 50)<br/>📖 Referenced in [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#timeslot-integration) |
+| `GET` | `/api/mentors/{mentorId}/time-slots` | Mentor/Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#15-get-mentors-all-time-slots)** | ✅ Authoritative<br/>Manage all slots with pagination |
+| `DELETE` | `/api/mentors/{mentorId}/time-slots/{slotId}` | Mentor/Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#16-delete-time-slot)** | ✅ Authoritative<br/>Cannot delete booked slots |
 | `GET` | `/api/mentors/pending` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#10-get-pending-mentor-applications)** | ✅ Authoritative<br/>Review applications |
 | `PATCH` | `/api/mentors/{id}/approve` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#11-approve-mentor-application)** | ✅ Authoritative<br/>Approve application |
 | `PATCH` | `/api/mentors/{id}/reject` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#12-reject-mentor-application)** | ✅ Authoritative<br/>Reject with reason |
@@ -97,7 +101,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 ---
 
-### Sessions (8 endpoints)
+### Sessions (10 endpoints)
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
@@ -109,6 +113,8 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies<br/>Releases TimeSlot |
 | `POST` | `/api/sessions/{id}/join` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#7-join-session-get-video-link)** | ✅ Authoritative<br/>Get video conference link |
 | `PATCH` | `/api/sessions/{id}/complete` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#8-complete-session)** | ✅ Authoritative<br/>Trigger payment release |
+| `GET` | `/api/sessions/{id}/recording` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#12-get-session-recording)** | ✅ Authoritative<br/>🎥 Zoom recording access |
+| `GET` | `/api/sessions/{id}/transcript` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#13-get-session-transcript)** | ✅ Authoritative<br/>📝 AI transcript access |
 
 ---
 
@@ -225,12 +231,13 @@ Mentor-Endpoints.md (REFERENCES)
 | Authentication | 8 | 7 | 1 | 0 | 0 |
 | Categories | 6 | 2 | 0 | 4 | 0 |
 | Skills | 5 | 2 | 0 | 3 | 0 |
-| Mentors | 10 | 4 | 3 | 3 | 0 |
+| Mentors | 14 | 5 | 3 | 3 | 0 |
+| TimeSlots | (included in Mentors) | 1 | 3 | 0 | 0 |
 | Users | 6 | 0 | 4 | 2 | 0 |
-| Sessions | 8 | 0 | 8 | 0 | 0 |
+| Sessions | 10 | 0 | 10 | 0 | 0 |
 | Payments | 3 | 0 | 3 | 0 | 0 |
 | Webhooks | 2 | 0 | 0 | 0 | 2 |
-| **TOTAL** | **48** | **15** | **19** | **12** | **2** |
+| **TOTAL** | **53** | **16** | **20** | **12** | **2** |
 
 **Notes:**
 - **System**: Webhook endpoints called by payment gateways (Stripe, Paymob), not by frontend applications
@@ -265,6 +272,7 @@ Mentor-Endpoints.md (REFERENCES)
 - `GET /api/mentors/search`
 - `GET /api/mentors/top-rated`
 - `GET /api/mentors/{id}`
+- `GET /api/mentors/{mentorId}/available-slots` (view available TimeSlots)
 
 ### Authenticated Endpoints (User/Mentor/Admin)
 
@@ -284,6 +292,9 @@ Mentor-Endpoints.md (REFERENCES)
 - `GET /api/mentors/me` (Any authenticated user with IsMentor=true - no Mentor role required)
 - `POST /api/mentors` (Any authenticated user - apply as mentor)
 - `PATCH /api/mentors/me` (Any authenticated user with IsMentor=true - includes user & mentor fields, no Mentor role required)
+- `POST /api/mentors/{mentorId}/time-slots` (Mentor/Admin - create TimeSlots)
+- `GET /api/mentors/{mentorId}/time-slots` (Mentor/Admin - manage TimeSlots)
+- `DELETE /api/mentors/{mentorId}/time-slots/{slotId}` (Mentor/Admin - delete TimeSlot)
 
 **Sessions:**
 - `POST /api/sessions` (User - book session)
@@ -538,10 +549,10 @@ Mentor-Endpoints.md (REFERENCES)
 4. Update the statistics section
 5. Add to Common Use Cases if applicable
 
-**Last Review:** 2025-11-16  
+**Last Review:** 2025-11-19
 
 ---
 
-**Total Documented Endpoints:** 48  
-**Total Contract Files:** 6  
+**Total Documented Endpoints:** 53
+**Total Contract Files:** 6
 **Documentation Status:** ✅ Complete & Synchronized

@@ -48,20 +48,26 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 **Important:** Session booking now uses a **TimeSlot-based system**. Before booking a session, mentees must select from available time slots created by mentors.
 
+**📖 TimeSlot Management Endpoints:** See [Mentor-Endpoints.md - TimeSlot Availability Management](./Mentor-Endpoints.md#timeslot-availability-management) for complete documentation of:
+- GET `/api/mentors/{mentorId}/available-slots` (Public - view available slots)
+- POST `/api/mentors/{mentorId}/time-slots` (Mentor/Admin - create slots)
+- GET `/api/mentors/{mentorId}/time-slots` (Mentor/Admin - manage all slots)
+- DELETE `/api/mentors/{mentorId}/time-slots/{slotId}` (Mentor/Admin - delete slot)
+
 **Booking Flow:**
-1. **Mentor creates availability** → POST `/api/mentors/{mentorId}/time-slots` (creates TimeSlot records)
-2. **Mentee views available slots** → GET `/api/mentors/{mentorId}/available-slots` (public endpoint)
+1. **Mentor creates availability** → POST `/api/mentors/{mentorId}/time-slots` (see [Mentor-Endpoints.md#14](./Mentor-Endpoints.md#14-create-time-slots-for-mentor))
+2. **Mentee views available slots** → GET `/api/mentors/{mentorId}/available-slots` (see [Mentor-Endpoints.md#13](./Mentor-Endpoints.md#13-get-available-time-slots-for-mentor-public))
 3. **Mentee books session** → POST `/api/sessions` with `timeSlotId` (this document, Endpoint 1)
 4. **TimeSlot marked as booked** → `isBooked = true`, `sessionId` set to new session ID
 5. **Mentee creates payment intent** → POST `/api/payments/create-intent` with `sessionId`
 6. **Payment confirmed** → Session status changes to "Confirmed", video link generated
 
 **TimeSlot-Session Relationship:**
-- Each Session is linked to one TimeSlot via `timeSlotId`
+- Each Session is linked to one TimeSlot via `timeSlotId` (string GUID)
 - TimeSlot stores: `startDateTime`, `durationMinutes`, mentor's `rate30Min` or `rate60Min`
 - When session is cancelled, TimeSlot is released (`isBooked = false`, `sessionId = null`)
 - Session price, duration, and schedule are derived from the TimeSlot
-- TimeSlots are created by mentors through their availability management endpoints
+- TimeSlots are created by mentors through their availability management endpoints (see [Mentor-Endpoints.md](./Mentor-Endpoints.md#timeslot-availability-management))
 
 ---
 
@@ -76,14 +82,14 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 **Request Body:**
 ```json
 {
-  "timeSlotId": 123,
+  "timeSlotId": "ts_123",
   "topic": "System Design Interview Preparation",
   "notes": "Focusing on distributed systems and scalability patterns"
 }
 ```
 
 **Field Requirements:**
-- `timeSlotId` (required): Integer, must reference an existing available TimeSlot (isBooked = false)
+- `timeSlotId` (required): String, must reference an existing available TimeSlot (isBooked = false)
 - `topic` (optional): Max 200 characters
 - `notes` (optional): Max 1000 characters
 
@@ -102,7 +108,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
     "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
     "mentorFirstName": "Sarah",
     "mentorLastName": "Johnson",
-    "timeSlotId": 123,
+    "timeSlotId": "ts_123",
     "sessionType": "OneOnOne",
     "duration": "SixtyMinutes",
     "scheduledStartTime": "2025-11-15T14:00:00Z",
@@ -534,7 +540,155 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 6. Cancel Session
+### 6. Approve Reschedule Request
+
+**Endpoint:** `POST /api/sessions/reschedule/{rescheduleId}/approve`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** User (mentee), Mentor, Admin
+
+**Path Parameters:**
+- `rescheduleId` (string, GUID): The unique identifier of the reschedule request
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Reschedule request approved successfully. Session has been updated.",
+  "data": {
+    "id": "44444444-e29b-41d4-a716-446655440014",
+    "status": "Confirmed",
+    "originalStartTime": "2025-11-15T14:00:00Z",
+    "requestedStartTime": "2025-11-16T15:00:00Z",
+    "requestedBy": "mentee",
+    "rescheduleReason": "Conflict with another meeting",
+    "requestedAt": "2025-11-09T12:00:00Z",
+    "isApproved": true
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "User not authorized to approve this request",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request not found",
+    "statusCode": 404
+  }
+  ```
+
+- **409 Conflict:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request already processed",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Validate reschedule request exists
+- Verify user is authorized (participant or admin)
+- Update session scheduled start time
+- Update reschedule request status to Approved
+- Notify other participant
+
+---
+
+### 7. Reject Reschedule Request
+
+**Endpoint:** `POST /api/sessions/reschedule/{rescheduleId}/reject`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** User (mentee), Mentor, Admin
+
+**Path Parameters:**
+- `rescheduleId` (string, GUID): The unique identifier of the reschedule request
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Reschedule request rejected successfully. Session remains at original time.",
+  "data": {
+    "id": "44444444-e29b-41d4-a716-446655440014",
+    "status": "Confirmed",
+    "originalStartTime": "2025-11-15T14:00:00Z",
+    "requestedStartTime": "2025-11-16T15:00:00Z",
+    "requestedBy": "mentee",
+    "rescheduleReason": "Conflict with another meeting",
+    "requestedAt": "2025-11-09T12:00:00Z",
+    "isApproved": false
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "User not authorized to reject this request",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request not found",
+    "statusCode": 404
+  }
+  ```
+
+- **409 Conflict:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request already processed",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Validate reschedule request exists
+- Verify user is authorized (participant or admin)
+- Update reschedule request status to Rejected
+- Session remains at original time
+- Notify other participant
+
+---
+
+### 8. Cancel Session
 
 **Endpoint:** `PATCH /api/sessions/{id}/cancel`
 **Requires:** `Authorization: Bearer {token}`
@@ -627,7 +781,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 7. Join Session (Get Video Link)
+### 9. Join Session (Get Video Link)
 
 **Endpoint:** `POST /api/sessions/{id}/join`
 **Requires:** `Authorization: Bearer {token}`
@@ -703,7 +857,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 8. Complete Session
+### 10. Complete Session
 
 **Endpoint:** `PATCH /api/sessions/{id}/complete`
 **Requires:** `Authorization: Bearer {token}`
@@ -771,7 +925,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ## Payment Management Endpoints
 
-### 9. Create Payment Intent
+### 11. Create Payment Intent
 
 **Endpoint:** `POST /api/payments/create-intent`
 **Requires:** `Authorization: Bearer {token}`
@@ -854,7 +1008,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 10. Confirm Payment
+### 12. Confirm Payment
 
 **Endpoint:** `POST /api/payments/confirm`
 **Requires:** `Authorization: Bearer {token}`
@@ -938,7 +1092,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 11. Get Payment History
+### 13. Get Payment History
 
 **Endpoint:** `GET /api/payments/history`
 **Requires:** `Authorization: Bearer {token}`
@@ -1075,7 +1229,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
   "mentorFirstName": "string",
   "mentorLastName": "string",
   "mentorProfilePictureUrl": "string | null",
-  "timeSlotId": "number | null",                // NEW: Reference to TimeSlot
+  "timeSlotId": "string | null",                // NEW: Reference to TimeSlot
   "sessionType": "string (enum: OneOnOne, Group)",
   "duration": "string (enum: ThirtyMinutes, SixtyMinutes)",
   "scheduledStartTime": "ISO 8601 datetime",
@@ -1119,7 +1273,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ### BookSessionRequestDto
 ```typescript
 {
-  "timeSlotId": "number (required)",           // Changed from mentorId + duration + scheduledStartTime
+  "timeSlotId": "string (required)",           // Changed from mentorId + duration + scheduledStartTime
   "topic": "string | optional",
   "notes": "string | optional"
 }
@@ -1316,7 +1470,7 @@ Authorization: Bearer {access-token}
 Content-Type: application/json
 
 {
-  "timeSlotId": 123,
+  "timeSlotId": "ts_123",
   "topic": "System Design Interview Preparation",
   "notes": "Focusing on distributed systems"
 }

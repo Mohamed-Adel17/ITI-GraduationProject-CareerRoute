@@ -44,14 +44,6 @@ import { forkJoin } from 'rxjs';
           <p class="text-lg text-gray-600 dark:text-gray-400">
             Share your expertise and help others grow their careers
           </p>
-          <!-- Skip button (shown only if canSkip is true) -->
-          <div *ngIf="canSkip" class="mt-4">
-            <button
-              (click)="onSkip()"
-              class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline">
-              Skip for now - I'll complete this later
-            </button>
-          </div>
         </div>
 
         <!-- Loading State -->
@@ -99,9 +91,6 @@ export class MentorApplicationComponent implements OnInit {
   isLoading = false;
   loadError: string | null = null;
 
-  // Skip functionality (allowed only when coming from registration)
-  canSkip = false;
-
   constructor(
     private mentorService: MentorService,
     private skillService: SkillService,
@@ -112,12 +101,37 @@ export class MentorApplicationComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Check if we can allow skipping (coming from registration)
-    // Check localStorage for pendingMentorApplication flag
-    const pendingMentorApplication = localStorage.getItem('pendingMentorApplication');
-    this.canSkip = pendingMentorApplication === 'true';
+    // Check if user already has a mentor profile
+    this.checkExistingProfile();
+  }
 
-    this.loadData();
+  /**
+   * Check if user already has a mentor profile
+   * If profile exists, redirect to application-pending page
+   */
+  private checkExistingProfile(): void {
+    this.mentorService.getCurrentMentorProfile().subscribe({
+      next: (profile) => {
+        // User already has a mentor profile - redirect to pending page
+        console.log('User already has mentor profile, redirecting to pending page');
+        this.notificationService.info(
+          'You have already submitted your mentor application.',
+          'Application Submitted'
+        );
+        this.router.navigate(['/mentor/application-pending']);
+      },
+      error: (error) => {
+        // If 404, user doesn't have profile yet - allow them to apply
+        if (error.status === 404) {
+          console.log('No existing mentor profile found, loading application form');
+          this.loadData();
+        } else {
+          // Other errors - show error and load form anyway
+          console.error('Error checking existing profile:', error);
+          this.loadData();
+        }
+      }
+    });
   }
 
   /**
@@ -168,10 +182,7 @@ export class MentorApplicationComponent implements OnInit {
             'Application Submitted'
           );
 
-          // Clear the pending mentor application flag from localStorage
-          localStorage.removeItem('pendingMentorApplication');
-
-          // Refresh token to get updated JWT with isMentor flag and mentorId
+          // Refresh token to get updated JWT with isMentor flag
           this.authService.refreshToken().subscribe({
             next: () => {
               console.log('Token refreshed successfully after mentor application');
@@ -227,17 +238,4 @@ export class MentorApplicationComponent implements OnInit {
     this.router.navigate(['/']);
   }
 
-  /**
-   * Handle skip action (only available when coming from registration)
-   * Keeps pendingMentorApplication flag and navigates to dashboard with reminder
-   */
-  onSkip(): void {
-    // Keep the pendingMentorApplication flag in localStorage
-    // This will trigger the reminder banner on the dashboard
-    this.notificationService.info(
-      'You can complete your mentor application anytime from your dashboard.',
-      'Application Skipped'
-    );
-    this.router.navigate(['/']);
-  }
 }
