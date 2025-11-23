@@ -1,4 +1,5 @@
-﻿using CareerRoute.Core.Domain.Enums;
+﻿using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.DTOs.Payments;
 
 namespace CareerRoute.Core.Services.Interfaces
@@ -46,5 +47,11 @@ namespace CareerRoute.Core.Services.Interfaces
         /// <param name="percentage">The percentage to refund (1-100)</param>
         /// <returns>Refund details</returns>
         Task<PaymentRefundResponseDto> RefundPaymentAsync(string paymentId, decimal percentage);
+
+        /// <summary>
+        /// Processes a refund with the provider and updates the payment entity without saving changes to the database.
+        /// This allows the caller to include this operation within a larger transaction.
+        /// </summary>
+        Task<PaymentRefundResponseDto> ProcessRefundAsync(Payment payment, decimal percentage);
     }
 }

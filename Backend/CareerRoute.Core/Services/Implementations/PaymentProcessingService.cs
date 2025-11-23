@@ -32,6 +32,8 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly PaymentSettings _paymentSettings;
         private readonly IPaymentNotificationService _paymentNotificationService;
+        private readonly IEmailTemplateService _emailTemplateService;
+
 
         public PaymentProcessingService(
             IPaymentRepository paymentRepository,
@@ -45,7 +47,8 @@ namespace CareerRoute.Core.Services.Implementations
             IValidator<PaymentConfirmRequestDto> paymentConfirmValidator,
             UserManager<ApplicationUser> userManager,
             IMapper mapper,
-            IPaymentNotificationService paymentNotificationService)
+            IPaymentNotificationService paymentNotificationService,
+            IEmailTemplateService emailTemplateService)
         {
             _paymentRepository = paymentRepository;
             _sessionRepository = sessionRepository;
@@ -59,6 +62,7 @@ namespace CareerRoute.Core.Services.Implementations
             _userManager = userManager;
             _mapper = mapper;
             _paymentNotificationService = paymentNotificationService;
+            _emailTemplateService = emailTemplateService;
         }
 
         public async Task<PaymentIntentResponseDto> CreatePaymentIntentAsync(PaymentIntentRequestDto request, string userId)
@@ -88,7 +92,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             // Determine currency based on provider
             var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
-            var amount = request.PaymentProvider == PaymentProviderOptions.Stripe ? session.Price/50 : session.Price;
+            var amount = request.PaymentProvider == PaymentProviderOptions.Stripe ? session.Price / 50 : session.Price;
 
             // Get the appropriate payment service
             var paymentService = _paymentFactory.GetService(request.PaymentProvider);
@@ -124,7 +128,7 @@ namespace CareerRoute.Core.Services.Implementations
                 PaymobPaymentMethod = request.PaymobPaymentMethod,
                 PaymentIntentId = providerResponse.PaymentIntentId ?? string.Empty,
                 ClientSecret = providerResponse.ClientSecret ?? string.Empty,
-                Amount = session.Price,
+                Amount = amount,
                 Currency = providerResponse.Currency ?? currency,
                 Status = PaymentStatusOptions.Pending,
                 PlatformCommission = 0.15m,
@@ -134,6 +138,8 @@ namespace CareerRoute.Core.Services.Implementations
             };
 
             await _paymentRepository.AddAsync(payment);
+            session.PaymentId = payment.Id;
+            _sessionRepository.Update(session);
             await _paymentRepository.SaveChangesAsync();
 
             _logger.LogInformation(
@@ -153,6 +159,59 @@ namespace CareerRoute.Core.Services.Implementations
                 PaymentProvider = payment.PaymentProvider,
                 PaymobPaymentMethod = payment.PaymobPaymentMethod,
                 Status = payment.Status
+            };
+        }
+
+        public async Task<PaymentRefundResponseDto> ProcessRefundAsync(Payment payment, decimal percentage)
+        {
+            if (payment == null)
+                throw new ArgumentNullException(nameof(payment));
+
+            if (percentage <= 0 || percentage > 100)
+                throw new BusinessException("Refund percentage must be between 1 and 100");
+
+            if (payment.Status != PaymentStatusOptions.Captured)
+                throw new BusinessException($"Cannot refund payment with status: {payment.Status}. Only captured payments can be refunded.");
+
+            if (payment.IsRefunded && payment.RefundPercentage >= 100)
+                throw new BusinessException("Payment is already fully refunded");
+
+            // Calculate refund amount
+            var refundAmount = payment.Amount * (percentage / 100m);
+
+            var paymentService = _paymentFactory.GetService(payment.PaymentProvider);
+
+            // Call provider
+            var refundResponse = await paymentService.RefundAsync(payment.PaymentIntentId, refundAmount, payment.ProviderTransactionId);
+
+            if (!refundResponse.Success)
+                throw new PaymentException(refundResponse.ErrorMessage ?? "Refund failed", paymentService.ProviderName);
+
+            // Update payment record (without saving - caller will handle transaction)
+            payment.IsRefunded = true;
+            payment.RefundAmount = (payment.RefundAmount ?? 0) + refundResponse.RefundedAmount;
+            payment.RefundPercentage = (payment.RefundPercentage ?? 0) + percentage;
+            payment.RefundStatus = RefundStatus.Completed;
+            payment.Status = PaymentStatusOptions.Refunded;
+            payment.RefundedAt = DateTime.UtcNow;
+            payment.UpdatedAt = DateTime.UtcNow;
+
+            _paymentRepository.Update(payment);
+
+            _logger.LogInformation(
+                "Payment refund processed. PaymentId: {PaymentId}, Amount: {Amount}, Percentage: {Percentage}%",
+                payment.Id, refundResponse.RefundedAmount, percentage);
+
+            // Notify client via SignalR
+            await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, payment.Status);
+
+            return new PaymentRefundResponseDto
+            {
+                PaymentId = payment.Id,
+                RefundAmount = refundResponse.RefundedAmount,
+                RefundPercentage = percentage,
+                Status = payment.Status,
+                RefundedAt = payment.RefundedAt.Value
             };
         }
 
@@ -197,7 +256,7 @@ namespace CareerRoute.Core.Services.Implementations
             payment.RefundedAt = DateTime.UtcNow;
             payment.UpdatedAt = DateTime.UtcNow;
 
-            
+
             _paymentRepository.Update(payment);
             await _paymentRepository.SaveChangesAsync();
 
@@ -532,7 +591,7 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 // 1. Send email to mentee
                 var menteeSubject = "Session Confirmed - Payment Successful";
-                var menteeEmailHtmlBody = GenerateMenteeConfirmationEmailBody(session, payment, mentor, mentee);
+                var menteeEmailHtmlBody = _emailTemplateService.GenerateMenteeConfirmationEmailBody(session, payment, mentor, mentee);
 
                 await _emailService.SendEmailAsync(
                     mentee.Email!,
@@ -542,7 +601,7 @@ namespace CareerRoute.Core.Services.Implementations
 
                 // 2. Send email to mentor
                 var mentorSubject = "New Session Booked";
-                var mentorEmailHtmlBody = GenerateMentorConfirmationEmailBody(session, payment, mentor, mentee);
+                var mentorEmailHtmlBody = _emailTemplateService.GenerateMentorConfirmationEmailBody(session, payment, mentor, mentee);
 
                 await _emailService.SendEmailAsync(
                     mentor.User.Email!,
@@ -558,70 +617,6 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 _logger.LogError(ex, "Failed to send confirmation emails for session: {SessionId}", session.Id);
             }
-        }
-
-        /// <summary>
-        /// Generates the HTML body for the mentee's session confirmation email.
-        /// </summary>
-        private string GenerateMenteeConfirmationEmailBody(Session session, Payment payment, Mentor mentor, ApplicationUser mentee)
-        {
-            // Use 'C' (Currency) format specifier, which includes the currency symbol based on the current culture (or default if no culture is set).
-            return $@"
-        <h2>Session Confirmed!</h2>
-        <p>Dear {mentee.FirstName},</p>
-        <p>Your mentorship session has been confirmed.</p>
-        
-        <h3>Session Details:</h3>
-        <ul>
-            <li><strong>Topic:</strong> {session.Topic}</li>
-            <li><strong>Mentor:</strong> {mentor.User.FullName}</li>
-            <li><strong>Date:</strong> {session.ScheduledStartTime:MMMM dd, yyyy}</li>
-            <li><strong>Time:</strong> {session.ScheduledStartTime:hh:mm tt}</li>
-            <li><strong>Duration:</strong> {session.Duration} minutes</li>
-            <li><strong>Meeting Link:</strong> <a href='{session.VideoConferenceLink}'>{session.VideoConferenceLink}</a></li>
-        </ul>
-        
-        <h3>Payment Details:</h3>
-        <ul>
-            <li><strong>Amount Paid:</strong> {payment.Amount:C} {payment.Currency}</li>
-            <li><strong>Transaction ID:</strong> {payment.ProviderTransactionId}</li>
-        </ul>
-        <p>We look forward to your session!</p>
-    ";
-        }
-
-        /// <summary>
-        /// Generates the HTML body for the mentor's new session booking email.
-        /// </summary>
-        private string GenerateMentorConfirmationEmailBody(Session session, Payment payment, Mentor mentor, ApplicationUser mentee)
-        {
-            // Calculate platform fee as a separate variable for clarity, even though it's used inline.
-            var platformFee = payment.Amount * 0.15m;
-
-            return $@"
-        <h2>New Session Booked!</h2>
-        <p>Dear {mentor.User.FullName},</p>
-        <p>A new mentorship session has been booked with you.</p>
-        
-        <h3>Session Details:</h3>
-        <ul>
-            <li><strong>Topic:</strong> {session.Topic}</li>
-            <li><strong>Mentee:</strong> {mentee.FullName}</li>
-            <li><strong>Date:</strong> {session.ScheduledStartTime:MMMM dd, yyyy}</li>
-            <li><strong>Time:</strong> {session.ScheduledStartTime:hh:mm tt}</li>
-            <li><strong>Duration:</strong> {session.Duration} minutes</li>
-            <li><strong>Meeting Link:</strong> <a href='{session.VideoConferenceLink}'>{session.VideoConferenceLink}</a></li>
-        </ul>
-        
-        <h3>Earnings:</h3>
-        <ul>
-            <li><strong>Session Price:</strong> {payment.Amount:C} {payment.Currency}</li>
-            <li><strong>Platform Fee (15%):</strong> {platformFee:C} {payment.Currency}</li>
-            <li><strong>Your Earnings:</strong> {payment.MentorPayoutAmount:C} {payment.Currency}</li>
-            <li><strong>Payout Date:</strong> {payment.PaymentReleaseDate:MMMM dd, yyyy}</li>
-        </ul>
-        <p>Please be ready for the session at the scheduled time.</p>
-    ";
         }
 
     }

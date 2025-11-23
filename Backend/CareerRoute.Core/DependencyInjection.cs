@@ -1,11 +1,9 @@
-using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Validators.Mentors;
 using CareerRoute.Core.Validators.Payments;
 using CareerRoute.Core.Validators.Sessions;
-using CareerRoute.Core.Validators.Users;
 
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<ITimeSlotService, TimeSlotService>();
         services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+
 
         services.AddAutoMapper(options =>
         {
