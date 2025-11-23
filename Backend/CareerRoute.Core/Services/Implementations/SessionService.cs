@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
@@ -29,6 +30,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<RescheduleSessionRequestDto> _rescheduleSessionValidator;
         private readonly IValidator<CancelSessionRequestDto> _cancelSessionValidator;
         private readonly string _baseUrl;
+        private readonly string _frontendUrl;
         private readonly IConfiguration _configuration;
 
         public SessionService(
@@ -59,76 +61,102 @@ namespace CareerRoute.Core.Services.Implementations
             _cancelSessionRepository = cancelSessionRepository;
             _cancelSessionValidator = cancelSessionValidator;
             _baseUrl = configuration["BackendBaseUrl"]!;
+            _frontendUrl = configuration["FrontendUrl"] ?? "http://localhost:4200";
             _configuration = configuration;
         }
 
 
         public async Task<BookSessionResponseDto> BookSessionAsync(string menteeId, BookSessionRequestDto dto)
         {
+            _logger.LogInformation("[Session] Mentee {MenteeId} attempting to book session for timeslot {TimeSlotId}", menteeId, dto.TimeSlotId);
 
             await _bookSessionRequestValidator.ValidateAndThrowCustomAsync(dto);
 
+            await using var transaction = await _sessionRepository.BeginTransactionAsync();
+            try
+            {
+                var timeSlot = await _timeSlotRepository.GetByIdAsync(dto.TimeSlotId);
+                if (timeSlot == null)
+                {
+                    _logger.LogWarning("[Session] TimeSlot {TimeSlotId} not found", dto.TimeSlotId);
+                    throw new NotFoundException("TimeSlot not found.");
+                }
+
+                if (timeSlot.IsBooked)
+                {
+                    _logger.LogWarning("[Session] TimeSlot {TimeSlotId} already booked", dto.TimeSlotId);
+                    throw new ConflictException("TimeSlot is already booked.");
+                }
+
+                if (timeSlot.StartDateTime < DateTime.UtcNow.AddHours(24))
+                    throw new ConflictException("TimeSlot must be booked at least 24 hours in advance.");
 
 
-            var timeSlot = await _timeSlotRepository.GetByIdAsync(dto.TimeSlotId);
-            if (timeSlot == null)
-                throw new NotFoundException("TimeSlot not found.");
-
-            if (timeSlot.IsBooked)
-                throw new ConflictException("TimeSlot is already booked.");
-
-            if (timeSlot.StartDateTime < DateTime.UtcNow.AddHours(24))
-                throw new ConflictException("TimeSlot must be booked at least 24 hours in advance.");
-
-
-            var mentor = await _mentorRepository.GetByIdAsync(timeSlot.MentorId);
-            if (mentor == null)
-                throw new NotFoundException("Mentor not found.");
+                var mentor = await _mentorRepository.GetByIdAsync(timeSlot.MentorId);
+                if (mentor == null)
+                    throw new NotFoundException("Mentor not found.");
 
 
 
-            bool hasOverlap = await _sessionRepository.HasOverlappingSession(
-                menteeId,
-                timeSlot.StartDateTime,
-                timeSlot.StartDateTime.AddMinutes(timeSlot.DurationMinutes));
+                bool hasOverlap = await _sessionRepository.HasOverlappingSession(
+                    menteeId,
+                    timeSlot.StartDateTime,
+                    timeSlot.StartDateTime.AddMinutes(timeSlot.DurationMinutes));
 
-            if (hasOverlap)
-                throw new ConflictException("You already have another session at this time.");
-
-
-            var session = _mapper.Map<Session>(dto);
-
-            session.Id = Guid.NewGuid().ToString();
-            session.MentorId = timeSlot.MentorId;
-            session.MenteeId = menteeId;
-            session.ScheduledStartTime = timeSlot.StartDateTime;
-            session.ScheduledEndTime = timeSlot.StartDateTime.AddMinutes(timeSlot.DurationMinutes);
-            session.Price = timeSlot.DurationMinutes == 30 ? mentor.Rate30Min :
-                timeSlot.DurationMinutes == 60 ? mentor.Rate60Min :
-                throw new ConflictException("Unsupported session duration for pricing.");
-
-            session.Status = SessionStatusOptions.Pending;
-            session.SessionType = SessionTypeOptions.OneOnOne;
-            session.Duration = (DurationOptions)timeSlot.DurationMinutes;
-            session.CreatedAt = DateTime.UtcNow;
-            session.TimeSlotId = dto.TimeSlotId;
+                if (hasOverlap)
+                {
+                    _logger.LogWarning("[Session] Mentee {MenteeId} has overlapping session", menteeId);
+                    throw new ConflictException("You already have another session at this time.");
+                }
 
 
-            await _sessionRepository.AddAsync(session);
-            await _sessionRepository.SaveChangesAsync();
+                var session = _mapper.Map<Session>(dto);
 
-            timeSlot.IsBooked = true;
-            timeSlot.SessionId = session.Id;
+                session.Id = Guid.NewGuid().ToString();
+                session.MentorId = timeSlot.MentorId;
+                session.MenteeId = menteeId;
+                session.ScheduledStartTime = timeSlot.StartDateTime;
+                session.ScheduledEndTime = timeSlot.StartDateTime.AddMinutes(timeSlot.DurationMinutes);
+                session.Price = timeSlot.DurationMinutes == 30 ? mentor.Rate30Min :
+                    timeSlot.DurationMinutes == 60 ? mentor.Rate60Min :
+                    throw new ConflictException("Unsupported session duration for pricing.");
 
-            _timeSlotRepository.Update(timeSlot);
-            await _timeSlotRepository.SaveChangesAsync();
+                // Session starts as Pending until payment is confirmed
+                session.Status = SessionStatusOptions.Pending;
+                session.SessionType = SessionTypeOptions.OneOnOne;
+                session.Duration = (DurationOptions)timeSlot.DurationMinutes;
+                session.CreatedAt = DateTime.UtcNow;
+                session.TimeSlotId = dto.TimeSlotId;
 
-            var bookingPeriodMinutes = _configuration.GetValue<int>("BookingPeriodMinutes", 15);
-            BackgroundJob.Schedule<ISessionService>(
-                service => service.ReleaseUnpaidSessionAsync(session.Id),
-                TimeSpan.FromMinutes(bookingPeriodMinutes));
 
-            return _mapper.Map<BookSessionResponseDto>(session);
+                await _sessionRepository.AddAsync(session);
+                await _sessionRepository.SaveChangesAsync();
+
+                timeSlot.IsBooked = true;
+                timeSlot.SessionId = session.Id;
+
+                _timeSlotRepository.Update(timeSlot);
+                await _timeSlotRepository.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("[Session] Session {SessionId} booked successfully by mentee {MenteeId} with mentor {MentorId}", session.Id, menteeId, session.MentorId);
+
+                var bookingPeriodMinutes = _configuration.GetValue<int>("BookingPeriodMinutes", 15);
+                BackgroundJob.Schedule<ISessionService>(
+                    service => service.ReleaseUnpaidSessionAsync(session.Id),
+                    TimeSpan.FromMinutes(bookingPeriodMinutes));
+
+                // Reload session with relations for proper DTO mapping
+                var sessionWithRelations = await _sessionRepository.GetByIdWithRelationsAsync(session.Id);
+                return _mapper.Map<BookSessionResponseDto>(sessionWithRelations);
+            }
+            catch
+            {
+                _logger.LogError("[Session] Failed to book session for mentee {MenteeId}", menteeId);
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
 
@@ -165,7 +193,7 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("No Upcomming Sessions ");
 
 
-            var sessionDtos = _mapper.Map<List<UpCommingSessionItemResponseDto>>(allUpcomingSessions);
+            var sessionDtos = _mapper.Map<List<UpcomingSessionItemResponseDto>>(allUpcomingSessions);
 
             var paginationMetadata = new PaginationMetadataDto
             {
@@ -216,12 +244,16 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<RescheduleSessionResponseDto> RescheduleSessionAsync(string sessionId, RescheduleSessionRequestDto dto,
                                                                                 string userId, string role)
         {
+            _logger.LogInformation("[Session] User {UserId} ({Role}) requesting reschedule for session {SessionId}", userId, role, sessionId);
+
             await _rescheduleSessionValidator.ValidateAndThrowCustomAsync(dto);
 
             var session = await _sessionRepository.GetByIdWithRelationsAsync(sessionId);
             if (session == null)
                 throw new NotFoundException("Session not found.");
 
+            if (session.ScheduledStartTime <= DateTime.UtcNow)
+                throw new ConflictException("Cannot reschedule a session that has already started.");
 
             bool isMentorRequester = session.Mentor.User.Id == userId;
             bool isMenteeRequester = session.Mentee.Id == userId;
@@ -241,7 +273,7 @@ namespace CareerRoute.Core.Services.Implementations
 
 
 
-            bool menteeAvailable = await _sessionRepository.IsMenteeAvailableAsync(session.MentorId,
+            bool menteeAvailable = await _sessionRepository.IsMenteeAvailableAsync(session.MenteeId,
                                             dto.NewScheduledStartTime,
                                             (int)(session.Duration));
 
@@ -256,13 +288,17 @@ namespace CareerRoute.Core.Services.Implementations
             rescheduleSession.RequestedBy = role;
             rescheduleSession.Status = SessionRescheduleOptions.Pending;
 
+            session.Status = SessionStatusOptions.PendingReschedule;
+            _sessionRepository.Update(session);
 
             await _rescheduleSessionRepository.AddAsync(rescheduleSession);
             await _rescheduleSessionRepository.SaveChangesAsync();
 
+            _logger.LogInformation("[Session] Reschedule request {RescheduleId} created for session {SessionId}. New time: {NewTime}", rescheduleSession.Id, session.Id, dto.NewScheduledStartTime);
+
             BackgroundJob.Schedule<IRescheduleSessionService>(
-            service => service.HandlePendingRescheduleAsync(rescheduleSession.Id), // Implement => HandlePendingRescheduleAsync
-            TimeSpan.FromHours(48));
+            service => service.HandlePendingRescheduleAsync(rescheduleSession.Id),
+            TimeSpan.FromHours(SessionConstants.RescheduleApprovalTimeoutHours));
 
 
             string receiverEmail;
@@ -271,18 +307,21 @@ namespace CareerRoute.Core.Services.Implementations
 
             if (isMentorRequester)
             {
-                receiverEmail = session.Mentee.Email;
+                receiverEmail = session.Mentee.Email!;
                 receiverName = session.Mentee.FirstName;
                 requesterName = session.Mentor.User.FirstName;
             }
             else
             {
-                receiverEmail = session.Mentor.User.Email;
+                receiverEmail = session.Mentor.User.Email!;
                 receiverName = session.Mentor.User.FirstName;
                 requesterName = session.Mentee.FirstName;
             }
 
-            await SendRescheduleRequestEmailAsync(receiverEmail, receiverName, requesterName, session, rescheduleSession);
+            if (!string.IsNullOrEmpty(receiverEmail))
+            {
+                await SendRescheduleRequestEmailAsync(receiverEmail, receiverName, requesterName, session, rescheduleSession);
+            }
 
             return _mapper.Map<RescheduleSessionResponseDto>(rescheduleSession);
 
@@ -303,6 +342,8 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<CancelSessionResponseDto> CancelSessionAsync(string sessionId, CancelSessionRequestDto dto,
                                                                         string userId, string role)
         {
+            _logger.LogInformation("[Session] User {UserId} ({Role}) attempting to cancel session {SessionId}", userId, role, sessionId);
+
             await _cancelSessionValidator.ValidateAndThrowCustomAsync(dto);
 
             var session = await _sessionRepository.GetByIdWithRelationsAsync(sessionId);
@@ -326,13 +367,13 @@ namespace CareerRoute.Core.Services.Implementations
 
             int refundPercentage = 0;
 
-            if (hoursUntilStart >= 48)
+            if (hoursUntilStart >= SessionConstants.FullRefundHours)
             {
-                refundPercentage = 100;
+                refundPercentage = SessionConstants.FullRefundPercentage;
             }
-            else if (hoursUntilStart >= 24)
+            else if (hoursUntilStart >= SessionConstants.PartialRefundHours)
             {
-                refundPercentage = 50;
+                refundPercentage = SessionConstants.PartialRefundPercentage;
             }
 
             var refundAmount = Math.Round((session.Price * refundPercentage / 100m), 2);
@@ -346,28 +387,63 @@ namespace CareerRoute.Core.Services.Implementations
             cancel.RefundAmount = refundAmount;
             cancel.RefundStatus = RefundStatus.Pending;
 
-
-            await _cancelSessionRepository.AddAsync(cancel);
-            await _cancelSessionRepository.SaveChangesAsync();
-
-            session.Status = SessionStatusOptions.Cancelled;
-            session.CancellationReason = dto.Reason;
-            session.TimeSlotId = null;
-            _sessionRepository.Update(session);
-            await _sessionRepository.SaveChangesAsync();
-
-
-            var timeSlot = await _timeSlotRepository.GetByIdAsync(session.TimeSlotId);
-            if (timeSlot != null)
+            await using var transaction = await _sessionRepository.BeginTransactionAsync();
+            try
             {
-                timeSlot.IsBooked = false;
-                timeSlot.SessionId = null;
-                _timeSlotRepository.Update(timeSlot);
-                await _timeSlotRepository.SaveChangesAsync();
+                await _cancelSessionRepository.AddAsync(cancel);
+                await _cancelSessionRepository.SaveChangesAsync();
 
+                session.Status = SessionStatusOptions.Cancelled;
+                session.CancellationReason = dto.Reason;
+                var timeSlotId = session.TimeSlotId;
+                session.TimeSlotId = null;
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+
+
+                if (!string.IsNullOrEmpty(timeSlotId))
+                {
+                    var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
+                    if (timeSlot != null)
+                    {
+                        timeSlot.IsBooked = false;
+                        timeSlot.SessionId = null;
+                        _timeSlotRepository.Update(timeSlot);
+                        await _timeSlotRepository.SaveChangesAsync();
+                    }
+                }
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("[Session] Session {SessionId} cancelled successfully. Refund: {RefundPercentage}% ({RefundAmount})", sessionId, refundPercentage, refundAmount);
+            }
+            catch
+            {
+                _logger.LogError("[Session] Failed to cancel session {SessionId}", sessionId);
+                await transaction.RollbackAsync();
+                throw;
             }
 
-            await SendCancellationEmailsAsync(session.Mentee.Email!, session.Mentor.User.Email!, session, cancel);
+            // Send cancellation emails
+            try
+            {
+                if (!string.IsNullOrEmpty(session.Mentee?.Email) && !string.IsNullOrEmpty(session.Mentor?.User?.Email))
+                {
+                    _logger.LogInformation("[Session] Sending cancellation emails for session {SessionId}", sessionId);
+                    await SendCancellationEmailsAsync(session.Mentee.Email, session.Mentor.User.Email, session, cancel);
+                    _logger.LogInformation("[Session] Cancellation emails sent successfully for session {SessionId}", sessionId);
+                }
+                else
+                {
+                    _logger.LogWarning("[Session] Cannot send cancellation emails - missing email addresses. Mentee: {MenteeEmail}, Mentor: {MentorEmail}", 
+                        session.Mentee?.Email ?? "null", session.Mentor?.User?.Email ?? "null");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to send cancellation emails for session {SessionId}", sessionId);
+                // Don't throw - email failure shouldn't fail the cancellation
+            }
 
             return _mapper.Map<CancelSessionResponseDto>(cancel);
 
@@ -377,6 +453,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<JoinSessionResponseDto> JoinSessionAsync(string sessionId, string userId)
         {
+            _logger.LogInformation("[Session] User {UserId} attempting to join session {SessionId}", userId, sessionId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
 
@@ -389,15 +466,17 @@ namespace CareerRoute.Core.Services.Implementations
             if (session.Status != SessionStatusOptions.Confirmed)
                 throw new ConflictException("Session is not confirmed yet and cannot be joined.");
 
-            var earlyJoinLimit = session.ScheduledStartTime.AddMinutes(-15);
-            var lateJoinLimit = session.ScheduledEndTime.AddMinutes(15);
+            var earlyJoinLimit = session.ScheduledStartTime.AddMinutes(-SessionConstants.EarlyJoinWindowMinutes);
+            var lateJoinLimit = session.ScheduledEndTime.AddMinutes(SessionConstants.LateJoinWindowMinutes);
 
 
             if (DateTime.UtcNow < earlyJoinLimit)
-                throw new ConflictException("Session has not started yet. You can join 15 minutes before scheduled time.");
+                throw new ConflictException($"Session has not started yet. You can join {SessionConstants.EarlyJoinWindowMinutes} minutes before scheduled time.");
 
             if (DateTime.UtcNow > lateJoinLimit)
                 throw new GoneException("The session has ended and can no longer be joined.");
+
+            _logger.LogInformation("[Session] User {UserId} joined session {SessionId} successfully", userId, sessionId);
 
             var dto = _mapper.Map<JoinSessionResponseDto>(session);
 
@@ -422,6 +501,8 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task<CompleteSessionResponseDto> CompleteSessionAsync(string sessionId, string userId, string role)
         {
+            _logger.LogInformation("[Session] User {UserId} ({Role}) attempting to complete session {SessionId}", userId, role, sessionId);
+
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null)
                 throw new NotFoundException("Session not found.");
@@ -438,16 +519,20 @@ namespace CareerRoute.Core.Services.Implementations
             session.Status = SessionStatusOptions.Completed;
             session.CompletedAt = DateTime.UtcNow;
 
-            //session.ActualDurationMinutes = recorded? 
-
-            session.Payment.PaymentReleaseDate = session.CompletedAt.Value.AddHours(72); //Include ? 
+            if (session.Payment != null)
+            {
+                session.Payment.PaymentReleaseDate = session.CompletedAt.Value.AddHours(72);
+            }
 
             _sessionRepository.Update(session);
             await _sessionRepository.SaveChangesAsync();
 
+            _logger.LogInformation("[Session] Session {SessionId} completed successfully by {Role}", sessionId, role);
 
-
-            await SendCompletionEmailAsync(session.Mentee.Email!, session);
+            if (!string.IsNullOrEmpty(session.Mentee?.Email))
+            {
+                await SendCompletionEmailAsync(session.Mentee.Email, session);
+            }
 
             //Trigger 72 - hour payment hold(release after 3 days if no disputes)
             //Trigger review request email to mentee after 24 hours
@@ -461,8 +546,7 @@ namespace CareerRoute.Core.Services.Implementations
         private async Task SendRescheduleRequestEmailAsync(string receiverEmail, string receiverName,
                              string requesterName, Session session, RescheduleSession rescheduleRequest)
         {
-            var approveLink = $"{_baseUrl}/sessions/{session.Id}/reschedule/approve?requestId={rescheduleRequest.Id}";
-            var rejectLink = $"{_baseUrl}/sessions/{session.Id}/reschedule/reject?requestId={rescheduleRequest.Id}";
+            var reschedulePageLink = $"{_frontendUrl}/sessions/reschedule/{rescheduleRequest.Id}";
 
             string htmlContent = $@"
             <h2>Session Reschedule Request</h2>
@@ -474,10 +558,9 @@ namespace CareerRoute.Core.Services.Implementations
             <p><b>Original time:</b> {rescheduleRequest.OriginalStartTime:yyyy-MM-dd HH:mm}</p>
             <p><b>Requested new time:</b> {rescheduleRequest.NewScheduledStartTime:yyyy-MM-dd HH:mm}</p>
 
-            <p>Please approve or reject the rescheduling request with 48 hours : </p>
+            <p>Please review and respond to this request within 48 hours:</p>
 
-            <a href='{approveLink}' style='padding:10px 15px;background:#4CAF50;color:white;text-decoration:none;border-radius:6px;'>Approve</a>
-            <a href='{rejectLink}' style='padding:10px 15px;background:#E53935;color:white;text-decoration:none;border-radius:6px;margin-left:10px;'>Reject</a>
+            <a href='{reschedulePageLink}' style='padding:10px 20px;background:#2196F3;color:white;text-decoration:none;border-radius:6px;display:inline-block;'>Review Reschedule Request</a>
 
             <br /><br />
             <p>Thank you.</p>
@@ -598,6 +681,154 @@ namespace CareerRoute.Core.Services.Implementations
             );
         }
 
+        private async Task SendRescheduleApprovedEmailAsync(string requesterEmail, string requesterName, Session session, RescheduleSession reschedule)
+        {
+            string htmlContent = $@"
+<html>
+<body>
+    <p>Dear {requesterName},</p>
+    <p>Your reschedule request has been <strong>approved</strong>!</p>
+    <p><strong>New Session Time:</strong> {reschedule.NewScheduledStartTime:yyyy-MM-dd HH:mm}</p>
+    <p><strong>Original Time:</strong> {reschedule.OriginalStartTime:yyyy-MM-dd HH:mm}</p>
+    <p>Please make sure to attend the session at the new time.</p>
+    <p>Thank you for using our platform!</p>
+</body>
+</html>";
+
+            await _emailService.SendEmailAsync(
+                requesterEmail,
+                "Reschedule Request Approved",
+                "Your reschedule request has been approved",
+                htmlContent
+            );
+        }
+
+        private async Task SendRescheduleRejectedEmailAsync(string requesterEmail, string requesterName, Session session, RescheduleSession reschedule)
+        {
+            string htmlContent = $@"
+<html>
+<body>
+    <p>Dear {requesterName},</p>
+    <p>Your reschedule request has been <strong>rejected</strong>.</p>
+    <p><strong>Requested Time:</strong> {reschedule.NewScheduledStartTime:yyyy-MM-dd HH:mm}</p>
+    <p><strong>Original Time:</strong> {reschedule.OriginalStartTime:yyyy-MM-dd HH:mm}</p>
+    <p>The session will remain at the original time: <strong>{session.ScheduledStartTime:yyyy-MM-dd HH:mm}</strong></p>
+    <p>Thank you for using our platform!</p>
+</body>
+</html>";
+
+            await _emailService.SendEmailAsync(
+                requesterEmail,
+                "Reschedule Request Rejected",
+                "Your reschedule request has been rejected",
+                htmlContent
+            );
+        }
+
+
+
+        public async Task<RescheduleSessionResponseDto> ApproveRescheduleAsync(string rescheduleId, string userId, string role)
+        {
+            _logger.LogInformation("[Session] User {UserId} ({Role}) approving reschedule {RescheduleId}", userId, role, rescheduleId);
+
+            var reschedule = await _rescheduleSessionRepository.GetByIdAsync(rescheduleId);
+            if (reschedule == null)
+                throw new NotFoundException("Reschedule request not found.");
+
+            if (reschedule.Status != SessionRescheduleOptions.Pending)
+                throw new ConflictException("Reschedule request has already been processed.");
+
+            var session = await _sessionRepository.GetByIdWithRelationsAsync(reschedule.SessionId);
+            if (session == null)
+                throw new NotFoundException("Session not found.");
+
+            bool isMentorApprover = session.MentorId == userId;
+            bool isMenteeApprover = session.MenteeId == userId;
+            bool isAdmin = role == "Admin";
+
+            if (!isMentorApprover && !isMenteeApprover && !isAdmin)
+                throw new UnauthorizedException("You don't have permission to approve this reschedule request.");
+
+            await using var transaction = await _sessionRepository.BeginTransactionAsync();
+            try
+            {
+                reschedule.Status = SessionRescheduleOptions.Approved;
+                _rescheduleSessionRepository.Update(reschedule);
+                await _rescheduleSessionRepository.SaveChangesAsync();
+
+                var oldTimeSlotId = session.TimeSlotId;
+                session.ScheduledStartTime = reschedule.NewScheduledStartTime;
+                session.ScheduledEndTime = reschedule.NewScheduledStartTime.AddMinutes((int)session.Duration);
+                session.UpdatedAt = DateTime.UtcNow;
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+
+                if (!string.IsNullOrEmpty(oldTimeSlotId))
+                {
+                    var oldTimeSlot = await _timeSlotRepository.GetByIdAsync(oldTimeSlotId);
+                    if (oldTimeSlot != null)
+                    {
+                        oldTimeSlot.IsBooked = false;
+                        oldTimeSlot.SessionId = null;
+                        _timeSlotRepository.Update(oldTimeSlot);
+                        await _timeSlotRepository.SaveChangesAsync();
+                    }
+                }
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("[Session] Reschedule {RescheduleId} approved. Session {SessionId} updated to new time: {NewTime}", rescheduleId, session.Id, reschedule.NewScheduledStartTime);
+            }
+            catch
+            {
+                _logger.LogError("[Session] Failed to approve reschedule {RescheduleId}", rescheduleId);
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            // Send email to requester
+            string requesterEmail = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.Email! : session.Mentee.Email!;
+            string requesterName = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.FirstName : session.Mentee.FirstName;
+            await SendRescheduleApprovedEmailAsync(requesterEmail, requesterName, session, reschedule);
+
+            return _mapper.Map<RescheduleSessionResponseDto>(reschedule);
+        }
+
+        public async Task<RescheduleSessionResponseDto> RejectRescheduleAsync(string rescheduleId, string userId, string role)
+        {
+            _logger.LogInformation("[Session] User {UserId} ({Role}) rejecting reschedule {RescheduleId}", userId, role, rescheduleId);
+
+            var reschedule = await _rescheduleSessionRepository.GetByIdAsync(rescheduleId);
+            if (reschedule == null)
+                throw new NotFoundException("Reschedule request not found.");
+
+            if (reschedule.Status != SessionRescheduleOptions.Pending)
+                throw new ConflictException("Reschedule request has already been processed.");
+
+            var session = await _sessionRepository.GetByIdWithRelationsAsync(reschedule.SessionId);
+            if (session == null)
+                throw new NotFoundException("Session not found.");
+
+            bool isMentorApprover = session.MentorId == userId;
+            bool isMenteeApprover = session.MenteeId == userId;
+            bool isAdmin = role == "Admin";
+
+            if (!isMentorApprover && !isMenteeApprover && !isAdmin)
+                throw new UnauthorizedException("You don't have permission to reject this reschedule request.");
+
+            reschedule.Status = SessionRescheduleOptions.Rejected;
+            _rescheduleSessionRepository.Update(reschedule);
+            await _rescheduleSessionRepository.SaveChangesAsync();
+
+            _logger.LogInformation("[Session] Reschedule {RescheduleId} rejected. Session {SessionId} remains at original time", rescheduleId, session.Id);
+
+            // Send email to requester
+            string requesterEmail = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.Email! : session.Mentee.Email!;
+            string requesterName = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.FirstName : session.Mentee.FirstName;
+            await SendRescheduleRejectedEmailAsync(requesterEmail, requesterName, session, reschedule);
+
+            return _mapper.Map<RescheduleSessionResponseDto>(reschedule);
+        }
 
         public async Task ReleaseUnpaidSessionAsync(string sessionId)
         {
