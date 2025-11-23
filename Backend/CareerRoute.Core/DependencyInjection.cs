@@ -4,7 +4,6 @@ using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Validators.Mentors;
 using CareerRoute.Core.Validators.Payments;
 using CareerRoute.Core.Validators.Sessions;
-
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,9 +14,6 @@ public static class DependencyInjection
     public static IServiceCollection AddCore(this IServiceCollection services)
     {
         // Business Logic Services Registration
-        // Uncomment and add as you create services
-
-
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
 
@@ -30,7 +26,6 @@ public static class DependencyInjection
         services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
-
         services.AddAutoMapper(options =>
         {
             options.AddProfile<MentorMappingProfile>();
@@ -42,9 +37,7 @@ public static class DependencyInjection
             options.AddProfile<SessionProfile>();
         });
 
-
         // ============ FLUENTVALIDATION ============
-
         services.AddValidatorsFromAssemblyContaining<UpdateMentorProfileValidator>();
         services.AddValidatorsFromAssemblyContaining<PaymentIntentRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<PaymentConfirmRequestValidator>();
@@ -52,9 +45,6 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<RescheduleSessionRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<CancelSessionRequestValidator>();
 
-
         return services;
     }
-
-
 }

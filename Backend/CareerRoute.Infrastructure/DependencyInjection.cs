@@ -13,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-
 namespace CareerRoute.Infrastructure;
 
 public static class DependencyInjection
@@ -25,10 +24,12 @@ public static class DependencyInjection
         services.Configure<JwtSettings>(configuration.GetSection(nameof(JwtSettings)));
         services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
         services.Configure<PaymentSettings>(configuration.GetSection(nameof(PaymentSettings)));
+        services.Configure<ZoomSettings>(configuration.GetSection(nameof(ZoomSettings)));
+        services.Configure<OpenAISettings>(configuration.GetSection(nameof(OpenAISettings)));
+        services.Configure<DeepgramSettings>(configuration.GetSection(nameof(DeepgramSettings)));
+        services.Configure<R2Settings>(configuration.GetSection(nameof(R2Settings)));
         return services;
-
     }
-
 
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
@@ -39,10 +40,8 @@ public static class DependencyInjection
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
         );
 
-        services.AddScoped<ITokenRepository, TokenRepository>();
-
         // Repository Registration
-        // Uncomment and add as you create repositories
+        services.AddScoped<ITokenRepository, TokenRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMentorRepository, MentorRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -51,7 +50,7 @@ public static class DependencyInjection
         services.AddScoped<ITimeSlotRepository, TimeSlotRepository>();
         services.AddScoped<IRescheduleSessionRepository, RescheduleSessionRepository>();
         services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
-         services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
         // Infrastructure Service Registration
@@ -59,27 +58,30 @@ public static class DependencyInjection
         services.AddScoped<IStripePaymentService, StripePaymentService>();
         services.AddScoped<IPaymobPaymentService, PaymobPaymentService>();
         services.AddScoped<IPaymentNotificationService, SignalRPaymentNotificationService>();
-
         services.AddScoped<IPaymentFactory, PaymentFactory>();
-        services.AddHttpClient();
-        // Uncomment and add as you create services
-        // services.AddScoped<IStorageService, AzureStorageService>();
 
-        // Identity Configuration (if using)
-        //services.AddIdentity<ApplicationUser, IdentityRole>()
-        //    .AddEntityFrameworkStores<ApplicationDbContext>()
-        //    .AddDefaultTokenProviders();
+        services.AddScoped<IZoomService, ZoomService>();
+        services.AddScoped<ICalendarService, CalendarService>();
+        services.AddScoped<IDeepgramService, DeepgramService>();
+        services.AddScoped<IBlobStorageService, CloudflareR2Service>();
+        services.AddScoped<IJobScheduler, HangfireJobScheduler>();
+
+        // HttpClient Configuration
+        services.AddHttpClient();
+
+        // Identity Configuration
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         {
-            options.User.RequireUniqueEmail = true; // Ensure unique email addresses
+            options.User.RequireUniqueEmail = true;
             options.Password.RequireNonAlphanumeric = false;
             options.Lockout.MaxFailedAccessAttempts = 5;
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             options.Lockout.AllowedForNewUsers = true;
         })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
 
+        // Hangfire Configuration
         services.AddHangfire(config => config
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
@@ -87,7 +89,6 @@ public static class DependencyInjection
             .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddHangfireServer();
-
 
         return services;
     }
