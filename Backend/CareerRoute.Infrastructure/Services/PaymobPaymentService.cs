@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -528,6 +529,134 @@ namespace CareerRoute.Infrastructure.Services
                 _logger.LogError(ex, "Unexpected error processing Paymob refund");
                 throw new PaymentException(
                     "Failed to process refund with Paymob",
+                    ProviderName,
+                    ex);
+            }
+        }
+        public async Task<(PaymentStatusOptions Status, string? ProviderTransactionId)> GetPaymentStatusAsync(string paymentIntentId)
+        {
+            try
+            {
+                var authToken = await GetAuthTokenAsync();
+
+                // First, get the order details
+                var orderRequest = new HttpRequestMessage(HttpMethod.Get, $"ecommerce/orders/{paymentIntentId}");
+                orderRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authToken);
+
+                var orderResponse = await _httpClient.SendAsync(orderRequest);
+
+                if (!orderResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Failed to get Paymob order status. Status: {Status}", orderResponse.StatusCode);
+                    return (PaymentStatusOptions.Pending, null);
+                }
+
+                var orderResult = await orderResponse.Content.ReadAsStringAsync();
+                using var orderDoc = JsonDocument.Parse(orderResult);
+                var orderRoot = orderDoc.RootElement;
+
+                // Get the order ID
+                string? orderId = null;
+                if (orderRoot.TryGetProperty("id", out var orderIdElement))
+                {
+                    orderId = orderIdElement.GetInt32().ToString();
+                }
+
+                // Check payment_status field first (most reliable for order status)
+                PaymentStatusOptions status = PaymentStatusOptions.Pending;
+
+                if (orderRoot.TryGetProperty("payment_status", out var paymentStatusElement))
+                {
+                    var paymentStatus = paymentStatusElement.GetString();
+                    if (paymentStatus?.Equals("PAID", StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        status = PaymentStatusOptions.Captured;
+                    }
+                }
+
+                // Fallback: Check if paid_amount_cents equals amount_cents
+                if (status == PaymentStatusOptions.Pending &&
+                    orderRoot.TryGetProperty("paid_amount_cents", out var paidAmountElement) &&
+                    orderRoot.TryGetProperty("amount_cents", out var amountElement))
+                {
+                    var paidAmount = paidAmountElement.GetInt32();
+                    var amount = amountElement.GetInt32();
+
+                    if (paidAmount >= amount && amount > 0)
+                    {
+                        status = PaymentStatusOptions.Captured;
+                    }
+                }
+
+                // If payment is captured, try to get the actual transaction ID
+                string? transactionId = null;
+
+                if (status == PaymentStatusOptions.Captured)
+                {
+                    try
+                    {
+                        // Call transactions API to get the actual transaction ID
+                        var txRequest = new HttpRequestMessage(HttpMethod.Get,
+                            $"acceptance/transactions?order={orderId}");
+                        txRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authToken);
+
+                        var txResponse = await _httpClient.SendAsync(txRequest);
+
+                        if (txResponse.IsSuccessStatusCode)
+                        {
+                            var txResult = await txResponse.Content.ReadAsStringAsync();
+                            using var txDoc = JsonDocument.Parse(txResult);
+                            var txRoot = txDoc.RootElement;
+
+                            // Look for the transactions array or results array
+                            if (txRoot.TryGetProperty("results", out var resultsElement) &&
+                                resultsElement.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var transaction in resultsElement.EnumerateArray())
+                                {
+                                    // Get the first successful transaction
+                                    if (transaction.TryGetProperty("success", out var successElement) &&
+                                        successElement.GetBoolean() &&
+                                        transaction.TryGetProperty("id", out var txIdElement))
+                                    {
+                                        transactionId = txIdElement.GetInt32().ToString();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to retrieve transaction ID for order {OrderId}", orderId);
+                        // Continue with order ID as fallback
+                    }
+                }
+
+                // If no transaction ID found, use order ID as fallback
+                return (status, transactionId ?? orderId);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Error parsing Paymob order response for order {OrderId}", paymentIntentId);
+                throw new PaymentException(
+                    "Failed to parse payment status response from Paymob",
+                    ProviderName,
+                    ex);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP error getting Paymob order status for {OrderId}", paymentIntentId);
+                throw new PaymentException(
+                    "Failed to get payment status from Paymob",
+                    ProviderName,
+                    ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error getting Paymob payment status for {OrderId}", paymentIntentId);
+                throw new PaymentException(
+                    "Failed to get payment status from Paymob",
                     ProviderName,
                     ex);
             }

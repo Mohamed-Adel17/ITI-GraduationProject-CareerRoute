@@ -16,7 +16,7 @@ namespace CareerRoute.Infrastructure.Services
 
         public async Task NotifyPaymentStatusAsync(string paymentIntentId, PaymentStatusOptions status)
         {
-            await _hubContext.Clients.Group(paymentIntentId).SendAsync("ReceivePaymentStatus", status.ToString());
+            await _hubContext.Clients.Group(paymentIntentId).SendAsync("ReceivePaymentStatus", status);
         }
     }
 }
