@@ -1,4 +1,6 @@
-﻿using CareerRoute.API.Models;
+﻿using CareerRoute.API.Filters;
+using CareerRoute.API.Models;
+using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.DTOs.Payments;
 using CareerRoute.Core.Exceptions;
@@ -31,6 +33,7 @@ namespace CareerRoute.API.Controllers
         /// </summary>
         /// <param name="request">Payment intent request details</param>
         /// <returns>Payment intent response with client secret</returns>
+        [AuthorizeRole( AppRoles.User)]
         [HttpPost("create-intent")]
         [ProducesResponseType(typeof(ApiResponse<PaymentIntentResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -74,6 +77,7 @@ namespace CareerRoute.API.Controllers
         /// <param name="pageSize">Page size (default: 10)</param>
         /// <param name="status">Filter by payment status</param>
         /// <returns>Paginated payment history</returns>
+        [AuthorizeRole(AppRoles.User,AppRoles.Admin)]
         [HttpGet("history")]
         [ProducesResponseType(typeof(ApiResponse<PaymentHistoryResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -94,6 +98,7 @@ namespace CareerRoute.API.Controllers
         /// </summary>
         /// <param name="paymentId">Payment ID</param>
         /// <returns>Payment details</returns>
+        [AuthorizeRole(AppRoles.User,AppRoles.Admin)]
         [HttpGet("{paymentId}")]
         [ProducesResponseType(typeof(ApiResponse<PaymentHistroyItemResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -110,8 +115,8 @@ namespace CareerRoute.API.Controllers
         /// <param name="paymentId">Payment ID</param>
         /// <param name="request">Refund request details</param>
         /// <returns>Refund details</returns>
+        [AuthorizeRole(AppRoles.Admin)]
         [HttpPost("{paymentId}/refund")]
-        [Authorize()] // Assuming only admins can refund, or add logic for mentors/mentees if needed
         [ProducesResponseType(typeof(ApiResponse<PaymentRefundResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

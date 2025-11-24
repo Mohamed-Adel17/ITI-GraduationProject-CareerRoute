@@ -58,6 +58,11 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                 .IsRequired()                        // Payment MUST have a Session
                 .OnDelete(DeleteBehavior.Restrict);  // Prevent cascade delete
 
+            builder.HasOne(p => p.Mentee)
+                .WithMany(m => m.Payments)
+                .HasForeignKey(p => p.MenteeId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------
             // Indexes

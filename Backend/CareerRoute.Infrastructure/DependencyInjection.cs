@@ -1,16 +1,17 @@
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.Domain.Interfaces.Services;
+using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
 using CareerRoute.Core.Settings;
 using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Identity;
 using CareerRoute.Infrastructure.Services;
+using Hangfire;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using CareerRoute.Core.Domain.Interfaces.Services;
-using Hangfire;
 
 
 namespace CareerRoute.Infrastructure;
@@ -57,6 +58,8 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, SendGridEmailService>();
         services.AddScoped<IStripePaymentService, StripePaymentService>();
         services.AddScoped<IPaymobPaymentService, PaymobPaymentService>();
+        services.AddScoped<IPaymentNotificationService, SignalRPaymentNotificationService>();
+
         services.AddScoped<IPaymentFactory, PaymentFactory>();
         services.AddHttpClient();
         // Uncomment and add as you create services

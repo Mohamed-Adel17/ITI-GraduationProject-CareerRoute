@@ -23,6 +23,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IPaymentRepository _paymentRepository;
         private readonly ISessionRepository _sessionRepository;
         private readonly IMentorRepository _mentorRepository;
+        private readonly ITimeSlotRepository _timeSlotRepository;
         private readonly IEmailService _emailService;
         private readonly IPaymentFactory _paymentFactory;
         private readonly ILogger<PaymentProcessingService> _logger;
@@ -39,6 +40,7 @@ namespace CareerRoute.Core.Services.Implementations
             IPaymentRepository paymentRepository,
             ISessionRepository sessionRepository,
             IMentorRepository mentorRepository,
+            ITimeSlotRepository timeSlotRepository,
             IEmailService emailService,
             IPaymentFactory paymentFactory,
             IOptions<PaymentSettings> paymentSettings,
@@ -53,6 +55,7 @@ namespace CareerRoute.Core.Services.Implementations
             _paymentRepository = paymentRepository;
             _sessionRepository = sessionRepository;
             _mentorRepository = mentorRepository;
+            _timeSlotRepository = timeSlotRepository;
             _emailService = emailService;
             _paymentFactory = paymentFactory;
             _paymentSettings = paymentSettings?.Value ?? throw new ArgumentNullException(nameof(paymentSettings));
@@ -92,7 +95,9 @@ namespace CareerRoute.Core.Services.Implementations
 
             // Determine currency based on provider
             var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
-            var amount = request.PaymentProvider == PaymentProviderOptions.Stripe ? session.Price / 50 : session.Price;
+            decimal amount = request.PaymentProvider == PaymentProviderOptions.Stripe
+                ? Math.Round((session.Price / 50m) * 100m, 2) // convert to cents
+                : session.Price;
 
             // Get the appropriate payment service
             var paymentService = _paymentFactory.GetService(request.PaymentProvider);
@@ -134,17 +139,29 @@ namespace CareerRoute.Core.Services.Implementations
                 PlatformCommission = 0.15m,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_paymentSettings.ExpirationMinutes)
             };
 
-            await _paymentRepository.AddAsync(payment);
-            session.PaymentId = payment.Id;
-            _sessionRepository.Update(session);
-            await _paymentRepository.SaveChangesAsync();
+            await using var transaction = await _paymentRepository.BeginTransactionAsync();
+            try
+            {
+                await _paymentRepository.AddAsync(payment);
 
-            _logger.LogInformation(
-                "Payment intent created. PaymentId: {PaymentId}, SessionId: {SessionId}, Provider: {Provider}",
-                payment.Id, request.SessionId, paymentService.ProviderName);
+                session.PaymentId = payment.Id;
+                _sessionRepository.Update(session);
+
+                await _paymentRepository.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Payment intent created. PaymentId: {PaymentId}, SessionId: {SessionId}, Provider: {Provider}",
+                    payment.Id, request.SessionId, paymentService.ProviderName);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError("Failed to create payment intent for session {SessionId}", request.SessionId);
+                throw;
+            }
 
             BackgroundJob.Schedule<IPaymentProcessingService>(
                 x => x.CheckAndCancelPaymentAsync(payment.Id),
@@ -327,8 +344,12 @@ namespace CareerRoute.Core.Services.Implementations
             // Verify payment status with provider (implementation depends on your provider SDK)
             await VerifyPaymentWithProviderAsync(paymentService, payment.PaymentIntentId);
 
+            var currency = payment.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
+            decimal expectedAmount = payment.PaymentProvider == PaymentProviderOptions.Stripe
+                ? Math.Round((session.Price / 50m) * 100m, 2) // convert to cents
+                : session.Price;
             // Validate payment amount matches session price
-            if (payment.Amount != session.Price)
+            if (payment.Amount != expectedAmount ||  payment.Currency !=currency)
             {
                 _logger.LogWarning(
                     "Payment amount mismatch. Payment: {PaymentAmount}, Session: {SessionPrice}",
@@ -340,20 +361,42 @@ namespace CareerRoute.Core.Services.Implementations
             var platformCommission = payment.Amount * payment.PlatformCommission;
             var mentorPayout = payment.Amount * (1 - payment.PlatformCommission);
 
-            // Update payment status
-            //payment.Status = PaymentStatusOptions.Captured;
-            payment.UpdatedAt = DateTime.UtcNow;
-            payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72); // Release after 72 hours
-            _paymentRepository.Update(payment);
-            // Update session status
-            session.Status = SessionStatusOptions.Confirmed;
-            session.UpdatedAt = DateTime.UtcNow;
+            using var transaction = await _paymentRepository.BeginTransactionAsync();
 
-            // Generate video conference link
-            session.VideoConferenceLink = await GenerateVideoConferenceLinkAsync(session);
-            _sessionRepository.Update(session);
-            await _paymentRepository.SaveChangesAsync();
+            try
+            {
+                // Update payment status
+                payment.UpdatedAt = DateTime.UtcNow;
+                payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72); // Release after 72 hours
+                _paymentRepository.Update(payment);
 
+                // Update session status
+                session.Status = SessionStatusOptions.Confirmed;
+                session.UpdatedAt = DateTime.UtcNow;
+
+                // Generate video conference link
+                session.VideoConferenceLink = await GenerateVideoConferenceLinkAsync(session);
+                _sessionRepository.Update(session);
+
+                await _paymentRepository.SaveChangesAsync();
+
+                // Commit transaction
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Payment confirmed. PaymentId: {PaymentId}, SessionId: {SessionId}, Amount: {Amount}",
+                    payment.Id, session.Id, payment.Amount);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+
+                _logger.LogError(ex,
+                    "Error confirming payment. PaymentId: {PaymentId}, SessionId: {SessionId}",
+                    payment.Id, session.Id);
+
+                throw;
+            }
             // Get mentor details for email
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(session.MentorId);
             if (mentor == null)
@@ -437,30 +480,83 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task CheckAndCancelPaymentAsync(string paymentId)
         {
-            var payment = await _paymentRepository.GetByIdAsync(paymentId);
-            if (payment == null) return;
+            _logger.LogInformation("[Payment] Checking if payment {PaymentId} should be cancelled", paymentId);
 
-            if (payment.Status == PaymentStatusOptions.Pending || payment.Status == PaymentStatusOptions.Failed)
+            await using var transaction = await _paymentRepository.BeginTransactionAsync();
+            try
             {
-                if (payment.PaymentProvider == PaymentProviderOptions.Stripe)
+                var payment = await _paymentRepository.GetByIdAsync(paymentId);
+                if (payment == null)
                 {
-                    try
-                    {
-                        var stripeService = (IStripePaymentService)_paymentFactory.GetService(PaymentProviderOptions.Stripe);
-                        await stripeService.CancelPaymentIntentAsync(payment.PaymentIntentId);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to cancel Stripe payment intent for payment {PaymentId}", paymentId);
-                    }
+                    _logger.LogWarning("[Payment] Payment {PaymentId} not found for cancellation check", paymentId);
+                    return;
                 }
 
-                payment.Status = PaymentStatusOptions.Canceled;
-                payment.UpdatedAt = DateTime.UtcNow;
-                _paymentRepository.Update(payment);
-                await _paymentRepository.SaveChangesAsync();
+                // Only cancel if payment is still pending or failed
+                if (payment.Status == PaymentStatusOptions.Pending || payment.Status == PaymentStatusOptions.Failed)
+                {
+                    // Cancel with payment provider if Stripe
+                    if (payment.PaymentProvider == PaymentProviderOptions.Stripe)
+                    {
+                        try
+                        {
+                            var stripeService = (IStripePaymentService)_paymentFactory.GetService(PaymentProviderOptions.Stripe);
+                            await stripeService.CancelPaymentIntentAsync(payment.PaymentIntentId);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "[Payment] Failed to cancel Stripe payment intent {PaymentIntentId}", payment.PaymentIntentId);
+                        }
+                    }
 
-                _logger.LogInformation("Payment {PaymentId} was automatically canceled due to expiration", paymentId);
+                    payment.Status = PaymentStatusOptions.Canceled;
+                    payment.UpdatedAt = DateTime.UtcNow;
+                    payment.CancelledAt = DateTime.UtcNow;
+                    _paymentRepository.Update(payment);
+                    await _paymentRepository.SaveChangesAsync();
+
+                    // Also cancel the associated session and free timeslot
+                    var session = await _sessionRepository.GetByIdAsync(payment.SessionId);
+                    if (session != null && session.Status == SessionStatusOptions.Pending)
+                    {
+                        var timeSlotId = session.TimeSlotId;
+
+                        session.Status = SessionStatusOptions.Cancelled;
+                        session.CancellationReason = "Payment not captured within allowed time";
+                        session.TimeSlotId = null;
+                        session.UpdatedAt = DateTime.UtcNow;
+
+                        _sessionRepository.Update(session);
+                        await _sessionRepository.SaveChangesAsync();
+
+                        // Free the TimeSlot
+                        if (!string.IsNullOrEmpty(timeSlotId))
+                        {
+                            var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
+                            if (timeSlot != null)
+                            {
+                                timeSlot.IsBooked = false;
+                                timeSlot.SessionId = null;
+                                _timeSlotRepository.Update(timeSlot);
+                                await _timeSlotRepository.SaveChangesAsync();
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("[Payment] Payment {PaymentId} and associated session automatically cancelled due to expiration", paymentId);
+                }
+                else
+                {
+                    _logger.LogInformation("[Payment] Payment {PaymentId} not cancelled. Status: {Status}", paymentId, payment.Status);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Payment] Error cancelling payment {PaymentId}", paymentId);
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 

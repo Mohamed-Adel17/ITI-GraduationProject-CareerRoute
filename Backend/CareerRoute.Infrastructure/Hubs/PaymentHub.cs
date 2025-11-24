@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace CareerRoute.API.Hubs
+namespace CareerRoute.Infrastructure.Hubs
 {
     public class PaymentHub : Hub
     {

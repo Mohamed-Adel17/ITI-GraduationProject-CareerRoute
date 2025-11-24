@@ -13,9 +13,7 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
 using Hangfire;
-using CareerRoute.Core.Services.Interfaces;
-using CareerRoute.API.Services;
-using CareerRoute.API.Hubs;
+using CareerRoute.Infrastructure.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -90,7 +88,6 @@ builder.Services.AddAuthorization(options =>
 // API Layer Services
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
-builder.Services.AddScoped<IPaymentNotificationService, SignalRPaymentNotificationService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

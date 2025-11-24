@@ -1,9 +1,9 @@
-using CareerRoute.API.Hubs;
+using CareerRoute.Infrastructure.Hubs;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CareerRoute.API.Services
+namespace CareerRoute.Infrastructure.Services
 {
     public class SignalRPaymentNotificationService : IPaymentNotificationService
     {

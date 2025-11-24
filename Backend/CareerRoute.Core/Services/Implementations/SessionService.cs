@@ -262,14 +262,14 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new UnauthorizedException("You don't have permission to view this session as You are not a participant of this session.");
 
 
-            bool mentorTimeSlotAvailable = await _timeSlotRepository.HasOverlapAsync(
+            bool mentorHasOverlap = await _timeSlotRepository.HasOverlapAsync(
                                             session.MentorId,
                                             dto.NewScheduledStartTime,
                                             dto.NewScheduledStartTime.AddMinutes((int)session.Duration)
                                             );
 
 
-            if (!mentorTimeSlotAvailable)
+            if (mentorHasOverlap)
                 throw new ConflictException("Mentor has no available time at the requested slot.");
 
 
@@ -736,31 +736,59 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task ReleaseUnpaidSessionAsync(string sessionId)
         {
-            var session = await _sessionRepository.GetByIdAsync(sessionId);
-            if (session == null) return;
+            _logger.LogInformation("[Session] Checking if session {SessionId} should be released due to no payment", sessionId);
 
-            if (session.Status == SessionStatusOptions.Pending && string.IsNullOrEmpty(session.PaymentId))
+            await using var transaction = await _sessionRepository.BeginTransactionAsync();
+            try
             {
-                var timeSlotId = session.TimeSlotId; // Capture ID before nulling
-
-                session.Status = SessionStatusOptions.Cancelled;
-                session.CancellationReason = "Payment timeout";
-                session.TimeSlotId = null; // Release the slot relation
-                _sessionRepository.Update(session);
-                await _sessionRepository.SaveChangesAsync();
-
-                // Release the TimeSlot
-                if (!string.IsNullOrEmpty(timeSlotId))
+                var session = await _sessionRepository.GetByIdAsync(sessionId);
+                if (session == null)
                 {
-                    var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
-                    if (timeSlot != null)
-                    {
-                        timeSlot.IsBooked = false;
-                        timeSlot.SessionId = null;
-                        _timeSlotRepository.Update(timeSlot);
-                        await _timeSlotRepository.SaveChangesAsync();
-                    }
+                    _logger.LogWarning("[Session] Session {SessionId} not found for release check", sessionId);
+                    return;
                 }
+
+                // Only release if still pending and no payment created
+                if (session.Status == SessionStatusOptions.Pending && string.IsNullOrEmpty(session.PaymentId))
+                {
+                    var timeSlotId = session.TimeSlotId;
+
+                    session.Status = SessionStatusOptions.Cancelled;
+                    session.CancellationReason = "Payment not initiated within booking period";
+                    session.TimeSlotId = null;
+                    session.UpdatedAt = DateTime.UtcNow;
+
+                    _sessionRepository.Update(session);
+                    await _sessionRepository.SaveChangesAsync();
+
+                    // Free the TimeSlot
+                    if (!string.IsNullOrEmpty(timeSlotId))
+                    {
+                        var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
+                        if (timeSlot != null)
+                        {
+                            timeSlot.IsBooked = false;
+                            timeSlot.SessionId = null;
+                            _timeSlotRepository.Update(timeSlot);
+                            await _timeSlotRepository.SaveChangesAsync();
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("[Session] Session {SessionId} automatically released - no payment initiated", sessionId);
+                }
+                else
+                {
+                    _logger.LogInformation("[Session] Session {SessionId} not released. Status: {Status}, HasPayment: {HasPayment}",
+                        sessionId, session.Status, !string.IsNullOrEmpty(session.PaymentId));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Error releasing unpaid session {SessionId}", sessionId);
+                await transaction.RollbackAsync();
+                throw;
             }
         }
     }

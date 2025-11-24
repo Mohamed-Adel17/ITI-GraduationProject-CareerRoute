@@ -67,14 +67,12 @@ namespace CareerRoute.API.Controllers.WebHooks
             {
                 var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
 
-                // Paymob might use a different header name for signature/HMAC
-                //var paymobSignature = Request.Headers["X-Paymob-Signature"].ToString();
                 var paymobSignature = Request.Query["hmac"].ToString();
 
                 if (string.IsNullOrEmpty(paymobSignature))
                 {
                     _logger.LogWarning("Paymob webhook received without signature");
-                    // Some providers might not require signature, adjust based on Paymob's requirements
+                    return BadRequest("Missing Stripe signature");
                 }
 
                 await _paymentService.HandlePaymobWebhookAsync(json, paymobSignature);
@@ -88,15 +86,5 @@ namespace CareerRoute.API.Controllers.WebHooks
             }
         }
 
-        /// <summary>
-        /// Generic webhook endpoint for testing
-        /// </summary>
-        [HttpPost("test")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult TestWebhook([FromBody] object payload)
-        {
-            _logger.LogInformation("Test webhook received: {Payload}", payload);
-            return Ok(new { message = "Webhook received successfully", timestamp = DateTime.UtcNow });
-        }
     }
 }
