@@ -359,8 +359,8 @@ export interface TokenPayload {
   /** User's role(s) - can be string or array */
   role: string | string[];
 
-  /** Whether user is a mentor (custom claim) */
-  is_mentor?: boolean;
+  /** Whether user is a mentor (custom claim) - JWT transmits as string "true"/"false" */
+  is_mentor?: boolean | string;
 
   /** Mentor ID if user is a mentor (custom claim) */
   mentor_id?: string;
