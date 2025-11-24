@@ -92,6 +92,7 @@ export interface SessionSummary {
   menteeId: string;
   menteeFirstName: string;
   menteeLastName: string;
+  menteeProfilePictureUrl?: string | null;
   mentorId: string;
   mentorFirstName: string;
   mentorLastName: string;
@@ -114,6 +115,7 @@ export interface PastSessionItem {
   menteeId: string;
   menteeFirstName: string;
   menteeLastName: string;
+  menteeProfilePictureUrl?: string | null;
   mentorId: string;
   mentorFirstName: string;
   mentorLastName: string;
@@ -223,6 +225,36 @@ export interface RescheduleResponse {
   requestedBy: 'mentee' | 'mentor';
   rescheduleReason: string;
   requestedAt: string;
+}
+
+/**
+ * Approve Reschedule Response
+ * Response for POST /api/sessions/reschedule/{rescheduleId}/approve
+ */
+export interface ApproveRescheduleResponse {
+  id: string;                           // Session ID
+  status: SessionStatus;                // Confirmed
+  originalStartTime: string;            // Original scheduled time
+  requestedStartTime: string;           // New scheduled time (approved)
+  requestedBy: 'mentee' | 'mentor';     // Who requested the reschedule
+  rescheduleReason: string;             // Reason for reschedule
+  requestedAt: string;                  // When reschedule was requested
+  isApproved: boolean;                  // true
+}
+
+/**
+ * Reject Reschedule Response
+ * Response for POST /api/sessions/reschedule/{rescheduleId}/reject
+ */
+export interface RejectRescheduleResponse {
+  id: string;                           // Session ID
+  status: SessionStatus;                // Confirmed (unchanged)
+  originalStartTime: string;            // Original scheduled time (kept)
+  requestedStartTime: string;           // Requested time (rejected)
+  requestedBy: 'mentee' | 'mentor';     // Who requested the reschedule
+  rescheduleReason: string;             // Reason for reschedule
+  requestedAt: string;                  // When reschedule was requested
+  isApproved: boolean;                  // false
 }
 
 /**
