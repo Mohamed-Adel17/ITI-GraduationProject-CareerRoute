@@ -261,14 +261,13 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new UnauthorizedException("You don't have permission to view this session as You are not a participant of this session.");
 
 
-            bool mentorTimeSlotAvailable = await _timeSlotRepository.HasOverlapAsync(
+            bool mentorHasOverlap = await _timeSlotRepository.HasOverlapAsync(
                                             session.MentorId,
                                             dto.NewScheduledStartTime,
                                             dto.NewScheduledStartTime.AddMinutes((int)session.Duration)
                                             );
 
-
-            if (!mentorTimeSlotAvailable)
+            if (mentorHasOverlap)
                 throw new ConflictException("Mentor has no available time at the requested slot.");
 
 
