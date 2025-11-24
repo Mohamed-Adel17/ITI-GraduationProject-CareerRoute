@@ -191,4 +191,23 @@ export class HeaderComponent implements OnInit {
     // - Admins (unless they're also approved mentors)
     return '/user/profile';
   }
+
+  /**
+   * Get the appropriate sessions route based on user role
+   * Approved mentors go to mentor sessions, others go to user sessions
+   *
+   * @param user The authenticated user
+   * @returns Sessions route path
+   */
+  getSessionsRoute(user: AuthUser | null): string {
+    if (!user) return '/user/sessions';
+
+    // Approved mentors: Route to mentor sessions
+    if (this.hasRole(user, UserRole.Mentor)) {
+      return '/mentor/sessions';
+    }
+
+    // All other users (regular users, pending mentors): Route to user sessions
+    return '/user/sessions';
+  }
 }

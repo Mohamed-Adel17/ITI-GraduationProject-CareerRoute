@@ -27,8 +27,8 @@
            class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
           Categories
         </a>
-        <a *ngIf="!hasRole((currentUser$ | async), UserRole.Admin)"
-           routerLink="/sessions"
+        <a *ngIf="(isAuthenticated$ | async) && !hasRole((currentUser$ | async), UserRole.Admin)"
+           [routerLink]="getSessionsRoute((currentUser$ | async))"
            routerLinkActive="text-primary"
            class="text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">
           Sessions
@@ -156,8 +156,9 @@
               </a> -->
 
               <a
-                *ngIf="!hasRole((currentUser$ | async), UserRole.Admin)"
-                routerLink="/user/sessions"
+                *ngIf="currentUser$ | async as user"
+                [class.hidden]="hasRole(user, UserRole.Admin)"
+                [routerLink]="getSessionsRoute(user)"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 role="menuitem">
@@ -278,8 +279,8 @@
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
           Categories
         </a>
-        <a *ngIf="!hasRole((currentUser$ | async), UserRole.Admin)"
-           routerLink="/sessions"
+        <a *ngIf="(isAuthenticated$ | async) && !hasRole((currentUser$ | async), UserRole.Admin)"
+           [routerLink]="getSessionsRoute((currentUser$ | async))"
            (click)="closeMenus()"
            routerLinkActive="bg-primary/10 text-primary"
            class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
