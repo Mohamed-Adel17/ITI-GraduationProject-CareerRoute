@@ -9,8 +9,7 @@ namespace CareerRoute.Core.DTOs.Payments
 {
     public class PaymentConfirmRequestDto
     {
-        public string PaymentIntentId { get; set; }
-
-        public string SessionId { get; set; }
+        public string PaymentIntentId { get; set; } = string.Empty;
+        public string SessionId { get; set; } = string.Empty;
     }
 }

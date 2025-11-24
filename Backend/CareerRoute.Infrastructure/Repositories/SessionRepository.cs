@@ -15,7 +15,7 @@ namespace CareerRoute.Infrastructure.Repositories
 {
     public class SessionRepository : GenericRepository<Session>, ISessionRepository
     {
-        public SessionRepository (ApplicationDbContext dbContext) : base(dbContext)
+        public SessionRepository(ApplicationDbContext dbContext) : base(dbContext)
         {
         }
         public async Task<bool> HasOverlappingSession(string menteeId, DateTime start, DateTime end)
@@ -32,7 +32,7 @@ namespace CareerRoute.Infrastructure.Repositories
         public async Task<Session?> GetByIdWithRelationsAsync(string sessionId)
         {
             return await dbContext.Sessions
-                 .Include(s => s.Payment)
+                .Include(s => s.Payment)
                 .Include(s => s.Mentee)
                 .Include(s => s.Mentor) // Include first-level Mentor entity
                 .ThenInclude(m => m.User)   //  Include the User entity inside Mentor
@@ -106,7 +106,7 @@ namespace CareerRoute.Infrastructure.Repositories
             query = query.Where(s => s.Status == SessionStatusOptions.Completed
                                      || s.Status == SessionStatusOptions.Cancelled);
 
-            
+
             query = query.OrderByDescending(s => s.ScheduledStartTime);
 
             var totalCount = await query.CountAsync();

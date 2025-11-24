@@ -6,9 +6,15 @@ using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Domain.Enums
 {
-    public enum PaymentMethodOptions
+    public enum PaymentProviderOptions
     {
-        Paymob,
-        Stripe
+        Stripe=1,
+        Paymob
+    }
+    
+    public enum PaymobPaymentMethodOptions
+    {
+        Card=1,
+        EWallet
     }
 }

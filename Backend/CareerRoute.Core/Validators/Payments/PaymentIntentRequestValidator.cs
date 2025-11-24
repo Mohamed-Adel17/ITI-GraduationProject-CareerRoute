@@ -1,11 +1,6 @@
-﻿using CareerRoute.Core.DTOs.Mentors;
+﻿using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.DTOs.Payments;
 using FluentValidation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Validators.Payments
 {
@@ -16,8 +11,13 @@ namespace CareerRoute.Core.Validators.Payments
             RuleFor(x => x.SessionId)
                 .NotEmpty().WithMessage("SessionId is required.");
 
-            RuleFor(x => x.PaymentMethod)
-                .IsInEnum().WithMessage("PaymentMethod must be Stripe or Paymob.");
+            RuleFor(x => x.PaymentProvider)
+                .NotEmpty()
+                .IsInEnum().WithMessage("PaymentProvider must be Stripe or Paymob.");
+
+            RuleFor(x => x.PaymobPaymentMethod)
+                .IsInEnum().WithMessage("Invalid PaymobPaymentMethod value.")
+                .When(x => x.PaymentProvider == PaymentProviderOptions.Paymob);
         }
     }
 }

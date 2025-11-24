@@ -638,8 +638,8 @@ namespace CareerRoute.Infrastructure.Data.SeedData
                         // Ensure we don't overlap with previous slot (simple check)
                         if (i > 0)
                         {
-                            var lastSlot = timeSlots.Last();
-                            if (lastSlot.StartDateTime.AddMinutes(lastSlot.DurationMinutes) > slotStart)
+                            var lastSlot = timeSlots.LastOrDefault();
+                            if (lastSlot != null && lastSlot.StartDateTime.AddMinutes(lastSlot.DurationMinutes) > slotStart)
                             {
                                 slotStart = lastSlot.StartDateTime.AddMinutes(lastSlot.DurationMinutes).AddMinutes(15); // 15 min break
                             }

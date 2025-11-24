@@ -2,6 +2,7 @@
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.DTOs.Payments;
+using CareerRoute.Core.DTOs.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,30 +16,24 @@ namespace CareerRoute.Core.Mappings
 
         public PaymentProfile()
         {
-            // Map PaymentRequestDto → Payment
-            CreateMap<PaymentIntentRequestDto, Payment>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatusOptions.Pending))
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.ClientSecret, opt => opt.Ignore())
-                .ForMember(dest => dest.PaymentIntentId, opt => opt.Ignore())
-                .ForMember(dest => dest.Amount, opt => opt.Ignore())
-                .ForMember(dest => dest.Session, opt => opt.Ignore());
-
-            // Map PaymentConfirmRequestDto → Payment (used to update PaymentIntentId)
-            CreateMap<PaymentConfirmRequestDto, Payment>()
-                .ForMember(dest => dest.Session, opt => opt.Ignore())
-                .ForMember(dest => dest.Amount, opt => opt.Ignore())
-                .ForMember(dest => dest.ClientSecret, opt => opt.Ignore())
-                .ForMember(dest => dest.PaymentMethod, opt => opt.Ignore())
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatusOptions.Captured));
-
             CreateMap<Payment, PaymentIntentResponseDto>();
 
             CreateMap<Payment, PaymentConfirmResponseDto>()
                 .ForMember(dest => dest.PaymentId, opt => opt.MapFrom(src => src.Id));
 
+            // Session → SessionPaymentResponseDto
+            CreateMap<Session, SessionPaymentResponseDto>();
 
-
+            // Payment → PaymentConfirmResponseDto
+            CreateMap<Payment, PaymentConfirmResponseDto>()
+                .ForMember(dest => dest.PaymentId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.TransactionId, opt => opt.MapFrom(src => src.ProviderTransactionId));
+            // Payment → PaymentHistroyItemResponseDto
+            CreateMap<Payment, PaymentHistroyItemResponseDto>()
+                .ForMember(dest => dest.MentorName, opt => opt.MapFrom(src => src.Session.Mentor.User.FullName))
+                .ForMember(dest => dest.SessionTopic, opt => opt.MapFrom(src => src.Session.Topic))
+                .ForMember(dest => dest.PaymentProvider, opt => opt.MapFrom(src => src.PaymentProvider.ToString()))
+                .ForMember(dest => dest.TransactionId, opt => opt.MapFrom(src => src.ProviderTransactionId));
         }
     }
 }

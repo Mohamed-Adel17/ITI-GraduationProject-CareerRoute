@@ -13,13 +13,16 @@ namespace CareerRoute.Core.Services.Implementations
     public class RescheduleSessionService : IRescheduleSessionService
     {
         private readonly IRescheduleSessionRepository _rescheduleRepository;
+        private readonly ISessionRepository _sessionRepository;
         private readonly ILogger<RescheduleSessionService> _logger;
 
         public RescheduleSessionService(
             IRescheduleSessionRepository rescheduleRepository,
+            ISessionRepository sessionRepository,
             ILogger<RescheduleSessionService> logger)
         {
             _rescheduleRepository = rescheduleRepository;
+            _sessionRepository = sessionRepository;
             _logger = logger;
         }
 
@@ -27,14 +30,24 @@ namespace CareerRoute.Core.Services.Implementations
         {
             var request = await _rescheduleRepository.GetByIdAsync(rescheduleRequestId);
 
-            if (request.Status == SessionRescheduleOptions.Pending)
+            if (request != null && request.Status == SessionRescheduleOptions.Pending)
             {
-                //To Do 
-
+                request.Status = SessionRescheduleOptions.Rejected;
                 _rescheduleRepository.Update(request);
                 await _rescheduleRepository.SaveChangesAsync();
 
-                _logger.LogInformation("Pending reschedule request {Id} was auto-rejected after 48 hours", rescheduleRequestId);
+                var session = await _sessionRepository.GetByIdAsync(request.SessionId);
+                if (session != null)
+                {
+                    // Revert session status to Confirmed (assuming it was confirmed before reschedule)
+                    // If we want to be more precise, we might need to store previous status, 
+                    // but typically you reschedule a confirmed session.
+                    session.Status = SessionStatusOptions.Confirmed;
+                    _sessionRepository.Update(session);
+                    await _sessionRepository.SaveChangesAsync();
+                }
+
+                _logger.LogInformation("Pending reschedule request {Id} was auto-rejected after timeout", rescheduleRequestId);
             }
         }
     }

@@ -1,12 +1,9 @@
-﻿using CareerRoute.Core.Exceptions;
-using CareerRoute.Core.Services.Interfaces;
+﻿using CareerRoute.Core.Domain.Interfaces.Services;
+using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Settings;
 using Microsoft.Extensions.Options;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-
-
-
 
 namespace CareerRoute.Infrastructure.Services
 {

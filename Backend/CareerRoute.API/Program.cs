@@ -12,6 +12,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
+using Hangfire;
+using CareerRoute.Infrastructure.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +87,7 @@ builder.Services.AddAuthorization(options =>
 
 // API Layer Services
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -135,20 +138,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-
-// Get Hangfire's recurring job manager from DI
-//using (var scope = app.Services.CreateScope())
-//{
-//    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-
-//    // Schedule the recurring job
-//    recurringJobManager.AddOrUpdate<SessionBackgroundJobs>(
-//        "UpdateHoursUntilSessionJob",                      // job ID
-//        job => job.UpdateHoursUntilSessionAsync(),         // method to call
-//        Cron.Minutely                                      // schedule
-//    );
-//}
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -164,9 +153,13 @@ app.UseCors("AllowFrontend");
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 //Authentication then Authorization
+app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHangfireDashboard();
+
+app.MapHub<PaymentHub>("hub/payment");
 
 app.MapControllers();
 

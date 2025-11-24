@@ -1,22 +1,16 @@
 ﻿using CareerRoute.Core.Domain.Enums;
-using CareerRoute.Core.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace CareerRoute.Core.Domain.Entities
 {
     public class Payment
     {
 
-        public string Id { get; set; }               
+        public string Id { get; set; } = string.Empty;               
        
         // ---------- Payment Provider ----------
-        public PaymentMethodOptions PaymentMethod { get; set; }
-        public string PaymentIntentId { get; set; }
-        public string ClientSecret { get; set; }
+        public PaymentProviderOptions PaymentProvider { get; set; }
+        public PaymobPaymentMethodOptions? PaymobPaymentMethod { get; set; }
+        public string PaymentIntentId { get; set; } = string.Empty;
+        public string ClientSecret { get; set; } = string.Empty;
 
         // ---------- Financial Information ----------
         public decimal Amount { get; set; }                   // Total session price
@@ -24,6 +18,9 @@ namespace CareerRoute.Core.Domain.Entities
         public decimal MentorPayoutAmount => Amount * (1 - PlatformCommission);
 
         public string Currency { get; set; } = "USD";
+        public DateTime? PaidAt { get; set; }
+        public DateTime? CancelledAt { get; set; }
+
 
         // ---------- Payment Status ----------
         public PaymentStatusOptions Status { get; set; }
@@ -40,16 +37,16 @@ namespace CareerRoute.Core.Domain.Entities
         public bool IsReleasedToMentor { get; set; }
         public DateTime? ReleasedAt { get; set; }
 
-        public string ProviderTransactionId { get; set; }
-        public string ProviderSignature { get; set; }
-
+        public string ProviderTransactionId { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        // -------- Relations --------
+        public string SessionId { get; set; } = null!;
+        public virtual Session Session { get; set; } = null!;
 
-        public string SessionId { get; set; }
-        public Session Session { get; set; }
+        public string MenteeId { get; set; } = null!;
+        public virtual ApplicationUser Mentee { get; set; } = null!;
+
     }
-
-
 }

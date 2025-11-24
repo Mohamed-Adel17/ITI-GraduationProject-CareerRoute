@@ -3,6 +3,7 @@ using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.Domain.Interfaces.Services;
 using CareerRoute.Core.DTOs;
 using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.Exceptions;
@@ -26,11 +27,11 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IRescheduleSessionRepository _rescheduleSessionRepository;
         private readonly ICancelSessionRepository _cancelSessionRepository;
         private readonly IEmailService _emailService;
+        private readonly IEmailTemplateService _emailTemplateService;
+        private readonly IPaymentProcessingService _paymentProcessingService;
         private readonly IValidator<BookSessionRequestDto> _bookSessionRequestValidator;
         private readonly IValidator<RescheduleSessionRequestDto> _rescheduleSessionValidator;
         private readonly IValidator<CancelSessionRequestDto> _cancelSessionValidator;
-        private readonly string _baseUrl;
-        private readonly string _frontendUrl;
         private readonly IConfiguration _configuration;
 
         public SessionService(
@@ -41,27 +42,27 @@ namespace CareerRoute.Core.Services.Implementations
             ITimeSlotRepository timeSlotRepository,
             ICancelSessionRepository cancelSessionRepository,
             IEmailService emailService,
+            IEmailTemplateService emailTemplateService,
+            IPaymentProcessingService paymentProcessingService,
             IRescheduleSessionRepository rescheduleSessionRepository,
             IValidator<BookSessionRequestDto> bookSessionRequestValidator,
             IValidator<RescheduleSessionRequestDto> rescheduleSessionValidator,
-            IValidator<CancelSessionRequestDto> cancelSessionValidator
-            , IConfiguration configuration
-            )
-
+            IValidator<CancelSessionRequestDto> cancelSessionValidator,
+            IConfiguration configuration)
         {
             _logger = logger;
             _mapper = mapper;
             _mentorRepository = mentorRepository;
             _timeSlotRepository = timeSlotRepository;
             _emailService = emailService;
+            _emailTemplateService = emailTemplateService;
+            _paymentProcessingService = paymentProcessingService;
             _sessionRepository = sessionRepository;
             _bookSessionRequestValidator = bookSessionRequestValidator;
             _rescheduleSessionRepository = rescheduleSessionRepository;
             _rescheduleSessionValidator = rescheduleSessionValidator;
             _cancelSessionRepository = cancelSessionRepository;
             _cancelSessionValidator = cancelSessionValidator;
-            _baseUrl = configuration["BackendBaseUrl"]!;
-            _frontendUrl = configuration["FrontendUrl"] ?? "http://localhost:4200";
             _configuration = configuration;
         }
 
@@ -220,7 +221,7 @@ namespace CareerRoute.Core.Services.Implementations
             if (allPastSessions.Count == 0)
 
                 throw new NotFoundException("No Past Sessions ");
-            
+
             var sessionDtos = _mapper.Map<List<PastSessionItemResponseDto>>(allPastSessions);
 
             var paginationMetadata = new PaginationMetadataDto
@@ -266,6 +267,7 @@ namespace CareerRoute.Core.Services.Implementations
                                             dto.NewScheduledStartTime,
                                             dto.NewScheduledStartTime.AddMinutes((int)session.Duration)
                                             );
+
 
             if (mentorHasOverlap)
                 throw new ConflictException("Mentor has no available time at the requested slot.");
@@ -319,7 +321,7 @@ namespace CareerRoute.Core.Services.Implementations
 
             if (!string.IsNullOrEmpty(receiverEmail))
             {
-                await SendRescheduleRequestEmailAsync(receiverEmail, receiverName, requesterName, session, rescheduleSession);
+                await SendRescheduleRequestEmailAsync(receiverEmail, receiverName, requesterName, rescheduleSession, session);
             }
 
             return _mapper.Map<RescheduleSessionResponseDto>(rescheduleSession);
@@ -423,6 +425,23 @@ namespace CareerRoute.Core.Services.Implementations
                 throw;
             }
 
+            // Process Refund if applicable
+            if (refundAmount > 0 && !string.IsNullOrEmpty(session.PaymentId))
+            {
+                try
+                {
+                    _logger.LogInformation("[Session] Initiating refund for session {SessionId}. Amount: {RefundAmount}", sessionId, refundAmount);
+                    await _paymentProcessingService.RefundPaymentAsync(session.PaymentId, refundPercentage);
+                    _logger.LogInformation("[Session] Refund initiated successfully for session {SessionId}", sessionId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[Session] Failed to process refund for session {SessionId}", sessionId);
+                    // We don't throw here to avoid rolling back the cancellation, 
+                    // but this should be alerted/monitored.
+                }
+            }
+
             // Send cancellation emails
             try
             {
@@ -434,7 +453,7 @@ namespace CareerRoute.Core.Services.Implementations
                 }
                 else
                 {
-                    _logger.LogWarning("[Session] Cannot send cancellation emails - missing email addresses. Mentee: {MenteeEmail}, Mentor: {MentorEmail}", 
+                    _logger.LogWarning("[Session] Cannot send cancellation emails - missing email addresses. Mentee: {MenteeEmail}, Mentor: {MentorEmail}",
                         session.Mentee?.Email ?? "null", session.Mentor?.User?.Email ?? "null");
                 }
             }
@@ -542,28 +561,9 @@ namespace CareerRoute.Core.Services.Implementations
         }
 
 
-        private async Task SendRescheduleRequestEmailAsync(string receiverEmail, string receiverName,
-                             string requesterName, Session session, RescheduleSession rescheduleRequest)
+        private async Task SendRescheduleRequestEmailAsync(string receiverEmail, string receiverName, string requesterName, RescheduleSession rescheduleRequest, Session session)
         {
-            var reschedulePageLink = $"{_frontendUrl}/sessions/reschedule/{rescheduleRequest.Id}";
-
-            string htmlContent = $@"
-            <h2>Session Reschedule Request</h2>
-
-            <p>Dear {receiverName},</p>
-
-            <p>The session with <b>{requesterName}</b> is requested to be rescheduled.</p>
-
-            <p><b>Original time:</b> {rescheduleRequest.OriginalStartTime:yyyy-MM-dd HH:mm}</p>
-            <p><b>Requested new time:</b> {rescheduleRequest.NewScheduledStartTime:yyyy-MM-dd HH:mm}</p>
-
-            <p>Please review and respond to this request within 48 hours:</p>
-
-            <a href='{reschedulePageLink}' style='padding:10px 20px;background:#2196F3;color:white;text-decoration:none;border-radius:6px;display:inline-block;'>Review Reschedule Request</a>
-
-            <br /><br />
-            <p>Thank you.</p>
-            ";
+            string htmlContent = _emailTemplateService.GenerateRescheduleRequestEmail(session, rescheduleRequest, receiverName, requesterName);
 
             await _emailService.SendEmailAsync(
                     receiverEmail,
@@ -575,7 +575,8 @@ namespace CareerRoute.Core.Services.Implementations
 
         private async Task SendCancellationEmailsAsync(string menteeEmail, string mentorEmail, Session session, CancelSession cancel)
         {
-            EmailTemplates(cancel, session, out string menteeEmailTemplate, out string mentorEmailTemplate);
+            string menteeEmailTemplate = _emailTemplateService.GenerateCancellationEmail(session, cancel, true);
+            string mentorEmailTemplate = _emailTemplateService.GenerateCancellationEmail(session, cancel, false);
 
             await _emailService.SendEmailAsync(
                 menteeEmail,
@@ -591,85 +592,9 @@ namespace CareerRoute.Core.Services.Implementations
         }
 
 
-        private void EmailTemplates(CancelSession cancel, Session session, out string menteeEmailTemplate,
-            out string mentorEmailTemplate)
-        {
-            if (cancel.RefundPercentage == 100)
-            {
-                menteeEmailTemplate = $@"
-<html>
-<body>
-    <p>Dear Mentee,</p>
-    <p>Your session scheduled on <strong>{session.ScheduledStartTime}</strong> has been <strong>cancelled</strong>.</p>
-    <p>Since the cancellation is more than 48 hours before the session, you will receive a <strong>100% refund</strong> ({cancel.RefundAmount:C}).</p>
-    <p>Thank you for using our platform.</p>
-</body>
-</html>";
-
-                mentorEmailTemplate = $@"
-<html>
-<body>
-    <p>Dear Mentor,</p>
-    <p>The session scheduled on <strong>{session.ScheduledStartTime}</strong> has been <strong>cancelled</strong>.</p>
-    <p>The mentee will receive a <strong>100% refund</strong> ({cancel.RefundAmount:C}).</p>
-    <p>Please adjust your schedule accordingly.</p>
-</body>
-</html>";
-            }
-            else if (cancel.RefundPercentage == 50)
-            {
-                menteeEmailTemplate = $@"
-<html>
-<body>
-    <p>Dear Mentee,</p>
-    <p>Your session scheduled on <strong>{session.ScheduledStartTime}</strong> has been <strong>cancelled</strong>.</p>
-    <p>Since the cancellation is 24–48 hours before the session, you will receive a <strong>50% refund</strong> ({cancel.RefundAmount:C}).</p>
-    <p>Thank you for using our platform.</p>
-</body>
-</html>";
-
-                mentorEmailTemplate = $@"
-<html>
-<body>
-    <p>Dear Mentor,</p>
-    <p>The session scheduled on <strong>{session.ScheduledStartTime}</strong> has been <strong>cancelled</strong>.</p>
-    <p>The mentee will receive a <strong>50% refund</strong> ({cancel.RefundAmount:C}).</p>
-    <p>Please adjust your schedule accordingly.</p>
-</body>
-</html>";
-            }
-            else // refundPercentage == 0
-            {
-                menteeEmailTemplate = $@"
-<html>
-<body>
-    <p>Dear Mentee,</p>
-    <p>Your session scheduled on <strong>{session.ScheduledStartTime}</strong> has been <strong>cancelled</strong>.</p>
-    <p>Since the cancellation is less than 24 hours before the session, <strong>no refund</strong> will be issued.</p>
-    <p>Thank you for using our platform.</p>
-</body>
-</html>";
-
-                mentorEmailTemplate = $@"
-<html>
-<body>
-    <p>Dear Mentor,</p>
-    <p>The session scheduled on <strong>{session.ScheduledStartTime}</strong> has been <strong>cancelled</strong>.</p>
-    <p>No refund will be issued to the mentee.</p>
-    <p>Please adjust your schedule accordingly.</p>
-</body>
-</html>";
-            }
-        }
-
-
         private async Task SendCompletionEmailAsync(string menteeEmail, Session session)
         {
-
-            string htmlContent = $"<p>Hi {session.Mentee.FirstName},</p>" +
-                                 $"<p>Your session with <strong>{session.Mentor.User.FirstName}</strong> scheduled on <strong>{session.ScheduledStartTime:yyyy-MM-dd HH:mm}</strong> has been completed.</p>" +
-                                 $"<p>You can now review the session ir provide feedback.</p>" +
-                                 $"<p>Thank you for using our platform!</p>";
+            string htmlContent = _emailTemplateService.GenerateSessionCompletionEmail(session, session.Mentee.FirstName);
 
             // Send the email
             await _emailService.SendEmailAsync(
@@ -682,17 +607,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         private async Task SendRescheduleApprovedEmailAsync(string requesterEmail, string requesterName, Session session, RescheduleSession reschedule)
         {
-            string htmlContent = $@"
-<html>
-<body>
-    <p>Dear {requesterName},</p>
-    <p>Your reschedule request has been <strong>approved</strong>!</p>
-    <p><strong>New Session Time:</strong> {reschedule.NewScheduledStartTime:yyyy-MM-dd HH:mm}</p>
-    <p><strong>Original Time:</strong> {reschedule.OriginalStartTime:yyyy-MM-dd HH:mm}</p>
-    <p>Please make sure to attend the session at the new time.</p>
-    <p>Thank you for using our platform!</p>
-</body>
-</html>";
+            string htmlContent = _emailTemplateService.GenerateRescheduleApprovedEmail(session, reschedule, requesterName);
 
             await _emailService.SendEmailAsync(
                 requesterEmail,
@@ -704,17 +619,7 @@ namespace CareerRoute.Core.Services.Implementations
 
         private async Task SendRescheduleRejectedEmailAsync(string requesterEmail, string requesterName, Session session, RescheduleSession reschedule)
         {
-            string htmlContent = $@"
-<html>
-<body>
-    <p>Dear {requesterName},</p>
-    <p>Your reschedule request has been <strong>rejected</strong>.</p>
-    <p><strong>Requested Time:</strong> {reschedule.NewScheduledStartTime:yyyy-MM-dd HH:mm}</p>
-    <p><strong>Original Time:</strong> {reschedule.OriginalStartTime:yyyy-MM-dd HH:mm}</p>
-    <p>The session will remain at the original time: <strong>{session.ScheduledStartTime:yyyy-MM-dd HH:mm}</strong></p>
-    <p>Thank you for using our platform!</p>
-</body>
-</html>";
+            string htmlContent = _emailTemplateService.GenerateRescheduleRejectedEmail(session, reschedule, requesterName);
 
             await _emailService.SendEmailAsync(
                 requesterEmail,
@@ -831,31 +736,59 @@ namespace CareerRoute.Core.Services.Implementations
 
         public async Task ReleaseUnpaidSessionAsync(string sessionId)
         {
-            var session = await _sessionRepository.GetByIdAsync(sessionId);
-            if (session == null) return;
+            _logger.LogInformation("[Session] Checking if session {SessionId} should be released due to no payment", sessionId);
 
-            if (session.Status == SessionStatusOptions.Pending && string.IsNullOrEmpty(session.PaymentId))
+            await using var transaction = await _sessionRepository.BeginTransactionAsync();
+            try
             {
-                var timeSlotId = session.TimeSlotId; // Capture ID before nulling
-
-                session.Status = SessionStatusOptions.Cancelled;
-                session.CancellationReason = "Payment timeout";
-                session.TimeSlotId = null; // Release the slot relation
-                _sessionRepository.Update(session);
-                await _sessionRepository.SaveChangesAsync();
-
-                // Release the TimeSlot
-                if (!string.IsNullOrEmpty(timeSlotId))
+                var session = await _sessionRepository.GetByIdAsync(sessionId);
+                if (session == null)
                 {
-                    var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
-                    if (timeSlot != null)
-                    {
-                        timeSlot.IsBooked = false;
-                        timeSlot.SessionId = null;
-                        _timeSlotRepository.Update(timeSlot);
-                        await _timeSlotRepository.SaveChangesAsync();
-                    }
+                    _logger.LogWarning("[Session] Session {SessionId} not found for release check", sessionId);
+                    return;
                 }
+
+                // Only release if still pending and no payment created
+                if (session.Status == SessionStatusOptions.Pending && string.IsNullOrEmpty(session.PaymentId))
+                {
+                    var timeSlotId = session.TimeSlotId;
+
+                    session.Status = SessionStatusOptions.Cancelled;
+                    session.CancellationReason = "Payment not initiated within booking period";
+                    session.TimeSlotId = null;
+                    session.UpdatedAt = DateTime.UtcNow;
+
+                    _sessionRepository.Update(session);
+                    await _sessionRepository.SaveChangesAsync();
+
+                    // Free the TimeSlot
+                    if (!string.IsNullOrEmpty(timeSlotId))
+                    {
+                        var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
+                        if (timeSlot != null)
+                        {
+                            timeSlot.IsBooked = false;
+                            timeSlot.SessionId = null;
+                            _timeSlotRepository.Update(timeSlot);
+                            await _timeSlotRepository.SaveChangesAsync();
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("[Session] Session {SessionId} automatically released - no payment initiated", sessionId);
+                }
+                else
+                {
+                    _logger.LogInformation("[Session] Session {SessionId} not released. Status: {Status}, HasPayment: {HasPayment}",
+                        sessionId, session.Status, !string.IsNullOrEmpty(session.PaymentId));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Error releasing unpaid session {SessionId}", sessionId);
+                await transaction.RollbackAsync();
+                throw;
             }
         }
     }

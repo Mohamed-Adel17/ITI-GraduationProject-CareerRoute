@@ -312,6 +312,9 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("ClientSecret")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -330,24 +333,30 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<bool>("IsReleasedToMentor")
                         .HasColumnType("bit");
 
+                    b.Property<string>("MenteeId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("PaymentIntentId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("PaymentMethod")
+                    b.Property<string>("PaymentProvider")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("PaymentReleaseDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("PaymobPaymentMethod")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("PlatformCommission")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
-
-                    b.Property<string>("ProviderSignature")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ProviderTransactionId")
                         .IsRequired()
@@ -382,6 +391,11 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MenteeId");
+
+                    b.HasIndex("PaymentIntentId")
+                        .HasDatabaseName("IX_Pament_PaymentIntentId");
 
                     b.HasIndex("ProviderTransactionId")
                         .HasDatabaseName("IX_Payment_ProviderTransactionId");
@@ -848,11 +862,19 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Payment", b =>
                 {
+                    b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "Mentee")
+                        .WithMany("Payments")
+                        .HasForeignKey("MenteeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("CareerRoute.Core.Domain.Entities.Session", "Session")
                         .WithOne("Payment")
                         .HasForeignKey("CareerRoute.Core.Domain.Entities.Payment", "SessionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Mentee");
 
                     b.Navigation("Session");
                 });
@@ -1010,6 +1032,8 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("Payments");
+
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("UserSkills");
