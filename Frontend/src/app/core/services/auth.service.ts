@@ -120,7 +120,9 @@ export class AuthService {
           lastName: payload.family_name || '',
           emailConfirmed: payload.email_verified || false,
           roles: getRolesFromToken(payload),
-          isMentor: payload.is_mentor || false,
+          // JWT claims are transmitted as strings, so "false" string is truthy
+          // Must explicitly check for string "true" to convert to boolean correctly
+          isMentor: payload.is_mentor === true || payload.is_mentor === 'true',
           mentorId: payload.mentor_id,
           profilePictureUrl: payload.picture
         };

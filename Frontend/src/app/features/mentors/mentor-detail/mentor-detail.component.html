@@ -262,8 +262,9 @@
               </div>
             </div>
 
-            <!-- View Available Slots Button -->
+            <!-- View Available Slots Button - For Mentees Only -->
             <button
+              *ngIf="canBook"
               (click)="openCalendarModal()"
               class="w-full px-6 py-4 bg-primary text-white font-bold rounded-lg
                      hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl
@@ -274,7 +275,32 @@
               View Available Slots
             </button>
 
-            <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+            <!-- Login Required Button - For Guests -->
+            <button
+              *ngIf="!isLoggedIn"
+              (click)="openCalendarModal()"
+              class="w-full px-6 py-4 bg-primary text-white font-bold rounded-lg
+                     hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl
+                     flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+              </svg>
+              Login to Book
+            </button>
+
+            <!-- Restricted Message - For Mentors/Admins -->
+            <div *ngIf="isLoggedIn && !canBook" class="text-center">
+              <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg mb-3">
+                <svg class="w-8 h-8 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  Booking is available for mentees only
+                </p>
+              </div>
+            </div>
+
+            <p *ngIf="canBook" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
               Choose a time that works for you
             </p>
           </div>

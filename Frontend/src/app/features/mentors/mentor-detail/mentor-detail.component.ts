@@ -6,6 +6,8 @@ import { Subscription } from 'rxjs';
 import { MentorService } from '../../../core/services/mentor.service';
 import { TimeslotService } from '../../../core/services/timeslot.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { SessionService } from '../../../core/services/session.service';
 import { RatingDisplay } from '../../../shared/components/rating-display/rating-display';
 import { BookingCalendarModalComponent } from './booking-calendar-modal/booking-calendar-modal.component';
 import {
@@ -83,6 +85,10 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
   // Calendar modal state
   showCalendarModal: boolean = false;
 
+  // User role state for booking permissions
+  canBook: boolean = false;
+  isLoggedIn: boolean = false;
+
   private subscription?: Subscription;
   private slotsSubscription?: Subscription;
 
@@ -92,9 +98,31 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private mentorService: MentorService,
     private timeslotService: TimeslotService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private authService: AuthService,
+    private sessionService: SessionService
   ) {
     this.initializeBookingForm();
+    this.checkBookingPermissions();
+  }
+
+  /**
+   * Check if the current user can book sessions
+   * Only mentees (users who are not mentors and not admins) can book
+   */
+  private checkBookingPermissions(): void {
+    this.isLoggedIn = this.authService.isAuthenticated();
+
+    if (this.isLoggedIn) {
+      const isMentor = this.authService.isMentor();
+      const isAdmin = this.authService.isAdmin();
+
+      // User can book only if they are NOT a mentor AND NOT an admin
+      this.canBook = !isMentor && !isAdmin;
+    } else {
+      // Not logged in users cannot book
+      this.canBook = false;
+    }
   }
 
   ngOnInit(): void {
@@ -330,8 +358,37 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
 
   /**
    * Open the calendar modal for booking
+   * Only allows mentees (non-mentor, non-admin users) to book
    */
   openCalendarModal(): void {
+    // Check if user is logged in
+    if (!this.isLoggedIn) {
+      this.notificationService.warning(
+        'Please log in to book a session',
+        'Login Required'
+      );
+      this.router.navigate(['/auth/login'], {
+        queryParams: { returnUrl: this.router.url }
+      });
+      return;
+    }
+
+    // Check if user can book (is a mentee)
+    if (!this.canBook) {
+      if (this.authService.isAdmin()) {
+        this.notificationService.info(
+          'Administrators cannot book mentorship sessions',
+          'Booking Restricted'
+        );
+      } else if (this.authService.isMentor()) {
+        this.notificationService.info(
+          'Mentors cannot book sessions. Please use a mentee account to book.',
+          'Booking Restricted'
+        );
+      }
+      return;
+    }
+
     this.showCalendarModal = true;
   }
 
@@ -348,6 +405,16 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
   handleBookingConfirm(data: { slot: AvailableSlot; topic?: string; notes?: string }): void {
     if (!this.mentor) return;
 
+    // Double-check booking permissions
+    if (!this.canBook) {
+      this.notificationService.error(
+        'You do not have permission to book sessions',
+        'Booking Denied'
+      );
+      this.showCalendarModal = false;
+      return;
+    }
+
     const request: BookSessionRequest = {
       timeSlotId: data.slot.id,
       topic: data.topic,
@@ -356,22 +423,26 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
 
     this.submittingBooking = true;
 
-    // TODO: Replace with actual SessionService when implemented
-    // For now, we'll simulate the booking flow
-    // this.sessionService.bookSession(request).subscribe({ ... });
-
-    // Temporary: Navigate to user area (will be replaced with actual booking API call)
-    setTimeout(() => {
-      this.submittingBooking = false;
-      this.showCalendarModal = false;
-      this.notificationService.success(
-        'Session booked successfully! Redirecting to payment...',
-        'Booking Confirmed'
-      );
-      // In real implementation, navigate to payment with sessionId
-      // this.router.navigate(['/user/payment'], { queryParams: { sessionId: response.data.id }});
-      this.router.navigate(['/user/sessions']); // Temporary
-    }, 1000);
+    this.sessionService.bookSession(request).subscribe({
+      next: (response) => {
+        this.submittingBooking = false;
+        this.showCalendarModal = false;
+        this.notificationService.success(
+          'Session booked successfully! Please proceed to payment to confirm your booking.',
+          'Booking Created'
+        );
+        // Navigate to payment page with sessionId
+        // TODO: Update route when payment page is implemented
+        this.router.navigate(['/user/sessions'], {
+          queryParams: { sessionId: response.id, action: 'payment' }
+        });
+      },
+      error: (err) => {
+        this.submittingBooking = false;
+        // Error is handled by errorInterceptor, but we can add specific handling here
+        console.error('Error booking session:', err);
+      }
+    });
   }
 
   // ==========================================================================
@@ -430,6 +501,15 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Check booking permissions
+    if (!this.canBook) {
+      this.notificationService.error(
+        'You do not have permission to book sessions',
+        'Booking Denied'
+      );
+      return;
+    }
+
     if (this.bookingForm.invalid) {
       this.notificationService.error('Please check your form for errors', 'Validation Error');
       return;
@@ -443,21 +523,25 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
 
     this.submittingBooking = true;
 
-    // TODO: Replace with actual SessionService when implemented
-    // For now, we'll simulate the booking flow
-    // this.sessionService.bookSession(request).subscribe({ ... });
-
-    // Temporary: Navigate to user area (will be replaced with actual booking API call)
-    setTimeout(() => {
-      this.submittingBooking = false;
-      this.notificationService.success(
-        'Session booked successfully! Redirecting to payment...',
-        'Booking Confirmed'
-      );
-      // In real implementation, navigate to payment with sessionId
-      // this.router.navigate(['/user/payment'], { queryParams: { sessionId: response.data.id }});
-      this.router.navigate(['/user/sessions']); // Temporary
-    }, 1000);
+    this.sessionService.bookSession(request).subscribe({
+      next: (response) => {
+        this.submittingBooking = false;
+        this.notificationService.success(
+          'Session booked successfully! Please proceed to payment to confirm your booking.',
+          'Booking Created'
+        );
+        // Navigate to payment page with sessionId
+        // TODO: Update route when payment page is implemented
+        this.router.navigate(['/user/sessions'], {
+          queryParams: { sessionId: response.id, action: 'payment' }
+        });
+      },
+      error: (err) => {
+        this.submittingBooking = false;
+        // Error is handled by errorInterceptor, but we can add specific handling here
+        console.error('Error booking session:', err);
+      }
+    });
   }
 
   /**

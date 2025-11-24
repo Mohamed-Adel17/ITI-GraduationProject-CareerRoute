@@ -1,0 +1,16 @@
+/* Session Card Component Styles */
+
+/* Line clamp utility for topic text */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Ensure buttons have consistent minimum width on small screens */
+@media (max-width: 640px) {
+  button {
+    min-width: 80px !important;
+  }
+}

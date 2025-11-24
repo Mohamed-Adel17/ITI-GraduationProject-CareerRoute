@@ -12,6 +12,8 @@ import {
   BookSessionResponse,
   RescheduleRequest,
   RescheduleResponse,
+  ApproveRescheduleResponse,
+  RejectRescheduleResponse,
   CancelRequest,
   CancelResponse,
   JoinSessionResponse,
@@ -309,6 +311,82 @@ export class SessionService {
   rescheduleSession(sessionId: string, request: RescheduleRequest): Observable<RescheduleResponse> {
     return this.http
       .patch<ApiResponse<RescheduleResponse>>(`${this.SESSIONS_URL}/${sessionId}/reschedule`, request)
+      .pipe(map(response => unwrapResponse(response)));
+  }
+
+  // ==================== Approve Reschedule Request ====================
+
+  /**
+   * Approve a reschedule request
+   *
+   * @param rescheduleId - Reschedule request GUID
+   * @returns Observable of ApproveRescheduleResponse
+   *
+   * @remarks
+   * - Endpoint: POST /api/sessions/reschedule/{rescheduleId}/approve
+   * - Requires authentication (mentee, mentor, or admin)
+   * - User must be authorized to approve (participant or admin)
+   * - Updates session scheduled start time to requested time
+   * - Updates reschedule request status to Approved
+   * - Notifies other participant
+   * - Returns 401 if not authenticated
+   * - Returns 403 if not authorized
+   * - Returns 404 if reschedule request not found
+   * - Returns 409 if already processed
+   *
+   * @example
+   * ```typescript
+   * this.sessionService.approveReschedule(rescheduleId).subscribe({
+   *   next: (response) => {
+   *     console.log('Session updated:', response.id);
+   *     console.log('New time:', response.requestedStartTime);
+   *     console.log('Approved:', response.isApproved);
+   *     this.notificationService.success('Reschedule approved!', 'Success');
+   *   }
+   * });
+   * ```
+   */
+  approveReschedule(rescheduleId: string): Observable<ApproveRescheduleResponse> {
+    return this.http
+      .post<ApiResponse<ApproveRescheduleResponse>>(`${this.SESSIONS_URL}/reschedule/${rescheduleId}/approve`, {})
+      .pipe(map(response => unwrapResponse(response)));
+  }
+
+  // ==================== Reject Reschedule Request ====================
+
+  /**
+   * Reject a reschedule request
+   *
+   * @param rescheduleId - Reschedule request GUID
+   * @returns Observable of RejectRescheduleResponse
+   *
+   * @remarks
+   * - Endpoint: POST /api/sessions/reschedule/{rescheduleId}/reject
+   * - Requires authentication (mentee, mentor, or admin)
+   * - User must be authorized to reject (participant or admin)
+   * - Updates reschedule request status to Rejected
+   * - Session remains at original time
+   * - Notifies other participant
+   * - Returns 401 if not authenticated
+   * - Returns 403 if not authorized
+   * - Returns 404 if reschedule request not found
+   * - Returns 409 if already processed
+   *
+   * @example
+   * ```typescript
+   * this.sessionService.rejectReschedule(rescheduleId).subscribe({
+   *   next: (response) => {
+   *     console.log('Session unchanged:', response.id);
+   *     console.log('Original time:', response.originalStartTime);
+   *     console.log('Rejected:', !response.isApproved);
+   *     this.notificationService.info('Reschedule rejected', 'Info');
+   *   }
+   * });
+   * ```
+   */
+  rejectReschedule(rescheduleId: string): Observable<RejectRescheduleResponse> {
+    return this.http
+      .post<ApiResponse<RejectRescheduleResponse>>(`${this.SESSIONS_URL}/reschedule/${rescheduleId}/reject`, {})
       .pipe(map(response => unwrapResponse(response)));
   }
 
