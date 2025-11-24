@@ -47,8 +47,15 @@ export const MENTOR_ROUTES: Routes = [
     canActivate: [approvedMentorGuard],
     title: 'Manage Availability - CareerRoute'
   },
+  {
+    path: 'sessions',
+    loadComponent: () => import('./sessions/sessions.component').then(m => m.MentorSessionsComponent),
+    canActivate: [approvedMentorGuard],
+    title: 'My Sessions - CareerRoute'
+  },
 
   // TODO: Add more mentor routes here as components are created
+  // - sessions/:id - Session detail page
   // All future mentor routes should use approvedMentorGuard
   // Example:
   // {
