@@ -113,8 +113,8 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies<br/>Releases TimeSlot |
 | `POST` | `/api/sessions/{id}/join` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#7-join-session-get-video-link)** | ✅ Authoritative<br/>Get video conference link |
 | `PATCH` | `/api/sessions/{id}/complete` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#8-complete-session)** | ✅ Authoritative<br/>Trigger payment release |
-| `GET` | `/api/sessions/{id}/recording` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#12-get-session-recording)** | ✅ Authoritative<br/>🎥 Zoom recording access |
-| `GET` | `/api/sessions/{id}/transcript` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#13-get-session-transcript)** | ✅ Authoritative<br/>📝 AI transcript access |
+| `GET` | `/api/sessions/{id}/recording` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#11-get-session-recording)** | ✅ Authoritative<br/>🎥 R2 recording access |
+| `GET` | `/api/sessions/{id}/transcript` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#12-get-session-transcript)** | ✅ Authoritative<br/>📝 Deepgram transcript |
 
 ---
 
@@ -122,9 +122,9 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
-| `POST` | `/api/payments/create-intent` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#9-create-payment-intent)** | ✅ Authoritative<br/>Stripe/Paymob integration |
-| `POST` | `/api/payments/confirm` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#10-confirm-payment)** | ✅ Authoritative<br/>Confirm & capture payment |
-| `GET` | `/api/payments/history` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#11-get-payment-history)** | ✅ Authoritative<br/>With summary stats |
+| `POST` | `/api/payments/create-intent` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#13-create-payment-intent)** | ✅ Authoritative<br/>Stripe/Paymob integration |
+| `POST` | `/api/payments/confirm` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#14-confirm-payment)** | ✅ Authoritative<br/>Confirm & capture payment |
+| `GET` | `/api/payments/history` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#15-get-payment-history)** | ✅ Authoritative<br/>With summary stats |
 
 ---
 
