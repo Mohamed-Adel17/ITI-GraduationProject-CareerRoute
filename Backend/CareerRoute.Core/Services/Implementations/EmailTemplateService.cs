@@ -26,7 +26,7 @@ namespace CareerRoute.Core.Services.Implementations
             <li><strong>Mentor:</strong> {mentor.User.FullName}</li>
             <li><strong>Date:</strong> {session.ScheduledStartTime:MMMM dd, yyyy}</li>
             <li><strong>Time:</strong> {session.ScheduledStartTime:hh:mm tt}</li>
-            <li><strong>Duration:</strong> {session.Duration} minutes</li>
+            <li><strong>Duration:</strong> {(int)session.Duration} minutes</li>
             <li><strong>Meeting Link:</strong> <a href='{session.VideoConferenceLink}'>{session.VideoConferenceLink}</a></li>
         </ul>
         
@@ -40,7 +40,6 @@ namespace CareerRoute.Core.Services.Implementations
         }
         public string GenerateMentorConfirmationEmailBody(Session session, Payment payment, Mentor mentor, ApplicationUser mentee)
         {
-            // Calculate platform fee as a separate variable for clarity, even though it's used inline.
             var platformFee = payment.Amount * 0.15m;
 
             return $@"
@@ -54,7 +53,7 @@ namespace CareerRoute.Core.Services.Implementations
             <li><strong>Mentee:</strong> {mentee.FullName}</li>
             <li><strong>Date:</strong> {session.ScheduledStartTime:MMMM dd, yyyy}</li>
             <li><strong>Time:</strong> {session.ScheduledStartTime:hh:mm tt}</li>
-            <li><strong>Duration:</strong> {session.Duration} minutes</li>
+            <li><strong>Duration:</strong> {(int)session.Duration} minutes</li>
             <li><strong>Meeting Link:</strong> <a href='{session.VideoConferenceLink}'>{session.VideoConferenceLink}</a></li>
         </ul>
         
@@ -84,7 +83,7 @@ namespace CareerRoute.Core.Services.Implementations
             <li><strong>Mentee:</strong> {mentee.FullName}</li>
             <li><strong>Date:</strong> {session.ScheduledStartTime:MMMM dd, yyyy}</li>
             <li><strong>Time:</strong> {session.ScheduledStartTime:hh:mm tt}</li>
-            <li><strong>Duration:</strong> {session.Duration} minutes</li>
+            <li><strong>Duration:</strong> {(int)session.Duration} minutes</li>
             <li><strong>Meeting Link:</strong> <a href='{session.VideoConferenceLink}'>{session.VideoConferenceLink}</a></li>
         </ul>
         

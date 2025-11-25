@@ -734,29 +734,31 @@ namespace CareerRoute.Core.Services.Implementations
                 var menteeSubject = "Session Confirmed - Payment Successful";
                 var menteeEmailHtmlBody = _emailTemplateService.GenerateMenteeConfirmationEmailBody(session, payment, mentor, mentee);
 
+                _logger.LogInformation("Attempting to send confirmation email to mentee: {Email} for session: {SessionId}", mentee.Email, session.Id);
                 await _emailService.SendEmailAsync(
                     mentee.Email!,
                     menteeSubject,
                     menteeEmailHtmlBody.HtmlToString(),
-                    menteeEmailHtmlBody); // Assuming the last argument is for plain text body, using HTML for simplicity
+                    menteeEmailHtmlBody);
+                _logger.LogInformation("Mentee confirmation email sent successfully to: {Email}", mentee.Email);
 
                 // 2. Send email to mentor
                 var mentorSubject = "New Session Booked";
                 var mentorEmailHtmlBody = _emailTemplateService.GenerateMentorConfirmationEmailBody(session, payment, mentor, mentee);
 
+                _logger.LogInformation("Attempting to send confirmation email to mentor: {Email} for session: {SessionId}", mentor.User.Email, session.Id);
                 await _emailService.SendEmailAsync(
                     mentor.User.Email!,
                     mentorSubject,
                     mentorEmailHtmlBody.HtmlToString(),
-                    mentorEmailHtmlBody); // Assuming the last argument is for plain text body, using HTML for simplicity
+                    mentorEmailHtmlBody);
+                _logger.LogInformation("Mentor confirmation email sent successfully to: {Email}", mentor.User.Email);
 
-                _logger.LogInformation(
-                    "Confirmation emails sent for session: {SessionId}",
-                    session.Id);
+                _logger.LogInformation("All confirmation emails sent successfully for session: {SessionId}", session.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send confirmation emails for session: {SessionId}", session.Id);
+                _logger.LogError(ex, "Failed to send confirmation emails for session: {SessionId}. Error: {ErrorMessage}", session.Id, ex.Message);
             }
         }
 
