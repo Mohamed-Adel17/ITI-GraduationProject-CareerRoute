@@ -28,11 +28,19 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 **Session Lifecycle:**
 1. **Pending** - Created after booking, awaiting payment confirmation
-2. **Confirmed** - Payment captured, session scheduled with video link
+2. **Confirmed** - Payment captured, Zoom meeting creation queued via background job
 3. **InProgress** - First participant joined
-4. **Completed** - Session finished, triggers 72h payment hold and 3-day chat window
+4. **Completed** - Session finished, triggers 72h payment hold, recording upload to R2, and Deepgram transcription
 
 *Alternative states:* Cancelled (user/mentor cancels), NoShow (no participants), PendingReschedule (reschedule requested)
+
+**Zoom Integration Flow:**
+1. **Payment Confirmed** → Session status = "Confirmed" → Confirmation emails sent (without Zoom link) → Background job queued to create Zoom meeting
+2. **Zoom Meeting Created** (background job) → `videoConferenceLink` and `zoomMeetingPassword` stored → Auto-termination job scheduled → Zoom link email scheduled for 15 min before session
+3. **15 minutes before session** → Zoom link email sent to both mentor and mentee with join URL and password
+4. **Session ends** → Auto-termination if needed (2 min after scheduled end)
+5. **Recording webhook received** → Video downloaded from Zoom → Uploaded to Cloudflare R2 → Deepgram transcription triggered
+6. **Transcription complete** → Transcript stored in session record
 
 ---
 
@@ -60,7 +68,8 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 3. **Mentee books session** → POST `/api/sessions` with `timeSlotId` (this document, Endpoint 1)
 4. **TimeSlot marked as booked** → `isBooked = true`, `sessionId` set to new session ID
 5. **Mentee creates payment intent** → POST `/api/payments/create-intent` with `sessionId`
-6. **Payment confirmed** → Session status changes to "Confirmed", video link generated
+6. **Payment confirmed** → Session status changes to "Confirmed", confirmation emails sent
+7. **Zoom meeting created** (background job) → Video link stored, Zoom link email scheduled for 15 min before session
 
 **TimeSlot-Session Relationship:**
 - Each Session is linked to one TimeSlot via `timeSlotId` (string GUID)
@@ -923,9 +932,202 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
+### 11. Get Session Recording
+
+**Endpoint:** `GET /api/sessions/{id}/recording`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** User (if mentee), Mentor (if mentor)
+
+**Path Parameters:**
+- `id` (string, GUID): Session ID
+
+**Description:**
+Returns the session recording video. The recording is stored in Cloudflare R2 and served via a time-limited presigned URL. This endpoint always returns 200 with status information indicating whether the recording is available, still processing, or failed.
+
+**Success Response (200) - Recording Available:**
+```json
+{
+  "success": true,
+  "message": "Session recording retrieved successfully",
+  "data": {
+    "sessionId": "44444444-e29b-41d4-a716-446655440014",
+    "recordingPlayUrl": "https://r2.cloudflarestorage.com/bucket/session-id.mp4?token=...",
+    "playUrl": "https://r2.cloudflarestorage.com/bucket/session-id.mp4?token=...",
+    "accessToken": "",
+    "expiresAt": "2025-11-15T16:05:00Z",
+    "isAvailable": true,
+    "status": "Available",
+    "availableAt": "2025-11-15T15:10:00Z",
+    "transcript": "[00:00] Speaker 0: Hello, welcome to the session..."
+  }
+}
+```
+
+**Success Response (200) - Recording Processing:**
+```json
+{
+  "success": true,
+  "message": "Session recording retrieved successfully",
+  "data": {
+    "sessionId": "44444444-e29b-41d4-a716-446655440014",
+    "recordingPlayUrl": "",
+    "playUrl": "",
+    "accessToken": "",
+    "expiresAt": "2025-11-15T15:05:00Z",
+    "isAvailable": false,
+    "status": "Processing",
+    "availableAt": null,
+    "transcript": null
+  }
+}
+```
+
+**Success Response (200) - Recording Failed:**
+```json
+{
+  "success": true,
+  "message": "Session recording retrieved successfully",
+  "data": {
+    "sessionId": "44444444-e29b-41d4-a716-446655440014",
+    "recordingPlayUrl": "",
+    "playUrl": "",
+    "accessToken": "",
+    "expiresAt": "2025-11-15T15:05:00Z",
+    "isAvailable": false,
+    "status": "Failed",
+    "availableAt": null,
+    "transcript": null
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Unauthorized access",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You are not authorized to view this recording",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Session not found",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Validate session exists
+- Verify user is session participant (mentee or mentor)
+- Check if `VideoStorageKey` exists (recording stored in R2)
+- If not available: Return DTO with `isAvailable = false` and appropriate status:
+  - `"Processing"` if `RecordingProcessed = false`
+  - `"Failed"` if `RecordingProcessed = true` but no `VideoStorageKey`
+- If available: Generate presigned URL from R2 with 60-minute expiration and `inline` content disposition for browser streaming
+- Include transcript if available
+
+**Status Values:**
+- `"Available"` - Recording ready, `recordingPlayUrl` contains valid presigned URL
+- `"Processing"` - Recording still being processed (Zoom webhook not yet received or upload in progress)
+- `"Failed"` - Recording processing failed, manual intervention may be required
+
+---
+
+### 12. Get Session Transcript
+
+**Endpoint:** `GET /api/sessions/{id}/transcript`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** User (if mentee), Mentor (if mentor)
+
+**Path Parameters:**
+- `id` (string, GUID): Session ID
+
+**Description:**
+Returns the AI-generated transcript of the session recording. Transcription is performed by Deepgram after the recording is uploaded to R2.
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Session transcript retrieved successfully",
+  "data": {
+    "sessionId": "44444444-e29b-41d4-a716-446655440014",
+    "transcript": "[00:00] Speaker 0: Hello, welcome to the session.\n[00:05] Speaker 1: Thank you for having me.\n[00:10] Speaker 0: Let's start with system design basics...",
+    "isAvailable": true
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Unauthorized access",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You are not authorized to view this transcript",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found (Session):**
+  ```json
+  {
+    "success": false,
+    "message": "Session not found",
+    "statusCode": 404
+  }
+  ```
+
+- **404 Not Found (Transcript):**
+  ```json
+  {
+    "success": false,
+    "message": "Transcript not yet available for session {sessionId}",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Validate session exists
+- Verify user is session participant (mentee or mentor)
+- Check if `Transcript` field is populated
+- Return 404 if transcript not available yet
+- Return transcript text if available
+
+**Transcript Format:**
+The transcript includes speaker diarization with timestamps:
+```
+[MM:SS] Speaker N: <text>
+```
+
+---
+
 ## Payment Management Endpoints
 
-### 11. Create Payment Intent
+### 13. Create Payment Intent
 
 **Endpoint:** `POST /api/payments/create-intent`
 **Requires:** `Authorization: Bearer {token}`
@@ -1008,7 +1210,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 12. Confirm Payment
+### 14. Confirm Payment
 
 **Endpoint:** `POST /api/payments/confirm`
 **Requires:** `Authorization: Bearer {token}`
@@ -1044,12 +1246,14 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
     "session": {
       "id": "44444444-e29b-41d4-a716-446655440014",
       "status": "Confirmed",
-      "videoConferenceLink": "https://zoom.us/j/1234567890?pwd=abcdefghijklmnop",
+      "videoConferenceLink": null,
       "scheduledStartTime": "2025-11-15T14:00:00Z"
     }
   }
 }
 ```
+
+**Note:** The `videoConferenceLink` will be `null` initially. The Zoom meeting is created via a background job after payment confirmation. The Zoom link will be sent via email 15 minutes before the session starts. Users can also retrieve the link via `GET /api/sessions/{id}` or `POST /api/sessions/{id}/join` once the meeting is created.
 
 **Error Responses:**
 
@@ -1086,13 +1290,20 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 - Calculate 15% platform commission
 - Update payment status to "Captured"
 - Update session status to "Confirmed"
-- Generate video conference link (Zoom meeting)
-- Send confirmation emails to mentee and mentor with session details
-- Schedule automated reminder notifications (24h and 1h before)
+- Send confirmation emails to mentee and mentor (without Zoom link - link sent separately)
+- Queue background job to create Zoom meeting (`CreateZoomMeetingForSessionAsync`)
+- Notify client via SignalR about payment status
+
+**Zoom Meeting Creation (Background Job):**
+- Create Zoom meeting via Zoom API with cloud recording enabled
+- Store `ZoomMeetingId`, `VideoConferenceLink`, and `ZoomMeetingPassword` in session
+- Schedule Zoom link email to be sent 15 minutes before session start
+- Schedule auto-termination job for 2 minutes after session scheduled end time
+- If session starts in less than 15 minutes, send Zoom link email immediately
 
 ---
 
-### 13. Get Payment History
+### 15. Get Payment History
 
 **Endpoint:** `GET /api/payments/history`
 **Requires:** `Authorization: Bearer {token}`
@@ -1215,6 +1426,54 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
+### Zoom Webhook
+
+**Endpoint:** `POST /api/webhooks/zoom`
+**Requires:** HMAC signature verification using `x-zm-signature` header
+**Purpose:** Handle Zoom meeting and recording events
+
+**Events Handled:**
+- `endpoint.url_validation` - Zoom URL validation challenge (returns encrypted token)
+- `recording.completed` - Recording ready for download
+  - Downloads MP4 video from Zoom
+  - Uploads to Cloudflare R2 storage
+  - Triggers Deepgram transcription via presigned R2 URL
+  - Updates session with `VideoStorageKey`, `RecordingPlayUrl`, and `Transcript`
+  - Marks `RecordingProcessed = true` and `TranscriptProcessed = true`
+- `recording.transcript_completed` - Processed same as `recording.completed`
+- `meeting.ended` - Logged for audit purposes
+
+**Webhook Payload (recording.completed):**
+```json
+{
+  "event": "recording.completed",
+  "payload": {
+    "object": {
+      "id": 1234567890,
+      "uuid": "AbCdEfGhIjKlMnOp==",
+      "topic": "Mentorship Session - {sessionId}",
+      "start_time": "2025-11-15T14:00:00Z",
+      "duration": 60,
+      "download_access_token": "eyJhbGciOiJIUzUxMiJ9...",
+      "recording_files": [
+        {
+          "id": "abc123",
+          "file_type": "MP4",
+          "file_size": 52428800,
+          "download_url": "https://zoom.us/rec/download/...",
+          "play_url": "https://zoom.us/rec/play/...",
+          "recording_start": "2025-11-15T14:00:00Z",
+          "recording_end": "2025-11-15T15:00:00Z",
+          "status": "completed"
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
 ## Data Models
 
 ### SessionDto
@@ -1279,6 +1538,21 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 }
 ```
 
+### SessionRecordingDto
+```typescript
+{
+  "sessionId": "string (GUID)",
+  "recordingPlayUrl": "string",                // R2 presigned URL (empty if not available)
+  "playUrl": "string",                         // Alias for recordingPlayUrl
+  "accessToken": "string",                     // Empty string (legacy field)
+  "expiresAt": "ISO 8601 datetime",            // URL expiration time
+  "isAvailable": "boolean",                    // Whether recording is ready
+  "status": "string (Available | Processing | Failed)",
+  "availableAt": "ISO 8601 datetime | null",   // When recording became available
+  "transcript": "string | null"                // Session transcript if available
+}
+```
+
 ### RescheduleRequestDto
 ```typescript
 {
@@ -1313,6 +1587,9 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 **SessionType:**
 `OneOnOne | Group`
+
+**RecordingStatus:**
+`Available | Processing | Failed`
 
 ---
 
@@ -1449,9 +1726,25 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 ### POST /api/payments/confirm
 - [ ] Confirm payment successfully
 - [ ] Verify session status updates to Confirmed
-- [ ] Verify video link is generated
+- [ ] Verify Zoom meeting creation job is queued
 - [ ] Confirm already processed payment (400)
 - [ ] Confirm with failed payment (402)
+
+### GET /api/sessions/{id}/recording
+- [ ] Get recording as mentee (200)
+- [ ] Get recording as mentor (200)
+- [ ] Get recording when available (status = "Available", URL populated)
+- [ ] Get recording when processing (status = "Processing", isAvailable = false)
+- [ ] Get recording when failed (status = "Failed", isAvailable = false)
+- [ ] Get recording as unauthorized user (403)
+- [ ] Get recording for non-existent session (404)
+
+### GET /api/sessions/{id}/transcript
+- [ ] Get transcript as mentee (200)
+- [ ] Get transcript as mentor (200)
+- [ ] Get transcript when not ready (404)
+- [ ] Get transcript as unauthorized user (403)
+- [ ] Get transcript for non-existent session (404)
 
 ### GET /api/payments/history
 - [ ] Get payment history with pagination
@@ -1532,5 +1825,17 @@ Content-Type: application/json
 **Get Payment History:**
 ```bash
 GET http://localhost:5000/api/payments/history?page=1&pageSize=10&status=Captured
+Authorization: Bearer {access-token}
+```
+
+**Get Session Recording:**
+```bash
+GET http://localhost:5000/api/sessions/44444444-e29b-41d4-a716-446655440014/recording
+Authorization: Bearer {access-token}
+```
+
+**Get Session Transcript:**
+```bash
+GET http://localhost:5000/api/sessions/44444444-e29b-41d4-a716-446655440014/transcript
 Authorization: Bearer {access-token}
 ```

@@ -1,13 +1,25 @@
-﻿using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Domain.Interfaces.Services;
+using CareerRoute.Core.DTOs.Payments;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.External.Payment;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Settings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 namespace CareerRoute.Infrastructure.Services
 {
+    /// <summary>
+    /// Stripe payment provider implementation.
+    /// </summary>
     public class StripePaymentService : IStripePaymentService
     {
         private readonly PaymentSettings _paymentSettings;
@@ -109,7 +121,7 @@ namespace CareerRoute.Infrastructure.Services
             }
             catch (ValidationException)
             {
-                throw; // Re-throw validation exceptions as-is
+                throw;
             }
             catch (Exception ex)
             {
@@ -257,15 +269,15 @@ namespace CareerRoute.Infrastructure.Services
             }
             catch (PaymentException)
             {
-                throw; // Re-throw payment exceptions
+                throw;
             }
             catch (ValidationException)
             {
-                throw; // Re-throw validation exceptions
+                throw;
             }
             catch (UnauthenticatedException)
             {
-                throw; // Re-throw authentication exceptions
+                throw;
             }
             catch (Exception ex)
             {
@@ -283,7 +295,6 @@ namespace CareerRoute.Infrastructure.Services
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
 
-            // Notify client via SignalR
             _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Captured);
 
             return new PaymentCallbackResult
@@ -296,10 +307,10 @@ namespace CareerRoute.Infrastructure.Services
                 Amount = paymentIntent.Amount / 100m,
                 Currency = paymentIntent.Currency.ToUpper(),
                 RawData = new Dictionary<string, object>
-            {
-                { "stripe_event", stripeEvent.Type },
-                { "payment_method", paymentIntent.PaymentMethodTypes.FirstOrDefault() ?? "unknown" }
-            }
+                {
+                    { "stripe_event", stripeEvent.Type },
+                    { "payment_method", paymentIntent.PaymentMethodTypes.FirstOrDefault() ?? "unknown" }
+                }
             };
         }
 
@@ -310,7 +321,6 @@ namespace CareerRoute.Infrastructure.Services
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
 
-            // Notify client via SignalR
             _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Failed);
 
             return new PaymentCallbackResult
@@ -324,10 +334,10 @@ namespace CareerRoute.Infrastructure.Services
                 Currency = paymentIntent.Currency.ToUpper(),
                 ErrorMessage = paymentIntent.LastPaymentError?.Message ?? "Payment failed",
                 RawData = new Dictionary<string, object>
-            {
-                { "stripe_event", stripeEvent.Type },
-                { "failure_code", paymentIntent.LastPaymentError?.Code ?? "unknown" }
-            }
+                {
+                    { "stripe_event", stripeEvent.Type },
+                    { "failure_code", paymentIntent.LastPaymentError?.Code ?? "unknown" }
+                }
             };
         }
 
@@ -338,7 +348,6 @@ namespace CareerRoute.Infrastructure.Services
             if (paymentIntent == null)
                 throw new PaymentException("Invalid payment intent data in webhook", ProviderName);
 
-            // Notify client via SignalR
             _paymentNotificationService.NotifyPaymentStatusAsync(paymentIntent.Id, PaymentStatusOptions.Canceled);
 
             return new PaymentCallbackResult
@@ -352,11 +361,12 @@ namespace CareerRoute.Infrastructure.Services
                 Currency = paymentIntent.Currency.ToUpper(),
                 ErrorMessage = "Payment was canceled",
                 RawData = new Dictionary<string, object>
-            {
-                { "stripe_event", stripeEvent.Type },
-                { "cancellation_reason", paymentIntent.CancellationReason ?? "unknown" }
-            }
+                {
+                    { "stripe_event", stripeEvent.Type },
+                    { "cancellation_reason", paymentIntent.CancellationReason ?? "unknown" }
+                }
             };
         }
     }
+
 }
