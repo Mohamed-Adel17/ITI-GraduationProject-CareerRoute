@@ -176,6 +176,34 @@ namespace CareerRoute.Infrastructure.Services
             }
         }
 
+        public async Task<(PaymentStatusOptions Status, string? ProviderTransactionId)> GetPaymentStatusAsync(string paymentIntentId)
+        {
+            try
+            {
+                var service = new PaymentIntentService();
+                var intent = await service.GetAsync(paymentIntentId);
+
+                var status = intent.Status switch
+                {
+                    "succeeded" => PaymentStatusOptions.Captured,
+                    "requires_payment_method" => PaymentStatusOptions.Failed,
+                    "requires_confirmation" => PaymentStatusOptions.Pending,
+                    "processing" => PaymentStatusOptions.Pending,
+                    "canceled" => PaymentStatusOptions.Canceled,
+                    _ => PaymentStatusOptions.Pending
+                };
+
+                return (status, intent.Id);
+            }
+            catch (StripeException ex)
+            {
+                throw new PaymentException(
+                    $"Failed to get Stripe payment status: {ex.Message}",
+                    ProviderName,
+                    ex);
+            }
+        }
+
         public PaymentCallbackResult HandleCallback(string payload, string? signature)
         {
             if (string.IsNullOrEmpty(payload))

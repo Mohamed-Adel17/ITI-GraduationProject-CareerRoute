@@ -115,7 +115,7 @@ namespace CareerRoute.API.Controllers
         /// <param name="paymentId">Payment ID</param>
         /// <param name="request">Refund request details</param>
         /// <returns>Refund details</returns>
-        [AuthorizeRole(AppRoles.Admin)]
+        //[AuthorizeRole(AppRoles.Admin)]
         [HttpPost("{paymentId}/refund")]
         [ProducesResponseType(typeof(ApiResponse<PaymentRefundResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

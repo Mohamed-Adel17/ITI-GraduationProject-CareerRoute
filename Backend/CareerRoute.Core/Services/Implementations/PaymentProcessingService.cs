@@ -96,7 +96,7 @@ namespace CareerRoute.Core.Services.Implementations
             // Determine currency based on provider
             var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
             decimal amount = request.PaymentProvider == PaymentProviderOptions.Stripe
-                ? Math.Round((session.Price / 50m) * 100m, 2) // convert to cents
+                ? Math.Round((session.Price / 50m) , 2) 
                 : session.Price;
 
             // Get the appropriate payment service
@@ -321,13 +321,29 @@ namespace CareerRoute.Core.Services.Implementations
             var payment = await _paymentRepository.GetByPaymentIntentIdAsync(request.PaymentIntentId);
             if (payment == null)
                 throw new NotFoundException("Payment", request.PaymentIntentId);
+            var paymentService = _paymentFactory.GetService(payment.PaymentProvider);
 
             // Verify payment is not already confirmed
             if (payment.Session.Status == SessionStatusOptions.Confirmed)
                 throw new ConflictException("Session has already been confirmed");
             // Verify payment is already Captured
             if (payment.Status != PaymentStatusOptions.Captured)
-                throw new PaymentException("Payment must be captured before it can be confirmed");
+            {
+                // Double check with provider
+                var (providerStatus, providerTransactionId) = await paymentService.GetPaymentStatusAsync(payment.PaymentIntentId);
+
+                if (providerStatus == PaymentStatusOptions.Captured&& providerTransactionId!=null)
+                {
+                    payment.Status = PaymentStatusOptions.Captured;
+                    payment.ProviderTransactionId = providerTransactionId;
+                    payment.PaidAt = DateTime.UtcNow;
+                    _logger.LogInformation("Payment {PaymentId} status recovered from provider as Captured", payment.Id);
+                }
+                else
+                {
+                    throw new PaymentException($"Payment must be captured before it can be confirmed. Current status: {payment.Status}, Provider status: {providerStatus}");
+                }
+            }
 
 
 
@@ -337,19 +353,16 @@ namespace CareerRoute.Core.Services.Implementations
             if (session == null)
                 throw new NotFoundException("Session", payment.SessionId);
 
-            // Get payment service to verify with provider
-            var paymentService = _paymentFactory.GetService(payment.PaymentProvider);
-
 
             // Verify payment status with provider (implementation depends on your provider SDK)
             await VerifyPaymentWithProviderAsync(paymentService, payment.PaymentIntentId);
 
             var currency = payment.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
             decimal expectedAmount = payment.PaymentProvider == PaymentProviderOptions.Stripe
-                ? Math.Round((session.Price / 50m) * 100m, 2) // convert to cents
+                ? Math.Round((session.Price / 50m) , 2) 
                 : session.Price;
             // Validate payment amount matches session price
-            if (payment.Amount != expectedAmount ||  payment.Currency !=currency)
+            if (payment.Amount != expectedAmount || payment.Currency != currency)
             {
                 _logger.LogWarning(
                     "Payment amount mismatch. Payment: {PaymentAmount}, Session: {SessionPrice}",
@@ -495,6 +508,30 @@ namespace CareerRoute.Core.Services.Implementations
                 // Only cancel if payment is still pending or failed
                 if (payment.Status == PaymentStatusOptions.Pending || payment.Status == PaymentStatusOptions.Failed)
                 {
+                    // Double check with provider before cancelling
+                    var paymentService = _paymentFactory.GetService(payment.PaymentProvider);
+                    var (providerStatus, transactionId) = await paymentService.GetPaymentStatusAsync(payment.PaymentIntentId);
+
+                    if (providerStatus == PaymentStatusOptions.Captured)
+                    {
+                        payment.Status = PaymentStatusOptions.Captured;
+                        payment.PaidAt = DateTime.UtcNow;
+                        if (!string.IsNullOrEmpty(transactionId))
+                        {
+                            payment.ProviderTransactionId = transactionId;
+                        }
+                        payment.UpdatedAt = DateTime.UtcNow;
+                        _paymentRepository.Update(payment);
+                        await _paymentRepository.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        _logger.LogInformation("[Payment] Payment {PaymentId} status recovered from provider as Captured during cancellation check", payment.Id);
+                        
+                        // Notify client via SignalR
+                        await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, PaymentStatusOptions.Captured);
+                        return;
+                    }
+
                     // Cancel with payment provider if Stripe
                     if (payment.PaymentProvider == PaymentProviderOptions.Stripe)
                     {
@@ -546,6 +583,9 @@ namespace CareerRoute.Core.Services.Implementations
                     await transaction.CommitAsync();
 
                     _logger.LogInformation("[Payment] Payment {PaymentId} and associated session automatically cancelled due to expiration", paymentId);
+                    
+                    // Notify client via SignalR
+                    await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, PaymentStatusOptions.Canceled);
                 }
                 else
                 {

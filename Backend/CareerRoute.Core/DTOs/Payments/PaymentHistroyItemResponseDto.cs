@@ -8,7 +8,7 @@ namespace CareerRoute.Core.DTOs.Payments
         public string MentorName { get; set; } = string.Empty;
         public string SessionTopic { get; set; } = string.Empty;
         public decimal Amount { get; set; }
-        public string PaymentProvider { get; set; } = string.Empty;
+        public PaymentProviderOptions PaymentProvider { get; set; }
         public PaymentStatusOptions Status { get; set; }
         public string TransactionId { get; set; } = string.Empty;
         public DateTime? PaidAt { get; set; }
