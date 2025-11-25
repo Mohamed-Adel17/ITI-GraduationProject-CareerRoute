@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ITimeSlotService, TimeSlotService>();
         services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+        services.AddScoped<IRescheduleSessionService, RescheduleSessionService>();
 
         services.AddAutoMapper(options =>
         {
