@@ -267,10 +267,10 @@ namespace CareerRoute.Infrastructure.Data.SeedData
                 // Calculate varied attributes for testing
                 var mentorIndex = i + 1;
                 
-                // Price tiers: Low (1-10), Medium (11-22), High (23-30)
-                decimal rate30Min = mentorIndex <= 10 ? Random.Shared.Next(15, 26) :
-                                   mentorIndex <= 22 ? Random.Shared.Next(30, 51) :
-                                   Random.Shared.Next(60, 101);
+                // Price tiers: Low (1-10), Medium (11-22), High (23-30) - All prices between 100-500
+                decimal rate30Min = mentorIndex <= 10 ? Random.Shared.Next(100, 201) :
+                                   mentorIndex <= 22 ? Random.Shared.Next(200, 351) :
+                                   Random.Shared.Next(350, 501);
                 
                 decimal rate60Min = rate30Min * 1.7m; // Roughly 70% more for 60min
                 
