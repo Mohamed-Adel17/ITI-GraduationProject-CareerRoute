@@ -94,5 +94,9 @@ namespace CareerRoute.Core.Services.Interfaces
         /// Processes Zoom recording completion webhook payload and persists artifacts.
         /// </summary>
         Task ProcessRecordingCompletedAsync(long meetingId, List<ZoomRecordingFileDto> recordingFiles, string? downloadAccessToken = null);
+        /// <summary>
+        /// Sends Zoom meeting link email to both mentor and mentee (scheduled 15 min before session).
+        /// </summary>
+        Task SendZoomLinkEmailAsync(string sessionId);
     }
 }

@@ -28,6 +28,11 @@ namespace CareerRoute.Core.Services.Interfaces
         Task<bool> UpdateMeetingStartTimeAsync(long meetingId, DateTime newStartTime, string? sessionId = null);
 
         /// <summary>
+        /// Updates meeting start/end times.
+        /// </summary>
+        Task<bool> UpdateMeetingAsync(long meetingId, string? sessionId, DateTime newStartTime, DateTime newEndTime);
+
+        /// <summary>
         /// Ends an active meeting for all participants by meeting ID
         /// </summary>
         Task<bool> EndMeetingAsync(long meetingId, string? sessionId = null, string? reason = null);

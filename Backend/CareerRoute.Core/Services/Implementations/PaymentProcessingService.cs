@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
@@ -34,6 +34,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly PaymentSettings _paymentSettings;
         private readonly IPaymentNotificationService _paymentNotificationService;
         private readonly IEmailTemplateService _emailTemplateService;
+        private readonly IJobScheduler _jobScheduler;
 
 
         public PaymentProcessingService(
@@ -50,7 +51,8 @@ namespace CareerRoute.Core.Services.Implementations
             UserManager<ApplicationUser> userManager,
             IMapper mapper,
             IPaymentNotificationService paymentNotificationService,
-            IEmailTemplateService emailTemplateService)
+            IEmailTemplateService emailTemplateService,
+            IJobScheduler jobScheduler)
         {
             _paymentRepository = paymentRepository;
             _sessionRepository = sessionRepository;
@@ -66,6 +68,7 @@ namespace CareerRoute.Core.Services.Implementations
             _mapper = mapper;
             _paymentNotificationService = paymentNotificationService;
             _emailTemplateService = emailTemplateService;
+            _jobScheduler = jobScheduler;
         }
 
         public async Task<PaymentIntentResponseDto> CreatePaymentIntentAsync(PaymentIntentRequestDto request, string userId)
@@ -387,8 +390,7 @@ namespace CareerRoute.Core.Services.Implementations
                 session.Status = SessionStatusOptions.Confirmed;
                 session.UpdatedAt = DateTime.UtcNow;
 
-                // Generate video conference link
-                session.VideoConferenceLink = await GenerateVideoConferenceLinkAsync(session);
+                // Generate video conference link is now created via Zoom integration background job
                 _sessionRepository.Update(session);
 
                 await _paymentRepository.SaveChangesAsync();
@@ -426,6 +428,9 @@ namespace CareerRoute.Core.Services.Implementations
             _logger.LogInformation(
                 "Payment confirmed. PaymentId: {PaymentId}, SessionId: {SessionId}, Amount: {Amount}",
                 payment.Id, session.Id, payment.Amount);
+
+            // Create Zoom meeting after payment confirmation (zoom integration) via background job to avoid DI cycle
+            _jobScheduler.EnqueueAsync<ISessionService>(svc => svc.CreateZoomMeetingForSessionAsync(session.Id));
 
             // Notify client via SignalR
             await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, PaymentStatusOptions.Captured);

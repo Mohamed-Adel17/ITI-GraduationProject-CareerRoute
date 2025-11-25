@@ -2,12 +2,10 @@ using CareerRoute.Core.Domain.Interfaces;
 using Hangfire;
 using System;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace CareerRoute.Infrastructure.Services
 {
-    /// <summary>
-    /// Implementation of IJobScheduler using Hangfire
-    /// </summary>
     public class HangfireJobScheduler : IJobScheduler
     {
         private readonly IBackgroundJobClient _backgroundJobClient;
@@ -32,9 +30,19 @@ namespace CareerRoute.Infrastructure.Services
             return _backgroundJobClient.Enqueue(methodCall);
         }
 
+        public string EnqueueAsync<T>(Expression<Func<T, Task>> methodCall)
+        {
+            return _backgroundJobClient.Enqueue(methodCall);
+        }
+
         public bool Delete(string jobId)
         {
             return _backgroundJobClient.Delete(jobId);
+        }
+
+        public string ScheduleJob(Func<Task> job, TimeSpan delay)
+        {
+            return _backgroundJobClient.Schedule(() => job(), delay);
         }
     }
 }

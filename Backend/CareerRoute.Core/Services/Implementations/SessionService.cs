@@ -524,6 +524,17 @@ namespace CareerRoute.Core.Services.Implementations
             if (DateTime.UtcNow > lateJoinLimit)
                 throw new GoneException("The session has ended and can no longer be joined.");
 
+            // Check if Zoom meeting is ready
+            if (string.IsNullOrEmpty(session.VideoConferenceLink))
+            {
+                _logger.LogInformation("[Session] Video conference link not ready for session {SessionId}, queueing retry", sessionId);
+                
+                // Queue background job to create Zoom meeting (in case it failed before)
+                _jobScheduler.EnqueueAsync<ISessionService>(svc => svc.CreateZoomMeetingForSessionAsync(sessionId));
+                
+                throw new ConflictException("Zoom meeting is being prepared. Please try again in 2-3 minutes.");
+            }
+
             _logger.LogInformation("[Session] User {UserId} joined session {SessionId} successfully", userId, sessionId);
 
             var dto = _mapper.Map<JoinSessionResponseDto>(session);
@@ -679,6 +690,7 @@ namespace CareerRoute.Core.Services.Implementations
                 var oldTimeSlotId = session.TimeSlotId;
                 session.ScheduledStartTime = reschedule.NewScheduledStartTime;
                 session.ScheduledEndTime = reschedule.NewScheduledStartTime.AddMinutes((int)session.Duration);
+                session.Status = SessionStatusOptions.Confirmed; // Restore status after approval
                 session.UpdatedAt = DateTime.UtcNow;
                 _sessionRepository.Update(session);
                 await _sessionRepository.SaveChangesAsync();
@@ -704,6 +716,43 @@ namespace CareerRoute.Core.Services.Implementations
                 _logger.LogError("[Session] Failed to approve reschedule {RescheduleId}", rescheduleId);
                 await transaction.RollbackAsync();
                 throw;
+            }
+
+            // Update Zoom meeting if exists
+            if (session.ZoomMeetingId.HasValue)
+            {
+                try
+                {
+                    await _zoomService.UpdateMeetingAsync(session.ZoomMeetingId.Value, session.Id, session.ScheduledStartTime, session.ScheduledEndTime);
+                    _logger.LogInformation("[Session] Updated Zoom meeting for rescheduled session {SessionId}", session.Id);
+
+                    // Re-schedule Zoom link email 15 minutes before new start time
+                    var emailDelay = session.ScheduledStartTime.AddMinutes(-15) - DateTime.UtcNow;
+                    if (emailDelay > TimeSpan.Zero)
+                    {
+                        _jobScheduler.Schedule<ISessionService>(
+                            svc => svc.SendZoomLinkEmailAsync(session.Id),
+                            emailDelay);
+                    }
+                    else if (session.ScheduledStartTime > DateTime.UtcNow)
+                    {
+                        // Session starts in less than 15 minutes, send immediately
+                        _jobScheduler.EnqueueAsync<ISessionService>(svc => svc.SendZoomLinkEmailAsync(session.Id));
+                    }
+
+                    // Re-schedule auto-termination
+                    var terminationDelay = session.ScheduledEndTime.AddMinutes(2) - DateTime.UtcNow;
+                    if (terminationDelay > TimeSpan.Zero)
+                    {
+                        _jobScheduler.Schedule<ISessionService>(
+                            svc => svc.AutoTerminateSessionAsync(session.Id),
+                            terminationDelay);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[Session] Failed to update Zoom meeting for rescheduled session {SessionId}", session.Id);
+                }
             }
 
             // Send email to requester
@@ -739,6 +788,12 @@ namespace CareerRoute.Core.Services.Implementations
             reschedule.Status = SessionRescheduleOptions.Rejected;
             _rescheduleSessionRepository.Update(reschedule);
             await _rescheduleSessionRepository.SaveChangesAsync();
+
+            // Restore session status back to Confirmed after rejection
+            session.Status = SessionStatusOptions.Confirmed;
+            session.UpdatedAt = DateTime.UtcNow;
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
 
             _logger.LogInformation("[Session] Reschedule {RescheduleId} rejected. Session {SessionId} remains at original time", rescheduleId, session.Id);
 
@@ -857,10 +912,31 @@ namespace CareerRoute.Core.Services.Implementations
 
                     _logger.LogInformation("[Session] Zoom meeting created for session {SessionId}: MeetingId={MeetingId}", sessionId, zoomMeeting.Id);
 
-                    var bufferMinutes = 2;
-                    var delay = session.ScheduledEndTime.AddMinutes(bufferMinutes) - DateTime.UtcNow;
-                    if (delay < TimeSpan.Zero) delay = TimeSpan.Zero;
-                    _jobScheduler.ScheduleJob(() => AutoTerminateSessionAsync(session.Id), delay);
+                    // Schedule Zoom link email 15 minutes before session start
+                    var emailDelay = session.ScheduledStartTime.AddMinutes(-15) - DateTime.UtcNow;
+                    if (emailDelay > TimeSpan.Zero)
+                    {
+                        _jobScheduler.Schedule<ISessionService>(
+                            svc => svc.SendZoomLinkEmailAsync(session.Id),
+                            emailDelay);
+                        _logger.LogInformation("[Session] Scheduled Zoom link email for session {SessionId} at {ScheduledTime}", 
+                            sessionId, session.ScheduledStartTime.AddMinutes(-15));
+                    }
+                    else
+                    {
+                        // Session starts in less than 15 minutes, send email immediately
+                        _jobScheduler.EnqueueAsync<ISessionService>(svc => svc.SendZoomLinkEmailAsync(session.Id));
+                        _logger.LogInformation("[Session] Session {SessionId} starts soon, sending Zoom link email immediately", sessionId);
+                    }
+
+                    // Schedule automatic meeting termination (ScheduledEndTime + 2 minutes grace period)
+                    var terminationDelay = session.ScheduledEndTime.AddMinutes(2) - DateTime.UtcNow;
+                    if (terminationDelay < TimeSpan.Zero) terminationDelay = TimeSpan.Zero;
+                    _jobScheduler.Schedule<ISessionService>(
+                        svc => svc.AutoTerminateSessionAsync(session.Id),
+                        terminationDelay);
+                    _logger.LogInformation("[Session] Scheduled auto-termination for session {SessionId} at {ScheduledTime}", 
+                        sessionId, session.ScheduledEndTime.AddMinutes(2));
 
                     return;
                 }
@@ -888,16 +964,44 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new UnauthorizedException("You are not authorized to view this recording.");
             }
 
-            if (string.IsNullOrEmpty(session.RecordingPlayUrl))
+            // Check if video is stored in R2
+            if (string.IsNullOrEmpty(session.VideoStorageKey))
             {
-                throw new NotFoundException("Recording not available yet");
+                _logger.LogInformation("[Session] Recording not yet available for session {SessionId}. RecordingProcessed: {Processed}", 
+                    sessionId, session.RecordingProcessed);
+                
+                return new SessionRecordingDto
+                {
+                    SessionId = sessionId,
+                    RecordingPlayUrl = string.Empty,
+                    PlayUrl = string.Empty,
+                    AccessToken = string.Empty,
+                    ExpiresAt = DateTime.UtcNow,
+                    IsAvailable = false,
+                    Status = session.RecordingProcessed ? "Failed" : "Processing",
+                    AvailableAt = null,
+                    Transcript = null
+                };
             }
+
+            // Generate R2 presigned URL with "inline" disposition for browser streaming
+            var presignedUrl = _blobStorageService.GetPresignedUrl(
+                session.VideoStorageKey, 
+                TimeSpan.FromMinutes(60), 
+                "inline");
+
+            _logger.LogInformation("[Session] Generated presigned URL for session {SessionId} recording", sessionId);
 
             return new SessionRecordingDto
             {
-                SessionId = session.Id,
-                PlayUrl = session.RecordingPlayUrl,
-                AvailableAt = session.RecordingAvailableAt ?? session.CompletedAt ?? session.UpdatedAt ?? session.CreatedAt,
+                SessionId = sessionId,
+                RecordingPlayUrl = presignedUrl,
+                PlayUrl = presignedUrl,
+                AccessToken = string.Empty,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+                IsAvailable = true,
+                Status = "Available",
+                AvailableAt = session.RecordingAvailableAt ?? session.CompletedAt ?? session.UpdatedAt,
                 Transcript = session.Transcript
             };
         }
@@ -968,7 +1072,7 @@ namespace CareerRoute.Core.Services.Implementations
 
                 session.ScheduledStartTime = newStartTime;
                 session.ScheduledEndTime = newEndTime;
-                session.Status = SessionStatusOptions.Scheduled;
+                session.Status = SessionStatusOptions.Confirmed;
                 session.UpdatedAt = DateTime.UtcNow;
 
                 _sessionRepository.Update(session);
@@ -1369,6 +1473,135 @@ namespace CareerRoute.Core.Services.Implementations
                        "Best regards,\nCareerRoute Team";
 
             await _emailService.SendEmailAsync(receiverEmail, subject, body, body);
+        }
+
+        public async Task SendZoomLinkEmailAsync(string sessionId)
+        {
+            _logger.LogInformation("[Session] Sending Zoom link email for session {SessionId}", sessionId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null)
+            {
+                _logger.LogWarning("[Session] Cannot send Zoom link email: Session {SessionId} not found", sessionId);
+                return;
+            }
+
+            if (session.Status == SessionStatusOptions.Cancelled)
+            {
+                _logger.LogInformation("[Session] Skipping Zoom link email: Session {SessionId} was cancelled", sessionId);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(session.VideoConferenceLink))
+            {
+                _logger.LogWarning("[Session] Cannot send Zoom link email: No video conference link for session {SessionId}", sessionId);
+                return;
+            }
+
+            try
+            {
+                var mentee = await _userRepository.GetByIdAsync(session.MenteeId);
+                var mentor = await _userRepository.GetByIdAsync(session.MentorId);
+
+                if (mentee == null || mentor == null)
+                {
+                    _logger.LogError("[Session] Cannot send Zoom link email for session {SessionId}: Mentee or Mentor not found", sessionId);
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(mentee.Email) || string.IsNullOrEmpty(mentor.Email))
+                {
+                    _logger.LogError("[Session] Cannot send Zoom link email for session {SessionId}: Missing email addresses", sessionId);
+                    return;
+                }
+
+                var topic = session.Topic ?? $"Mentorship Session";
+                var duration = (int)(session.ScheduledEndTime - session.ScheduledStartTime).TotalMinutes;
+
+                // Send to Mentee
+                var menteeSubject = $"Your Session Starts Soon - Join Link Inside";
+                var menteeHtmlBody = $@"
+                    <p>Hello {mentee.FirstName},</p>
+                    <p>Your mentorship session is starting in <strong>15 minutes</strong>!</p>
+                    <p><strong>Session Details:</strong></p>
+                    <ul>
+                        <li><strong>Topic:</strong> {topic}</li>
+                        <li><strong>Mentor:</strong> {mentor.FullName}</li>
+                        <li><strong>Date & Time:</strong> {session.ScheduledStartTime:f} UTC</li>
+                        <li><strong>Duration:</strong> {duration} minutes</li>
+                    </ul>
+                    <p><strong>Join the Session:</strong></p>
+                    <p><a href=""{session.VideoConferenceLink}"" style=""background-color: #2D8CFF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;"">Join Zoom Meeting</a></p>
+                    <p>Or copy this link: <a href=""{session.VideoConferenceLink}"">{session.VideoConferenceLink}</a></p>
+                    {(string.IsNullOrEmpty(session.ZoomMeetingPassword) ? "" : $"<p><strong>Password:</strong> {session.ZoomMeetingPassword}</p>")}
+                    <p>Please join a few minutes early to test your audio and video.</p>
+                    <p>Best regards,<br>CareerRoute Team</p>";
+
+                var menteeTextBody = $@"Hello {mentee.FirstName},
+
+Your mentorship session is starting in 15 minutes!
+
+Session Details:
+- Topic: {topic}
+- Mentor: {mentor.FullName}
+- Date & Time: {session.ScheduledStartTime:f} UTC
+- Duration: {duration} minutes
+
+Join the Session: {session.VideoConferenceLink}
+{(string.IsNullOrEmpty(session.ZoomMeetingPassword) ? "" : $"Password: {session.ZoomMeetingPassword}")}
+
+Please join a few minutes early to test your audio and video.
+
+Best regards,
+CareerRoute Team";
+
+                await _emailService.SendEmailAsync(mentee.Email, menteeSubject, menteeTextBody, menteeHtmlBody);
+
+                // Send to Mentor
+                var mentorSubject = $"Your Session Starts Soon - Join Link Inside";
+                var mentorHtmlBody = $@"
+                    <p>Hello {mentor.FirstName},</p>
+                    <p>Your mentorship session is starting in <strong>15 minutes</strong>!</p>
+                    <p><strong>Session Details:</strong></p>
+                    <ul>
+                        <li><strong>Topic:</strong> {topic}</li>
+                        <li><strong>Mentee:</strong> {mentee.FullName}</li>
+                        <li><strong>Date & Time:</strong> {session.ScheduledStartTime:f} UTC</li>
+                        <li><strong>Duration:</strong> {duration} minutes</li>
+                    </ul>
+                    <p><strong>Join the Session:</strong></p>
+                    <p><a href=""{session.VideoConferenceLink}"" style=""background-color: #2D8CFF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;"">Join Zoom Meeting</a></p>
+                    <p>Or copy this link: <a href=""{session.VideoConferenceLink}"">{session.VideoConferenceLink}</a></p>
+                    {(string.IsNullOrEmpty(session.ZoomMeetingPassword) ? "" : $"<p><strong>Password:</strong> {session.ZoomMeetingPassword}</p>")}
+                    <p>Please join a few minutes early to ensure everything is ready.</p>
+                    <p>Best regards,<br>CareerRoute Team</p>";
+
+                var mentorTextBody = $@"Hello {mentor.FirstName},
+
+Your mentorship session is starting in 15 minutes!
+
+Session Details:
+- Topic: {topic}
+- Mentee: {mentee.FullName}
+- Date & Time: {session.ScheduledStartTime:f} UTC
+- Duration: {duration} minutes
+
+Join the Session: {session.VideoConferenceLink}
+{(string.IsNullOrEmpty(session.ZoomMeetingPassword) ? "" : $"Password: {session.ZoomMeetingPassword}")}
+
+Please join a few minutes early to ensure everything is ready.
+
+Best regards,
+CareerRoute Team";
+
+                await _emailService.SendEmailAsync(mentor.Email, mentorSubject, mentorTextBody, mentorHtmlBody);
+
+                _logger.LogInformation("[Session] Successfully sent Zoom link emails for session {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to send Zoom link emails for session {SessionId}", sessionId);
+            }
         }
 
         #endregion

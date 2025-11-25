@@ -838,6 +838,40 @@ namespace CareerRoute.Infrastructure.Services
         }
 
         /// <summary>
+        /// Updates meeting start/end times (Zoom branch compatibility).
+        /// </summary>
+        public async Task<bool> UpdateMeetingAsync(long meetingId, string? sessionId, DateTime newStartTime, DateTime newEndTime)
+        {
+            _logger.LogInformation(
+                "[AUDIT] Updating Zoom meeting schedule. SessionId: {SessionId}, MeetingId: {MeetingId}, NewStart: {Start}, NewEnd: {End}",
+                sessionId ?? "N/A", meetingId, newStartTime, newEndTime);
+
+            var updateRequest = new
+            {
+                start_time = newStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                duration = (int)(newEndTime - newStartTime).TotalMinutes
+            };
+
+            var jsonContent = JsonSerializer.Serialize(updateRequest);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            await MakeAuthenticatedRequestWithRetryAsync(
+                new HttpMethod("PATCH"),
+                $"meetings/{meetingId}",
+                content,
+                "UpdateMeeting",
+                sessionId,
+                meetingId);
+
+            _logger.LogInformation(
+                "[AUDIT] Successfully updated Zoom meeting schedule. SessionId: {SessionId}, MeetingId: {MeetingId}",
+                sessionId ?? "N/A",
+                meetingId);
+
+            return true;
+        }
+
+        /// <summary>
         /// Internal class for deserializing Zoom API meeting response
         /// </summary>
         private class ZoomApiMeetingResponse

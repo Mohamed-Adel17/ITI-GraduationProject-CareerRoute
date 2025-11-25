@@ -72,7 +72,7 @@ namespace CareerRoute.API.Controllers.WebHooks
                 if (string.IsNullOrEmpty(paymobSignature))
                 {
                     _logger.LogWarning("Paymob webhook received without signature");
-                    return BadRequest("Missing Stripe signature");
+                    return BadRequest("Missing Paymob signature");
                 }
 
                 await _paymentService.HandlePaymobWebhookAsync(json, paymobSignature);
