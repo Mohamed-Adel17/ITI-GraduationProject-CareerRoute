@@ -10,6 +10,11 @@ import { AuthService } from '../../../core/services/auth.service';
 import { SessionService } from '../../../core/services/session.service';
 import { RatingDisplay } from '../../../shared/components/rating-display/rating-display';
 import { BookingCalendarModalComponent } from './booking-calendar-modal/booking-calendar-modal.component';
+import { StripePaymentComponent } from '../../payment/stripe-payment/stripe-payment.component';
+import { PaymobCardPaymentComponent } from '../../payment/paymob-card-payment/paymob-card-payment.component';
+import { PaymobWalletPaymentComponent } from '../../payment/paymob-wallet-payment/paymob-wallet-payment.component';
+import { PaymentProvider, PaymobPaymentMethod } from '../../../shared/models/payment.model';
+import { PaymentMethodSelection } from '../../../shared/models/payment-flow.model';
 import {
   MentorDetail,
   getMentorFullName,
@@ -63,7 +68,7 @@ import { BookSessionRequest, BookingRules } from '../../../shared/models/booking
 @Component({
   selector: 'app-mentor-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent, StripePaymentComponent, PaymobCardPaymentComponent, PaymobWalletPaymentComponent],
   templateUrl: './mentor-detail.component.html',
   styleUrls: ['./mentor-detail.component.css']
 })
@@ -84,6 +89,15 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
 
   // Calendar modal state
   showCalendarModal: boolean = false;
+
+  // Payment processing state
+  showPaymentModal: boolean = false;
+  currentSession: any = null;
+  selectedPaymentMethod: PaymentMethodSelection | null = null;
+  
+  // Expose enums to template
+  readonly PaymentProvider = PaymentProvider;
+  readonly PaymobPaymentMethod = PaymobPaymentMethod;
 
   // User role state for booking permissions
   canBook: boolean = false;
@@ -401,8 +415,9 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
 
   /**
    * Handle booking confirmation from calendar modal
+   * Receives session details and selected payment method
    */
-  handleBookingConfirm(data: { slot: AvailableSlot; topic?: string; notes?: string }): void {
+  handleBookingConfirm(data: { session: any; paymentMethod: PaymentMethodSelection }): void {
     if (!this.mentor) return;
 
     // Double-check booking permissions
@@ -415,34 +430,61 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const request: BookSessionRequest = {
-      timeSlotId: data.slot.id,
-      topic: data.topic,
-      notes: data.notes
-    };
+    console.log('Booking confirmed:', data);
+    console.log('Session:', data.session);
+    console.log('Payment method:', data.paymentMethod);
 
-    this.submittingBooking = true;
+    // Close calendar modal
+    this.showCalendarModal = false;
 
-    this.sessionService.bookSession(request).subscribe({
-      next: (response) => {
-        this.submittingBooking = false;
-        this.showCalendarModal = false;
-        this.notificationService.success(
-          'Session booked successfully! Please proceed to payment to confirm your booking.',
-          'Booking Created'
-        );
-        // Navigate to payment page with sessionId
-        // TODO: Update route when payment page is implemented
-        this.router.navigate(['/user/sessions'], {
-          queryParams: { sessionId: response.id, action: 'payment' }
-        });
-      },
-      error: (err) => {
-        this.submittingBooking = false;
-        // Error is handled by errorInterceptor, but we can add specific handling here
-        console.error('Error booking session:', err);
-      }
-    });
+    // Store session and payment method
+    this.currentSession = data.session;
+    this.selectedPaymentMethod = data.paymentMethod;
+
+    // Show payment modal based on provider
+    if (data.paymentMethod.provider === PaymentProvider.Stripe) {
+      this.showPaymentModal = true;
+    } else if (data.paymentMethod.provider === PaymentProvider.Paymob) {
+      this.showPaymentModal = true;
+    }
+  }
+
+  /**
+   * Handle successful payment
+   */
+  handlePaymentSuccess(response: any): void {
+    console.log('Payment successful:', response);
+    this.showPaymentModal = false;
+    
+    this.notificationService.success(
+      'Payment successful! Your session is confirmed.',
+      'Payment Complete'
+    );
+
+    // Navigate to session details or sessions list
+    this.router.navigate(['/user/sessions']);
+  }
+
+  /**
+   * Handle payment failure
+   */
+  handlePaymentFailure(error: string): void {
+    console.error('Payment failed:', error);
+    this.notificationService.error(
+      error || 'Payment failed. Please try again.',
+      'Payment Failed'
+    );
+  }
+
+  /**
+   * Handle payment cancellation
+   */
+  handlePaymentCancel(): void {
+    this.showPaymentModal = false;
+    this.notificationService.info(
+      'Payment cancelled. Your session is still pending payment.',
+      'Payment Cancelled'
+    );
   }
 
   // ==========================================================================

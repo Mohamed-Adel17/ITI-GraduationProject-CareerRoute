@@ -160,12 +160,28 @@ export const TIMESLOT_ERROR_MESSAGES = {
 // ============================================================================
 
 /**
+ * Normalizes a datetime string to ensure it's treated as UTC
+ * Backend sometimes returns datetime without 'Z' suffix, which causes JavaScript to treat it as local time
+ * @param dateTimeString ISO datetime string (may or may not have 'Z' suffix)
+ * @returns ISO datetime string with 'Z' suffix
+ */
+function normalizeUtcDateTime(dateTimeString: string): string {
+  // If the string already has a timezone indicator (Z or +/-), return as is
+  if (dateTimeString.endsWith('Z') || dateTimeString.includes('+') || dateTimeString.match(/.*-\d{2}:\d{2}$/)) {
+    return dateTimeString;
+  }
+  // Otherwise, append 'Z' to indicate UTC
+  return dateTimeString + 'Z';
+}
+
+/**
  * Formats a time slot's time range as a readable string
  * @example "10:00 AM - 10:30 AM"
  */
 export function formatSlotTime(slot: AvailableSlot | TimeSlot): string {
-  const start = new Date(slot.startDateTime);
-  const end = new Date(slot.endDateTime);
+  // Normalize datetime strings to ensure they're treated as UTC
+  const start = new Date(normalizeUtcDateTime(slot.startDateTime));
+  const end = new Date(normalizeUtcDateTime(slot.endDateTime));
 
   const formatTime = (date: Date): string => {
     return date.toLocaleTimeString('en-US', {
@@ -215,7 +231,7 @@ export function groupSlotsByDate<T extends AvailableSlot | TimeSlot>(
   const grouped = new Map<string, T[]>();
 
   slots.forEach((slot) => {
-    const date = new Date(slot.startDateTime);
+    const date = new Date(normalizeUtcDateTime(slot.startDateTime));
     const dateKey = date.toISOString().split('T')[0]; // Extract YYYY-MM-DD
 
     if (!grouped.has(dateKey)) {
@@ -228,8 +244,8 @@ export function groupSlotsByDate<T extends AvailableSlot | TimeSlot>(
   grouped.forEach((slotsForDate) => {
     slotsForDate.sort(
       (a, b) =>
-        new Date(a.startDateTime).getTime() -
-        new Date(b.startDateTime).getTime()
+        new Date(normalizeUtcDateTime(a.startDateTime)).getTime() -
+        new Date(normalizeUtcDateTime(b.startDateTime)).getTime()
     );
   });
 

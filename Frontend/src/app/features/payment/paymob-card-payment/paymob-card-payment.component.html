@@ -1,0 +1,250 @@
+<!-- Paymob Card Payment Component -->
+<div class="paymob-card-payment">
+  <!-- Header -->
+  <div class="payment-header">
+    <h2>Pay with Card (Paymob)</h2>
+    <p class="payment-details">
+      Session with <strong>{{ mentorName }}</strong>
+    </p>
+    <p class="payment-amount">{{ getFormattedAmount() }}</p>
+  </div>
+
+  <!-- Creating Intent State -->
+  <div *ngIf="currentStatus === PaymentFlowStatus.CreatingIntent" class="loading-state">
+    <div class="spinner"></div>
+    <p>Preparing payment...</p>
+  </div>
+
+  <!-- Processing Payment State (Iframe) -->
+  <div *ngIf="currentStatus === PaymentFlowStatus.ProcessingPayment" class="iframe-container">
+    <!-- Loading indicator while iframe loads -->
+    <div *ngIf="isIframeLoading" class="iframe-loading">
+      <div class="spinner"></div>
+      <p>Loading payment form...</p>
+    </div>
+
+    <!-- Paymob iframe -->
+    <iframe
+      *ngIf="iframeUrl"
+      [src]="iframeUrl"
+      (load)="onIframeLoad()"
+      class="paymob-iframe"
+      frameborder="0"
+      allowfullscreen
+    ></iframe>
+
+    <!-- Cancel button -->
+    <div class="iframe-actions">
+      <button 
+        type="button" 
+        class="btn-cancel" 
+        (click)="cancelPayment()"
+        [disabled]="isIframeLoading"
+      >
+        Cancel Payment
+      </button>
+    </div>
+  </div>
+
+  <!-- Confirming Payment State -->
+  <div *ngIf="currentStatus === PaymentFlowStatus.ConfirmingPayment" class="loading-state">
+    <div class="spinner"></div>
+    <p>Confirming payment...</p>
+    <p class="loading-subtext">Please wait while we verify your payment.</p>
+  </div>
+
+  <!-- Success State -->
+  <div *ngIf="currentStatus === PaymentFlowStatus.Success" class="success-state">
+    <div class="success-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+      </svg>
+    </div>
+    <h3>Payment Successful!</h3>
+    <p>Your session has been confirmed.</p>
+  </div>
+
+  <!-- Failed State -->
+  <div *ngIf="currentStatus === PaymentFlowStatus.Failed" class="error-state">
+    <div class="error-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+    </div>
+    <h3>Payment Failed</h3>
+    <p class="error-message">{{ errorMessage }}</p>
+    <div class="error-actions">
+      <button type="button" class="btn-retry" (click)="retryPayment()">
+        Try Again
+      </button>
+      <button type="button" class="btn-cancel" (click)="cancelPayment()">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.paymob-card-payment {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.payment-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.payment-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.payment-details {
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.payment-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin-top: 1rem;
+}
+
+.loading-state,
+.success-state,
+.error-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f4f6;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-subtext {
+  color: #666;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.iframe-container {
+  position: relative;
+  min-height: 500px;
+}
+
+.iframe-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  z-index: 10;
+}
+
+.paymob-iframe {
+  width: 100%;
+  min-height: 500px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.iframe-actions {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.success-icon,
+.error-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+}
+
+.success-icon svg {
+  color: #10b981;
+}
+
+.error-icon svg {
+  color: #ef4444;
+}
+
+.success-state h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #10b981;
+  margin-bottom: 0.5rem;
+}
+
+.error-state h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ef4444;
+  margin-bottom: 0.5rem;
+}
+
+.error-message {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.error-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn-retry,
+.btn-cancel {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 1rem;
+}
+
+.btn-retry {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-retry:hover {
+  background: #1d4ed8;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

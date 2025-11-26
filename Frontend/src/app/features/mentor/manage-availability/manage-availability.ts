@@ -64,7 +64,9 @@ export class ManageAvailabilityComponent implements OnInit {
 
     this.timeslotService.getMentorSlots(this.mentorId, {
       startDate: firstDay.toISOString(),
-      endDate: lastDay.toISOString()
+      endDate: lastDay.toISOString(),
+      page: 1,
+      pageSize: 1000 // Set a large page size to get all slots for the month
     }).subscribe({
       next: (response) => {
         if (response.success && response.data) {
@@ -117,13 +119,25 @@ export class ManageAvailabilityComponent implements OnInit {
     }
   }
 
+  /**
+   * Normalizes a datetime string to ensure it's treated as UTC
+   * Backend sometimes returns datetime without 'Z' suffix
+   */
+  private normalizeUtcDateTime(dateTimeString: string): string {
+    if (dateTimeString.endsWith('Z') || dateTimeString.includes('+') || dateTimeString.match(/.*-\d{2}:\d{2}$/)) {
+      return dateTimeString;
+    }
+    return dateTimeString + 'Z';
+  }
+
   createCalendarDay(date: Date, isCurrentMonth: boolean): CalendarDay {
     const today = new Date();
     const isToday = date.toDateString() === today.toDateString();
 
     // Filter slots for this day
     const daySlots = this.timeSlots.filter(slot => {
-      const slotDate = new Date(slot.startDateTime);
+      // Normalize the datetime string to ensure it's treated as UTC
+      const slotDate = new Date(this.normalizeUtcDateTime(slot.startDateTime));
       return slotDate.toDateString() === date.toDateString();
     });
 
