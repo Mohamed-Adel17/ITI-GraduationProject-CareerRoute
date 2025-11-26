@@ -1,33 +1,31 @@
 using CareerRoute.Core.Services.Interfaces;
-using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 
 namespace CareerRoute.Infrastructure.Services
 {
     public class CacheService : ICacheService
     {
-        private readonly IDistributedCache _distributedCache;
+        private readonly IMemoryCache _memoryCache;
 
-        public CacheService(IDistributedCache distributedCache)
+        public CacheService(IMemoryCache memoryCache)
         {
-            _distributedCache = distributedCache;
+            _memoryCache = memoryCache;
         }
 
-        public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
+        public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
         {
-            var cachedData = await _distributedCache.GetStringAsync(key, cancellationToken);
-            if (string.IsNullOrEmpty(cachedData))
+            if (_memoryCache.TryGetValue(key, out T? value))
             {
-                return default;
+                return Task.FromResult(value);
             }
 
-            return JsonSerializer.Deserialize<T>(cachedData);
+            return Task.FromResult<T?>(default);
         }
 
-        public async Task SetAsync<T>(string key, T value, TimeSpan? slidingExpiration = null, TimeSpan? absoluteExpiration = null, CancellationToken cancellationToken = default)
+        public Task SetAsync<T>(string key, T value, TimeSpan? slidingExpiration = null, TimeSpan? absoluteExpiration = null, CancellationToken cancellationToken = default)
         {
-            var options = new DistributedCacheEntryOptions();
+            var options = new MemoryCacheEntryOptions();
 
             if (slidingExpiration.HasValue)
             {
@@ -39,13 +37,14 @@ namespace CareerRoute.Infrastructure.Services
                 options.SetAbsoluteExpiration(absoluteExpiration.Value);
             }
 
-            var jsonData = JsonSerializer.Serialize(value);
-            await _distributedCache.SetStringAsync(key, jsonData, options, cancellationToken);
+            _memoryCache.Set(key, value, options);
+            return Task.CompletedTask;
         }
 
-        public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+        public Task RemoveAsync(string key, CancellationToken cancellationToken = default)
         {
-            await _distributedCache.RemoveAsync(key, cancellationToken);
+            _memoryCache.Remove(key);
+            return Task.CompletedTask;
         }
     }
 }

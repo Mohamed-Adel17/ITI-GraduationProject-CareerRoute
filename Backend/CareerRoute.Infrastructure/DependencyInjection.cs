@@ -92,11 +92,7 @@ public static class DependencyInjection
 
         services.AddHangfireServer();
 
-        services.AddStackExchangeRedisCache(options =>
-        {
-            options.Configuration = configuration.GetConnectionString("Redis");
-            options.InstanceName = "CareerRoute_";
-        });
+        services.AddMemoryCache();
         services.AddScoped<ICacheService, CacheService>();
         services.AddRateLimitingInfrastructure(configuration);
 
