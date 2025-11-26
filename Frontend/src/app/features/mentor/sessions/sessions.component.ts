@@ -5,6 +5,8 @@ import { Subscription } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { SessionCard } from '../../../shared/components/session-card/session-card';
+import { CancelModalComponent } from '../../../shared/components/cancel-modal/cancel-modal.component';
+import { RescheduleModalComponent } from '../../../shared/components/reschedule-modal/reschedule-modal.component';
 import {
   SessionSummary,
   PastSessionItem,
@@ -35,7 +37,7 @@ import {
 @Component({
   selector: 'app-mentor-sessions',
   standalone: true,
-  imports: [CommonModule, SessionCard],
+  imports: [CommonModule, SessionCard, CancelModalComponent, RescheduleModalComponent],
   templateUrl: './sessions.component.html',
   styleUrls: ['./sessions.component.css']
 })
@@ -58,13 +60,18 @@ export class MentorSessionsComponent implements OnInit, OnDestroy {
   // General state
   pageSize: number = 10;
 
+  // Modal state
+  showCancelModal: boolean = false;
+  showRescheduleModal: boolean = false;
+  selectedSession: SessionSummary | null = null;
+
   private subscriptions: Subscription[] = [];
 
   constructor(
     private sessionService: SessionService,
     private notificationService: NotificationService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Load initial data for the active tab
@@ -236,11 +243,8 @@ export class MentorSessionsComponent implements OnInit, OnDestroy {
     // Find the session to get its details for the modal
     const session = this.upcomingSessions.find(s => s.id === sessionId);
     if (session) {
-      // TODO: Open cancel session modal
-      this.notificationService.info(
-        'Cancel session modal will be implemented',
-        'Coming Soon'
-      );
+      this.selectedSession = session;
+      this.showCancelModal = true;
     }
   }
 
@@ -252,11 +256,8 @@ export class MentorSessionsComponent implements OnInit, OnDestroy {
     // Find the session to get its details for the modal
     const session = this.upcomingSessions.find(s => s.id === sessionId);
     if (session) {
-      // TODO: Open reschedule session modal
-      this.notificationService.info(
-        'Reschedule session modal will be implemented',
-        'Coming Soon'
-      );
+      this.selectedSession = session;
+      this.showRescheduleModal = true;
     }
   }
 
@@ -266,6 +267,58 @@ export class MentorSessionsComponent implements OnInit, OnDestroy {
    */
   onViewDetails(sessionId: string): void {
     this.router.navigate(['/mentor/sessions', sessionId]);
+  }
+
+  /**
+   * Handle view recording action
+   * Navigates to session detail page with recording tab
+   */
+  onViewRecording(sessionId: string): void {
+    this.router.navigate(['/mentor/sessions', sessionId], { queryParams: { tab: 'recording' } });
+  }
+
+  /**
+   * Handle view transcript action
+   * Navigates to session detail page with transcript tab
+   */
+  onViewTranscript(sessionId: string): void {
+    this.router.navigate(['/mentor/sessions', sessionId], { queryParams: { tab: 'transcript' } });
+  }
+
+  /**
+   * Handle cancel modal close
+   */
+  onCancelModalClose(): void {
+    this.showCancelModal = false;
+    this.selectedSession = null;
+  }
+
+  /**
+   * Handle cancel success
+   */
+  onCancelSuccess(): void {
+    this.showCancelModal = false;
+    this.selectedSession = null;
+    // Refresh the sessions list
+    this.loadUpcomingSessions();
+  }
+
+  /**
+   * Handle reschedule modal close
+   */
+  onRescheduleModalClose(): void {
+    this.showRescheduleModal = false;
+    this.selectedSession = null;
+  }
+
+  /**
+   * Handle reschedule success
+   */
+  onRescheduleSuccess(): void {
+    this.showRescheduleModal = false;
+    this.selectedSession = null;
+    // Refresh the sessions list
+    this.loadUpcomingSessions();
   }
 
   // ==========================================================================

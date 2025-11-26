@@ -102,6 +102,7 @@ export interface SessionSummary {
   scheduledStartTime: string;
   status: SessionStatus;
   topic?: string | null;
+  price: number;
   videoConferenceLink?: string | null;
   hoursUntilSession?: number | null;
 }
