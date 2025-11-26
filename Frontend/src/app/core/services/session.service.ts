@@ -18,6 +18,8 @@ import {
   CancelResponse,
   JoinSessionResponse,
   CompleteSessionResponse,
+  SessionRecordingResponse,
+  SessionTranscriptResponse,
   UpcomingSessionsResponse,
   PastSessionsResponse
 } from '../../shared/models/session.model';
@@ -511,6 +513,89 @@ export class SessionService {
   completeSession(sessionId: string): Observable<CompleteSessionResponse> {
     return this.http
       .patch<ApiResponse<CompleteSessionResponse>>(`${this.SESSIONS_URL}/${sessionId}/complete`, {})
+      .pipe(map(response => unwrapResponse(response)));
+  }
+
+  // ==================== Get Session Recording ====================
+
+  /**
+   * Get session recording with presigned URL
+   *
+   * @param sessionId - Session GUID
+   * @returns Observable of SessionRecordingResponse
+   *
+   * @remarks
+   * - Endpoint: GET /api/sessions/{id}/recording
+   * - Requires authentication (mentee or mentor)
+   * - Returns presigned URL with 60-minute expiration
+   * - Three possible states:
+   *   - Available: Recording ready, recordingPlayUrl contains valid URL
+   *   - Processing: Recording still being processed (Zoom webhook not received)
+   *   - Failed: Recording processing failed
+   * - Always returns 200 with status information
+   * - Returns 401 if not authenticated
+   * - Returns 403 if not authorized (not session participant)
+   * - Returns 404 if session not found
+   *
+   * @example
+   * ```typescript
+   * this.sessionService.getSessionRecording(sessionId).subscribe({
+   *   next: (response) => {
+   *     if (response.isAvailable && response.status === 'Available') {
+   *       // Play video using response.recordingPlayUrl
+   *       console.log('Video URL:', response.recordingPlayUrl);
+   *       console.log('Expires at:', response.expiresAt);
+   *     } else if (response.status === 'Processing') {
+   *       // Show loading state, poll again later
+   *       console.log('Recording is still processing...');
+   *     } else {
+   *       // Show error message
+   *       console.log('Recording failed or unavailable');
+   *     }
+   *   }
+   * });
+   * ```
+   */
+  getSessionRecording(sessionId: string): Observable<SessionRecordingResponse> {
+    return this.http
+      .get<ApiResponse<SessionRecordingResponse>>(`${this.SESSIONS_URL}/${sessionId}/recording`)
+      .pipe(map(response => unwrapResponse(response)));
+  }
+
+  // ==================== Get Session Transcript ====================
+
+  /**
+   * Get AI-generated session transcript
+   *
+   * @param sessionId - Session GUID
+   * @returns Observable of SessionTranscriptResponse
+   *
+   * @remarks
+   * - Endpoint: GET /api/sessions/{id}/transcript
+   * - Requires authentication (mentee or mentor)
+   * - Returns Deepgram-generated transcript with timestamps
+   * - Transcript format: "[00:00] Speaker 0: Hello..."
+   * - Returns 401 if not authenticated
+   * - Returns 403 if not authorized (not session participant)
+   * - Returns 404 if session not found or transcript not available
+   *
+   * @example
+   * ```typescript
+   * this.sessionService.getSessionTranscript(sessionId).subscribe({
+   *   next: (response) => {
+   *     if (response.isAvailable) {
+   *       console.log('Transcript:', response.transcript);
+   *       // Parse and display transcript with timestamps
+   *     } else {
+   *       console.log('Transcript not available yet');
+   *     }
+   *   }
+   * });
+   * ```
+   */
+  getSessionTranscript(sessionId: string): Observable<SessionTranscriptResponse> {
+    return this.http
+      .get<ApiResponse<SessionTranscriptResponse>>(`${this.SESSIONS_URL}/${sessionId}/transcript`)
       .pipe(map(response => unwrapResponse(response)));
   }
 

@@ -315,6 +315,78 @@
     [availableSlots]="availableSlots"
     [mentorName]="getMentorName()"
     (closeModal)="closeCalendarModal()"
-    (confirmBooking)="handleBookingConfirm($event)">
+    (bookingConfirmed)="handleBookingConfirm($event)">
   </app-booking-calendar-modal>
+
+  <!-- Stripe Payment Modal -->
+  <div *ngIf="showPaymentModal && currentSession && selectedPaymentMethod"
+       class="fixed inset-0 z-50 overflow-y-auto"
+       aria-labelledby="payment-modal-title"
+       role="dialog"
+       aria-modal="true">
+    
+    <!-- Background overlay -->
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
+
+    <!-- Modal content -->
+    <div class="flex min-h-screen items-center justify-center p-4">
+      <div class="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl transform transition-all">
+        
+        <!-- Modal Header -->
+        <div class="bg-primary px-6 py-4 rounded-t-xl">
+          <div class="flex items-center justify-between">
+            <h2 id="payment-modal-title" class="text-xl font-bold text-white flex items-center gap-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              </svg>
+              Complete Payment
+            </h2>
+            <button
+              type="button"
+              (click)="handlePaymentCancel()"
+              class="text-white hover:text-gray-200 transition-colors p-1">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6">
+          <app-stripe-payment
+            *ngIf="selectedPaymentMethod.provider === PaymentProvider.Stripe"
+            [sessionId]="currentSession.id"
+            [amount]="currentSession.price"
+            [mentorName]="getMentorName()"
+            (paymentSuccess)="handlePaymentSuccess($event)"
+            (paymentFailed)="handlePaymentFailure($event)"
+            (paymentCancelled)="handlePaymentCancel()">
+          </app-stripe-payment>
+
+          <!-- Paymob Card Payment -->
+          <app-paymob-card-payment
+            *ngIf="selectedPaymentMethod.provider === PaymentProvider.Paymob && selectedPaymentMethod.paymobMethod === PaymobPaymentMethod.Card"
+            [sessionId]="currentSession.id"
+            [amount]="currentSession.price"
+            [mentorName]="getMentorName()"
+            (paymentSuccess)="handlePaymentSuccess($event)"
+            (paymentFailed)="handlePaymentFailure($event)"
+            (paymentCancelled)="handlePaymentCancel()">
+          </app-paymob-card-payment>
+
+          <!-- Paymob Wallet Payment -->
+          <app-paymob-wallet-payment
+            *ngIf="selectedPaymentMethod.provider === PaymentProvider.Paymob && selectedPaymentMethod.paymobMethod === PaymobPaymentMethod.EWallet"
+            [sessionId]="currentSession.id"
+            [amount]="currentSession.price"
+            [mentorName]="getMentorName()"
+            (paymentSuccess)="handlePaymentSuccess($event)"
+            (paymentFailed)="handlePaymentFailure($event)"
+            (paymentCancelled)="handlePaymentCancel()">
+          </app-paymob-wallet-payment>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

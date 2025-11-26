@@ -26,19 +26,21 @@ export enum PaymentStatus {
 /**
  * Payment Provider Enum
  * Supported payment gateway providers
+ * Values match backend API contract (integer enum)
  */
 export enum PaymentProvider {
-  Stripe = 'Stripe',   // Stripe (international, USD)
-  Paymob = 'Paymob'    // Paymob (Egypt, EGP)
+  Stripe = 1,   // 1: Stripe (international, USD)
+  Paymob = 2    // 2: Paymob (Egypt, EGP)
 }
 
 /**
  * Paymob Payment Method Enum
  * Payment methods available for Paymob
+ * Values match backend API contract (integer enum)
  */
 export enum PaymobPaymentMethod {
-  Card = 'Card',       // Credit/Debit card
-  EWallet = 'EWallet'  // E-wallet (Vodafone Cash, etc.)
+  Card = 1,      // 1: Credit/Debit card
+  EWallet = 2    // 2: E-wallet (Vodafone Cash, etc.)
 }
 
 /**
@@ -261,7 +263,7 @@ export function formatPaymentProvider(provider: PaymentProvider): string {
     [PaymentProvider.Stripe]: 'Stripe',
     [PaymentProvider.Paymob]: 'Paymob'
   };
-  return providerMap[provider] || provider;
+  return providerMap[provider] || 'Unknown';
 }
 
 /**

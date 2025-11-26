@@ -507,6 +507,6 @@ export class PaymentService {
       [PaymentProvider.Stripe]: 'Stripe',
       [PaymentProvider.Paymob]: 'Paymob'
     };
-    return providerMap[provider] || provider;
+    return providerMap[provider] || 'Unknown';
   }
 }
