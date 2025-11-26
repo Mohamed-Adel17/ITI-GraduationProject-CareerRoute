@@ -1,9 +1,11 @@
 ﻿using CareerRoute.API.Models;
 using CareerRoute.Core.DTOs.Auth;
 using CareerRoute.Core.Services.Interfaces;
+using CareerRoute.Core.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -29,6 +31,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Registration successful</response>
         /// <response code="400">Invalid input or user already exists</response>
         [HttpPost("register")]
+        [EnableRateLimiting(RateLimitingPolicies.Auth)]
         [ProducesResponseType(typeof(ApiResponse<RegisterResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerRequest)
@@ -45,6 +48,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Login successful</response>
         /// <response code="401">Invalid credentials or account issues</response>
         [HttpPost("login")]
+        [EnableRateLimiting(RateLimitingPolicies.Auth)]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
@@ -95,6 +99,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Verification email sent</response>
         /// <response code="400">Email already verified or invalid</response>
         [HttpPost("resend-verification")]
+        [EnableRateLimiting(RateLimitingPolicies.Auth)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> RequestVerifyEmail([FromBody] EmailRequestDto emailRequest)
@@ -111,6 +116,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Password reset email sent</response>
         /// <response code="400">Invalid request</response>
         [HttpPost("forgot-password")]
+        [EnableRateLimiting(RateLimitingPolicies.ForgetPassword)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ForgotPassword([FromBody] EmailRequestDto emailRequest)
@@ -129,6 +135,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="200">Password reset successful</response>
         /// <response code="400">Invalid token or password</response>
         [HttpPost("reset-password")]
+        [EnableRateLimiting(RateLimitingPolicies.PasswordReset)]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto resetPasswordRequest)

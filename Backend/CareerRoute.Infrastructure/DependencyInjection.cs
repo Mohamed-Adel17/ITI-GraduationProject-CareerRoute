@@ -2,12 +2,12 @@ using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Domain.Interfaces.Services;
 using CareerRoute.Infrastructure.Services;
+using CareerRoute.Infrastructure.Extensions;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
 using CareerRoute.Core.Settings;
 using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Repositories;
-using CareerRoute.Infrastructure.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.Configure<OpenAISettings>(configuration.GetSection(nameof(OpenAISettings)));
         services.Configure<DeepgramSettings>(configuration.GetSection(nameof(DeepgramSettings)));
         services.Configure<R2Settings>(configuration.GetSection(nameof(R2Settings)));
+        services.Configure<RateLimitingSettings>(configuration.GetSection(nameof(RateLimitingSettings)));
         return services;
     }
 
@@ -97,6 +98,7 @@ public static class DependencyInjection
             options.InstanceName = "CareerRoute_";
         });
         services.AddScoped<ICacheService, CacheService>();
+        services.AddRateLimitingInfrastructure(configuration);
 
         return services;
     }

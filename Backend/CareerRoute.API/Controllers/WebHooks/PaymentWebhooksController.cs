@@ -1,5 +1,6 @@
 ﻿using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CareerRoute.API.Controllers.WebHooks
 {
@@ -10,6 +11,7 @@ namespace CareerRoute.API.Controllers.WebHooks
     /// </summary>
     [ApiController]
     [Route("api/payments/webhooks")]
+    [DisableRateLimiting]
     public class PaymentWebhooksController : ControllerBase
     {
         private readonly IPaymentProcessingService _paymentService;
