@@ -308,6 +308,32 @@ export interface CompleteSessionResponse {
   paymentReleaseDate: string;         // Date when payment released to mentor (72h after)
 }
 
+/**
+ * Session Recording Response
+ * Response for GET /api/sessions/{id}/recording
+ */
+export interface SessionRecordingResponse {
+  sessionId: string;
+  recordingPlayUrl: string;           // Presigned URL for video playback (60-min expiration)
+  playUrl: string;                    // Alias for recordingPlayUrl
+  accessToken: string;                // Access token (if needed)
+  expiresAt: string;                  // ISO 8601 datetime when presigned URL expires
+  isAvailable: boolean;               // True if recording is ready
+  status: 'Available' | 'Processing' | 'Failed';  // Recording status
+  availableAt: string | null;         // ISO 8601 datetime when recording became available
+  transcript: string | null;          // Transcript text (if available)
+}
+
+/**
+ * Session Transcript Response
+ * Response for GET /api/sessions/{id}/transcript
+ */
+export interface SessionTranscriptResponse {
+  sessionId: string;
+  transcript: string;                 // AI-generated transcript from Deepgram
+  isAvailable: boolean;               // True if transcript is ready
+}
+
 // ===========================
 // Paginated Responses
 // ===========================

@@ -1,0 +1,68 @@
+/* Reuse cancel modal styles with some modifications */
+@import '../cancel-modal/cancel-modal.component.css';
+
+/* Override specific styles for reschedule modal */
+.info-message {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.375rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.info-message p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #1e40af;
+}
+
+/* Form Input (datetime-local) */
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #111827;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input.error {
+  border-color: #ef4444;
+}
+
+.form-input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.help-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Primary Button */
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
