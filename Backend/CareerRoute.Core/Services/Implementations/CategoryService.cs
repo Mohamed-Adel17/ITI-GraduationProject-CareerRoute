@@ -17,23 +17,35 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly ILogger<CategoryService> _logger;
         private readonly IValidator<CreateCategoryDto> _createValidator;
         private readonly IValidator<UpdateCategoryDto> _updateValidator;
+        private readonly ICacheService _cache;
+        private const string CategoriesCacheKey = "AllCategories";
 
         public CategoryService(
             ICategoryRepository categoryRepository,
             IMapper mapper,
             ILogger<CategoryService> logger,
             IValidator<CreateCategoryDto> createValidator,
-            IValidator<UpdateCategoryDto> updateValidator)
+            IValidator<UpdateCategoryDto> updateValidator,
+            ICacheService cache)
         {
             _categoryRepository = categoryRepository;
             _mapper = mapper;
             _logger = logger;
             _createValidator = createValidator;
             _updateValidator = updateValidator;
+            _cache = cache;
         }
 
         public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()
         {
+            var cachedCategories = await _cache.GetAsync<IEnumerable<CategoryDto>>(CategoriesCacheKey);
+            if (cachedCategories != null)
+            {
+                _logger.LogInformation("Fetching categories from cache");
+                return cachedCategories;
+            }
+
+            _logger.LogInformation("Fetching categories from database");
             var categories = await _categoryRepository.GetAllActiveAsync();
             var categoryDtos = _mapper.Map<IEnumerable<CategoryDto>>(categories).ToList();
             
@@ -45,6 +57,8 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 categoryDto.MentorCount = mentorCounts.TryGetValue(categoryDto.Id, out var count) ? count : 0;
             }
+
+            await _cache.SetAsync(CategoriesCacheKey, categoryDtos, TimeSpan.FromMinutes(30), TimeSpan.FromHours(2));
             
             return categoryDtos;
         }
@@ -85,6 +99,7 @@ namespace CareerRoute.Core.Services.Implementations
             await _categoryRepository.AddAsync(category);
             await _categoryRepository.SaveChangesAsync();
 
+            await _cache.RemoveAsync(CategoriesCacheKey);
             _logger.LogInformation("Category '{CategoryName}' created successfully with ID: {CategoryId}", category.Name, category.Id);
 
             return _mapper.Map<CategoryDto>(category);
@@ -131,7 +146,8 @@ namespace CareerRoute.Core.Services.Implementations
 
             _categoryRepository.Update(category);
             await _categoryRepository.SaveChangesAsync();
-
+            
+            await _cache.RemoveAsync(CategoriesCacheKey);
             _logger.LogInformation("Category '{CategoryName}' (ID: {CategoryId}) updated successfully", category.Name, category.Id);
 
             return _mapper.Map<CategoryDto>(category);
@@ -153,7 +169,8 @@ namespace CareerRoute.Core.Services.Implementations
 
             _categoryRepository.Delete(category);
             await _categoryRepository.SaveChangesAsync();
-
+            
+            await _cache.RemoveAsync(CategoriesCacheKey);
             _logger.LogInformation("Category '{CategoryName}' (ID: {CategoryId}) deleted successfully", category.Name, id);
         }
     }

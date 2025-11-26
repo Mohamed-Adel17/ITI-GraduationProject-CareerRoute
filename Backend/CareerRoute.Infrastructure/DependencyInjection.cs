@@ -1,6 +1,7 @@
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Domain.Interfaces.Services;
+using CareerRoute.Infrastructure.Services;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Setting;
 using CareerRoute.Core.Settings;
@@ -89,6 +90,13 @@ public static class DependencyInjection
             .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddHangfireServer();
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration.GetConnectionString("Redis");
+            options.InstanceName = "CareerRoute_";
+        });
+        services.AddScoped<ICacheService, CacheService>();
 
         return services;
     }

@@ -18,6 +18,9 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly ILogger<SkillService> _logger;
         private readonly IValidator<CreateSkillDto> _createValidator;
         private readonly IValidator<UpdateSkillDto> _updateValidator;
+        private readonly ICacheService _cache;
+        private const string SkillsCacheKey = "AllSkills";
+        private const string SkillsVersionKey = "SkillsVersion";
 
         public SkillService(
             ISkillRepository skillRepository,
@@ -25,7 +28,8 @@ namespace CareerRoute.Core.Services.Implementations
             IMapper mapper,
             ILogger<SkillService> logger,
             IValidator<CreateSkillDto> createValidator,
-            IValidator<UpdateSkillDto> updateValidator)
+            IValidator<UpdateSkillDto> updateValidator,
+            ICacheService cache)
         {
             _skillRepository = skillRepository;
             _categoryRepository = categoryRepository;
@@ -33,10 +37,30 @@ namespace CareerRoute.Core.Services.Implementations
             _logger = logger;
             _createValidator = createValidator;
             _updateValidator = updateValidator;
+            _cache = cache;
         }
 
         public async Task<IEnumerable<SkillDto>> GetAllSkillsAsync(int? categoryId = null, bool? isActive = true)
         {
+            // Get or create version
+            var version = await _cache.GetAsync<int>(SkillsVersionKey);
+            if (version == 0)
+            {
+                version = 1;
+                await _cache.SetAsync(SkillsVersionKey, version);
+            }
+
+            // Create a unique cache key based on parameters and version
+            string cacheKey = $"{SkillsCacheKey}_v{version}_{categoryId}_{isActive}";
+
+            var cachedSkills = await _cache.GetAsync<IEnumerable<SkillDto>>(cacheKey);
+            if (cachedSkills != null)
+            {
+                _logger.LogInformation("Fetching skills from cache for key: {CacheKey}", cacheKey);
+                return cachedSkills;
+            }
+
+            _logger.LogInformation("Fetching skills from database");
             IEnumerable<Skill> skills;
 
             if (categoryId.HasValue)
@@ -52,7 +76,11 @@ namespace CareerRoute.Core.Services.Implementations
                 skills = await _skillRepository.GetAllAsync();
             }
 
-            return _mapper.Map<IEnumerable<SkillDto>>(skills);
+            var skillDtos = _mapper.Map<IEnumerable<SkillDto>>(skills);
+
+            await _cache.SetAsync(cacheKey, skillDtos, TimeSpan.FromMinutes(30), TimeSpan.FromHours(2));
+
+            return skillDtos;
         }
 
         public async Task<SkillDetailDto> GetSkillByIdAsync(int id)
@@ -94,6 +122,8 @@ namespace CareerRoute.Core.Services.Implementations
 
             await _skillRepository.AddAsync(skill);
             await _skillRepository.SaveChangesAsync();
+
+            await InvalidateSkillsCacheAsync();
 
             _logger.LogInformation("Skill '{SkillName}' created successfully with ID: {SkillId}", skill.Name, skill.Id);
 
@@ -148,6 +178,8 @@ namespace CareerRoute.Core.Services.Implementations
             _skillRepository.Update(skill);
             await _skillRepository.SaveChangesAsync();
 
+            await InvalidateSkillsCacheAsync();
+
             _logger.LogInformation("Skill '{SkillName}' (ID: {SkillId}) updated successfully", skill.Name, skill.Id);
 
             return await GetSkillByIdAsync(id);
@@ -171,7 +203,16 @@ namespace CareerRoute.Core.Services.Implementations
             _skillRepository.Delete(skill);
             await _skillRepository.SaveChangesAsync();
 
+            await InvalidateSkillsCacheAsync();
+
             _logger.LogInformation("Skill '{SkillName}' (ID: {SkillId}) deleted successfully", skill.Name, id);
+        }
+
+        private async Task InvalidateSkillsCacheAsync()
+        {
+            // Increment version to invalidate all skill-related keys
+            var version = await _cache.GetAsync<int>(SkillsVersionKey);
+            await _cache.SetAsync(SkillsVersionKey, version + 1);
         }
 
         public async Task<bool> ValidateSkillIdsAsync(IEnumerable<int> skillIds)
