@@ -35,8 +35,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Hangfire is configured in Infrastructure layer (DependencyInjection.cs)
-
 // Add services to the container.
 // Clean Architecture Layers
 builder.Services.AddCore();
@@ -154,6 +152,7 @@ app.UseGlobalExceptionHandler();
 
 app.UseCors("AllowFrontend");
 
+app.UseRateLimiter();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 //Authentication then Authorization

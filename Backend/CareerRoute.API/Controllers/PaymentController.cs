@@ -7,6 +7,7 @@ using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -35,6 +36,7 @@ namespace CareerRoute.API.Controllers
         /// <returns>Payment intent response with client secret</returns>
         [AuthorizeRole( AppRoles.User)]
         [HttpPost("create-intent")]
+        [EnableRateLimiting(RateLimitingPolicies.Payment)]
         [ProducesResponseType(typeof(ApiResponse<PaymentIntentResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

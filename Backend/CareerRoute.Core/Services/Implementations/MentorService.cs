@@ -34,6 +34,9 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<UpdateMentorProfileDto> _updateValidator;
         private readonly IValidator<RejectMentorDto> _rejectValidator;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ICacheService _cache;
+        private const string MentorsCacheKey = "Mentors";
+        private const string MentorsVersionKey = "MentorsVersion";
 
         public MentorService(
             IMentorRepository mentorRepository,
@@ -45,7 +48,8 @@ namespace CareerRoute.Core.Services.Implementations
             IValidator<CreateMentorProfileDto> createValidator,
             IValidator<UpdateMentorProfileDto> updateValidator,
             IValidator<RejectMentorDto> rejectValidator,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ICacheService cache)
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
@@ -57,6 +61,7 @@ namespace CareerRoute.Core.Services.Implementations
             _updateValidator = updateValidator;
             _rejectValidator = rejectValidator;
             _userManager = userManager;
+            _cache = cache;
         }
         
         // Get mentor profile by ID
@@ -72,8 +77,30 @@ namespace CareerRoute.Core.Services.Implementations
         // Get all approved mentors
         public async Task<IEnumerable<MentorProfileDto>> GetAllApprovedMentorsAsync()
         {
+            // Get or create version
+            var version = await _cache.GetAsync<int>(MentorsVersionKey);
+            if (version == 0)
+            {
+                version = 1;
+                await _cache.SetAsync(MentorsVersionKey, version);
+            }
+
+            string cacheKey = $"{MentorsCacheKey}_Approved_v{version}";
+
+            var cachedMentors = await _cache.GetAsync<IEnumerable<MentorProfileDto>>(cacheKey);
+            if (cachedMentors != null)
+            {
+                _logger.LogInformation("Fetching approved mentors from cache");
+                return cachedMentors;
+            }
+
+            _logger.LogInformation("Fetching approved mentors from database");
             var mentors = await _mentorRepository.GetApprovedMentorsAsync();
-            return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+            var mentorDtos = _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+
+            await _cache.SetAsync(cacheKey, mentorDtos, TimeSpan.FromMinutes(15), TimeSpan.FromHours(1));
+
+            return mentorDtos;
         }
         // Update mentor profile - only updates provided fields
         public async Task<MentorProfileDto> UpdateMentorProfileAsync(
@@ -189,6 +216,9 @@ namespace CareerRoute.Core.Services.Implementations
 
             // Reload to get updated data with user info
             var updatedMentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
+            
+            await InvalidateMentorsCacheAsync();
+            
             return _mapper.Map<MentorProfileDto>(updatedMentor!);
         }
         public async Task<MentorProfileDto> CreateMentorProfileAsync(
@@ -303,6 +333,8 @@ namespace CareerRoute.Core.Services.Implementations
 
             var createdMentor = await _mentorRepository.GetMentorWithUserByIdAsync(userId);
 
+            await InvalidateMentorsCacheAsync();
+
             return _mapper.Map<MentorProfileDto>(createdMentor!);
         }
 
@@ -350,15 +382,57 @@ namespace CareerRoute.Core.Services.Implementations
         // Get top-rated mentors
         public async Task<IEnumerable<MentorProfileDto>> GetTopRatedMentorsAsync(int count = 10)
         {
+            // Get or create version
+            var version = await _cache.GetAsync<int>(MentorsVersionKey);
+            if (version == 0)
+            {
+                version = 1;
+                await _cache.SetAsync(MentorsVersionKey, version);
+            }
+
+            string cacheKey = $"{MentorsCacheKey}_TopRated_{count}_v{version}";
+
+            var cachedMentors = await _cache.GetAsync<IEnumerable<MentorProfileDto>>(cacheKey);
+            if (cachedMentors != null)
+            {
+                _logger.LogInformation("Fetching top-rated mentors from cache");
+                return cachedMentors;
+            }
+
             var mentors = await _mentorRepository.GetTopRatedMentorsAsync(count);
-            return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+            var mentorDtos = _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+
+            await _cache.SetAsync(cacheKey, mentorDtos, TimeSpan.FromMinutes(15), TimeSpan.FromHours(1));
+
+            return mentorDtos;
         }
 
         // Get mentors by category
         public async Task<IEnumerable<MentorProfileDto>> GetMentorsByCategoryAsync(int categoryId)
         {
+            // Get or create version
+            var version = await _cache.GetAsync<int>(MentorsVersionKey);
+            if (version == 0)
+            {
+                version = 1;
+                await _cache.SetAsync(MentorsVersionKey, version);
+            }
+
+            string cacheKey = $"{MentorsCacheKey}_Category_{categoryId}_v{version}";
+
+            var cachedMentors = await _cache.GetAsync<IEnumerable<MentorProfileDto>>(cacheKey);
+            if (cachedMentors != null)
+            {
+                _logger.LogInformation("Fetching mentors by category from cache");
+                return cachedMentors;
+            }
+
             var mentors = await _mentorRepository.GetMentorsByCategoryAsync(categoryId);
-            return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+            var mentorDtos = _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
+
+            await _cache.SetAsync(cacheKey, mentorDtos, TimeSpan.FromMinutes(15), TimeSpan.FromHours(1));
+
+            return mentorDtos;
         }
 
         // ============ ADMIN OPERATIONS ============
@@ -420,6 +494,8 @@ namespace CareerRoute.Core.Services.Implementations
 
             // TODO: Send approval email to mentor
             // await _emailService.SendMentorApprovalEmailAsync(mentor.User.Email, mentor.User.FirstName);
+            
+            await InvalidateMentorsCacheAsync();
         }
         // Reject a mentor application
         public async Task RejectMentorAsync(string mentorId, RejectMentorDto rejectDto)
@@ -461,6 +537,15 @@ namespace CareerRoute.Core.Services.Implementations
             //     mentor.User.Email, 
             //     mentor.User.FirstName, 
             //     rejectDto.Reason);
+            
+            await InvalidateMentorsCacheAsync();
+        }
+
+        private async Task InvalidateMentorsCacheAsync()
+        {
+            // Increment version to invalidate all mentor-related keys
+            var version = await _cache.GetAsync<int>(MentorsVersionKey);
+            await _cache.SetAsync(MentorsVersionKey, version + 1);
         }
 
         // Check if user is a mentor

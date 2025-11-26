@@ -125,6 +125,11 @@ namespace CareerRoute.API.Middleware
                     }
                     break;
 
+                case RateLimitExceededException rateLimitEx:
+                    response = ApiResponse.Error(rateLimitEx.Message, 429);
+                    _logger.LogWarning("[429] Rate Limit Exceeded: {Message}", rateLimitEx.Message);
+                    break;
+
                 default:
                     var message = _environment.IsDevelopment()
                         ? exception.Message

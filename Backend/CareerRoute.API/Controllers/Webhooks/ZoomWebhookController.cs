@@ -3,6 +3,7 @@ using CareerRoute.Core.DTOs.Zoom;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Settings;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
@@ -16,6 +17,7 @@ namespace CareerRoute.API.Controllers.Webhooks
     [ApiController]
     [Route("api/webhooks/zoom")]
     [Produces("application/json")]
+    [DisableRateLimiting]
     public class ZoomWebhookController : ControllerBase
     {
         private readonly ISessionService _sessionService;

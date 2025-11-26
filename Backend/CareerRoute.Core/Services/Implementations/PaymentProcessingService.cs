@@ -99,7 +99,7 @@ namespace CareerRoute.Core.Services.Implementations
             // Determine currency based on provider
             var currency = request.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
             decimal amount = request.PaymentProvider == PaymentProviderOptions.Stripe
-                ? Math.Round((session.Price / 50m) , 2) 
+                ? Math.Round((session.Price / 50m), 2)
                 : session.Price;
 
             // Get the appropriate payment service
@@ -335,7 +335,7 @@ namespace CareerRoute.Core.Services.Implementations
                 // Double check with provider
                 var (providerStatus, providerTransactionId) = await paymentService.GetPaymentStatusAsync(payment.PaymentIntentId);
 
-                if (providerStatus == PaymentStatusOptions.Captured&& providerTransactionId!=null)
+                if (providerStatus == PaymentStatusOptions.Captured && providerTransactionId != null)
                 {
                     payment.Status = PaymentStatusOptions.Captured;
                     payment.ProviderTransactionId = providerTransactionId;
@@ -356,13 +356,9 @@ namespace CareerRoute.Core.Services.Implementations
             if (session == null)
                 throw new NotFoundException("Session", payment.SessionId);
 
-
-            // Verify payment status with provider (implementation depends on your provider SDK)
-            await VerifyPaymentWithProviderAsync(paymentService, payment.PaymentIntentId);
-
             var currency = payment.PaymentProvider == PaymentProviderOptions.Stripe ? "USD" : "EGP";
             decimal expectedAmount = payment.PaymentProvider == PaymentProviderOptions.Stripe
-                ? Math.Round((session.Price / 50m) , 2) 
+                ? Math.Round((session.Price / 50m), 2)
                 : session.Price;
             // Validate payment amount matches session price
             if (payment.Amount != expectedAmount || payment.Currency != currency)
@@ -531,7 +527,7 @@ namespace CareerRoute.Core.Services.Implementations
                         await transaction.CommitAsync();
 
                         _logger.LogInformation("[Payment] Payment {PaymentId} status recovered from provider as Captured during cancellation check", payment.Id);
-                        
+
                         // Notify client via SignalR
                         await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, PaymentStatusOptions.Captured);
                         return;
@@ -588,7 +584,7 @@ namespace CareerRoute.Core.Services.Implementations
                     await transaction.CommitAsync();
 
                     _logger.LogInformation("[Payment] Payment {PaymentId} and associated session automatically cancelled due to expiration", paymentId);
-                    
+
                     // Notify client via SignalR
                     await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, PaymentStatusOptions.Canceled);
                 }
@@ -695,35 +691,6 @@ namespace CareerRoute.Core.Services.Implementations
                 TotalRefunded = totalRefunded,
                 NetSpent = netSpent
             };
-        }
-
-
-        private async Task VerifyPaymentWithProviderAsync(IPaymentService paymentService, string paymentIntentId)
-        {
-            // This would call the provider's API to verify the payment status
-            // Implementation depends on your payment provider SDK
-            // For now, we trust the webhook callback
-            // In production, you should verify with the provider's API
-
-            _logger.LogInformation(
-                "Payment verification requested for intent: {PaymentIntentId} with provider: {Provider}",
-                paymentIntentId, paymentService.ProviderName);
-
-            await Task.CompletedTask;
-        }
-
-        private async Task<string> GenerateVideoConferenceLinkAsync(Session session)
-        {
-            // TODO: Integrate with Zoom API or your preferred video conferencing service
-            // For now, return a placeholder
-            var meetingId = Guid.NewGuid().ToString("N").Substring(0, 10);
-            var VideoConferenceLink = $"https://zoom.us/j/{meetingId}";
-
-            _logger.LogInformation(
-                "Generated video conference link for session: {SessionId}, Link: {Link}",
-                session.Id, VideoConferenceLink);
-
-            return await Task.FromResult(VideoConferenceLink);
         }
 
         private async Task SendConfirmationEmailsAsync(Session session, Payment payment, Mentor mentor, ApplicationUser mentee)
