@@ -25,6 +25,7 @@ namespace CareerRoute.API.Controllers
         private readonly IBaseRepository<Session> _sessionRepository;
         private readonly IBaseRepository<ApplicationUser> _userRepository;
         private readonly IBaseRepository<Mentor> _mentorRepository;
+        private readonly IBaseRepository<TimeSlot> _timeSlotRepository;
         private readonly IZoomService _zoomService;
         private readonly ZoomSettings _zoomSettings;
         private readonly ISessionService _sessionService;
@@ -35,6 +36,7 @@ namespace CareerRoute.API.Controllers
             IBaseRepository<Session> sessionRepository,
             IBaseRepository<ApplicationUser> userRepository,
             IBaseRepository<Mentor> mentorRepository,
+            IBaseRepository<TimeSlot> timeSlotRepository,
             IZoomService zoomService,
             ISessionService sessionService,
             IOptions<ZoomSettings> zoomSettings,
@@ -44,6 +46,7 @@ namespace CareerRoute.API.Controllers
             _sessionRepository = sessionRepository;
             _userRepository = userRepository;
             _mentorRepository = mentorRepository;
+            _timeSlotRepository = timeSlotRepository;
             _zoomService = zoomService;
             _zoomSettings = zoomSettings.Value;
             _sessionService = sessionService;
@@ -54,17 +57,40 @@ namespace CareerRoute.API.Controllers
         /// <summary>
         /// Seeds a dummy session for testing. Finds the first available Mentor and Mentee.
         /// </summary>
+        /// <summary>
+        /// Seeds a dummy session for testing. Finds the first available Mentor and Mentee if not provided.
+        /// Bypasses the 24-hour booking rule.
+        /// </summary>
         [HttpPost("seed-session")]
-        public async Task<IActionResult> SeedSession([FromQuery] int offsetMinutes = 10, [FromQuery] int durationMinutes = 60)
+        public async Task<IActionResult> SeedSession(
+            [FromQuery] int offsetMinutes = 10, 
+            [FromQuery] int durationMinutes = 60,
+            [FromQuery] string? mentorId = null,
+            [FromQuery] string? menteeId = null)
         {
-            var mentor = await
-            _mentorRepository.GetByIdAsync("6f9ba797-345b-42f3-83ea-d6a086a2a536");
+            // Get mentor - use provided ID or fall back to first in DB
+            Mentor? mentor = null;
+            if (!string.IsNullOrEmpty(mentorId))
+                mentor = await _mentorRepository.GetByIdAsync(mentorId);
+            
+            if (mentor == null)
+            {
+                var mentors = await _mentorRepository.GetAllAsync();
+                mentor = mentors.FirstOrDefault();
+            }
 
             if (mentor == null) return NotFound("No mentors found in DB. Create a mentor first.");
 
-            var users = await _userRepository.GetAllAsync();
-            // Pick a user who is NOT the mentor (if possible)
-            var mentee = users.FirstOrDefault(u => u.Id != mentor.Id);
+            // Get mentee - use provided ID or fall back to first user who is not the mentor
+            ApplicationUser? mentee = null;
+            if (!string.IsNullOrEmpty(menteeId))
+                mentee = await _userRepository.GetByIdAsync(menteeId);
+            
+            if (mentee == null)
+            {
+                var users = await _userRepository.GetAllAsync();
+                mentee = users.FirstOrDefault(u => u.Id != mentor.Id);
+            }
             
             if (mentee == null) return NotFound("No suitable mentee user found in DB.");
 
@@ -91,7 +117,7 @@ namespace CareerRoute.API.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Bypass service logic and save directly
+            // Bypass service logic (including 24-hour rule) and save directly
             await _sessionRepository.AddAsync(session);
             await _sessionRepository.SaveChangesAsync();
             
@@ -108,14 +134,41 @@ namespace CareerRoute.API.Controllers
         /// <summary>
         /// Seeds a session AND creates Zoom meeting in one call (skips payment flow entirely).
         /// </summary>
+        /// <summary>
+        /// Seeds a session AND creates Zoom meeting in one call (skips payment flow entirely).
+        /// Bypasses the 24-hour booking rule.
+        /// </summary>
         [HttpPost("seed-and-create-meeting")]
-        public async Task<IActionResult> SeedAndCreateMeeting([FromQuery] int offsetMinutes = 10, [FromQuery] int durationMinutes = 60)
+        public async Task<IActionResult> SeedAndCreateMeeting(
+            [FromQuery] int offsetMinutes = 10, 
+            [FromQuery] int durationMinutes = 60,
+            [FromQuery] string? mentorId = null,
+            [FromQuery] string? menteeId = null)
         {
-            var mentor = await _mentorRepository.GetByIdAsync("6f9ba797-345b-42f3-83ea-d6a086a2a536");
+            // Get mentor - use provided ID or fall back to first in DB
+            Mentor? mentor = null;
+            if (!string.IsNullOrEmpty(mentorId))
+                mentor = await _mentorRepository.GetByIdAsync(mentorId);
+            
+            if (mentor == null)
+            {
+                var mentors = await _mentorRepository.GetAllAsync();
+                mentor = mentors.FirstOrDefault();
+            }
+
             if (mentor == null) return NotFound("No mentors found in DB. Create a mentor first.");
 
-            var users = await _userRepository.GetAllAsync();
-            var mentee = users.FirstOrDefault(u => u.Id != mentor.Id);
+            // Get mentee - use provided ID or fall back to first user who is not the mentor
+            ApplicationUser? mentee = null;
+            if (!string.IsNullOrEmpty(menteeId))
+                mentee = await _userRepository.GetByIdAsync(menteeId);
+            
+            if (mentee == null)
+            {
+                var users = await _userRepository.GetAllAsync();
+                mentee = users.FirstOrDefault(u => u.Id != mentor.Id);
+            }
+
             if (mentee == null) return NotFound("No suitable mentee user found in DB.");
 
             if (durationMinutes != 30 && durationMinutes != 60)
@@ -139,6 +192,7 @@ namespace CareerRoute.API.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
+            // Bypass service logic (including 24-hour rule) and save directly
             await _sessionRepository.AddAsync(session);
             await _sessionRepository.SaveChangesAsync();
 
@@ -171,6 +225,102 @@ namespace CareerRoute.API.Controllers
                     Error = ex.Message
                 });
             }
+        }
+
+        /// <summary>
+        /// Seeds a session requiring payment (Pending status). Creates a TimeSlot and Session.
+        /// Bypasses the 24-hour booking rule for testing. Use normal payment flow after this.
+        /// </summary>
+        [HttpPost("seed-session-pending-payment")]
+        public async Task<IActionResult> SeedSessionPendingPayment(
+            [FromQuery] int offsetMinutes = 10, 
+            [FromQuery] int durationMinutes = 60,
+            [FromQuery] string? mentorId = null,
+            [FromQuery] string? menteeId = null)
+        {
+            // Get mentor - use provided ID or fall back to first in DB
+            Mentor? mentor = null;
+            if (!string.IsNullOrEmpty(mentorId))
+                mentor = await _mentorRepository.GetByIdAsync(mentorId);
+            
+            if (mentor == null)
+            {
+                var mentors = await _mentorRepository.GetAllAsync();
+                mentor = mentors.FirstOrDefault();
+            }
+
+            if (mentor == null) return NotFound("No mentors found in DB. Create a mentor first.");
+
+            // Get mentee - use provided ID or fall back to first user who is not the mentor
+            ApplicationUser? mentee = null;
+            if (!string.IsNullOrEmpty(menteeId))
+                mentee = await _userRepository.GetByIdAsync(menteeId);
+            
+            if (mentee == null)
+            {
+                var users = await _userRepository.GetAllAsync();
+                mentee = users.FirstOrDefault(u => u.Id != mentor.Id);
+            }
+
+            if (mentee == null) return NotFound("No suitable mentee user found in DB.");
+
+            if (durationMinutes != 30 && durationMinutes != 60)
+                return BadRequest("Duration must be 30 or 60 minutes");
+
+            var scheduledStart = DateTime.UtcNow.AddMinutes(offsetMinutes);
+
+            // Create a TimeSlot for the mentor (bypassing normal availability checks)
+            var timeSlot = new TimeSlot
+            {
+                Id = Guid.NewGuid().ToString(),
+                MentorId = mentor.Id,
+                StartDateTime = scheduledStart,
+                DurationMinutes = durationMinutes,
+                IsBooked = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var durationOption = (DurationOptions)durationMinutes;
+
+            // Create session with Pending status (requires payment)
+            var session = new Session
+            {
+                Id = Guid.NewGuid().ToString(),
+                MentorId = mentor.Id,
+                MenteeId = mentee.Id,
+                TimeSlotId = timeSlot.Id,
+                SessionType = SessionTypeOptions.OneOnOne,
+                Duration = durationOption,
+                Price = durationOption == DurationOptions.SixtyMinutes ? mentor.Rate60Min : mentor.Rate30Min,
+                Status = SessionStatusOptions.Pending, // Requires payment
+                ScheduledStartTime = scheduledStart,
+                ScheduledEndTime = scheduledStart.AddMinutes(durationMinutes),
+                Topic = "Test Session (Pending Payment)",
+                Notes = "Auto-generated by ZoomTestController - requires payment",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // Link timeslot to session
+            timeSlot.SessionId = session.Id;
+
+            // Save both
+            await _timeSlotRepository.AddAsync(timeSlot);
+            await _sessionRepository.AddAsync(session);
+            await _sessionRepository.SaveChangesAsync();
+            
+            return Ok(new 
+            { 
+                Message = "Session created with Pending status. Proceed with payment flow.",
+                SessionId = session.Id,
+                TimeSlotId = timeSlot.Id,
+                MenteeId = mentee.Id,
+                MenteeEmail = mentee.Email,
+                MentorId = mentor.Id,
+                Price = session.Price,
+                Duration = durationMinutes,
+                ScheduledStartTime = session.ScheduledStartTime,
+                NextStep = "Call POST /api/payments/create-intent with { sessionId, paymentProvider } then confirm payment"
+            });
         }
 
         /// <summary>
