@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
@@ -8,6 +8,10 @@ import {
   formatSlotDate
 } from '../../../../shared/models/timeslot.model';
 import { BookingRules } from '../../../../shared/models/booking.model';
+import { SessionService } from '../../../../core/services/session.service';
+import { BookSessionRequest, BookSessionResponse } from '../../../../shared/models/session.model';
+import { PaymentMethodSelectionComponent } from '../payment-method-selection/payment-method-selection.component';
+import { PaymentMethodSelection } from '../../../../shared/models/payment-flow.model';
 
 /**
  * Interface for a single day in the week view calendar
@@ -45,7 +49,7 @@ interface WeekDay {
 @Component({
   selector: 'app-booking-calendar-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, PaymentMethodSelectionComponent],
   templateUrl: './booking-calendar-modal.component.html',
   styleUrls: ['./booking-calendar-modal.component.css']
 })
@@ -71,14 +75,17 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
   @Output() closeModal = new EventEmitter<void>();
 
   /**
-   * Event emitted when booking is confirmed
-   * Emits the booking request data including selected slot and form values
+   * Event emitted when booking is confirmed and payment method selected
+   * Emits session details and payment method selection
    */
-  @Output() confirmBooking = new EventEmitter<{
-    slot: AvailableSlot;
-    topic?: string;
-    notes?: string;
+  @Output() bookingConfirmed = new EventEmitter<{
+    session: BookSessionResponse;
+    paymentMethod: PaymentMethodSelection;
   }>();
+
+  // Services
+  private readonly sessionService = inject(SessionService);
+  private readonly formBuilder = inject(FormBuilder);
 
   // Week view state
   currentWeekStart: Date = new Date();
@@ -89,11 +96,30 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
   bookingForm!: FormGroup;
   showBookingForm: boolean = false;
 
+  // Session creation state
+  createdSession: BookSessionResponse | null = null;
+  isSubmitting: boolean = false;
+  submissionError: string | null = null;
+
+  // Payment method selection state
+  showPaymentMethodSelection: boolean = false;
+
   // Booking rules for validation
   readonly BookingRules = BookingRules;
 
-  constructor(private formBuilder: FormBuilder) {
+  constructor() {
     this.initializeBookingForm();
+  }
+
+  /**
+   * Normalizes a datetime string to ensure it's treated as UTC
+   * Backend sometimes returns datetime without 'Z' suffix
+   */
+  private normalizeUtcDateTime(dateTimeString: string): string {
+    if (dateTimeString.endsWith('Z') || dateTimeString.includes('+') || dateTimeString.match(/.*-\d{2}:\d{2}$/)) {
+      return dateTimeString;
+    }
+    return dateTimeString + 'Z';
   }
 
   ngOnInit(): void {
@@ -151,10 +177,10 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
 
       // Filter slots for this day
       const daySlots = this.availableSlots.filter(slot => {
-        const slotDate = new Date(slot.startDateTime);
+        const slotDate = new Date(this.normalizeUtcDateTime(slot.startDateTime));
         return slotDate.toDateString() === date.toDateString();
       }).sort((a, b) => {
-        return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
+        return new Date(this.normalizeUtcDateTime(a.startDateTime)).getTime() - new Date(this.normalizeUtcDateTime(b.startDateTime)).getTime();
       });
 
       this.weekDays.push({
@@ -249,7 +275,7 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Submit the booking
+   * Submit the booking - creates session via API
    */
   submitBooking(): void {
     if (!this.selectedSlot) return;
@@ -258,11 +284,57 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.confirmBooking.emit({
-      slot: this.selectedSlot,
+    this.isSubmitting = true;
+    this.submissionError = null;
+
+    const request: BookSessionRequest = {
+      timeSlotId: this.selectedSlot.id,
       topic: this.bookingForm.value.topic?.trim() || undefined,
       notes: this.bookingForm.value.notes?.trim() || undefined
+    };
+
+    this.sessionService.bookSession(request).subscribe({
+      next: (session) => {
+        console.log('Session created:', session);
+        console.log('Session ID:', session.id);
+        console.log('Session Price:', session.price);
+        console.log('Session Status:', session.status);
+        console.log('Full session object:', JSON.stringify(session, null, 2));
+        this.createdSession = session;
+        this.isSubmitting = false;
+        // Show payment method selection modal
+        this.showPaymentMethodSelection = true;
+      },
+      error: (error) => {
+        console.error('Session creation failed:', error);
+        this.isSubmitting = false;
+        this.submissionError = error?.error?.message || 'Failed to create session. Please try again.';
+      }
     });
+  }
+
+  /**
+   * Handle payment method selection
+   */
+  onPaymentMethodSelected(paymentMethod: PaymentMethodSelection): void {
+    if (!this.createdSession) return;
+
+    // Emit booking confirmed event with session and payment method
+    this.bookingConfirmed.emit({
+      session: this.createdSession,
+      paymentMethod: paymentMethod
+    });
+
+    // Close both modals
+    this.showPaymentMethodSelection = false;
+    this.onClose();
+  }
+
+  /**
+   * Close payment method selection modal
+   */
+  closePaymentMethodSelection(): void {
+    this.showPaymentMethodSelection = false;
   }
 
   /**
@@ -298,7 +370,7 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
    * Get only the start time (e.g., "10:00 AM")
    */
   getStartTime(slot: AvailableSlot): string {
-    const date = new Date(slot.startDateTime);
+    const date = new Date(this.normalizeUtcDateTime(slot.startDateTime));
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
