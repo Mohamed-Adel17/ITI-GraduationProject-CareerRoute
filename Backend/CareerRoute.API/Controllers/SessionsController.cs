@@ -602,6 +602,51 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
+        /// Get AI-generated summary for a completed session (participants only).
+        /// </summary>
+        /// <remarks>
+        /// Retrieves the AI-generated summary for a completed session.
+        /// 
+        /// **Availability:**
+        /// - Summary is generated automatically after transcript is processed
+        /// - Processing may take a few minutes after transcript is available
+        /// 
+        /// **Format:**
+        /// - Returns markdown-formatted summary
+        /// - Includes session overview, key advice, action items, and takeaways
+        /// 
+        /// **Authorization:** Only session participants can access summaries.
+        /// </remarks>
+        /// <param name="sessionId">The unique session identifier</param>
+        /// <returns>AI-generated session summary in markdown format</returns>
+        /// <response code="200">Summary retrieved successfully</response>
+        /// <response code="401">User not authenticated</response>
+        /// <response code="403">User is not a participant of this session</response>
+        /// <response code="404">Session, transcript, or summary not found</response>
+        [HttpGet("{sessionId}/summary")]
+        [Authorize]
+        [Produces("text/plain")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetSessionSummary(string sessionId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthenticatedException("Invalid authentication token");
+            }
+
+            _logger.LogInformation("User {UserId} requesting summary for session {SessionId}", userId, sessionId);
+
+            var summary = await _sessionService.GetSessionSummaryAsync(sessionId, userId);
+
+            return Content(summary, "text/plain");
+        }
+
+        /// <summary>
         /// Ends an active session and its associated Zoom meeting (mentor only).
         /// </summary>
         /// <remarks>

@@ -74,6 +74,8 @@ namespace CareerRoute.Core.Domain.Entities
         [MaxLength(500)]
         public string? VideoStorageKey { get; set; }
 
+        public string? Summary { get; set; }
+
         // Navigation properties
         public virtual ApplicationUser Mentee { get; set; } = null!;
         public virtual Mentor Mentor { get; set; } = null!;

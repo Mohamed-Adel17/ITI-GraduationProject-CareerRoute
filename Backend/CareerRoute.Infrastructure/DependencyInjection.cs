@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.Configure<DeepgramSettings>(configuration.GetSection(nameof(DeepgramSettings)));
         services.Configure<R2Settings>(configuration.GetSection(nameof(R2Settings)));
         services.Configure<RateLimitingSettings>(configuration.GetSection(nameof(RateLimitingSettings)));
+        services.Configure<GitHubSettings>(configuration.GetSection(nameof(GitHubSettings)));
         return services;
     }
 
@@ -67,6 +68,11 @@ public static class DependencyInjection
         services.AddScoped<IDeepgramService, DeepgramService>();
         services.AddScoped<IBlobStorageService, CloudflareR2Service>();
         services.AddScoped<IJobScheduler, HangfireJobScheduler>();
+
+        // AI Client Registration
+        services.AddHttpClient<OpenAiClient>(c => c.Timeout = TimeSpan.FromMinutes(5));
+        services.AddHttpClient<GitHubModelsClient>(c => c.Timeout = TimeSpan.FromMinutes(5));
+        services.AddScoped<IAiClient, AiClientFacade>();
 
         // HttpClient Configuration
         services.AddHttpClient();

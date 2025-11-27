@@ -1026,6 +1026,31 @@ namespace CareerRoute.Core.Services.Implementations
             return session.Transcript;
         }
 
+        public async Task<string> GetSessionSummaryAsync(string sessionId, string userId)
+        {
+            _logger.LogInformation("[Session] Fetching summary for session {SessionId} by user {UserId}", sessionId, userId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            if (session.MentorId != userId && session.MenteeId != userId)
+            {
+                throw new UnauthorizedException("You are not authorized to view this summary.");
+            }
+
+            if (string.IsNullOrEmpty(session.Transcript))
+            {
+                throw new NotFoundException("Transcript not available yet. Please wait for session recording to be processed.");
+            }
+
+            if (string.IsNullOrEmpty(session.Summary))
+            {
+                throw new NotFoundException("Summary is being generated. Please try again in a few moments.");
+            }
+
+            return session.Summary;
+        }
+
         public async Task CancelSessionAsync(string sessionId, string cancellationReason)
         {
             _logger.LogInformation("[Session] Cancelling session {SessionId} with Zoom integration", sessionId);
@@ -1459,7 +1484,8 @@ namespace CareerRoute.Core.Services.Implementations
 
         private Task TriggerAISummaryGenerationEventAsync(Session session)
         {
-            _logger.LogInformation("[Session] [AUDIT] AI summary generation event triggered for session {SessionId}", session.Id);
+            _jobScheduler.EnqueueAsync<IAiSummaryService>(s => s.GenerateAndStoreSummaryAsync(session.Id, default));
+            _logger.LogInformation("[Session] AI summary job enqueued for session {SessionId}", session.Id);
             return Task.CompletedTask;
         }
 

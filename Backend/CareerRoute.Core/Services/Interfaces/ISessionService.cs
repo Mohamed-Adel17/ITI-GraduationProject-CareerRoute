@@ -70,6 +70,11 @@ namespace CareerRoute.Core.Services.Interfaces
         /// Retrieves transcript content for an authorized user.
         /// </summary>
         Task<string> GetSessionTranscriptAsync(string sessionId, string userId);
+
+        /// <summary>
+        /// Retrieves AI-generated summary for an authorized user.
+        /// </summary>
+        Task<string> GetSessionSummaryAsync(string sessionId, string userId);
         /// <summary>
         /// Cancels a session and deletes the associated Zoom meeting.
         /// </summary>
