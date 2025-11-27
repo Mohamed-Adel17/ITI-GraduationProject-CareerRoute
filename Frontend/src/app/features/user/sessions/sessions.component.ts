@@ -7,6 +7,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { SessionCard } from '../../../shared/components/session-card/session-card';
 import { CancelModalComponent } from '../../../shared/components/cancel-modal/cancel-modal.component';
 import { RescheduleModalComponent } from '../../../shared/components/reschedule-modal/reschedule-modal.component';
+import { SessionPaymentModalComponent } from '../../../shared/components/session-payment-modal/session-payment-modal.component';
 import {
   SessionSummary,
   PastSessionItem,
@@ -36,7 +37,7 @@ import {
 @Component({
   selector: 'app-user-sessions',
   standalone: true,
-  imports: [CommonModule, SessionCard, CancelModalComponent, RescheduleModalComponent],
+  imports: [CommonModule, SessionCard, CancelModalComponent, RescheduleModalComponent, SessionPaymentModalComponent],
   templateUrl: './sessions.component.html',
   styleUrls: ['./sessions.component.css']
 })
@@ -62,6 +63,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
   // Modal state
   showCancelModal: boolean = false;
   showRescheduleModal: boolean = false;
+  showPaymentModal: boolean = false;
   selectedSession: SessionSummary | null = null;
 
   private subscriptions: Subscription[] = [];
@@ -280,14 +282,6 @@ export class SessionsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle complete payment action
-   * Navigates to payment page for pending session
-   */
-  onCompletePayment(sessionId: string): void {
-    this.router.navigate(['/payment'], { queryParams: { sessionId } });
-  }
-
-  /**
    * Handle cancel modal close
    */
   onCancelModalClose(): void {
@@ -321,6 +315,41 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.selectedSession = null;
     // Refresh the sessions list
     this.loadUpcomingSessions();
+  }
+
+  /**
+   * Handle complete payment action
+   * Opens payment modal for pending payment session
+   */
+  onCompletePayment(sessionId: string): void {
+    // Find the session to get its details for the modal
+    const session = this.upcomingSessions.find(s => s.id === sessionId);
+    if (session) {
+      this.selectedSession = session;
+      this.showPaymentModal = true;
+    }
+  }
+
+  /**
+   * Handle payment modal close
+   */
+  onPaymentModalClose(): void {
+    this.showPaymentModal = false;
+    this.selectedSession = null;
+  }
+
+  /**
+   * Handle payment success
+   */
+  onPaymentSuccess(): void {
+    this.showPaymentModal = false;
+    this.selectedSession = null;
+    // Refresh the sessions list to show updated status
+    this.loadUpcomingSessions();
+    this.notificationService.success(
+      'Payment completed successfully! Your session is now confirmed.',
+      'Payment Successful'
+    );
   }
 
   // ==========================================================================

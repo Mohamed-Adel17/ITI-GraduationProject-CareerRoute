@@ -98,7 +98,8 @@
       <div *ngIf="hasUpcomingSessions()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <app-session-card *ngFor="let session of upcomingSessions; trackBy: trackBySessionId" [session]="session"
           [userRole]="'mentee'" (joinSession)="onJoinSession($event)" (cancelSession)="onCancelSession($event)"
-          (rescheduleSession)="onRescheduleSession($event)" (viewDetails)="onViewDetails($event)">
+          (rescheduleSession)="onRescheduleSession($event)" (viewDetails)="onViewDetails($event)"
+          (completePayment)="onCompletePayment($event)">
         </app-session-card>
       </div>
 
@@ -193,209 +194,24 @@
           <div class="animate-spin rounded-full h-4 w-4 border-2 border-solid border-primary border-r-transparent">
           </div>
           Loading...
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Sessions</h1>
-          <p class="mt-2 text-gray-600 dark:text-gray-400">
-            Manage your mentorship sessions
-          </p>
-        </div>
-
-        <!-- Pending Payment Alert -->
-        <div *ngIf="pendingPaymentCount > 0"
-          class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <p class="text-sm text-yellow-700 dark:text-yellow-300">
-              You have <strong>{{ pendingPaymentCount }}</strong> session{{ pendingPaymentCount > 1 ? 's' : '' }}
-              pending payment.
-              Complete payment to confirm your booking.
-            </p>
-          </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-          <nav class="flex gap-8" aria-label="Sessions tabs">
-            <button (click)="switchTab('upcoming')" [class]="activeTab === 'upcoming'
-            ? 'border-b-2 border-primary text-primary font-semibold'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-              class="pb-4 px-1 text-sm transition-colors">
-              Upcoming
-              <span *ngIf="upcomingPagination?.totalCount"
-                class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
-                {{ upcomingPagination?.totalCount }}
-              </span>
-            </button>
-            <button (click)="switchTab('past')" [class]="activeTab === 'past'
-            ? 'border-b-2 border-primary text-primary font-semibold'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-              class="pb-4 px-1 text-sm transition-colors">
-              Past
-              <span *ngIf="pastPagination?.totalCount"
-                class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
-                {{ pastPagination?.totalCount }}
-              </span>
-            </button>
-          </nav>
-        </div>
-
-        <!-- Upcoming Sessions Tab -->
-        <div *ngIf="activeTab === 'upcoming'">
-          <!-- Loading State -->
-          <div *ngIf="loadingUpcoming && upcomingSessions.length === 0"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div *ngFor="let i of [1, 2, 3]" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 animate-pulse">
-              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                <div class="flex-1">
-                  <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                </div>
-              </div>
-              <div class="space-y-2">
-                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="!loadingUpcoming && !hasUpcomingSessions()" class="text-center py-12">
-            <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Upcoming Sessions</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">
-              You don't have any upcoming sessions scheduled.
-            </p>
-            <a routerLink="/mentors"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-              Find a Mentor
-            </a>
-          </div>
-
-          <!-- Sessions Grid -->
-          <div *ngIf="hasUpcomingSessions()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <app-session-card *ngFor="let session of upcomingSessions; trackBy: trackBySessionId" [session]="session"
-              [userRole]="'mentee'" (joinSession)="onJoinSession($event)" (cancelSession)="onCancelSession($event)"
-              (rescheduleSession)="onRescheduleSession($event)" (viewDetails)="onViewDetails($event)">
-            </app-session-card>
-          </div>
-
-          <!-- Pagination -->
-          <div *ngIf="upcomingPagination && upcomingPagination.totalPages > 1" class="mt-8 flex justify-center">
-            <div class="flex items-center gap-2">
-              <button (click)="goToUpcomingPage(upcomingPage - 1)" [disabled]="!upcomingPagination.hasPreviousPage"
-                class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                Previous
-              </button>
-              <span class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
-                Page {{ upcomingPagination.currentPage }} of {{ upcomingPagination.totalPages }}
-              </span>
-              <button (click)="goToUpcomingPage(upcomingPage + 1)" [disabled]="!upcomingPagination.hasNextPage"
-                class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                Next
-              </button>
-            </div>
-          </div>
-
-          <!-- Loading More Indicator -->
-          <div *ngIf="loadingUpcoming && upcomingSessions.length > 0" class="mt-6 text-center">
-            <div class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <div class="animate-spin rounded-full h-4 w-4 border-2 border-solid border-primary border-r-transparent">
-              </div>
-              Loading...
-            </div>
-          </div>
-        </div>
-
-        <!-- Past Sessions Tab -->
-        <div *ngIf="activeTab === 'past'">
-          <!-- Loading State -->
-          <div *ngIf="loadingPast && pastSessions.length === 0"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div *ngFor="let i of [1, 2, 3]" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 animate-pulse">
-              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                <div class="flex-1">
-                  <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                </div>
-              </div>
-              <div class="space-y-2">
-                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="!loadingPast && !hasPastSessions()" class="text-center py-12">
-            <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Past Sessions</h3>
-            <p class="text-gray-600 dark:text-gray-400">
-              You haven't completed any sessions yet.
-            </p>
-          </div>
-
-          <!-- Sessions Grid -->
-          <div *ngIf="hasPastSessions()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <app-session-card *ngFor="let session of pastSessions; trackBy: trackBySessionId" [session]="session"
-              [userRole]="'mentee'" (viewDetails)="onViewDetails($event)">
-            </app-session-card>
-          </div>
-
-          <!-- Pagination -->
-          <div *ngIf="pastPagination && pastPagination.totalPages > 1" class="mt-8 flex justify-center">
-            <div class="flex items-center gap-2">
-              <button (click)="goToPastPage(pastPage - 1)" [disabled]="!pastPagination.hasPreviousPage"
-                class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                Previous
-              </button>
-              <span class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
-                Page {{ pastPagination.currentPage }} of {{ pastPagination.totalPages }}
-              </span>
-              <button (click)="goToPastPage(pastPage + 1)" [disabled]="!pastPagination.hasNextPage"
-                class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                Next
-              </button>
-            </div>
-          </div>
-
-          <!-- Loading More Indicator -->
-          <div *ngIf="loadingPast && pastSessions.length > 0" class="mt-6 text-center">
-            <div class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <div class="animate-spin rounded-full h-4 w-4 border-2 border-solid border-primary border-r-transparent">
-              </div>
-              Loading...
-            </div>
-          </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Cancel Session Modal -->
-    <app-cancel-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showCancelModal"
-      (onClose)="onCancelModalClose()" (onCancelSuccess)="onCancelSuccess()">
-    </app-cancel-modal>
+  <!-- Cancel Session Modal -->
+  <app-cancel-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showCancelModal"
+    (onClose)="onCancelModalClose()" (onCancelSuccess)="onCancelSuccess()">
+  </app-cancel-modal>
 
-    <!-- Reschedule Session Modal -->
-    <app-reschedule-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showRescheduleModal"
-      (onClose)="onRescheduleModalClose()" (onRescheduleSuccess)="onRescheduleSuccess()">
-    </app-reschedule-modal>
+  <!-- Reschedule Session Modal -->
+  <app-reschedule-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showRescheduleModal"
+    (onClose)="onRescheduleModalClose()" (onRescheduleSuccess)="onRescheduleSuccess()">
+  </app-reschedule-modal>
+
+  <!-- Payment Modal -->
+  <app-session-payment-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showPaymentModal"
+    (closeModal)="onPaymentModalClose()" (paymentSuccess)="onPaymentSuccess()">
+  </app-session-payment-modal>
+</div>
+
