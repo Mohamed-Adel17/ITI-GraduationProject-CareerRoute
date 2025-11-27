@@ -89,6 +89,11 @@ export class SessionCard {
    */
   @Output() completeSession = new EventEmitter<string>();
 
+  /**
+   * Emitted when user clicks Complete Payment button (for pending payment sessions)
+   */
+  @Output() completePayment = new EventEmitter<string>();
+
   // Expose enums to template
   SessionStatus = SessionStatus;
 
@@ -292,5 +297,9 @@ export class SessionCard {
 
   onCompleteClick(): void {
     this.completeSession.emit(this.session.id);
+  }
+
+  onCompletePaymentClick(): void {
+    this.completePayment.emit(this.session.id);
   }
 }
