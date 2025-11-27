@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IRescheduleSessionService, RescheduleSessionService>();
+        services.AddScoped<IAiSummaryService, AiSummaryService>();
 
         services.AddAutoMapper(options =>
         {

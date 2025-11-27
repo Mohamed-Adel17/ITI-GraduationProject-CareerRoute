@@ -225,20 +225,10 @@ namespace CareerRoute.Infrastructure.Services
         /// </summary>
         private Task TriggerAISummaryGenerationEventAsync(Session session)
         {
-            // TODO: Implement actual event triggering mechanism
-            // This could be:
-            // - Publishing to a message queue (RabbitMQ, Azure Service Bus, etc.)
-            // - Triggering a webhook
-            // - Calling an AI service API
-            // - Storing in a queue table for processing
-
-            _logger.LogInformation(
-                "[AUDIT] AI summary generation event triggered for session {SessionId}. " +
-                "This will be implemented in a future task. Timestamp: {Timestamp}",
-                session.Id, DateTime.UtcNow);
-
-            // For now, just log the event
-            // In a real implementation, you would publish an event here
+            using var scope = _serviceProvider.CreateScope();
+            var jobScheduler = scope.ServiceProvider.GetRequiredService<IJobScheduler>();
+            jobScheduler.EnqueueAsync<IAiSummaryService>(s => s.GenerateAndStoreSummaryAsync(session.Id, default));
+            _logger.LogInformation("[AUDIT] AI summary job enqueued for session {SessionId}", session.Id);
             return Task.CompletedTask;
         }
 
