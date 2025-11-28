@@ -47,13 +47,13 @@ export const environment = {
    * Payment Provider Configuration
    */
   payment: {
-    // Stripe configuration
+   // Stripe configuration
     stripe: {
-      publishableKey: 'pk_live_YOUR_STRIPE_LIVE_KEY_HERE', // Replace with actual Stripe live key
+      publishableKey: 'pk_test_51SQj1nB7cctyvNSxIOsiv6EM6mcrIZ2nP9MUq8Q8oXZm5TOFh7wI8yjvWWvC8A8m6wgKaEPHZ3k5XZYZUTWncbe100STm2bT8X', // Replace with actual Stripe test key
     },
     // Paymob configuration
     paymob: {
-      iframeId: 'YOUR_PAYMOB_IFRAME_ID', // Replace with actual Paymob iframe ID
+      iframeId: '983026', // Replace with actual Paymob iframe ID
       apiUrl: 'https://accept.paymob.com/api/acceptance',
     },
     // SignalR hub for real-time payment status updates
