@@ -253,7 +253,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-//seed test data on application startup (Development only)
+//seed test data on application startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -263,8 +263,9 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var env = services.GetRequiredService<IWebHostEnvironment>();
+        var forceSeeding = builder.Configuration.GetValue<bool>("SeedData:ForceSeeding");
 
-        await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env);
+        await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env, forceSeeding);
     }
     catch (Exception ex)
     {

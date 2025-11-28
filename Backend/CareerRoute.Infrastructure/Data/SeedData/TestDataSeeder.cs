@@ -14,12 +14,13 @@ namespace CareerRoute.Infrastructure.Data.SeedData
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             ILogger logger,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            bool forceSeeding = false)
         {
-            // Only seed test data in Development environment
-            if (!env.IsDevelopment())
+            // Only seed test data in Development environment unless forced
+            if (!env.IsDevelopment() && !forceSeeding)
             {
-                logger.LogInformation("Skipping test data seeding (not in Development environment)");
+                logger.LogInformation("Skipping test data seeding (not in Development environment and ForceSeeding is false)");
                 return;
             }
 
