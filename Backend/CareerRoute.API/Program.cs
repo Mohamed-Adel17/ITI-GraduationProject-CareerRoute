@@ -265,6 +265,9 @@ using (var scope = app.Services.CreateScope())
         var env = services.GetRequiredService<IWebHostEnvironment>();
         var configuration = services.GetRequiredService<IConfiguration>();
         var forceSeeding = configuration.GetValue<bool>("SeedData:ForceSeeding");
+        
+        logger.LogInformation("=== SEED DATA CONFIG: ForceSeeding = {ForceSeeding}, Environment = {Env} ===", 
+            forceSeeding, env.EnvironmentName);
 
         await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env, forceSeeding);
     }

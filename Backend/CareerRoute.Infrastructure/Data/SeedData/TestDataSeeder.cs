@@ -17,12 +17,17 @@ namespace CareerRoute.Infrastructure.Data.SeedData
             IWebHostEnvironment env,
             bool forceSeeding = false)
         {
+            logger.LogInformation("TestDataSeeder called - Environment: {Env}, ForceSeeding: {Force}", 
+                env.EnvironmentName, forceSeeding);
+            
             // Only seed test data in Development environment unless forced
             if (!env.IsDevelopment() && !forceSeeding)
             {
                 logger.LogInformation("Skipping test data seeding (not in Development environment and ForceSeeding is false)");
                 return;
             }
+            
+            logger.LogInformation("Proceeding with test data seeding...");
 
             logger.LogInformation("=== Starting Test Data Seeding for US2 ===");
 
