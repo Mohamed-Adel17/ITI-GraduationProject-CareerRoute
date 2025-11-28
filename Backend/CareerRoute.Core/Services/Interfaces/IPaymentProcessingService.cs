@@ -38,6 +38,11 @@ namespace CareerRoute.Core.Services.Interfaces
         /// Gets a single payment by ID
         /// </summary>
         Task<PaymentHistroyItemResponseDto> GetPaymentByIdAsync(string paymentId);
+
+        /// <summary>
+        /// Gets a single payment by Payment Intent ID
+        /// </summary>
+        Task<PaymentHistroyItemResponseDto> GetPaymentByIntentIdAsync(string paymentIntentId);
         Task CheckAndCancelPaymentAsync(string paymentId);
 
         /// <summary>

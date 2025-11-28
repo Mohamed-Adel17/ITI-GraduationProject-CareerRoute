@@ -170,14 +170,14 @@ namespace CareerRoute.Core.Services.Implementations
                 await _timeSlotRepository.SaveChangesAsync();
 
                 await transaction.CommitAsync();
-
-                _logger.LogInformation("[Session] Session {SessionId} booked successfully by mentee {MenteeId} with mentor {MentorId}", session.Id, menteeId, session.MentorId);
-
+                // Schedule cleanup job IMMEDIATELY after commit - critical for data integrity
                 var bookingPeriodMinutes = _configuration.GetValue<int>("BookingPeriodMinutes", 15);
-                BackgroundJob.Schedule<ISessionService>(
+                var jobId = BackgroundJob.Schedule<ISessionService>(
                     service => service.ReleaseUnpaidSessionAsync(session.Id),
                     TimeSpan.FromMinutes(bookingPeriodMinutes));
-
+                
+                _logger.LogInformation("[Session] Session {SessionId} booked successfully by mentee {MenteeId} with mentor {MentorId}. Scheduled ReleaseUnpaidSessionAsync job {JobId} in {Minutes} min", session.Id, menteeId, session.MentorId, jobId, bookingPeriodMinutes);
+                
                 // Reload session with relations for proper DTO mapping
                 var sessionWithRelations = await _sessionRepository.GetByIdWithRelationsAsync(session.Id);
                 return _mapper.Map<BookSessionResponseDto>(sessionWithRelations);

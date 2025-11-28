@@ -112,6 +112,22 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
+        /// Get a specific payment by Payment Intent ID
+        /// </summary>
+        /// <param name="paymentIntentId">Payment Intent ID (e.g., pi_xxx from Stripe)</param>
+        /// <returns>Payment details</returns>
+        [AuthorizeRole(AppRoles.User, AppRoles.Admin)]
+        [HttpGet("intent/{paymentIntentId}")]
+        [ProducesResponseType(typeof(ApiResponse<PaymentHistroyItemResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<PaymentHistroyItemResponseDto>> GetPaymentByIntentId(string paymentIntentId)
+        {
+            var result = await _paymentService.GetPaymentByIntentIdAsync(paymentIntentId);
+            return Ok(new ApiResponse<PaymentHistroyItemResponseDto> { Data = result });
+        }
+
+        /// <summary>
         /// Refund a payment by percentage
         /// </summary>
         /// <param name="paymentId">Payment ID</param>

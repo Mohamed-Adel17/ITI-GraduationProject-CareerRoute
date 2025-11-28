@@ -4,6 +4,7 @@ using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.DTOs.Zoom;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Settings;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ namespace CareerRoute.API.Controllers
         private readonly ISessionService _sessionService;
         private readonly IBlobStorageService _blobStorageService;
         private readonly IDeepgramService _deepgramService;
+        private readonly ILogger<ZoomTestController> _logger;
+        private readonly IConfiguration _configuration;
 
         public ZoomTestController(
             IBaseRepository<Session> sessionRepository,
@@ -41,7 +44,9 @@ namespace CareerRoute.API.Controllers
             ISessionService sessionService,
             IOptions<ZoomSettings> zoomSettings,
             IBlobStorageService blobStorageService,
-            IDeepgramService deepgramService)
+            IDeepgramService deepgramService,
+            ILogger<ZoomTestController> logger,
+            IConfiguration configuration)
         {
             _sessionRepository = sessionRepository;
             _userRepository = userRepository;
@@ -52,6 +57,8 @@ namespace CareerRoute.API.Controllers
             _sessionService = sessionService;
             _blobStorageService = blobStorageService;
             _deepgramService = deepgramService;
+            _logger = logger;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -307,6 +314,15 @@ namespace CareerRoute.API.Controllers
             await _timeSlotRepository.AddAsync(timeSlot);
             await _sessionRepository.AddAsync(session);
             await _sessionRepository.SaveChangesAsync();
+
+            // Schedule cleanup job IMMEDIATELY after save - critical for data integrity
+            var bookingPeriodMinutes = _configuration.GetValue<int>("BookingPeriodMinutes", 15);
+            var jobId = BackgroundJob.Schedule<ISessionService>(
+                service => service.ReleaseUnpaidSessionAsync(session.Id),
+                TimeSpan.FromMinutes(bookingPeriodMinutes));
+            
+            _logger.LogInformation("[ZoomTest] Session {SessionId} created. Scheduled ReleaseUnpaidSessionAsync job {JobId} to run in {Minutes} minutes",
+                session.Id, jobId, bookingPeriodMinutes);
             
             return Ok(new 
             { 
@@ -319,6 +335,8 @@ namespace CareerRoute.API.Controllers
                 Price = session.Price,
                 Duration = durationMinutes,
                 ScheduledStartTime = session.ScheduledStartTime,
+                HangfireJobId = jobId,
+                ReleaseAfterMinutes = bookingPeriodMinutes,
                 NextStep = "Call POST /api/payments/create-intent with { sessionId, paymentProvider } then confirm payment"
             });
         }

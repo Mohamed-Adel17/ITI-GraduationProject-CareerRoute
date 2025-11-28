@@ -82,10 +82,50 @@ namespace CareerRoute.Core.Services.Implementations
 
             if (session.Status != SessionStatusOptions.Pending)
                 throw new BusinessException($"Cannot create payment for session with status: {session.Status}");
-            if (session.PaymentId is not null)
-                throw new ConflictException("Session already has a payment associated");
             if (session.MenteeId != userId)
                 throw new UnauthorizedException($"Access Denied");
+
+            // Handle re-payment scenarios
+            if (session.PaymentId is not null)
+            {
+                var existingPayment = await _paymentRepository.GetByIdAsync(session.PaymentId);
+                if (existingPayment != null)
+                {
+                    // If existing payment is still pending, return it
+                    if (existingPayment.Status == PaymentStatusOptions.Pending)
+                    {
+                        _logger.LogInformation("[Payment] Returning existing pending payment {PaymentId} for session {SessionId}",
+                            existingPayment.Id, request.SessionId);
+                        return new PaymentIntentResponseDto
+                        {
+                            PaymentIntentId = existingPayment.PaymentIntentId,
+                            ClientSecret = existingPayment.ClientSecret,
+                            Amount = existingPayment.Amount,
+                            Currency = existingPayment.Currency,
+                            SessionId = existingPayment.SessionId,
+                            PaymentProvider = existingPayment.PaymentProvider,
+                            PaymobPaymentMethod = existingPayment.PaymobPaymentMethod,
+                            Status = existingPayment.Status
+                        };
+                    }
+                    
+                    // If payment was canceled/failed, clear it to allow new payment
+                    if (existingPayment.Status == PaymentStatusOptions.Canceled || existingPayment.Status == PaymentStatusOptions.Failed)
+                    {
+                        _logger.LogInformation("[Payment] Clearing {Status} payment {PaymentId} for session {SessionId} to allow re-payment",
+                            existingPayment.Status, existingPayment.Id, request.SessionId);
+                        session.PaymentId = null;
+                        _sessionRepository.Update(session);
+                        await _sessionRepository.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        // Payment exists with other status (Captured, Refunded, etc.)
+                        throw new ConflictException($"Session already has a payment with status: {existingPayment.Status}");
+                    }
+                }
+            }
+
 
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(session.MentorId);
             if (mentor is null)
@@ -479,19 +519,33 @@ namespace CareerRoute.Core.Services.Implementations
         public async Task<PaymentHistroyItemResponseDto> GetPaymentByIdAsync(string paymentId)
         {
             if (string.IsNullOrEmpty(paymentId))
-                throw new BusinessException("Payment ID must be send");
+                throw new BusinessException("Payment ID must be provided");
 
-            var payment = await _paymentRepository.GetByIdAsync(paymentId);
-            if (payment == null)
-                throw new NotFoundException("Payment", paymentId);
+            var payment = await _paymentRepository.GetByIdAsync(paymentId)
+                ?? throw new NotFoundException("Payment", paymentId);
 
+            return await GetPaymentDtoAsync(payment);
+        }
+
+        public async Task<PaymentHistroyItemResponseDto> GetPaymentByIntentIdAsync(string paymentIntentId)
+        {
+            if (string.IsNullOrEmpty(paymentIntentId))
+                throw new BusinessException("Payment Intent ID must be provided");
+
+            var payment = await _paymentRepository.GetByPaymentIntentIdAsync(paymentIntentId)
+                ?? throw new NotFoundException("Payment", paymentIntentId);
+
+            return await GetPaymentDtoAsync(payment);
+        }
+
+        private async Task<PaymentHistroyItemResponseDto> GetPaymentDtoAsync(Payment payment)
+        {
             var session = await _sessionRepository.GetByIdAsync(payment.SessionId);
             payment.Session = session!;
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(session!.MentorId);
             payment.Session.Mentor = mentor!;
             return _mapper.Map<PaymentHistroyItemResponseDto>(payment);
         }
-
         public async Task CheckAndCancelPaymentAsync(string paymentId)
         {
             _logger.LogInformation("[Payment] Checking if payment {PaymentId} should be cancelled", paymentId);
