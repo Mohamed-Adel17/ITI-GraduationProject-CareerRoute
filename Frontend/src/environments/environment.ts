@@ -9,7 +9,7 @@ export const environment = {
    * API Configuration
    * Base URL for the backend API - REPLACE WITH YOUR PRODUCTION API URL
    */
-  apiUrl: 'careerroute.runasp.net',
+  apiUrl: 'https://careerroute.runasp.net',
 
   /**
    * Authentication Configuration
