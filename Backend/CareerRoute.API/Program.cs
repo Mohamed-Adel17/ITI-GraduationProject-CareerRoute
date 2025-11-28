@@ -263,7 +263,8 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var env = services.GetRequiredService<IWebHostEnvironment>();
-        var forceSeeding = builder.Configuration.GetValue<bool>("SeedData:ForceSeeding");
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var forceSeeding = configuration.GetValue<bool>("SeedData:ForceSeeding");
 
         await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env, forceSeeding);
     }
