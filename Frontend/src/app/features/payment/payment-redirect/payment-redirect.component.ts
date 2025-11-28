@@ -101,16 +101,35 @@ export class PaymentRedirectComponent implements OnInit {
 
   /**
    * Extract payment intent ID from query parameter
+   * Paymob may send different parameters depending on the payment method:
+   * - 'order' - Order ID (most common)
+   * - 'id' - Transaction ID
+   * - 'merchant_order_id' - Merchant order ID
    * @returns Payment intent ID or null if invalid
    */
   extractPaymentIntentId(): string | null {
+    // Try different query parameters that Paymob might send
     const orderId = this.route.snapshot.queryParamMap.get('order');
+    const id = this.route.snapshot.queryParamMap.get('id');
+    const merchantOrderId = this.route.snapshot.queryParamMap.get('merchant_order_id');
     
-    if (!orderId || orderId.trim() === '') {
+    // Log all query params for debugging
+    console.log('Payment redirect query params:', {
+      order: orderId,
+      id: id,
+      merchant_order_id: merchantOrderId,
+      all: this.route.snapshot.queryParamMap.keys
+    });
+    
+    // Try order first, then id, then merchant_order_id
+    const paymentId = orderId || id || merchantOrderId;
+    
+    if (!paymentId || paymentId.trim() === '') {
+      console.error('No valid payment ID found in query parameters');
       return null;
     }
     
-    return orderId.trim();
+    return paymentId.trim();
   }
 
   /**

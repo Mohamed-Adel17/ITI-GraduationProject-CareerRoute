@@ -24,6 +24,7 @@ interface PaymobWalletRequest {
     identifier: string;
     subtype: 'WALLET';
   };
+  redirect_url?: string;
 }
 
 /**
@@ -245,15 +246,22 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
    */
   private async initiateWalletPayment(): Promise<void> {
     const paymobApiUrl = environment.payment.paymob.apiUrl;
+    
+    // Build redirect URL for after OTP verification
+    // This tells Paymob where to redirect the user after they complete OTP
+    const redirectUrl = `${window.location.origin}/payment-redirect`;
+    
     const walletRequest: PaymobWalletRequest = {
       payment_token: this.clientSecret!,
       source: {
         identifier: this.mobileNumber,
         subtype: 'WALLET'
-      }
+      },
+      redirect_url: redirectUrl
     };
 
     console.log('Initiating Paymob wallet payment:', walletRequest);
+    console.log('Redirect URL after OTP:', redirectUrl);
 
     return new Promise((resolve, reject) => {
       this.http.post<PaymobWalletResponse>(`${paymobApiUrl}/payments/pay`, walletRequest).subscribe({

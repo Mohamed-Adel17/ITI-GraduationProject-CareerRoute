@@ -16,7 +16,7 @@ export const environment = {
   /**
    * Uncomment below when backend is ready on localhost:5000
    */
-  apiUrl: 'https://localhost:7023/api',
+  apiUrl: 'http://localhost:5119/api',
 
   /**
    * Authentication Configuration
@@ -60,7 +60,7 @@ export const environment = {
     },
     // Paymob configuration
     paymob: {
-      iframeId: '976870', // Replace with actual Paymob iframe ID
+      iframeId: '983026', // Replace with actual Paymob iframe ID
       apiUrl: 'https://accept.paymob.com/api/acceptance',
     },
     // SignalR hub for real-time payment status updates
