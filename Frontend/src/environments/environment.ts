@@ -46,7 +46,23 @@ export const environment = {
   /**
    * Payment Provider Configuration
    */
- /**
+  payment: {
+    // Stripe configuration
+    stripe: {
+      publishableKey: 'pk_live_YOUR_STRIPE_LIVE_KEY_HERE', // Replace with actual Stripe live key
+    },
+    // Paymob configuration
+    paymob: {
+      iframeId: 'YOUR_PAYMOB_IFRAME_ID', // Replace with actual Paymob iframe ID
+      apiUrl: 'https://accept.paymob.com/api/acceptance',
+    },
+    // SignalR hub for real-time payment status updates
+    signalr: {
+      hubUrl: 'https://api.careerroute.com/hub/payment',
+    },
+  },
+
+  /**
    * Session Configuration
    */
   session: {
