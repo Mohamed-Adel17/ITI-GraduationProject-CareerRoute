@@ -1,11 +1,18 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { mentorRoleGuard, adminRoleGuard } from './core/guards/role.guard';
+import { PaymentRedirectComponent } from './features/payment/payment-redirect/payment-redirect.component';
 
 export const routes: Routes = [
   {
     path: '',
     loadChildren: () => import('./features/public/public.routes').then(m => m.PUBLIC_ROUTES)
+  },
+  {
+    path: 'payment-redirect',
+    component: PaymentRedirectComponent
+    // No auth guard - external redirect from Paymob won't have auth context
+    // Payment verification is done server-side with the payment ID
   },
   {
     path: 'user',

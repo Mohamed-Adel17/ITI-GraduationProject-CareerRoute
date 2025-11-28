@@ -24,15 +24,18 @@ interface PaymobWalletRequest {
     identifier: string;
     subtype: 'WALLET';
   };
+  redirect_url?: string;
 }
 
 /**
  * Paymob Wallet Response Interface
+ * Based on Paymob API contract
  */
 interface PaymobWalletResponse {
   redirect_url: string | null;
-  pending: boolean;
-  success: boolean;
+  id?: number;
+  pending?: boolean;
+  success?: boolean;
 }
 
 /**
@@ -239,40 +242,55 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
 
   /**
    * Initiate wallet payment via Paymob API
+   * Paymob returns a redirect_url for OTP verification
    */
   private async initiateWalletPayment(): Promise<void> {
     const paymobApiUrl = environment.payment.paymob.apiUrl;
+    
+    // Build redirect URL for after OTP verification
+    // This tells Paymob where to redirect the user after they complete OTP
+    const redirectUrl = `${window.location.origin}/payment-redirect`;
+    
     const walletRequest: PaymobWalletRequest = {
       payment_token: this.clientSecret!,
       source: {
         identifier: this.mobileNumber,
         subtype: 'WALLET'
-      }
+      },
+      redirect_url: redirectUrl
     };
 
     console.log('Initiating Paymob wallet payment:', walletRequest);
+    console.log('Redirect URL after OTP:', redirectUrl);
 
     return new Promise((resolve, reject) => {
       this.http.post<PaymobWalletResponse>(`${paymobApiUrl}/payments/pay`, walletRequest).subscribe({
         next: (response) => {
-          console.log('Paymob wallet payment initiated:', response);
+          console.log('Paymob wallet payment response:', response);
           
-          if (response.success) {
+          // Check if we have a redirect URL for OTP verification
+          if (response.redirect_url) {
+            console.log('Redirecting to Paymob OTP page:', response.redirect_url);
+            // Redirect user to Paymob OTP page
+            window.location.href = response.redirect_url;
+            resolve();
+          } else if (response.success) {
             // Payment already successful (unlikely but possible)
             this.handlePaymentSuccess();
             resolve();
-          } else if (response.pending) {
-            // Payment pending - user needs to approve OTP
-            console.log('Waiting for user to approve OTP on mobile');
+          } else {
+            // No redirect URL and not successful - show pending screen
+            // User will receive OTP on mobile and we poll for status
+            console.log('No redirect URL, waiting for OTP approval on mobile');
             this.isSubmitting = false;
             resolve();
-          } else {
-            reject('Payment initiation failed');
           }
         },
         error: (error) => {
           console.error('Paymob wallet payment initiation failed:', error);
-          reject(error);
+          // Extract error detail from Paymob response
+          const errorMessage = error?.error?.detail || error?.error?.message || 'Payment initiation failed';
+          reject(errorMessage);
         }
       });
     });

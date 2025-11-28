@@ -92,7 +92,8 @@ export class CancelModalComponent implements OnChanges {
    */
   get refundInfo(): { amount: number; percentage: number } {
     const hoursUntil = this.session.hoursUntilSession || 0;
-    return calculateRefundAmount(this.session.price, hoursUntil);
+    const price = this.session.price ?? 0;
+    return calculateRefundAmount(price, hoursUntil);
   }
 
   /**
@@ -113,7 +114,8 @@ export class CancelModalComponent implements OnChanges {
    * Get formatted session price
    */
   get formattedPrice(): string {
-    return formatSessionPrice(this.session.price);
+    const price = this.session.price ?? 0;
+    return formatSessionPrice(price);
   }
 
   /**

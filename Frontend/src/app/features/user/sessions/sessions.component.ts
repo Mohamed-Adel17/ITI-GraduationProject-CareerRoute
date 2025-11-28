@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -37,7 +37,7 @@ import {
 @Component({
   selector: 'app-user-sessions',
   standalone: true,
-  imports: [CommonModule, SessionCard, CancelModalComponent, RescheduleModalComponent, SessionPaymentModalComponent],
+  imports: [CommonModule, RouterModule, SessionCard, CancelModalComponent, RescheduleModalComponent, SessionPaymentModalComponent],
   templateUrl: './sessions.component.html',
   styleUrls: ['./sessions.component.css']
 })

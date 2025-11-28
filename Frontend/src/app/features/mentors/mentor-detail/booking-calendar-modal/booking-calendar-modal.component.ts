@@ -27,6 +27,16 @@ interface WeekDay {
 }
 
 /**
+ * Interface for storing booking intent before session creation
+ * This allows deferring session creation until payment method is selected
+ */
+interface BookingIntent {
+  slot: AvailableSlot;
+  topic?: string;
+  notes?: string;
+}
+
+/**
  * BookingCalendarModalComponent
  *
  * @description
@@ -103,6 +113,13 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
 
   // Payment method selection state
   showPaymentMethodSelection: boolean = false;
+
+  // Deferred booking state - stores intent before session creation
+  // Session is only created after payment method is selected
+  bookingIntent: BookingIntent | null = null;
+  pendingPaymentMethod: PaymentMethodSelection | null = null;
+  isCreatingSession: boolean = false;
+  sessionCreationError: string | null = null;
 
   // Booking rules for validation
   readonly BookingRules = BookingRules;
@@ -275,7 +292,9 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Submit the booking - creates session via API
+   * Submit the booking - stores booking intent and shows payment method selection
+   * Session is NOT created here - it's deferred until payment method is selected
+   * This prevents orphan sessions when users close the modal without selecting payment
    */
   submitBooking(): void {
     if (!this.selectedSlot) return;
@@ -284,63 +303,120 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.isSubmitting = true;
-    this.submissionError = null;
-
-    const request: BookSessionRequest = {
-      timeSlotId: this.selectedSlot.id,
+    // Store booking intent instead of creating session
+    this.bookingIntent = {
+      slot: this.selectedSlot,
       topic: this.bookingForm.value.topic?.trim() || undefined,
       notes: this.bookingForm.value.notes?.trim() || undefined
+    };
+
+    // Clear any previous errors
+    this.sessionCreationError = null;
+
+    // Show payment method selection modal
+    this.showPaymentMethodSelection = true;
+  }
+
+  /**
+   * Handle payment method selection - NOW creates the session
+   * Session creation is deferred until this point to prevent orphan sessions
+   */
+  onPaymentMethodSelected(paymentMethod: PaymentMethodSelection): void {
+    if (!this.bookingIntent) return;
+
+    // Store the selected payment method
+    this.pendingPaymentMethod = paymentMethod;
+
+    // Now create the session
+    this.createSessionAndProceed();
+  }
+
+  /**
+   * Create session via API and proceed to payment
+   * Called only after payment method is selected
+   */
+  private createSessionAndProceed(): void {
+    if (!this.bookingIntent || !this.pendingPaymentMethod) return;
+
+    this.isCreatingSession = true;
+    this.sessionCreationError = null;
+
+    const request: BookSessionRequest = {
+      timeSlotId: this.bookingIntent.slot.id,
+      topic: this.bookingIntent.topic,
+      notes: this.bookingIntent.notes
     };
 
     this.sessionService.bookSession(request).subscribe({
       next: (session) => {
         console.log('Session created:', session);
-        console.log('Session ID:', session.id);
-        console.log('Session Price:', session.price);
-        console.log('Session Status:', session.status);
-        console.log('Full session object:', JSON.stringify(session, null, 2));
         this.createdSession = session;
-        this.isSubmitting = false;
-        // Show payment method selection modal
-        this.showPaymentMethodSelection = true;
+        this.isCreatingSession = false;
+
+        // Emit booking confirmed event with session and payment method
+        this.bookingConfirmed.emit({
+          session: session,
+          paymentMethod: this.pendingPaymentMethod!
+        });
+
+        // Close both modals
+        this.showPaymentMethodSelection = false;
+        this.onClose();
       },
       error: (error) => {
         console.error('Session creation failed:', error);
-        this.isSubmitting = false;
-        this.submissionError = error?.error?.message || 'Failed to create session. Please try again.';
+        this.isCreatingSession = false;
+        this.sessionCreationError = error?.error?.message || 'Failed to create session. Please try again.';
       }
     });
   }
 
   /**
-   * Handle payment method selection
+   * Retry session creation after an error
    */
-  onPaymentMethodSelected(paymentMethod: PaymentMethodSelection): void {
-    if (!this.createdSession) return;
-
-    // Emit booking confirmed event with session and payment method
-    this.bookingConfirmed.emit({
-      session: this.createdSession,
-      paymentMethod: paymentMethod
-    });
-
-    // Close both modals
-    this.showPaymentMethodSelection = false;
-    this.onClose();
+  retrySessionCreation(): void {
+    this.createSessionAndProceed();
   }
 
   /**
-   * Close payment method selection modal
+   * Close payment method selection modal and return to booking form
+   * Preserves booking intent so user can go back and modify or try again
    */
   closePaymentMethodSelection(): void {
     this.showPaymentMethodSelection = false;
+    // Clear pending payment method but keep booking intent
+    this.pendingPaymentMethod = null;
+    this.sessionCreationError = null;
+    this.isCreatingSession = false;
+    // User returns to booking form with their data preserved
+    // bookingIntent and form values are kept intact
   }
 
   /**
-   * Close the modal
+   * Close the modal and reset all booking state
+   * Ensures no orphan data is left when modal is closed
    */
   onClose(): void {
+    // Reset all booking state
+    this.selectedSlot = null;
+    this.showBookingForm = false;
+    this.bookingForm.reset();
+    
+    // Reset deferred booking state
+    this.bookingIntent = null;
+    this.pendingPaymentMethod = null;
+    this.isCreatingSession = false;
+    this.sessionCreationError = null;
+    
+    // Reset session state
+    this.createdSession = null;
+    this.isSubmitting = false;
+    this.submissionError = null;
+    
+    // Reset payment method selection
+    this.showPaymentMethodSelection = false;
+    
+    // Emit close event
     this.closeModal.emit();
   }
 

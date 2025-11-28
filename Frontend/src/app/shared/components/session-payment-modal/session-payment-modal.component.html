@@ -7,12 +7,18 @@
     <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
       (click)="$event.stopPropagation()">
 
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="p-8 text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-r-transparent mb-4"></div>
+        <p class="text-gray-600 dark:text-gray-400">Loading payment information...</p>
+      </div>
+
       <!-- Payment Method Selection -->
       <app-payment-method-selection
-        *ngIf="showPaymentMethodSelection"
+        *ngIf="!isLoading && showPaymentMethodSelection"
         [isOpen]="true"
         [sessionId]="session.id"
-        [amount]="session.price"
+        [amount]="displayPrice"
         [mentorName]="mentorName"
         (paymentMethodSelected)="onPaymentMethodSelected($event)"
         (closeModal)="onPaymentMethodSelectionClose()">
@@ -20,35 +26,35 @@
 
       <!-- Stripe Payment -->
       <app-stripe-payment
-        *ngIf="showStripePayment"
+        *ngIf="!isLoading && showStripePayment"
         [sessionId]="session.id"
-        [amount]="session.price"
+        [amount]="displayPrice"
         [mentorName]="mentorName"
         (paymentSuccess)="onPaymentSuccess()"
-        (paymentFailure)="onPaymentFailure($event)"
-        (closeModal)="onPaymentComponentClose()">
+        (paymentFailed)="onPaymentFailure($event)"
+        (paymentCancelled)="onPaymentComponentClose()">
       </app-stripe-payment>
 
       <!-- Paymob Card Payment -->
       <app-paymob-card-payment
-        *ngIf="showPaymobCardPayment"
+        *ngIf="!isLoading && showPaymobCardPayment"
         [sessionId]="session.id"
-        [amount]="session.price"
+        [amount]="displayPrice"
         [mentorName]="mentorName"
         (paymentSuccess)="onPaymentSuccess()"
-        (paymentFailure)="onPaymentFailure($event)"
-        (closeModal)="onPaymentComponentClose()">
+        (paymentFailed)="onPaymentFailure($event)"
+        (paymentCancelled)="onPaymentComponentClose()">
       </app-paymob-card-payment>
 
       <!-- Paymob Wallet Payment -->
       <app-paymob-wallet-payment
-        *ngIf="showPaymobWalletPayment"
+        *ngIf="!isLoading && showPaymobWalletPayment"
         [sessionId]="session.id"
-        [amount]="session.price"
+        [amount]="displayPrice"
         [mentorName]="mentorName"
         (paymentSuccess)="onPaymentSuccess()"
-        (paymentFailure)="onPaymentFailure($event)"
-        (closeModal)="onPaymentComponentClose()">
+        (paymentFailed)="onPaymentFailure($event)"
+        (paymentCancelled)="onPaymentComponentClose()">
       </app-paymob-wallet-payment>
 
     </div>

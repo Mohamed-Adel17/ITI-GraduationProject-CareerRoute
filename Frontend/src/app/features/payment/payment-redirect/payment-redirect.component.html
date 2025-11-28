@@ -1,0 +1,108 @@
+<div class="min-h-screen bg-gray-50 pt-20">
+  <div class="max-w-lg mx-auto px-4 py-12">
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+      
+      <!-- Pending State -->
+      <div *ngIf="verificationStatus === VerificationStatus.Pending" class="text-center">
+        <!-- Loading Spinner -->
+        <div class="flex justify-center mb-6">
+          <div class="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600"></div>
+        </div>
+        
+        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Verifying Your Payment</h2>
+        <p class="text-gray-600">Please wait while we confirm your payment...</p>
+        <p class="text-sm text-gray-500 mt-4">Do not close this page</p>
+      </div>
+
+      <!-- Success State -->
+      <div *ngIf="verificationStatus === VerificationStatus.Success" class="text-center">
+        <!-- Checkmark Icon -->
+        <div class="flex justify-center mb-6">
+          <div class="rounded-full bg-green-100 p-4">
+            <svg class="h-16 w-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Payment Successful!</h2>
+        <p class="text-gray-600 mb-6">Your session has been confirmed.</p>
+        
+        <!-- Session Details -->
+        <div *ngIf="sessionDetails" class="bg-gray-50 rounded-xl p-6 mb-8 text-left">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Session Details</h3>
+          
+          <div class="space-y-3">
+            <div class="flex items-start">
+              <svg class="h-5 w-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              <div>
+                <p class="text-sm text-gray-500">Mentor</p>
+                <p class="text-gray-900 font-medium">{{ sessionDetails.mentorName }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <svg class="h-5 w-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <div>
+                <p class="text-sm text-gray-500">Scheduled Time</p>
+                <p class="text-gray-900 font-medium">{{ formatScheduledTime(sessionDetails.scheduledStartTime) }}</p>
+              </div>
+            </div>
+
+            <div *ngIf="amount > 0" class="flex items-start">
+              <svg class="h-5 w-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <p class="text-sm text-gray-500">Amount Paid</p>
+                <p class="text-gray-900 font-medium">{{ getFormattedAmount() }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+          <button 
+            (click)="navigateToSession()"
+            class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+            Go to Session
+          </button>
+          
+          <button 
+            (click)="navigateToMentors()"
+            class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-lg border border-gray-300 transition-colors duration-200">
+            Browse Mentors
+          </button>
+        </div>
+      </div>
+
+      <!-- Failed State -->
+      <div *ngIf="verificationStatus === VerificationStatus.Failed" class="text-center">
+        <!-- Error Icon -->
+        <div class="flex justify-center mb-6">
+          <div class="rounded-full bg-red-100 p-4">
+            <svg class="h-16 w-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Payment Verification Failed</h2>
+        <p class="text-gray-600 mb-6">{{ errorMessage }}</p>
+        
+        <!-- Action Button -->
+        <button 
+          (click)="navigateToMentors()"
+          class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+          Browse Mentors
+        </button>
+      </div>
+      
+    </div>
+  </div>
+</div>

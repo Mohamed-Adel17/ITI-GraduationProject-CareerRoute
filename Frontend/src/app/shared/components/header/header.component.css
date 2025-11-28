@@ -140,11 +140,11 @@
   background-color: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .site-header {
     background-color: #101c22;
   }
-}
+} */
 
 /* Print styles - hide header when printing */
 @media print {

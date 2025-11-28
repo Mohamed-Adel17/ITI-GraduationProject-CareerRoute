@@ -1,0 +1,16 @@
+/* Payment Redirect Component Styles */
+/* Most styling is handled by Tailwind CSS classes in the template */
+
+/* Custom animation for loading spinner */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

@@ -305,23 +305,19 @@
                   </button>
                   <button
                     type="submit"
-                    [disabled]="bookingForm.invalid || isSubmitting"
+                    [disabled]="bookingForm.invalid"
                     class="flex-1 px-6 py-3 bg-primary text-white font-bold rounded-lg
                            hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl
                            disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                    <span *ngIf="!isSubmitting">Confirm Booking</span>
-                    <span *ngIf="isSubmitting" class="flex items-center gap-2">
-                      <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating Session...
-                    </span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    Continue to Payment
                   </button>
                 </div>
 
                 <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                  After booking, you'll proceed to payment to confirm your session.
+                  You'll select your payment method in the next step. No charges until you complete payment.
                 </p>
               </form>
             </div>
@@ -333,11 +329,70 @@
 </div>
 
 <!-- Payment Method Selection Modal -->
+<!-- Now uses bookingIntent instead of createdSession since session is created after payment method selection -->
 <app-payment-method-selection
-  [isOpen]="showPaymentMethodSelection"
-  [sessionId]="createdSession?.id || ''"
-  [amount]="createdSession?.price || 0"
+  [isOpen]="showPaymentMethodSelection && !isCreatingSession && !sessionCreationError"
+  [sessionId]="''"
+  [amount]="bookingIntent?.slot?.price || selectedSlot?.price || 0"
   [mentorName]="mentorName"
   (paymentMethodSelected)="onPaymentMethodSelected($event)"
   (closeModal)="closePaymentMethodSelection()">
 </app-payment-method-selection>
+
+<!-- Session Creation Loading State -->
+<div *ngIf="showPaymentMethodSelection && isCreatingSession"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     aria-labelledby="creating-session-modal"
+     role="dialog"
+     aria-modal="true">
+  <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary border-r-transparent mb-6"></div>
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Creating Your Session</h3>
+      <p class="text-gray-600 dark:text-gray-400">Please wait while we book your session...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Session Creation Error State -->
+<div *ngIf="showPaymentMethodSelection && sessionCreationError"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     aria-labelledby="session-error-modal"
+     role="dialog"
+     aria-modal="true">
+  <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8">
+      <!-- Error Icon -->
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Session Creation Failed</h3>
+      <p class="text-gray-600 dark:text-gray-400 text-center mb-6">{{ sessionCreationError }}</p>
+      
+      <!-- Action Buttons -->
+      <div class="flex gap-3">
+        <button
+          type="button"
+          (click)="closePaymentMethodSelection()"
+          class="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300
+                 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+          Go Back
+        </button>
+        <button
+          type="button"
+          (click)="retrySessionCreation()"
+          class="flex-1 px-4 py-3 bg-primary text-white font-bold rounded-lg
+                 hover:bg-primary/90 transition-colors">
+          Try Again
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -294,6 +294,38 @@ export class PaymentService {
       .pipe(map(response => unwrapResponse(response)));
   }
 
+  // ==================== Get Payment By ID ====================
+
+  /**
+   * Get payment details by payment ID
+   *
+   * @param paymentId - Payment ID (payment intent ID)
+   * @returns Observable of payment details including sessionId
+   *
+   * @remarks
+   * - Endpoint: GET /api/payments/{paymentId}
+   * - Requires authentication (User or Admin role)
+   * - Returns payment details with associated session information
+   * - Returns 400 if payment ID is not provided
+   * - Returns 404 if payment not found
+   *
+   * @example
+   * ```typescript
+   * this.paymentService.getPaymentById('pi_123456789').subscribe({
+   *   next: (response) => {
+   *     console.log('Session ID:', response.sessionId);
+   *     console.log('Mentor:', response.mentorName);
+   *     console.log('Amount:', response.amount);
+   *   }
+   * });
+   * ```
+   */
+  getPaymentById(paymentId: string): Observable<any> {
+    return this.http
+      .get<ApiResponse<any>>(`${this.PAYMENTS_URL}/intent/${paymentId}`)
+      .pipe(map(response => unwrapResponse(response)));
+  }
+
   // ==================== Helper Methods ====================
 
   /**
