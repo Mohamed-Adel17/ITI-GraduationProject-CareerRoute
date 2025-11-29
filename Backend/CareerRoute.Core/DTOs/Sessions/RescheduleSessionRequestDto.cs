@@ -10,6 +10,6 @@ namespace CareerRoute.Core.DTOs.Sessions
     {
         public DateTime NewScheduledStartTime { get; set; }
         public string Reason { get; set; } = null!;
-
+        public string? SlotId { get; set; }  // Optional - used when mentee reschedules to a specific slot
     }
 }
