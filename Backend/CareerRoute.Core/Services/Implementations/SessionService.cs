@@ -208,6 +208,12 @@ namespace CareerRoute.Core.Services.Implementations
 
             var dto = _mapper.Map<SessionDetailsResponseDto>(session);
 
+            // Populate RescheduleId if session has a pending reschedule
+            if (session.Status == SessionStatusOptions.PendingReschedule && session.Reschedule != null)
+            {
+                dto.RescheduleId = session.Reschedule.Id;
+            }
+
             return dto;
         }
 
