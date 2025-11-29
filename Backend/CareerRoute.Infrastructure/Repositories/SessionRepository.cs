@@ -68,7 +68,8 @@ namespace CareerRoute.Infrastructure.Repositories
 
             // Filter by status and future sessions
             query = query.Where(s => (s.Status == SessionStatusOptions.Confirmed
-                                      || s.Status == SessionStatusOptions.Pending)
+                                      || s.Status == SessionStatusOptions.Pending
+                                      || s.Status == SessionStatusOptions.PendingReschedule)
                                       && s.ScheduledStartTime >= now);
 
             // Order by start time

@@ -805,6 +805,39 @@ namespace CareerRoute.Core.Services.Implementations
             return _mapper.Map<RescheduleSessionResponseDto>(reschedule);
         }
 
+        public async Task<RescheduleDetailsDto> GetRescheduleDetailsAsync(string rescheduleId, string userId, string role)
+        {
+            var reschedule = await _rescheduleSessionRepository.GetByIdAsync(rescheduleId);
+            if (reschedule == null)
+                throw new NotFoundException("Reschedule request not found.");
+
+            var session = await _sessionRepository.GetByIdWithRelationsAsync(reschedule.SessionId);
+            if (session == null)
+                throw new NotFoundException("Session not found.");
+
+            bool isMentor = session.MentorId == userId;
+            bool isMentee = session.MenteeId == userId;
+            bool isAdmin = role == "Admin";
+
+            if (!isMentor && !isMentee && !isAdmin)
+                throw new UnauthorizedException("You don't have permission to view this reschedule request.");
+
+            return new RescheduleDetailsDto
+            {
+                RescheduleId = reschedule.Id,
+                SessionId = session.Id,
+                Status = reschedule.Status.ToString(),
+                MentorName = $"{session.Mentor.User.FirstName} {session.Mentor.User.LastName}",
+                MenteeName = $"{session.Mentee.FirstName} {session.Mentee.LastName}",
+                Topic = session.Topic,
+                OriginalStartTime = reschedule.OriginalStartTime,
+                NewStartTime = reschedule.NewScheduledStartTime,
+                RequestedBy = reschedule.RequestedBy,
+                RescheduleReason = reschedule.RescheduleReason,
+                RequestedAt = reschedule.RequestedAt
+            };
+        }
+
         public async Task ReleaseUnpaidSessionAsync(string sessionId)
         {
             _logger.LogInformation("[Session] Checking if session {SessionId} should be released due to no payment", sessionId);
