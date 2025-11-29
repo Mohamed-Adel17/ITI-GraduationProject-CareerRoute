@@ -29,21 +29,20 @@
 - [Section 12: Mentor Onboarding & Discovery](#section-12-mentor-onboarding--discovery)
 - [Section 13: Session Scheduling & Lifecycle](#section-13-session-scheduling--lifecycle)
 
-### [Abdelfattah — Payments, Admin & Notifications](#abdelfattah--payments-admin--notifications)
+### [Abdelfattah — Payments & Notifications](#abdelfattah--payments--notifications)
 - [Section 14: Payments & Financial Model](#section-14-payments--financial-model)
-- [Section 15: Admin Dashboard](#section-15-admin-dashboard)
-- [Section 16: Notifications & Communication Layer](#section-16-notifications--communication-layer)
+- [Section 15: Notifications & Communication Layer](#section-15-notifications--communication-layer)
 
 ### [Adel — Video Conferencing & AI Intelligence](#adel--video-conferencing--ai-intelligence)
-- [Section 17: Video Conferencing (Zoom Automation)](#section-17-video-conferencing-zoom-automation)
-- [Section 18: AI-Powered Session Intelligence](#section-18-ai-powered-session-intelligence)
+- [Section 16: Video Conferencing (Zoom Automation)](#section-16-video-conferencing-zoom-automation)
+- [Section 17: AI-Powered Session Intelligence](#section-17-ai-powered-session-intelligence)
 
 ### [Hisham — Development Workflow, Demo & Closing](#hisham--development-workflow-demo--closing)
-- [Section 19: Git/GitHub & Development Workflow (Optional)](#section-19-gitgithub--development-workflow-optional)
-- [Section 20: Testing & Quality Assurance](#section-20-testing--quality-assurance)
-- [Section 21: Live Demo](#section-21-live-demo)
-- [Section 22: Future Roadmap](#section-22-future-roadmap)
-- [Section 23: Conclusion & Q&A](#section-23-conclusion--qa)
+- [Section 18: Git/GitHub & Development Workflow (Optional)](#section-18-gitgithub--development-workflow-optional)
+- [Section 19: Testing & Quality Assurance](#section-19-testing--quality-assurance)
+- [Section 20: Live Demo](#section-20-live-demo)
+- [Section 21: Future Roadmap](#section-21-future-roadmap)
+- [Section 22: Conclusion & Q&A](#section-22-conclusion--qa)
 
 ### [Appendix: Quick Reference](#appendix-quick-reference)
 
@@ -422,9 +421,9 @@ Session Confirmed → Both Parties Notified
 
 ---
 
-# Abdelfattah — Payments, Admin & Notifications
+# Abdelfattah — Payments & Notifications
 
-> **Sections 14-16** — Payment system, admin dashboard, and notifications
+> **Sections 14-15** — Payment system and notifications
 
 ## Section 14: Payments & Financial Model
 
@@ -467,34 +466,7 @@ Trigger SignalR Notification → Update UI in Real-time
 
 ---
 
-## Section 15: Admin Dashboard
-
-**Admin Capabilities:**
-
-| Feature | Description |
-|---------|-------------|
-| **Mentor Approvals** | Review and approve/reject mentor applications |
-| **User Management** | View and manage user accounts |
-| **Category Management** | Add/edit mentorship categories |
-| **Analytics Overview** | Platform statistics and metrics |
-
-**Mentor Approval Workflow:**
-```
-View Pending Applications → 
-Review Mentor Details → 
-Approve (Profile Goes Live) OR 
-Reject with Reason (Notification Sent)
-```
-
-**Admin Analytics (Future Enhancement):**
-- Total users and mentors
-- Session statistics
-- Revenue metrics
-- User growth trends
-
----
-
-## Section 16: Notifications & Communication Layer
+## Section 15: Notifications & Communication Layer
 
 **Real-time Notifications (SignalR):**
 
@@ -527,9 +499,9 @@ Reject with Reason (Notification Sent)
 
 # Adel — Video Conferencing & AI Intelligence
 
-> **Sections 17-18** — Zoom integration and AI-powered features
+> **Sections 16-17** — Zoom integration and AI-powered features
 
-## Section 17: Video Conferencing (Zoom Automation)
+## Section 16: Video Conferencing (Zoom Automation)
 
 **Zoom Integration Features:**
 
@@ -563,7 +535,7 @@ End Time + 5 min: Auto-terminate
 
 ---
 
-## Section 18: AI-Powered Session Intelligence
+## Section 17: AI-Powered Session Intelligence
 
 **AI Pipeline Architecture:**
 ```
@@ -599,9 +571,9 @@ Display on Session Page
 
 # Hisham — Development Workflow, Demo & Closing
 
-> **Sections 19-23** — Git workflow, testing, demo, future roadmap, and conclusion
+> **Sections 18-22** — Git workflow, testing, demo, future roadmap, and conclusion
 
-## Section 19: Git/GitHub & Development Workflow (Optional)
+## Section 18: Git/GitHub & Development Workflow (Optional)
 
 **Branching Strategy:**
 
@@ -670,7 +642,7 @@ chore: maintenance tasks
 
 ---
 
-## Section 20: Testing & Quality Assurance
+## Section 19: Testing & Quality Assurance
 
 **Testing Approach:**
 
@@ -692,7 +664,7 @@ chore: maintenance tasks
 
 ---
 
-## Section 21: Live Demo
+## Section 20: Live Demo
 
 **Demo Flow (5 minutes):**
 
@@ -727,7 +699,7 @@ chore: maintenance tasks
 
 ---
 
-## Section 22: Future Roadmap
+## Section 21: Future Roadmap
 
 **Planned Enhancements:**
 
@@ -751,7 +723,7 @@ chore: maintenance tasks
 
 ---
 
-## Section 23: Conclusion & Q&A
+## Section 22: Conclusion & Q&A
 
 **Key Achievements:**
 - ✅ Full-stack mentorship platform
