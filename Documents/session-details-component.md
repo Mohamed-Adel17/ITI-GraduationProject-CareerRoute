@@ -197,3 +197,9 @@ Files updated for EGP currency:
   - Removed `[disabled]` attribute from form controls (input, textarea)
   - Added `rescheduleForm.disable()/enable()` programmatically when submitting
 - Added `rescheduleId` and `rescheduleRequestedBy` fields to session model interfaces
+- Enhanced reschedule modal with role-based time selection:
+  - Added `userRole` input ('mentee' | 'mentor')
+  - Mentee: Shows slot picker with mentor's available slots (fetched via TimeslotService)
+  - Mentor: Shows datetime picker (can choose any time)
+  - Slot picker displays date, time range, and duration for each slot
+  - Added `slotId` to RescheduleRequest for mentee slot selection
