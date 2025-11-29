@@ -216,6 +216,7 @@ export interface BookSessionResponse {
 export interface RescheduleRequest {
   newScheduledStartTime: string;  // ISO 8601 datetime, must be >24h from now
   reason: string;                 // Required: Min 10 chars, max 500 chars
+  slotId?: string;                // Optional: slot ID when mentee selects from available slots
 }
 
 /**
