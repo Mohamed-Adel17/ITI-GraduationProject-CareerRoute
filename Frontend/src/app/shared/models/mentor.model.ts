@@ -464,8 +464,8 @@ export function getHourlyRate(rate30Min: number): number {
 /**
  * Helper function to format price
  */
-export function formatPrice(price: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatPrice(price: number, currency: string = 'EGP'): string {
+  return new Intl.NumberFormat('en-EG', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 0,
@@ -477,7 +477,7 @@ export function formatPrice(price: number, currency: string = 'USD'): string {
  * Helper function to get price range display
  */
 export function getPriceRange(mentor: Mentor | MentorListItem | MentorDetail): string {
-  return `${formatPrice(mentor.rate30Min)}/30min - ${formatPrice(mentor.rate60Min)}/60min`;
+  return `From ${mentor.rate30Min} EGP`;
 }
 
 /**

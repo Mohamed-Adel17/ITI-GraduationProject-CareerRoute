@@ -14,12 +14,14 @@ import {
   RescheduleResponse,
   ApproveRescheduleResponse,
   RejectRescheduleResponse,
+  RescheduleDetails,
   CancelRequest,
   CancelResponse,
   JoinSessionResponse,
   CompleteSessionResponse,
   SessionRecordingResponse,
   SessionTranscriptResponse,
+  SessionSummaryResponse,
   UpcomingSessionsResponse,
   PastSessionsResponse
 } from '../../shared/models/session.model';
@@ -161,7 +163,6 @@ export class SessionService {
   /**
    * Get detailed session information by ID
    *
-   * @param sessionId - Session GUID
    * @returns Observable of SessionDetailResponse
    *
    * @remarks
@@ -278,7 +279,6 @@ export class SessionService {
   /**
    * Request to reschedule a session
    *
-   * @param sessionId - Session GUID
    * @param request - Reschedule request with new time and reason
    * @returns Observable of RescheduleResponse
    *
@@ -314,6 +314,21 @@ export class SessionService {
     return this.http
       .patch<ApiResponse<RescheduleResponse>>(`${this.SESSIONS_URL}/${sessionId}/reschedule`, request)
       .pipe(map(response => unwrapResponse(response)));
+  }
+
+  // ==================== Get Reschedule Details ====================
+
+  /**
+   * Get reschedule request details
+   * @param rescheduleId - Reschedule request GUID
+   */
+  getRescheduleDetails(rescheduleId: string): Observable<RescheduleDetails> {
+    return this.http
+      .get<ApiResponse<RescheduleDetails>>(`${this.SESSIONS_URL}/reschedule/${rescheduleId}`)
+      .pipe(map(response => unwrapResponse(response)));
+  }
+
+  /**
   }
 
   // ==================== Approve Reschedule Request ====================
@@ -397,7 +412,6 @@ export class SessionService {
   /**
    * Cancel a session with refund processing
    *
-   * @param sessionId - Session GUID
    * @param request - Cancellation request with reason
    * @returns Observable of CancelResponse with refund information
    *
@@ -442,7 +456,6 @@ export class SessionService {
   /**
    * Get video conference link to join session
    *
-   * @param sessionId - Session GUID
    * @returns Observable of JoinSessionResponse with video link
    *
    * @remarks
@@ -481,7 +494,6 @@ export class SessionService {
   /**
    * Mark session as completed (Mentor or Admin only)
    *
-   * @param sessionId - Session GUID
    * @returns Observable of CompleteSessionResponse
    *
    * @remarks
@@ -521,7 +533,6 @@ export class SessionService {
   /**
    * Get session recording with presigned URL
    *
-   * @param sessionId - Session GUID
    * @returns Observable of SessionRecordingResponse
    *
    * @remarks
@@ -567,7 +578,6 @@ export class SessionService {
   /**
    * Get AI-generated session transcript
    *
-   * @param sessionId - Session GUID
    * @returns Observable of SessionTranscriptResponse
    *
    * @remarks
@@ -597,6 +607,19 @@ export class SessionService {
     return this.http
       .get<ApiResponse<SessionTranscriptResponse>>(`${this.SESSIONS_URL}/${sessionId}/transcript`)
       .pipe(map(response => unwrapResponse(response)));
+  }
+
+  // ==================== Get Session AI Summary ====================
+
+  /**
+   * Get AI-generated session summary
+   *
+   * @returns Observable of SessionSummaryResponse
+   */
+  getSessionSummary(sessionId: string): Observable<SessionSummaryResponse> {
+    return this.http
+      .get(`${this.SESSIONS_URL}/${sessionId}/summary`, { responseType: 'text' })
+      .pipe(map(text => ({ sessionId, summary: text, isAvailable: !!text })));
   }
 
   // ==================== Helper Methods ====================

@@ -58,7 +58,7 @@ export class ApplicationPendingComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log('ApplicationPendingComponent initialized');
+    // console.log('ApplicationPendingComponent initialized');
     this.loadMentorProfile();
   }
 
@@ -66,25 +66,25 @@ export class ApplicationPendingComponent implements OnInit {
    * Fetch mentor's own profile from API
    */
   private loadMentorProfile(): void {
-    console.log('Loading mentor profile...');
+    // console.log('Loading mentor profile...');
     this.loading = true;
     this.errorMessage = null;
 
     this.mentorService.getCurrentMentorProfile().subscribe({
       next: (mentor) => {
-        console.log('Mentor profile loaded:', mentor);
-        console.log('Approval status:', mentor.approvalStatus);
-        console.log('Is Pending?', mentor.approvalStatus === MentorApprovalStatus.Pending);
-        console.log('Is Approved?', mentor.approvalStatus === MentorApprovalStatus.Approved);
-        console.log('Is Rejected?', mentor.approvalStatus === MentorApprovalStatus.Rejected);
-        console.log('MentorApprovalStatus enum:', MentorApprovalStatus);
+        // console.log('Mentor profile loaded:', mentor);
+        // console.log('Approval status:', mentor.approvalStatus);
+        // console.log('Is Pending?', mentor.approvalStatus === MentorApprovalStatus.Pending);
+        // console.log('Is Approved?', mentor.approvalStatus === MentorApprovalStatus.Approved);
+        // console.log('Is Rejected?', mentor.approvalStatus === MentorApprovalStatus.Rejected);
+        // console.log('MentorApprovalStatus enum:', MentorApprovalStatus);
 
         this.mentorProfile = mentor;
         this.loading = false;
 
         // If mentor is approved, redirect to mentor profile page
         if (mentor.approvalStatus === MentorApprovalStatus.Approved) {
-          console.log('Mentor is approved, redirecting to profile');
+          // console.log('Mentor is approved, redirecting to profile');
           this.notificationService.success(
             'Your application has been approved!',
             'Congratulations!'

@@ -178,17 +178,13 @@ export class MentorService {
       if (params.availableOnly !== undefined) httpParams = httpParams.set('availableOnly', params.availableOnly.toString());
     }
 
-    const url = `${this.MENTORS_URL}?${httpParams.toString()}`;
-    console.log('🌐 MentorService calling API:', url);
 
     return this.http.get<ApiResponse<MentorListItem[] | MentorSearchResponse>>(
       this.MENTORS_URL,
       { params: httpParams }
     ).pipe(
       map(response => {
-        console.log('📥 MentorService received raw response:', response);
         const unwrapped = unwrapResponse(response);
-        console.log('📦 MentorService unwrapped response:', unwrapped);
         return unwrapped;
       })
     );

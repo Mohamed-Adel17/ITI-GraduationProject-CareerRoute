@@ -51,7 +51,6 @@
             class="form-input"
             [class.error]="hasError('newScheduledStartTime', 'required') || hasError('newScheduledStartTime', 'futureTime')"
             [min]="minDateTime"
-            [disabled]="isSubmitting"
           />
           <div class="help-text">
             Select a new date and time at least 24 hours from now
@@ -73,7 +72,6 @@
             [class.error]="hasError('reason', 'required') || hasError('reason', 'minlength') || hasError('reason', 'maxlength')"
             rows="4"
             placeholder="Please explain why you need to reschedule (minimum 10 characters)"
-            [disabled]="isSubmitting"
           ></textarea>
           <div class="character-count">
             {{ rescheduleForm.get('reason')?.value?.length || 0 }} / 500 characters

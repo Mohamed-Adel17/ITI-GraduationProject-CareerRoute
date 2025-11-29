@@ -113,13 +113,6 @@ export class PaymentRedirectComponent implements OnInit {
     const id = this.route.snapshot.queryParamMap.get('id');
     const merchantOrderId = this.route.snapshot.queryParamMap.get('merchant_order_id');
     
-    // Log all query params for debugging
-    console.log('Payment redirect query params:', {
-      order: orderId,
-      id: id,
-      merchant_order_id: merchantOrderId,
-      all: this.route.snapshot.queryParamMap.keys
-    });
     
     // Try order first, then id, then merchant_order_id
     const paymentId = orderId || id || merchantOrderId;

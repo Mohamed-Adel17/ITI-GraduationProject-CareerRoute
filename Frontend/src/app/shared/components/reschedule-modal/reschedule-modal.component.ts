@@ -180,7 +180,8 @@ export class RescheduleModalComponent implements OnChanges {
     }
 
     this.isSubmitting = true;
-    const formValue = this.rescheduleForm.value;
+    this.rescheduleForm.disable();
+    const formValue = this.rescheduleForm.getRawValue();
     
     // Convert local datetime to ISO 8601 UTC
     const newTime = new Date(formValue.newScheduledStartTime);
@@ -201,6 +202,7 @@ export class RescheduleModalComponent implements OnChanges {
       error: () => {
         // Error handled by global error interceptor
         this.isSubmitting = false;
+        this.rescheduleForm.enable();
       }
     });
   }

@@ -1,0 +1,6 @@
+/* Session Details Component Styles */
+/* Most styling is handled by Tailwind CSS in the template */
+
+:host {
+  display: block;
+}

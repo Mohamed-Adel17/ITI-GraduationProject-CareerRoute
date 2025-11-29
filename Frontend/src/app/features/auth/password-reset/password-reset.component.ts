@@ -267,7 +267,7 @@ export class PasswordResetComponent implements OnInit {
     // Call AuthService
     this.authService.forgotPassword(request).subscribe({
       next: (response) => {
-        console.log('Password reset request successful:', response);
+        // console.log('Password reset request successful:', response);
 
         // Show success message in component
         // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
@@ -357,7 +357,7 @@ export class PasswordResetComponent implements OnInit {
     // Call AuthService
     this.authService.resetPassword(request).subscribe({
       next: (response) => {
-        console.log('Password reset successful:', response);
+        // console.log('Password reset successful:', response);
 
         // Backend always returns tokens for auto-login
         // AuthService.resetPassword() has already handled token storage and auth state update
@@ -418,7 +418,7 @@ export class PasswordResetComponent implements OnInit {
    * @param email User's email address
    */
   private handleUnverifiedEmail(email: string): void {
-    console.log('Handling unverified email for forgot password:', email);
+    // console.log('Handling unverified email for forgot password:', email);
 
     // Show info notification about email verification requirement
     this.notificationService.warning(

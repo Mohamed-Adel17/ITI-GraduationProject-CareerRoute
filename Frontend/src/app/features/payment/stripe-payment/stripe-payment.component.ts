@@ -78,6 +78,14 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
   errorMessage: string | null = null;
   isProcessing: boolean = false;
 
+  // EGP to USD conversion rate (same as backend)
+  private readonly EGP_TO_USD_RATE = 50;
+
+  // Get amount in USD for Stripe
+  get amountInUSD(): number {
+    return Math.round((this.amount / this.EGP_TO_USD_RATE) * 100) / 100;
+  }
+
   // Expose enum to template
   readonly PaymentFlowStatus = PaymentFlowStatus;
 
@@ -134,17 +142,17 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
       paymentProvider: PaymentProvider.Stripe
     };
 
-    console.log('Creating payment intent with request:', request);
-    console.log('SessionId:', this.sessionId);
-    console.log('PaymentProvider value:', PaymentProvider.Stripe);
-    console.log('Request JSON:', JSON.stringify(request));
+    // console.log('Creating payment intent with request:', request);
+    // console.log('SessionId:', this.sessionId);
+    // console.log('PaymentProvider value:', PaymentProvider.Stripe);
+    // console.log('Request JSON:', JSON.stringify(request));
 
     return new Promise((resolve, reject) => {
       this.paymentService.createPaymentIntent(request).subscribe({
         next: (response) => {
           this.paymentIntentId = response.paymentIntentId;
           this.clientSecret = response.clientSecret;
-          console.log('Payment intent created:', this.paymentIntentId);
+          // console.log('Payment intent created:', this.paymentIntentId);
           resolve();
         },
         error: (error) => {
@@ -276,7 +284,7 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
       this.paymentService.confirmPayment(request).subscribe({
         next: (response) => {
           this.currentStatus = PaymentFlowStatus.Success;
-          console.log('Payment confirmed:', response);
+          // console.log('Payment confirmed:', response);
           this.paymentSuccess.emit(response);
           resolve();
         },

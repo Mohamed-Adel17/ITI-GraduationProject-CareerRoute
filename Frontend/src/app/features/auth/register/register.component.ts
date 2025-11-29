@@ -238,7 +238,7 @@ export class RegisterComponent implements OnInit {
     this.authService.register(registerRequest).subscribe({
       next: (response) => {
         // Registration successful - AuthService has handled auth state updates
-        console.log('Registration successful:', response);
+        // console.log('Registration successful:', response);
 
         // Show success notification
         this.notificationService.success(

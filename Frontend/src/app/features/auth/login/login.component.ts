@@ -125,7 +125,7 @@ export class LoginComponent implements OnInit {
     this.authService.login(loginRequest).subscribe({
       next: (response) => {
         // Login successful - AuthService has stored tokens and updated auth state
-        console.log('Login successful:', response);
+        // console.log('Login successful:', response);
 
         // Show success notification
         this.notificationService.success(
@@ -173,7 +173,7 @@ export class LoginComponent implements OnInit {
    * @param email User's email address
    */
   private handleUnverifiedEmail(email: string): void {
-    console.log('Handling unverified email for:', email);
+    // console.log('Handling unverified email for:', email);
 
     // Navigate to send-email-verification page so user can manually send verification
     this.router.navigate(['/auth/send-email-verification'], {
@@ -206,7 +206,7 @@ export class LoginComponent implements OnInit {
 
     if (hasMentorRole) {
       // User is approved mentor - navigate to returnUrl or mentor dashboard
-      console.log('User is approved mentor, navigating to:', this.returnUrl);
+      // console.log('User is approved mentor, navigating to:', this.returnUrl);
       this.router.navigate([this.returnUrl]);
     } else {
       // User has applied but not approved yet - check if they have submitted application
@@ -214,13 +214,13 @@ export class LoginComponent implements OnInit {
         next: (mentorProfile) => {
           // Mentor profile exists (application submitted and pending approval)
           // Redirect to home page - they can use "Become a Mentor" button if needed
-          console.log('Mentor application submitted and pending approval, navigating to home');
+          // console.log('Mentor application submitted and pending approval, navigating to home');
           this.router.navigate(['/']);
         },
         error: (error) => {
           // If 404, mentor profile doesn't exist - redirect to application form
           if (error.status === 404) {
-            console.log('Mentor profile not found - redirecting to application form');
+            // console.log('Mentor profile not found - redirecting to application form');
             this.notificationService.info(
               'Please complete your mentor application to get started.',
               'Complete Your Profile'
