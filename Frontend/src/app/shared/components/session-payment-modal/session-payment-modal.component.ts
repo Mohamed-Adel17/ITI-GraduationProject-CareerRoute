@@ -143,15 +143,15 @@ export class SessionPaymentModalComponent implements OnChanges {
         paymentProvider: PaymentProvider.Stripe // Default, backend will return existing if any
       }).subscribe({
         next: (response) => {
-          console.log('Payment intent response:', response);
           resolve({
+            clientSecret: response.clientSecret,
+            paymentIntentId: response.paymentIntentId,
             paymentProvider: response.paymentProvider,
             paymobPaymentMethod: (response as any).paymobPaymentMethod,
             amount: response.amount
           });
         },
         error: (error) => {
-          console.log('Payment intent error:', error);
           reject(error);
         }
       });
