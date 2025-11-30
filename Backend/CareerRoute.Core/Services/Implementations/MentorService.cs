@@ -462,16 +462,22 @@ namespace CareerRoute.Core.Services.Implementations
             mentor.IsAvailable = true;
             mentor.UpdatedAt = DateTime.UtcNow;
             
-            // Assign Mentor role to user
+            // Promote user: Remove User role and assign Mentor role (single role per user)
             var user = mentor.User;
             if (!await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
             {
+                // Remove User role first (promotion to Mentor)
+                if (await _userManager.IsInRoleAsync(user, AppRoles.User))
+                {
+                    await _userManager.RemoveFromRoleAsync(user, AppRoles.User);
+                }
+                
                 var roleResult = await _userManager.AddToRoleAsync(user, AppRoles.Mentor);
                 if (!roleResult.Succeeded)
                 {
                     throw new BusinessException("Failed to assign Mentor role");
                 }
-                _logger.LogInformation("Mentor role assigned to user {UserId}", user.Id);
+                _logger.LogInformation("User {UserId} promoted from User to Mentor role", user.Id);
             }
 
             // Ensure IsMentor flag is set (should already be true from registration or application)

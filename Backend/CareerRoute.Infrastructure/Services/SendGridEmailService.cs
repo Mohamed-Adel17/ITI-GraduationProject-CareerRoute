@@ -27,6 +27,9 @@ namespace CareerRoute.Infrastructure.Services
                 var from = new EmailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName);
                 var recipient = new EmailAddress(to);
                 var message = MailHelper.CreateSingleEmail(from, recipient, subject, plainTextContent, htmlContent);
+                
+                // Disable click tracking to show original URLs instead of SendGrid tracking URLs
+                message.SetClickTracking(false, false);
 
                 var response = await client.SendEmailAsync(message);
 
@@ -56,6 +59,9 @@ namespace CareerRoute.Infrastructure.Services
                 var from = new EmailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName);
                 var recipient = new EmailAddress(to);
                 var message = MailHelper.CreateSingleEmail(from, recipient, subject, plainTextContent, htmlContent);
+
+                // Disable click tracking to show original URLs instead of SendGrid tracking URLs
+                message.SetClickTracking(false, false);
 
                 // Add calendar invitation as attachment
                 var calendarBytes = System.Text.Encoding.UTF8.GetBytes(calendarContent);
