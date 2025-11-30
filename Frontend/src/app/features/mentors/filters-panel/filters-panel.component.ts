@@ -327,7 +327,7 @@ export class FiltersPanelComponent implements OnInit, OnDestroy {
    * Format price for display
    */
   formatPrice(price: number): string {
-    return `$${price}`;
+    return `${price} EGP`;
   }
 
   /**

@@ -230,7 +230,6 @@ export class MentorSearchStateService implements OnDestroy {
             pageSize: state.pageSize
           };
 
-          console.log('🚀 Calling MentorService.getAllMentors with params:', params);
 
           return this.mentorService.getAllMentors(params).pipe(
             tap((response) => {
@@ -259,10 +258,6 @@ export class MentorSearchStateService implements OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe((response) => {
-        console.log('🔍 MentorSearchStateService received response:', response);
-        console.log('🔍 Response type:', typeof response);
-        console.log('🔍 Is array?:', Array.isArray(response));
-        console.log('🔍 Has mentors property?:', response && typeof response === 'object' && 'mentors' in response);
 
         // Handle both response types
         let mentors: MentorListItem[] = [];
@@ -273,24 +268,17 @@ export class MentorSearchStateService implements OnDestroy {
         if (response && typeof response === 'object' && !Array.isArray(response) && 'mentors' in response && 'pagination' in response) {
           // Response is MentorSearchResponse
           const searchResponse = response as MentorSearchResponse;
-          console.log('📄 Response is MentorSearchResponse:', {
-            mentorsCount: searchResponse.mentors?.length || 0,
-            pagination: searchResponse.pagination,
-            totalCount: searchResponse.pagination?.totalCount
-          });
           mentors = searchResponse.mentors || [];
           pagination = searchResponse.pagination || null;
           totalCount = searchResponse.pagination?.totalCount || 0;
         } else if (Array.isArray(response)) {
           // Response is MentorListItem[]
-          console.log('📋 Response is array of mentors, count:', response.length);
           mentors = response;
           totalCount = response.length;
         } else {
           console.error('❌ Unexpected response format:', response);
         }
 
-        console.log('✅ Updating subjects with:', { mentorsCount: mentors.length, totalCount, pagination });
 
         // Update results
         this.resultsSubject$.next(mentors);

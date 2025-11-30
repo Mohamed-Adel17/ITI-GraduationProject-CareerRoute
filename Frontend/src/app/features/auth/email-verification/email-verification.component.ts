@@ -113,7 +113,7 @@ export class EmailVerificationComponent implements OnInit {
     // Call AuthService to verify email
     this.authService.verifyEmail(request).subscribe({
       next: (response) => {
-        console.log('Email verification successful:', response);
+        // console.log('Email verification successful:', response);
 
         // Set success state
         this.verificationState = 'success';

@@ -113,7 +113,7 @@ export class MentorApplicationComponent implements OnInit {
     this.mentorService.getCurrentMentorProfile().subscribe({
       next: (profile) => {
         // User already has a mentor profile - redirect to pending page
-        console.log('User already has mentor profile, redirecting to pending page');
+        // console.log('User already has mentor profile, redirecting to pending page');
         this.notificationService.info(
           'You have already submitted your mentor application.',
           'Application Submitted'
@@ -123,7 +123,7 @@ export class MentorApplicationComponent implements OnInit {
       error: (error) => {
         // If 404, user doesn't have profile yet - allow them to apply
         if (error.status === 404) {
-          console.log('No existing mentor profile found, loading application form');
+          // console.log('No existing mentor profile found, loading application form');
           this.loadData();
         } else {
           // Other errors - show error and load form anyway
@@ -185,7 +185,7 @@ export class MentorApplicationComponent implements OnInit {
           // Refresh token to get updated JWT with isMentor flag
           this.authService.refreshToken().subscribe({
             next: () => {
-              console.log('Token refreshed successfully after mentor application');
+              // console.log('Token refreshed successfully after mentor application');
               // Navigate to application pending page
               this.router.navigate(['/mentor/application-pending']);
             },

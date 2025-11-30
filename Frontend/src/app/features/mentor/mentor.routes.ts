@@ -13,11 +13,11 @@ import { pendingMentorGuard, approvedMentorGuard } from '../../core/guards/role.
  * - profile: Mentor profile view (own profile, read-only) - APPROVED ONLY
  * - profile/edit: Edit mentor profile - APPROVED ONLY
  * - manage-availability: Manage time slots and availability - APPROVED ONLY
+ * - sessions: View all sessions - APPROVED ONLY
+ * - sessions/:id: View session details - APPROVED ONLY
  *
  * Future routes to implement:
  * - dashboard: Mentor dashboard
- * - sessions: Session management
- * - bookings: Booking requests
  * - earnings: Earnings/payments
  * - reviews: Reviews received
  * - settings: Mentor settings
@@ -53,15 +53,12 @@ export const MENTOR_ROUTES: Routes = [
     canActivate: [approvedMentorGuard],
     title: 'My Sessions - CareerRoute'
   },
-
+  {
+    path: 'sessions/:id',
+    loadComponent: () => import('../../shared/components/session-details/session-details.component').then(m => m.SessionDetailsComponent),
+    canActivate: [approvedMentorGuard],
+    title: 'Session Details - CareerRoute'
+  }
   // TODO: Add more mentor routes here as components are created
-  // - sessions/:id - Session detail page
   // All future mentor routes should use approvedMentorGuard
-  // Example:
-  // {
-  //   path: 'dashboard',
-  //   loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent),
-  //   canActivate: [approvedMentorGuard],
-  //   title: 'Mentor Dashboard - CareerRoute'
-  // },
 ];

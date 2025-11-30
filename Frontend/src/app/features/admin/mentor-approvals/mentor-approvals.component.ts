@@ -82,7 +82,7 @@ export class MentorApprovalsComponent implements OnInit {
       next: (applications) => {
         this.applications = applications;
         this.loading = false;
-        console.log(`📋 Loaded ${applications.length} pending applications`);
+        // console.log(`📋 Loaded ${applications.length} pending applications`);
       },
       error: (error) => {
         this.loading = false;
@@ -116,8 +116,8 @@ export class MentorApprovalsComponent implements OnInit {
         // Remove from list immediately
         this.applications = this.applications.filter(app => app.id !== mentorId);
 
-        console.log(`✅ Approved mentor: ${mentorName} (${mentorId})`);
-        console.log('ℹ️  Note: User needs to refresh their browser or wait for automatic token refresh');
+        // console.log(`✅ Approved mentor: ${mentorName} (${mentorId})`);
+        // console.log('ℹ️  Note: User needs to refresh their browser or wait for automatic token refresh');
       },
       error: (error) => {
         // Error notification handled by errorInterceptor
@@ -170,8 +170,8 @@ export class MentorApprovalsComponent implements OnInit {
           app => app.id !== this.selectedMentorId
         );
 
-        console.log(`❌ Rejected mentor: ${mentorName} (${this.selectedMentorId})`);
-        console.log(`📝 Reason: ${reason}`);
+        // console.log(`❌ Rejected mentor: ${mentorName} (${this.selectedMentorId})`);
+        // console.log(`📝 Reason: ${reason}`);
 
         // Close dialog and reset state
         this.closeRejectDialog();

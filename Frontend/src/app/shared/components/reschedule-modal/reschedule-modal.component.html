@@ -39,8 +39,48 @@
 
       <!-- Reschedule Form -->
       <form [formGroup]="rescheduleForm" (ngSubmit)="onSubmit()">
-        <!-- New Date/Time Field -->
-        <div class="form-group">
+        <!-- Slot Picker for Mentee -->
+        <div *ngIf="userRole === 'mentee'" class="form-group">
+          <label class="form-label">
+            Select New Time Slot <span class="required">*</span>
+          </label>
+          
+          <!-- Loading State -->
+          <div *ngIf="isLoadingSlots" class="slots-loading">
+            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Loading available slots...</span>
+          </div>
+
+          <!-- No Slots Available -->
+          <div *ngIf="!isLoadingSlots && availableSlots.length === 0" class="no-slots">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>No available slots. The mentor hasn't added any availability yet.</span>
+          </div>
+
+          <!-- Slot List -->
+          <div *ngIf="!isLoadingSlots && availableSlots.length > 0" class="slots-list">
+            <button
+              *ngFor="let slot of availableSlots"
+              type="button"
+              class="slot-item"
+              [class.selected]="selectedSlot?.id === slot.id"
+              (click)="selectSlot(slot)"
+            >
+              <span class="slot-date">{{ formatSlotDisplay(slot) }}</span>
+            </button>
+          </div>
+          <div class="help-text">
+            Choose from the mentor's available time slots
+          </div>
+        </div>
+
+        <!-- DateTime Picker for Mentor -->
+        <div *ngIf="userRole === 'mentor'" class="form-group">
           <label for="newScheduledStartTime" class="form-label">
             New Date & Time <span class="required">*</span>
           </label>
@@ -51,7 +91,6 @@
             class="form-input"
             [class.error]="hasError('newScheduledStartTime', 'required') || hasError('newScheduledStartTime', 'futureTime')"
             [min]="minDateTime"
-            [disabled]="isSubmitting"
           />
           <div class="help-text">
             Select a new date and time at least 24 hours from now
@@ -73,7 +112,6 @@
             [class.error]="hasError('reason', 'required') || hasError('reason', 'minlength') || hasError('reason', 'maxlength')"
             rows="4"
             placeholder="Please explain why you need to reschedule (minimum 10 characters)"
-            [disabled]="isSubmitting"
           ></textarea>
           <div class="character-count">
             {{ rescheduleForm.get('reason')?.value?.length || 0 }} / 500 characters
@@ -96,7 +134,7 @@
           <button
             type="submit"
             class="btn btn-primary"
-            [disabled]="isSubmitting || rescheduleForm.invalid"
+            [disabled]="isSubmitting || !canSubmit"
           >
             <span *ngIf="!isSubmitting">Request Reschedule</span>
             <span *ngIf="isSubmitting" class="flex items-center">

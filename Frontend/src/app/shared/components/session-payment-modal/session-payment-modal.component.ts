@@ -117,7 +117,7 @@ export class SessionPaymentModalComponent implements OnInit, OnChanges {
         }
       } catch (error) {
         // No existing payment or error - show method selection
-        console.log('No existing payment intent, showing method selection');
+        // console.log('No existing payment intent, showing method selection');
       }
     }
 

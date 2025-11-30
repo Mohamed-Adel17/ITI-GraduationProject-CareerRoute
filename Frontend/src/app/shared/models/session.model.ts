@@ -74,7 +74,9 @@ export interface Session {
   price: number;                        // Session price in USD/EGP
   paymentId?: string | null;            // Payment GUID (null until payment created)
   paymentStatus?: string | null;        // Payment status (Pending, Captured, etc.)
-  cancellationReason?: string | null;   // Reason for cancellation
+  cancellationReason?: string | null;
+  rescheduleId?: string | null;       // Only populated when status is PendingReschedule
+  rescheduleRequestedBy?: 'Mentor' | 'Mentee' | null; // Who requested the reschedule
   canReschedule?: boolean;              // True if reschedule allowed (>24h notice)
   canCancel?: boolean;                  // True if cancellation allowed
   hoursUntilSession?: number | null;    // Hours until session start (for countdown)
@@ -157,6 +159,8 @@ export interface SessionDetailResponse {
   paymentId?: string | null;
   paymentStatus?: string | null;
   cancellationReason?: string | null;
+  rescheduleId?: string | null;       // Only populated when status is PendingReschedule
+  rescheduleRequestedBy?: 'Mentor' | 'Mentee' | null; // Who requested the reschedule
   canReschedule: boolean;
   canCancel: boolean;
   hoursUntilSession?: number | null;
@@ -212,6 +216,7 @@ export interface BookSessionResponse {
 export interface RescheduleRequest {
   newScheduledStartTime: string;  // ISO 8601 datetime, must be >24h from now
   reason: string;                 // Required: Min 10 chars, max 500 chars
+  slotId?: string;                // Optional: slot ID when mentee selects from available slots
 }
 
 /**
@@ -226,6 +231,27 @@ export interface RescheduleResponse {
   requestedBy: 'mentee' | 'mentor';
   rescheduleReason: string;
   requestedAt: string;
+}
+
+/**
+ * Reschedule Details
+ * Response for GET /api/sessions/reschedule/{rescheduleId}
+ */
+export interface RescheduleDetails {
+  id: string;
+  sessionId: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  originalStartTime: string;
+  newScheduledStartTime: string;
+  requestedBy: 'mentee' | 'mentor';
+  rescheduleReason: string;
+  requestedAt: string;
+  topic?: string;
+  duration?: string;
+  mentorFirstName?: string;
+  mentorLastName?: string;
+  menteeFirstName?: string;
+  menteeLastName?: string;
 }
 
 /**
@@ -335,6 +361,16 @@ export interface SessionTranscriptResponse {
   isAvailable: boolean;               // True if transcript is ready
 }
 
+
+/**
+ * Session AI Summary Response
+ * Response for GET /api/sessions/{id}/summary
+ */
+export interface SessionSummaryResponse {
+  sessionId: string;
+  summary: string;                    // AI-generated summary (markdown/plain text)
+  isAvailable: boolean;               // True if summary is ready
+}
 // ===========================
 // Paginated Responses
 // ===========================
@@ -456,8 +492,8 @@ export function formatSessionType(type: SessionType): string {
 /**
  * Format price with currency
  */
-export function formatSessionPrice(price: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatSessionPrice(price: number, currency: string = 'EGP'): string {
+  return new Intl.NumberFormat('en-EG', {
     style: 'currency',
     currency: currency
   }).format(price);
