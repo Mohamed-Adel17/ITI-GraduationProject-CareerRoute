@@ -275,6 +275,28 @@ namespace CareerRoute.API.Controllers
         /// <response code="403">User cannot approve this reschedule request</response>
         /// <response code="404">Reschedule request not found</response>
         /// <response code="409">Reschedule request already processed or expired</response>
+        /// <summary>
+        /// Gets reschedule request details for approval page
+        /// </summary>
+        [HttpGet("reschedule/{rescheduleId}")]
+        [Authorize(Policy = AppPolicies.RequireAnyRole)]
+        [ProducesResponseType(typeof(ApiResponse<RescheduleDetailsDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetRescheduleDetails([FromRoute] string rescheduleId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            var result = await _sessionService.GetRescheduleDetailsAsync(rescheduleId, userId, userRole);
+
+            return Ok(new ApiResponse<RescheduleDetailsDto>(result, "Reschedule details retrieved successfully."));
+        }
+
         [HttpPost("reschedule/{rescheduleId}/approve")]
         [Authorize(Policy = AppPolicies.RequireAnyRole)]
         [ProducesResponseType(typeof(ApiResponse<RescheduleSessionResponseDto>), StatusCodes.Status200OK)]

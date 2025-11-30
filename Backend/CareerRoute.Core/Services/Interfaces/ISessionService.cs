@@ -52,6 +52,11 @@ namespace CareerRoute.Core.Services.Interfaces
         /// Rejects a pending reschedule request.
         /// </summary>
         Task<RescheduleSessionResponseDto> RejectRescheduleAsync(string rescheduleId, string userId, string role);
+
+        /// <summary>
+        /// Gets details of a reschedule request for display on approval page.
+        /// </summary>
+        Task<RescheduleDetailsDto> GetRescheduleDetailsAsync(string rescheduleId, string userId, string role);
         /// <summary>
         /// Releases an unpaid session so its slot can be reused.
         /// </summary>

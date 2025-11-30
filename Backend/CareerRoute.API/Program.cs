@@ -8,6 +8,7 @@ using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Data.SeedData;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Net;
@@ -144,16 +145,38 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+var enableSwagger = builder.Environment.IsDevelopment() ||
+    builder.Configuration.GetValue<bool>("Swagger:Enabled");
+var swaggerRoutePrefix = builder.Configuration.GetValue<string>("Swagger:RoutePrefix");
+var enableHttpsRedirection = builder.Configuration.GetValue<bool?>("HttpsRedirection:Enabled") ?? true;
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (enableSwagger)
 {
+    app.UseMiddleware<SwaggerBasicAuthMiddleware>();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareerRoute API v1");
+        if (app.Environment.IsDevelopment())
+        {
+            c.RoutePrefix = "swagger";
+        }
+        else
+        {
+            c.RoutePrefix = string.IsNullOrWhiteSpace(swaggerRoutePrefix)
+                ? string.Empty
+                : swaggerRoutePrefix;
+        }
+    });
 }
 
-app.UseHttpsRedirection();
+if (enableHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
 app.UseGlobalExceptionHandler();
 
 app.UseCors("AllowFrontend");
@@ -176,9 +199,25 @@ app.MapHub<PaymentHub>("hub/payment");
 
 app.MapControllers();
 
-
-
-
+// Apply pending migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        
+        logger.LogInformation("Applying database migrations...");
+        await context.Database.MigrateAsync();
+        logger.LogInformation("Database migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error applying database migrations");
+    }
+}
 
 //seed roles on application startup
 using (var scope = app.Services.CreateScope())
@@ -234,7 +273,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-//seed test data on application startup (Development only)
+//seed test data on application startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -244,8 +283,13 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var env = services.GetRequiredService<IWebHostEnvironment>();
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var forceSeeding = configuration.GetValue<bool>("SeedData:ForceSeeding");
+        
+        logger.LogInformation("=== SEED DATA CONFIG: ForceSeeding = {ForceSeeding}, Environment = {Env} ===", 
+            forceSeeding, env.EnvironmentName);
 
-        await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env);
+        await TestDataSeeder.SeedTestDataAsync(context, userManager, logger, env, forceSeeding);
     }
     catch (Exception ex)
     {
@@ -253,14 +297,6 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Error happened while seeding test data");
     }
 }
-
-// Start the meeting termination background timer (REMOVED - Replaced by Hangfire)
-// var meetingTerminationTimer = app.Services.GetRequiredService<CareerRoute.Infrastructure.Services.MeetingTerminationTimer>();
-// meetingTerminationTimer.Start();
-
-// Start the transcript retry background timer
-// var transcriptRetryTimer = app.Services.GetRequiredService<CareerRoute.Infrastructure.Services.TranscriptRetryTimer>();
-// transcriptRetryTimer.Start();
 
 app.Run();
 
@@ -291,3 +327,5 @@ internal sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthoriza
         return user?.Identity?.IsAuthenticated == true && user.IsInRole(AppRoles.Admin);
     }
 }
+
+public partial class Program { }

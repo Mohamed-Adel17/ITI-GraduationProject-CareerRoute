@@ -208,6 +208,13 @@ namespace CareerRoute.Core.Services.Implementations
 
             var dto = _mapper.Map<SessionDetailsResponseDto>(session);
 
+            // Populate RescheduleId if session has a pending reschedule
+            if (session.Status == SessionStatusOptions.PendingReschedule && session.Reschedule != null)
+            {
+                dto.RescheduleId = session.Reschedule.Id;
+                dto.RescheduleRequestedBy = session.Reschedule.RequestedBy;
+            }
+
             return dto;
         }
 
@@ -291,18 +298,32 @@ namespace CareerRoute.Core.Services.Implementations
             if (!isMentorRequester && !isMenteeRequester)
                 throw new UnauthorizedException("You don't have permission to view this session as You are not a participant of this session.");
 
+            // If slotId is provided (mentee rescheduling to a specific slot)
+            if (!string.IsNullOrEmpty(dto.SlotId))
+            {
+                var slot = await _timeSlotRepository.GetByIdAsync(dto.SlotId);
+                if (slot == null)
+                    throw new NotFoundException("Time slot not found.");
+                if (slot.IsBooked)
+                    throw new ConflictException("The selected time slot is no longer available.");
+                if (slot.MentorId != session.MentorId)
+                    throw new BusinessException("The selected slot does not belong to this session's mentor.");
 
-            bool mentorHasOverlap = await _timeSlotRepository.HasOverlapAsync(
-                                            session.MentorId,
-                                            dto.NewScheduledStartTime,
-                                            dto.NewScheduledStartTime.AddMinutes((int)session.Duration)
-                                            );
+                // Use slot's start time
+                dto.NewScheduledStartTime = slot.StartDateTime;
+            }
+            else
+            {
+                // Only check mentor overlap when no slotId provided (mentor rescheduling to arbitrary time)
+                bool mentorHasOverlap = await _timeSlotRepository.HasOverlapAsync(
+                                                session.MentorId,
+                                                dto.NewScheduledStartTime,
+                                                dto.NewScheduledStartTime.AddMinutes((int)session.Duration)
+                                                );
 
-
-            if (mentorHasOverlap)
-                throw new ConflictException("Mentor has no available time at the requested slot.");
-
-
+                if (mentorHasOverlap)
+                    throw new ConflictException("Mentor has no available time at the requested slot.");
+            }
 
             bool menteeAvailable = await _sessionRepository.IsMenteeAvailableAsync(session.MenteeId,
                                             dto.NewScheduledStartTime,
@@ -803,6 +824,39 @@ namespace CareerRoute.Core.Services.Implementations
             await SendRescheduleRejectedEmailAsync(requesterEmail, requesterName, session, reschedule);
 
             return _mapper.Map<RescheduleSessionResponseDto>(reschedule);
+        }
+
+        public async Task<RescheduleDetailsDto> GetRescheduleDetailsAsync(string rescheduleId, string userId, string role)
+        {
+            var reschedule = await _rescheduleSessionRepository.GetByIdAsync(rescheduleId);
+            if (reschedule == null)
+                throw new NotFoundException("Reschedule request not found.");
+
+            var session = await _sessionRepository.GetByIdWithRelationsAsync(reschedule.SessionId);
+            if (session == null)
+                throw new NotFoundException("Session not found.");
+
+            bool isMentor = session.MentorId == userId;
+            bool isMentee = session.MenteeId == userId;
+            bool isAdmin = role == "Admin";
+
+            if (!isMentor && !isMentee && !isAdmin)
+                throw new UnauthorizedException("You don't have permission to view this reschedule request.");
+
+            return new RescheduleDetailsDto
+            {
+                RescheduleId = reschedule.Id,
+                SessionId = session.Id,
+                Status = reschedule.Status.ToString(),
+                MentorName = $"{session.Mentor.User.FirstName} {session.Mentor.User.LastName}",
+                MenteeName = $"{session.Mentee.FirstName} {session.Mentee.LastName}",
+                Topic = session.Topic,
+                OriginalStartTime = reschedule.OriginalStartTime,
+                NewStartTime = reschedule.NewScheduledStartTime,
+                RequestedBy = reschedule.RequestedBy,
+                RescheduleReason = reschedule.RescheduleReason,
+                RequestedAt = reschedule.RequestedAt
+            };
         }
 
         public async Task ReleaseUnpaidSessionAsync(string sessionId)

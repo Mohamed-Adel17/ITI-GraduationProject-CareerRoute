@@ -549,7 +549,82 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 6. Approve Reschedule Request
+### 6. Get Reschedule Details
+
+**Endpoint:** `GET /api/sessions/reschedule/{rescheduleId}`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** User (mentee), Mentor, Admin
+
+**Description:** Retrieves details of a reschedule request for display on the approval page. Used when a user clicks the reschedule approval link from email.
+
+**Path Parameters:**
+- `rescheduleId` (string, GUID): The unique identifier of the reschedule request
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Reschedule details retrieved successfully.",
+  "data": {
+    "rescheduleId": "55555555-e29b-41d4-a716-446655440015",
+    "sessionId": "44444444-e29b-41d4-a716-446655440014",
+    "status": "Pending",
+    "mentorName": "John Doe",
+    "menteeName": "Jane Smith",
+    "topic": "Career Guidance Session",
+    "originalStartTime": "2025-11-15T14:00:00Z",
+    "newStartTime": "2025-11-16T15:00:00Z",
+    "requestedBy": "Mentor",
+    "rescheduleReason": "Conflict with another meeting, requesting alternative time",
+    "requestedAt": "2025-11-09T12:00:00Z"
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You don't have permission to view this reschedule request.",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Reschedule request not found.",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Validate reschedule request exists
+- Verify user is session participant (mentee, mentor) or admin
+- Return reschedule details with session info (mentor/mentee names, topic)
+
+**Frontend Usage:**
+1. Email link directs user to `/sessions/reschedule/{rescheduleId}`
+2. If not logged in, redirect to login with returnUrl
+3. Fetch reschedule details using this endpoint
+4. Display approval page with session info, original time, new time, reason
+5. User clicks Approve/Reject buttons
+
+---
+
+### 7. Approve Reschedule Request
 
 **Endpoint:** `POST /api/sessions/reschedule/{rescheduleId}/approve`
 **Requires:** `Authorization: Bearer {token}`
@@ -623,7 +698,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 7. Reject Reschedule Request
+### 8. Reject Reschedule Request
 
 **Endpoint:** `POST /api/sessions/reschedule/{rescheduleId}/reject`
 **Requires:** `Authorization: Bearer {token}`
@@ -697,7 +772,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 8. Cancel Session
+### 9. Cancel Session
 
 **Endpoint:** `PATCH /api/sessions/{id}/cancel`
 **Requires:** `Authorization: Bearer {token}`
@@ -790,7 +865,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 9. Join Session (Get Video Link)
+### 10. Join Session (Get Video Link)
 
 **Endpoint:** `POST /api/sessions/{id}/join`
 **Requires:** `Authorization: Bearer {token}`
@@ -866,7 +941,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 10. Complete Session
+### 11. Complete Session
 
 **Endpoint:** `PATCH /api/sessions/{id}/complete`
 **Requires:** `Authorization: Bearer {token}`
@@ -932,7 +1007,7 @@ Session and payment endpoints enable the core transaction flow: booking mentorsh
 
 ---
 
-### 11. Get Session Recording
+### 12. Get Session Recording
 
 **Endpoint:** `GET /api/sessions/{id}/recording`
 **Requires:** `Authorization: Bearer {token}`
@@ -1047,7 +1122,7 @@ Returns the session recording video. The recording is stored in Cloudflare R2 an
 
 ---
 
-### 12. Get Session Transcript
+### 13. Get Session Transcript
 
 **Endpoint:** `GET /api/sessions/{id}/transcript`
 **Requires:** `Authorization: Bearer {token}`
@@ -1127,7 +1202,7 @@ The transcript includes speaker diarization with timestamps:
 
 ## Payment Management Endpoints
 
-### 13. Create Payment Intent
+### 14. Create Payment Intent
 
 **Endpoint:** `POST /api/payments/create-intent`
 **Requires:** `Authorization: Bearer {token}`
@@ -1210,7 +1285,7 @@ The transcript includes speaker diarization with timestamps:
 
 ---
 
-### 14. Confirm Payment
+### 15. Confirm Payment
 
 **Endpoint:** `POST /api/payments/confirm`
 **Requires:** `Authorization: Bearer {token}`
@@ -1303,7 +1378,7 @@ The transcript includes speaker diarization with timestamps:
 
 ---
 
-### 15. Get Payment History
+### 16. Get Payment History
 
 **Endpoint:** `GET /api/payments/history`
 **Requires:** `Authorization: Bearer {token}`

@@ -31,6 +31,9 @@
 
     public string? CancellationReason { get; set; }
 
+    public string? RescheduleId { get; set; }  // Only populated when status is PendingReschedule
+    public string? RescheduleRequestedBy { get; set; }  // "Mentor" or "Mentee" - only when PendingReschedule
+
     public bool CanReschedule { get; set; }
     public bool CanCancel { get; set; }
     public int HoursUntilSession { get; set; }

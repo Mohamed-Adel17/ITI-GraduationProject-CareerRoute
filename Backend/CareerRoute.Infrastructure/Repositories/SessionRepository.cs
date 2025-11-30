@@ -36,7 +36,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(s => s.Mentee)
                 .Include(s => s.Mentor) // Include first-level Mentor entity
                 .ThenInclude(m => m.User)   //  Include the User entity inside Mentor
-                .Include(s => s.Payment)
+                .Include(s => s.Reschedule)
                 .FirstOrDefaultAsync(s => s.Id == sessionId);
         }
         public async Task<List<Session>> GetSessionsStartingBetweenAsync(DateTime start, DateTime end) //For Background job 
@@ -68,7 +68,8 @@ namespace CareerRoute.Infrastructure.Repositories
 
             // Filter by status and future sessions
             query = query.Where(s => (s.Status == SessionStatusOptions.Confirmed
-                                      || s.Status == SessionStatusOptions.Pending)
+                                      || s.Status == SessionStatusOptions.Pending
+                                      || s.Status == SessionStatusOptions.PendingReschedule)
                                       && s.ScheduledStartTime >= now);
 
             // Order by start time
