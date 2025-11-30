@@ -295,13 +295,13 @@
               <!-- 30-Min Rate -->
               <div>
                 <label for="rate30Min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  30-Minute Session Rate (USD) <span class="text-red-600 dark:text-red-500">*</span>
+                  30-Minute Session Rate (EGP) <span class="text-red-600 dark:text-red-500">*</span>
                 </label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">EGP</span>
                   <input
                     type="number"
-                    class="w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    class="w-full pl-16 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     [ngClass]="{
                       'border-red-500 dark:border-red-500': hasError('rate30Min', 'required') || hasError('rate30Min', 'min') || hasError('rate30Min', 'max'),
                       'border-gray-300 dark:border-gray-600': !(hasError('rate30Min', 'required') || hasError('rate30Min', 'min') || hasError('rate30Min', 'max'))
@@ -328,13 +328,13 @@
               <!-- 60-Min Rate -->
               <div>
                 <label for="rate60Min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  60-Minute Session Rate (USD) <span class="text-red-600 dark:text-red-500">*</span>
+                  60-Minute Session Rate (EGP) <span class="text-red-600 dark:text-red-500">*</span>
                 </label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">EGP</span>
                   <input
                     type="number"
-                    class="w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    class="w-full pl-16 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     [ngClass]="{
                       'border-red-500 dark:border-red-500': hasError('rate60Min', 'required') || hasError('rate60Min', 'min') || hasError('rate60Min', 'max'),
                       'border-gray-300 dark:border-gray-600': !(hasError('rate60Min', 'required') || hasError('rate60Min', 'min') || hasError('rate60Min', 'max'))
