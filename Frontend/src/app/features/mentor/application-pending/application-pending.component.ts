@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Mentor, MentorApprovalStatus } from '../../../shared/models/mentor.model';
 
 /**
@@ -54,13 +55,14 @@ export class ApplicationPendingComponent implements OnInit {
   constructor(
     private mentorService: MentorService,
     private notificationService: NotificationService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    // console.log('ApplicationPendingComponent initialized');
     this.loadMentorProfile();
   }
+
 
   /**
    * Fetch mentor's own profile from API
@@ -82,14 +84,16 @@ export class ApplicationPendingComponent implements OnInit {
         this.mentorProfile = mentor;
         this.loading = false;
 
-        // If mentor is approved, redirect to mentor profile page
+        // If mentor is approved, refresh token to get Mentor role, then redirect
         if (mentor.approvalStatus === MentorApprovalStatus.Approved) {
-          // console.log('Mentor is approved, redirecting to profile');
           this.notificationService.success(
             'Your application has been approved!',
             'Congratulations!'
           );
-          this.router.navigate(['/mentor/profile']);
+          this.authService.refreshToken().subscribe({
+            next: () => this.router.navigate(['/mentor/profile']),
+            error: () => this.router.navigate(['/mentor/profile'])
+          });
         }
       },
       error: (error) => {

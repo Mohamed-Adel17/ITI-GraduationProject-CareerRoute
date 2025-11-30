@@ -19,9 +19,9 @@ import { Skill } from './skill.model';
  * Backend sends numeric values: 0 = Pending, 1 = Approved, 2 = Rejected
  */
 export enum MentorApprovalStatus {
-  Pending = 0,
-  Approved = 1,
-  Rejected = 2
+  Pending = 'Pending',
+  Approved = 'Approved',
+  Rejected = 'Rejected'
 }
 
 /**
