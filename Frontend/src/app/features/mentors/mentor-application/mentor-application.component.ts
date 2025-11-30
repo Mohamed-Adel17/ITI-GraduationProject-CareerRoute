@@ -101,8 +101,11 @@ export class MentorApplicationComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Check if user already has a mentor profile
-    this.checkExistingProfile();
+    // Refresh token first to get latest user state, then check profile
+    this.authService.refreshToken().subscribe({
+      next: () => this.checkExistingProfile(),
+      error: () => this.checkExistingProfile()
+    });
   }
 
   /**
@@ -176,38 +179,30 @@ export class MentorApplicationComponent implements OnInit {
     // Type guard to ensure we have the right type
     if (this.isMentorApplication(data)) {
       this.mentorService.applyToBecomeMentor(data).subscribe({
-        next: (mentor) => {
+        next: () => {
           this.notificationService.success(
             'Application submitted successfully! Your application is pending approval.',
             'Application Submitted'
           );
 
-          // Refresh token to get updated JWT with isMentor flag
+          // Refresh token to get updated JWT with isMentor flag, then navigate
           this.authService.refreshToken().subscribe({
-            next: () => {
-              // console.log('Token refreshed successfully after mentor application');
-              // Navigate to application pending page
-              this.router.navigate(['/mentor/application-pending']);
-            },
-            error: (refreshError) => {
-              console.error('Failed to refresh token after application:', refreshError);
-              // Even if refresh fails, navigate to pending page
-              // User might need to re-login to see updated token
-              this.router.navigate(['/mentor/application-pending']);
-            }
+            next: () => this.router.navigate(['/mentor/application-pending']),
+            error: () => this.router.navigate(['/'])
           });
         },
         error: (error) => {
-          // errorInterceptor handles most errors, but we can add custom handling here
-          if (error.status === 400 && error.error?.message?.includes('already have a mentor profile')) {
-            this.notificationService.error('You already have a mentor profile.');
+          if (error.status === 409) {
+            this.notificationService.error(
+              'You have a previous application. Please contact support to re-apply.',
+              'Application Exists'
+            );
           } else {
             this.notificationService.error('Failed to submit application. Please try again.');
           }
         }
       });
     } else {
-      // This should never happen in create mode, but handle gracefully
       console.error('Invalid data type received in create mode');
       this.notificationService.error('Invalid form data. Please try again.');
     }

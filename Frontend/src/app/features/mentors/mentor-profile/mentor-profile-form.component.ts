@@ -77,7 +77,7 @@ export class MentorProfileFormComponent implements OnInit {
   showPricingHelp = false;
 
   // Pricing constraints (from API contract)
-  readonly MIN_PRICE = 0; // API allows min 0, max 10000
+  readonly MIN_PRICE = 50; // Minimum session rate
   readonly MAX_PRICE = 10000;
   readonly MIN_BIO_LENGTH = 50; // API: min 50, max 1000
   readonly MAX_BIO_LENGTH = 1000;

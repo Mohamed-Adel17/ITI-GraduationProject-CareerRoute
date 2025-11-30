@@ -93,6 +93,16 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
   @Input() mentorName: string = '';
 
   /**
+   * Optional: Pre-fetched client secret (skip API call if provided)
+   */
+  @Input() existingClientSecret: string = '';
+
+  /**
+   * Optional: Pre-fetched payment intent ID
+   */
+  @Input() existingPaymentIntentId: string = '';
+
+  /**
    * Event emitted when payment is successful
    */
   @Output() paymentSuccess = new EventEmitter<PaymentConfirmationResponse>();
@@ -159,21 +169,24 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
    * Create payment intent via backend
    */
   private async createPaymentIntent(): Promise<void> {
+    // Use existing values if provided (skip API call)
+    if (this.existingClientSecret && this.existingPaymentIntentId) {
+      this.clientSecret = this.existingClientSecret;
+      this.paymentIntentId = this.existingPaymentIntentId;
+      return;
+    }
+
     const request: CreatePaymentIntentRequest = {
       sessionId: this.sessionId,
       paymentProvider: PaymentProvider.Paymob,
       paymobPaymentMethod: PaymobPaymentMethod.EWallet
     };
 
-    // console.log('Creating Paymob wallet payment intent:', request);
-
     return new Promise((resolve, reject) => {
       this.paymentService.createPaymentIntent(request).subscribe({
         next: (response) => {
           this.paymentIntentId = response.paymentIntentId;
           this.clientSecret = response.clientSecret;
-          // console.log('Paymob wallet payment intent created:', this.paymentIntentId);
-          // console.log('Client secret (payment token):', this.clientSecret);
           resolve();
         },
         error: (error) => {

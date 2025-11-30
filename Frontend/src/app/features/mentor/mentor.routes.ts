@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { pendingMentorGuard, approvedMentorGuard } from '../../core/guards/role.guard';
+import { authGuard } from '../../core/guards/auth.guard';
 
 /**
  * Mentor routes - Protected by different guards based on approval status
@@ -25,8 +26,9 @@ import { pendingMentorGuard, approvedMentorGuard } from '../../core/guards/role.
 export const MENTOR_ROUTES: Routes = [
   {
     path: 'application-pending',
+    canActivate: [authGuard],
     loadComponent: () => import('./application-pending/application-pending.component').then(m => m.ApplicationPendingComponent),
-    canActivate: [pendingMentorGuard],
+    
     title: 'Application Pending - CareerRoute'
   },
   {

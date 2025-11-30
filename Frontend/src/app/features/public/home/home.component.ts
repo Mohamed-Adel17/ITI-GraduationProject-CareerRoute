@@ -144,8 +144,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loadTopCategories();
     this.checkMentorProfileStatus();
 
-    // Re-check mentor profile status when navigating back to home page
-    // This ensures button visibility is updated after visiting other pages
+    // Re-check on navigation back to home
     this.router.events
       .pipe(
         filter(event => event instanceof NavigationEnd),
