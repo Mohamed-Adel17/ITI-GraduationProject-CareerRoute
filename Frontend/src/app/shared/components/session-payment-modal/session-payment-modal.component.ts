@@ -1,13 +1,14 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PaymentMethodSelectionComponent } from '../../../features/mentors/mentor-detail/payment-method-selection/payment-method-selection.component';
 import { StripePaymentComponent } from '../../../features/payment/stripe-payment/stripe-payment.component';
 import { PaymobCardPaymentComponent } from '../../../features/payment/paymob-card-payment/paymob-card-payment.component';
 import { PaymobWalletPaymentComponent } from '../../../features/payment/paymob-wallet-payment/paymob-wallet-payment.component';
 import { PaymentService } from '../../../core/services/payment.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { PaymentMethodSelection } from '../../models/payment-flow.model';
 import { PaymentProvider, PaymobPaymentMethod } from '../../models/payment.model';
-import { SessionSummary } from '../../models/session.model';
+import { SessionSummary, SessionStatus } from '../../models/session.model';
 
 /**
  * SessionPaymentModalComponent
@@ -35,8 +36,9 @@ import { SessionSummary } from '../../models/session.model';
   templateUrl: './session-payment-modal.component.html',
   styleUrls: []
 })
-export class SessionPaymentModalComponent implements OnInit, OnChanges {
+export class SessionPaymentModalComponent implements OnChanges {
   private readonly paymentService = inject(PaymentService);
+  private readonly notificationService = inject(NotificationService);
 
   /**
    * Whether the modal is visible
@@ -71,15 +73,14 @@ export class SessionPaymentModalComponent implements OnInit, OnChanges {
   // Session details with price
   sessionPrice: number = 0;
 
+  // Payment intent details from API
+  existingClientSecret: string = '';
+  existingPaymentIntentId: string = '';
+
   // Expose enums to template
   readonly PaymentProvider = PaymentProvider;
   readonly PaymobPaymentMethod = PaymobPaymentMethod;
 
-  ngOnInit(): void {
-    if (this.isOpen && this.session) {
-      this.initializePaymentFlow();
-    }
-  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen && this.session) {
@@ -95,33 +96,38 @@ export class SessionPaymentModalComponent implements OnInit, OnChanges {
     this.resetPaymentFlow();
     this.hasExistingPaymentIntent = false;
 
-    // Get session price from session
+    // Validate session status - only allow payment for Pending sessions
+    if (this.session.status !== SessionStatus.Pending) {
+      this.isLoading = false;
+      this.onClose();
+      return;
+    }
+
     this.sessionPrice = this.session.price || 0;
 
-    // Check if session already has a payment intent by trying to create one
-    // Backend will return existing intent if one exists
     if (this.session.id) {
       try {
         const paymentInfo = await this.checkExistingPayment();
-        
         if (paymentInfo && paymentInfo.paymentProvider) {
-          // Payment intent exists - go directly to the payment component
-          // Also update price from payment response if available
-          if (paymentInfo.amount) {
-            this.sessionPrice = paymentInfo.amount;
-          }
+          this.existingClientSecret = paymentInfo.clientSecret || '';
+          this.existingPaymentIntentId = paymentInfo.paymentIntentId || '';
           this.hasExistingPaymentIntent = true;
           this.isLoading = false;
           this.showPaymentComponentForProvider(paymentInfo.paymentProvider, paymentInfo.paymobPaymentMethod);
           return;
         }
-      } catch (error) {
-        // No existing payment or error - show method selection
-        // console.log('No existing payment intent, showing method selection');
+      } catch (error: any) {
+        // Rate limit - show notification and close modal
+        if (error?.status === 429) {
+          this.notificationService.warning('Too many requests. Please wait a moment and try again.', 'Rate Limit');
+          this.isLoading = false;
+          this.onClose();
+          return;
+        }
+        // Other errors - continue to method selection
       }
     }
 
-    // No existing payment - show method selection
     this.isLoading = false;
     this.showPaymentMethodSelection = true;
   }
@@ -137,6 +143,7 @@ export class SessionPaymentModalComponent implements OnInit, OnChanges {
         paymentProvider: PaymentProvider.Stripe // Default, backend will return existing if any
       }).subscribe({
         next: (response) => {
+          console.log('Payment intent response:', response);
           resolve({
             paymentProvider: response.paymentProvider,
             paymobPaymentMethod: (response as any).paymobPaymentMethod,
@@ -144,6 +151,7 @@ export class SessionPaymentModalComponent implements OnInit, OnChanges {
           });
         },
         error: (error) => {
+          console.log('Payment intent error:', error);
           reject(error);
         }
       });
@@ -153,16 +161,16 @@ export class SessionPaymentModalComponent implements OnInit, OnChanges {
   /**
    * Show the appropriate payment component based on provider
    */
-  private showPaymentComponentForProvider(provider: PaymentProvider, paymobMethod?: PaymobPaymentMethod): void {
+  private showPaymentComponentForProvider(provider: PaymentProvider | string | number, paymobMethod?: PaymobPaymentMethod | number): void {
     this.showPaymentMethodSelection = false;
-    
-    if (provider === PaymentProvider.Stripe) {
+    const isStripe = provider === PaymentProvider.Stripe || provider === 'Stripe' || provider === 1;
+    const isPaymob = provider === PaymentProvider.Paymob || provider === 'Paymob' || provider === 2;
+    if (isStripe) {
       this.showStripePayment = true;
-    } else if (provider === PaymentProvider.Paymob) {
-      if (paymobMethod === PaymobPaymentMethod.EWallet) {
+    } else if (isPaymob) {
+      if (paymobMethod === PaymobPaymentMethod.EWallet || paymobMethod === 2) {
         this.showPaymobWalletPayment = true;
       } else {
-        // Default to card for Paymob
         this.showPaymobCardPayment = true;
       }
     }

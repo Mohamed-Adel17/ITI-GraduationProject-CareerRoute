@@ -322,11 +322,12 @@ export class SessionsComponent implements OnInit, OnDestroy {
    * Opens payment modal for pending payment session
    */
   onCompletePayment(sessionId: string): void {
-    // Find the session to get its details for the modal
     const session = this.upcomingSessions.find(s => s.id === sessionId);
-    if (session) {
+    if (session && session.status === SessionStatus.Pending) {
       this.selectedSession = session;
       this.showPaymentModal = true;
+    } else if (session) {
+      this.notificationService.error(`Cannot pay for session with status: ${session.status}`);
     }
   }
 

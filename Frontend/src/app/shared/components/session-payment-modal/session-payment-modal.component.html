@@ -30,6 +30,8 @@
         [sessionId]="session.id"
         [amount]="displayPrice"
         [mentorName]="mentorName"
+        [existingClientSecret]="existingClientSecret"
+        [existingPaymentIntentId]="existingPaymentIntentId"
         (paymentSuccess)="onPaymentSuccess()"
         (paymentFailed)="onPaymentFailure($event)"
         (paymentCancelled)="onPaymentComponentClose()">
@@ -41,6 +43,8 @@
         [sessionId]="session.id"
         [amount]="displayPrice"
         [mentorName]="mentorName"
+        [existingClientSecret]="existingClientSecret"
+        [existingPaymentIntentId]="existingPaymentIntentId"
         (paymentSuccess)="onPaymentSuccess()"
         (paymentFailed)="onPaymentFailure($event)"
         (paymentCancelled)="onPaymentComponentClose()">
@@ -52,6 +56,8 @@
         [sessionId]="session.id"
         [amount]="displayPrice"
         [mentorName]="mentorName"
+        [existingClientSecret]="existingClientSecret"
+        [existingPaymentIntentId]="existingPaymentIntentId"
         (paymentSuccess)="onPaymentSuccess()"
         (paymentFailed)="onPaymentFailure($event)"
         (paymentCancelled)="onPaymentComponentClose()">

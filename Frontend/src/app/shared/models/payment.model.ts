@@ -29,8 +29,8 @@ export enum PaymentStatus {
  * Values match backend API contract (integer enum)
  */
 export enum PaymentProvider {
-  Stripe = 1,   // 1: Stripe (international, USD)
-  Paymob = 2    // 2: Paymob (Egypt, EGP)
+  Stripe = 'Stripe',   // 1: Stripe (international, USD)
+  Paymob = 'Paymob'    // 2: Paymob (Egypt, EGP)
 }
 
 /**

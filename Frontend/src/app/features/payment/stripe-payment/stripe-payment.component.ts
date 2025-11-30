@@ -10,6 +10,7 @@ import {
   PaymentConfirmationResponse
 } from '../../../shared/models/payment.model';
 import { PaymentFlowStatus } from '../../../shared/models/payment-flow.model';
+import { NotificationService } from '../../../core/services/notification.service';
 
 /**
  * StripePaymentComponent
@@ -35,6 +36,7 @@ import { PaymentFlowStatus } from '../../../shared/models/payment-flow.model';
 })
 export class StripePaymentComponent implements OnInit, OnDestroy {
   private readonly paymentService = inject(PaymentService);
+  private readonly notificationService = inject(NotificationService);
 
   /**
    * Session ID to pay for
@@ -50,6 +52,16 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
    * Mentor name for display
    */
   @Input() mentorName: string = '';
+
+  /**
+   * Optional: Pre-fetched client secret (skip API call if provided)
+   */
+  @Input() existingClientSecret: string = '';
+
+  /**
+   * Optional: Pre-fetched payment intent ID
+   */
+  @Input() existingPaymentIntentId: string = '';
 
   /**
    * Event emitted when payment is successful
@@ -137,27 +149,27 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
    * Create payment intent via backend
    */
   private async createPaymentIntent(): Promise<void> {
+    // Use existing values if provided (skip API call)
+    if (this.existingClientSecret && this.existingPaymentIntentId) {
+      this.clientSecret = this.existingClientSecret;
+      this.paymentIntentId = this.existingPaymentIntentId;
+      return;
+    }
+
     const request: CreatePaymentIntentRequest = {
       sessionId: this.sessionId,
       paymentProvider: PaymentProvider.Stripe
     };
-
-    // console.log('Creating payment intent with request:', request);
-    // console.log('SessionId:', this.sessionId);
-    // console.log('PaymentProvider value:', PaymentProvider.Stripe);
-    // console.log('Request JSON:', JSON.stringify(request));
 
     return new Promise((resolve, reject) => {
       this.paymentService.createPaymentIntent(request).subscribe({
         next: (response) => {
           this.paymentIntentId = response.paymentIntentId;
           this.clientSecret = response.clientSecret;
-          // console.log('Payment intent created:', this.paymentIntentId);
           resolve();
         },
         error: (error) => {
           console.error('Payment intent creation failed:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
           reject(error);
         }
       });
@@ -301,6 +313,7 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
    */
   private handleError(error: any): void {
     this.currentStatus = PaymentFlowStatus.Failed;
+    
     
     let message: string;
     if (typeof error === 'string') {
