@@ -277,7 +277,13 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
 
   get isRescheduleRequester(): boolean {
     if (!this.rescheduleDetails?.requestedBy) return false;
-    return this.rescheduleDetails.requestedBy.toLowerCase() === this.userRole;
+    
+    // Backend may return "User"/"Mentor" or "mentee"/"mentor"
+    const requestedByRole = this.rescheduleDetails.requestedBy.toLowerCase() === 'user' 
+      ? 'mentee' 
+      : this.rescheduleDetails.requestedBy.toLowerCase();
+    
+    return requestedByRole === this.userRole.toLowerCase();
   }
 
   get canActOnReschedule(): boolean {
@@ -287,7 +293,7 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
 
   get formattedProposedTime(): string {
     if (!this.rescheduleDetails) return '';
-    return formatSessionDateTime(this.rescheduleDetails.newScheduledStartTime);
+    return formatSessionDateTime(this.rescheduleDetails.newScheduledStartTime || this.rescheduleDetails.newStartTime || '');
   }
 
   // === Reschedule Actions ===
