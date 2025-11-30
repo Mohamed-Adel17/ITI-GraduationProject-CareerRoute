@@ -5,6 +5,9 @@ on: [push]
 jobs:
   build_and_deploy:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: Backend
     steps:
       - uses: actions/checkout@v4
       
@@ -32,3 +35,4 @@ jobs:
           server-computer-name: ${{ secrets.SERVER_COMPUTER_NAME }}
           server-username: ${{ secrets.SERVER_USERNAME }}
           server-password: ${{ secrets.SERVER_PASSWORD }}
+          source-path: Backend/publish
