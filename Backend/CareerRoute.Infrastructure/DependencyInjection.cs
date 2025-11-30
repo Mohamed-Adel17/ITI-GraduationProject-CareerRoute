@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IRescheduleSessionRepository, RescheduleSessionRepository>();
         services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
         // Infrastructure Service Registration
@@ -61,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<IStripePaymentService, StripePaymentService>();
         services.AddScoped<IPaymobPaymentService, PaymobPaymentService>();
         services.AddScoped<IPaymentNotificationService, SignalRPaymentNotificationService>();
+        services.AddScoped<ISignalRNotificationService, SignalRNotificationService>();
         services.AddScoped<IPaymentFactory, PaymentFactory>();
 
         services.AddScoped<IZoomService, ZoomService>();
@@ -68,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<IDeepgramService, DeepgramService>();
         services.AddScoped<IBlobStorageService, CloudflareR2Service>();
         services.AddScoped<IJobScheduler, HangfireJobScheduler>();
+        services.AddScoped<ISessionReminderJobService, SessionReminderJobService>();
 
         // AI Client Registration
         services.AddHttpClient<OpenAiClient>(c => c.Timeout = TimeSpan.FromMinutes(5));

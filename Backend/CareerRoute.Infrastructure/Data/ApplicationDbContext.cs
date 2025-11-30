@@ -25,6 +25,7 @@ namespace CareerRoute.Infrastructure.Data
         public DbSet<Payment>Payments { get; set; }
         public DbSet<RescheduleSession> RescheduledSessions { get; set; }
         public DbSet<CancelSession> CancelledSessions { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)

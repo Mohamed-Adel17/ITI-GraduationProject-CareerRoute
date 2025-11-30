@@ -20,5 +20,6 @@ namespace CareerRoute.Core.Domain.Entities
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = [];
         public virtual ICollection<UserSkill> UserSkills { get; set; } = [];
         public virtual ICollection<Payment> Payments { get; set; } = [];
+        public virtual ICollection<Notification> Notifications { get; set; } = [];
     }
 }

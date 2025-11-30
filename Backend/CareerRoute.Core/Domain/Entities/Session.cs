@@ -75,6 +75,9 @@ namespace CareerRoute.Core.Domain.Entities
         public string? VideoStorageKey { get; set; }
 
         public string? Summary { get; set; }
+        
+        [MaxLength(100)]
+        public string? ReminderJobId { get; set; }
 
         // Navigation properties
         public virtual ApplicationUser Mentee { get; set; } = null!;

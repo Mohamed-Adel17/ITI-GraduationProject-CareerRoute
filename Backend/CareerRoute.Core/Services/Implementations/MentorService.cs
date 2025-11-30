@@ -5,20 +5,12 @@ using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.DTOs;
 using CareerRoute.Core.DTOs.Mentors;
-using CareerRoute.Core.DTOs;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Extentions;
-using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Services.Implementations
 {
@@ -35,6 +27,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IValidator<RejectMentorDto> _rejectValidator;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICacheService _cache;
+        private readonly ISignalRNotificationService _notificationService;
         private const string MentorsCacheKey = "Mentors";
         private const string MentorsVersionKey = "MentorsVersion";
 
@@ -49,7 +42,8 @@ namespace CareerRoute.Core.Services.Implementations
             IValidator<UpdateMentorProfileDto> updateValidator,
             IValidator<RejectMentorDto> rejectValidator,
             UserManager<ApplicationUser> userManager,
-            ICacheService cache)
+            ICacheService cache,
+            ISignalRNotificationService notificationService)
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
@@ -62,6 +56,7 @@ namespace CareerRoute.Core.Services.Implementations
             _rejectValidator = rejectValidator;
             _userManager = userManager;
             _cache = cache;
+            _notificationService = notificationService;
         }
         
         // Get mentor profile by ID
@@ -498,6 +493,24 @@ namespace CareerRoute.Core.Services.Implementations
             
             _logger.LogInformation("Mentor {MentorId} approved successfully", mentorId);
 
+            // Send real-time notification to the mentor
+            try
+            {
+                await _notificationService.SendNotificationAsync(
+                    mentorId,
+                    NotificationType.MentorApplicationApproved,
+                    "Application Approved!",
+                    "Congratulations! Your mentor application has been approved. You can now start accepting sessions.",
+                    "/mentor/profile");
+                
+                _logger.LogInformation("[Mentor] Approval notification sent to mentor {MentorId}", mentorId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Mentor] Failed to send approval notification to mentor {MentorId}", mentorId);
+                // Don't throw - notification failure shouldn't fail the approval
+            }
+
             // TODO: Send approval email to mentor
             // await _emailService.SendMentorApprovalEmailAsync(mentor.User.Email, mentor.User.FirstName);
             
@@ -531,6 +544,24 @@ namespace CareerRoute.Core.Services.Implementations
             }
 
             // Keep IsMentor flag as true to allow reapplication
+
+            // Send real-time notification to the applicant before deleting the record
+            try
+            {
+                await _notificationService.SendNotificationAsync(
+                    mentorId,
+                    NotificationType.MentorApplicationRejected,
+                    "Application Not Approved",
+                    $"We're sorry, but your mentor application was not approved. Reason: {rejectDto.Reason}",
+                    "/mentor/apply");
+                
+                _logger.LogInformation("[Mentor] Rejection notification sent to mentor {MentorId}", mentorId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Mentor] Failed to send rejection notification to mentor {MentorId}", mentorId);
+                // Don't throw - notification failure shouldn't fail the rejection
+            }
 
             // Delete the mentor record
             _mentorRepository.Delete(mentor);
