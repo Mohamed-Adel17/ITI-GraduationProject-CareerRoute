@@ -60,7 +60,7 @@ export class ManageAvailabilityComponent implements OnInit {
 
     // Calculate date range for current month view
     const firstDay = new Date(this.currentYear, this.currentMonth, 1);
-    const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+    const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0, 23, 59, 59);
 
     this.timeslotService.getMentorSlots(this.mentorId, {
       startDate: firstDay.toISOString(),
@@ -93,7 +93,7 @@ export class ManageAvailabilityComponent implements OnInit {
 
   generateCalendar(): void {
     const firstDay = new Date(this.currentYear, this.currentMonth, 1);
-    const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+    const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0, 23, 59, 59);
     const firstDayOfWeek = firstDay.getDay();
 
     this.calendarDays = [];
