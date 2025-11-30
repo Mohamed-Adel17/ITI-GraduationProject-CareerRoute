@@ -8,10 +8,11 @@ import { canApplyAsMentorGuard } from '../../core/guards/role.guard';
  * - apply-mentor: Apply to become a mentor (only for users who registered as mentors)
  * - profile: View user profile
  * - profile/edit: Edit user profile
+ * - sessions: View all sessions
+ * - sessions/:id: View session details
  *
  * Future routes to implement:
  * - dashboard: User dashboard
- * - bookings: Booking management
  * - payments: Payment history
  * - reviews/create/:sessionId: Create review
  * - messages: Chat/messaging
@@ -37,9 +38,13 @@ export const USER_ROUTES: Routes = [
     path: 'sessions',
     loadComponent: () => import('./sessions/sessions.component').then(m => m.SessionsComponent),
     title: 'My Sessions - Career Route'
+  },
+  {
+    path: 'sessions/:id',
+    loadComponent: () => import('../../shared/components/session-details/session-details.component').then(m => m.SessionDetailsComponent),
+    title: 'Session Details - Career Route'
   }
   // TODO: Add more user routes here as components are created
-  // - sessions/:id - Session detail page
   // - dashboard - User dashboard
   // - payments - Payment history
 ];

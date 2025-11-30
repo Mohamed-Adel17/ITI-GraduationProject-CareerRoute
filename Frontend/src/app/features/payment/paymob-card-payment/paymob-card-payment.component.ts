@@ -136,15 +136,15 @@ export class PaymobCardPaymentComponent implements OnInit, OnDestroy {
       paymobPaymentMethod: PaymobPaymentMethod.Card
     };
 
-    console.log('Creating Paymob card payment intent:', request);
+    // console.log('Creating Paymob card payment intent:', request);
 
     return new Promise((resolve, reject) => {
       this.paymentService.createPaymentIntent(request).subscribe({
         next: (response) => {
           this.paymentIntentId = response.paymentIntentId;
           this.clientSecret = response.clientSecret;
-          console.log('Paymob payment intent created:', this.paymentIntentId);
-          console.log('Client secret (payment token):', this.clientSecret);
+          // console.log('Paymob payment intent created:', this.paymentIntentId);
+          // console.log('Client secret (payment token):', this.clientSecret);
           resolve();
         },
         error: (error) => {
@@ -173,7 +173,7 @@ export class PaymobCardPaymentComponent implements OnInit, OnDestroy {
     // Format: https://accept.paymob.com/api/acceptance/iframes/{iframe_id}?payment_token={clientSecret}
     const url = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${this.clientSecret}`;
     
-    console.log('Paymob iframe URL:', url);
+    // console.log('Paymob iframe URL:', url);
     
     // Sanitize URL for iframe
     this.iframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
@@ -190,7 +190,7 @@ export class PaymobCardPaymentComponent implements OnInit, OnDestroy {
         return;
       }
 
-      console.log('Received message from Paymob iframe:', event.data);
+      // console.log('Received message from Paymob iframe:', event.data);
 
       // Handle different message types
       if (event.data && typeof event.data === 'object') {
@@ -212,7 +212,7 @@ export class PaymobCardPaymentComponent implements OnInit, OnDestroy {
    */
   onIframeLoad(): void {
     this.isIframeLoading = false;
-    console.log('Paymob iframe loaded successfully');
+    // console.log('Paymob iframe loaded successfully');
   }
 
   /**
@@ -246,7 +246,7 @@ export class PaymobCardPaymentComponent implements OnInit, OnDestroy {
       this.paymentService.confirmPayment(request).subscribe({
         next: (response) => {
           this.currentStatus = PaymentFlowStatus.Success;
-          console.log('Paymob payment confirmed:', response);
+          // console.log('Paymob payment confirmed:', response);
           this.paymentSuccess.emit(response);
           resolve();
         },

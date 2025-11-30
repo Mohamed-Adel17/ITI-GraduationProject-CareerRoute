@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { mentorRoleGuard, adminRoleGuard } from './core/guards/role.guard';
 import { PaymentRedirectComponent } from './features/payment/payment-redirect/payment-redirect.component';
+import { RescheduleReviewComponent } from './features/sessions/reschedule-review/reschedule-review.component';
 
 export const routes: Routes = [
   {
@@ -11,8 +12,11 @@ export const routes: Routes = [
   {
     path: 'payment-redirect',
     component: PaymentRedirectComponent
-    // No auth guard - external redirect from Paymob won't have auth context
-    // Payment verification is done server-side with the payment ID
+  },
+  {
+    path: 'sessions/reschedule/:rescheduleId',
+    component: RescheduleReviewComponent,
+    canActivate: [authGuard]
   },
   {
     path: 'user',
@@ -21,8 +25,6 @@ export const routes: Routes = [
   },
   {
     path: 'mentor',
-    // Note: No parent guard here - guards are applied at child route level
-    // This allows both pending and approved mentors to access appropriate routes
     loadChildren: () => import('./features/mentor/mentor.routes').then(m => m.MENTOR_ROUTES)
   },
   {

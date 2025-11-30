@@ -9,7 +9,7 @@ export const environment = {
    * API Configuration
    * Base URL for the backend API - REPLACE WITH YOUR PRODUCTION API URL
    */
-  apiUrl: 'https://api.careerroute.com/api',
+  apiUrl: 'https://careerroute.runasp.net/api',
 
   /**
    * Authentication Configuration
@@ -47,31 +47,19 @@ export const environment = {
    * Payment Provider Configuration
    */
   payment: {
-    // Stripe configuration
+   // Stripe configuration
     stripe: {
-      publishableKey: 'pk_live_YOUR_STRIPE_LIVE_KEY_HERE', // Replace with actual Stripe live key
+      publishableKey: 'pk_test_51SQj1nB7cctyvNSxIOsiv6EM6mcrIZ2nP9MUq8Q8oXZm5TOFh7wI8yjvWWvC8A8m6wgKaEPHZ3k5XZYZUTWncbe100STm2bT8X', // Replace with actual Stripe test key
     },
     // Paymob configuration
     paymob: {
-      iframeId: 'YOUR_PAYMOB_IFRAME_ID', // Replace with actual Paymob iframe ID
+      iframeId: '983026', // Replace with actual Paymob iframe ID
       apiUrl: 'https://accept.paymob.com/api/acceptance',
     },
     // SignalR hub for real-time payment status updates
     signalr: {
       hubUrl: 'https://api.careerroute.com/hub/payment',
     },
-  },
-
-  /**
-   * Feature Flags
-   * Enable/disable features in production
-   */
-  features: {
-    enableChat: true,
-    enablePayments: true,
-    enableVideoConferencing: true,
-    enableReviews: true,
-    enableAdminDashboard: true,
   },
 
   /**
@@ -94,5 +82,17 @@ export const environment = {
     allowedImageFormats: ['image/jpeg', 'image/png', 'image/jpg'],
     // Maximum file size for documents (in MB)
     maxDocumentSize: 10,
+  },
+
+  /**
+   * Feature Flags
+   * Enable/disable features in production
+   */
+  features: {
+    enableChat: true,
+    enablePayments: true,
+    enableVideoConferencing: true,
+    enableReviews: true,
+    enableAdminDashboard: true,
   },
 };

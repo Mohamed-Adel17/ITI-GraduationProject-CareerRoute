@@ -165,15 +165,15 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
       paymobPaymentMethod: PaymobPaymentMethod.EWallet
     };
 
-    console.log('Creating Paymob wallet payment intent:', request);
+    // console.log('Creating Paymob wallet payment intent:', request);
 
     return new Promise((resolve, reject) => {
       this.paymentService.createPaymentIntent(request).subscribe({
         next: (response) => {
           this.paymentIntentId = response.paymentIntentId;
           this.clientSecret = response.clientSecret;
-          console.log('Paymob wallet payment intent created:', this.paymentIntentId);
-          console.log('Client secret (payment token):', this.clientSecret);
+          // console.log('Paymob wallet payment intent created:', this.paymentIntentId);
+          // console.log('Client secret (payment token):', this.clientSecret);
           resolve();
         },
         error: (error) => {
@@ -260,17 +260,17 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
       redirect_url: redirectUrl
     };
 
-    console.log('Initiating Paymob wallet payment:', walletRequest);
-    console.log('Redirect URL after OTP:', redirectUrl);
+    // console.log('Initiating Paymob wallet payment:', walletRequest);
+    // console.log('Redirect URL after OTP:', redirectUrl);
 
     return new Promise((resolve, reject) => {
       this.http.post<PaymobWalletResponse>(`${paymobApiUrl}/payments/pay`, walletRequest).subscribe({
         next: (response) => {
-          console.log('Paymob wallet payment response:', response);
+          // console.log('Paymob wallet payment response:', response);
           
           // Check if we have a redirect URL for OTP verification
           if (response.redirect_url) {
-            console.log('Redirecting to Paymob OTP page:', response.redirect_url);
+            // console.log('Redirecting to Paymob OTP page:', response.redirect_url);
             // Redirect user to Paymob OTP page
             window.location.href = response.redirect_url;
             resolve();
@@ -281,7 +281,7 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
           } else {
             // No redirect URL and not successful - show pending screen
             // User will receive OTP on mobile and we poll for status
-            console.log('No redirect URL, waiting for OTP approval on mobile');
+            // console.log('No redirect URL, waiting for OTP approval on mobile');
             this.isSubmitting = false;
             resolve();
           }
@@ -368,7 +368,7 @@ export class PaymobWalletPaymentComponent implements OnInit, OnDestroy {
         this.stopPolling();
         this.handlePaymentSuccess();
         this.currentStatus = PaymentFlowStatus.Success;
-        console.log('Paymob wallet payment confirmed:', response);
+        // console.log('Paymob wallet payment confirmed:', response);
         this.paymentSuccess.emit(response);
       },
       error: (error) => {

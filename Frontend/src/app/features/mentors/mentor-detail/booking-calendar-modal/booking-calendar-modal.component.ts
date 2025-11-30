@@ -349,7 +349,7 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
 
     this.sessionService.bookSession(request).subscribe({
       next: (session) => {
-        console.log('Session created:', session);
+        // console.log('Session created:', session);
         this.createdSession = session;
         this.isCreatingSession = false;
 

@@ -453,8 +453,8 @@ export class AuthService {
         this.setToken(verifyResponse.token);
         this.setRefreshToken(verifyResponse.refreshToken);
 
-        console.log('[AUTH SERVICE] Auto-login after email verification - tokens stored');
-        console.log('[AUTH SERVICE] User authenticated:', verifyResponse.user.email);
+        // console.log('[AUTH SERVICE] Auto-login after email verification - tokens stored');
+        // console.log('[AUTH SERVICE] User authenticated:', verifyResponse.user.email);
 
         // Update auth state with verified user
         this.authStateSubject.next({
@@ -554,8 +554,8 @@ export class AuthService {
         this.setToken(resetResponse.token);
         this.setRefreshToken(resetResponse.refreshToken);
 
-        console.log('[AUTH SERVICE] Auto-login after password reset - tokens stored');
-        console.log('[AUTH SERVICE] User authenticated:', resetResponse.user.email);
+        // console.log('[AUTH SERVICE] Auto-login after password reset - tokens stored');
+        // console.log('[AUTH SERVICE] User authenticated:', resetResponse.user.email);
 
         // Update auth state with authenticated user
         this.authStateSubject.next({

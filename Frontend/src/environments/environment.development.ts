@@ -16,7 +16,7 @@ export const environment = {
   /**
    * Uncomment below when backend is ready on localhost:5000
    */
-  apiUrl: 'http://localhost:5119/api',
+  apiUrl: 'https://careerroute.runasp.net/api',
 
   /**
    * Authentication Configuration

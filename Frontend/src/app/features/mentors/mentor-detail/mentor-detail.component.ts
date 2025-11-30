@@ -430,9 +430,9 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('Booking confirmed:', data);
-    console.log('Session:', data.session);
-    console.log('Payment method:', data.paymentMethod);
+    // console.log('Booking confirmed:', data);
+    // console.log('Session:', data.session);
+    // console.log('Payment method:', data.paymentMethod);
 
     // Close calendar modal
     this.showCalendarModal = false;
@@ -453,7 +453,7 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
    * Handle successful payment
    */
   handlePaymentSuccess(response: any): void {
-    console.log('Payment successful:', response);
+    // console.log('Payment successful:', response);
     this.showPaymentModal = false;
     
     this.notificationService.success(

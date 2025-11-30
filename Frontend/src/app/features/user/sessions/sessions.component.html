@@ -205,7 +205,7 @@
   </app-cancel-modal>
 
   <!-- Reschedule Session Modal -->
-  <app-reschedule-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showRescheduleModal"
+  <app-reschedule-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showRescheduleModal" [userRole]="'mentee'"
     (onClose)="onRescheduleModalClose()" (onRescheduleSuccess)="onRescheduleSuccess()">
   </app-reschedule-modal>
 
