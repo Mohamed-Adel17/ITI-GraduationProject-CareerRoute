@@ -71,7 +71,9 @@ export class SessionsComponent implements OnInit, OnDestroy {
   showCancelModal: boolean = false;
   showRescheduleModal: boolean = false;
   showPaymentModal: boolean = false;
+  showPendingCancelConfirm: boolean = false;
   selectedSession: SessionSummary | null = null;
+  pendingCancelSessionId: string | null = null;
 
   private subscriptions: Subscription[] = [];
 
@@ -283,15 +285,51 @@ export class SessionsComponent implements OnInit, OnDestroy {
 
   /**
    * Handle cancel session action
-   * Opens cancel confirmation modal
+   * For pending payment sessions: simple confirmation modal (no refund needed)
+   * For confirmed sessions: opens cancel modal with refund info
    */
   onCancelSession(sessionId: string): void {
-    // Find the session to get its details for the modal
     const session = this.upcomingSessions.find(s => s.id === sessionId);
-    if (session) {
-      this.selectedSession = session;
-      this.showCancelModal = true;
+    if (!session) return;
+
+    // For pending payment sessions, show simple confirmation modal
+    if (session.status === SessionStatus.Pending) {
+      this.pendingCancelSessionId = sessionId;
+      this.showPendingCancelConfirm = true;
+      return;
     }
+
+    // For confirmed sessions, open the cancel modal with refund info
+    this.selectedSession = session;
+    this.showCancelModal = true;
+  }
+
+  /**
+   * Confirm cancellation of pending payment session
+   */
+  confirmPendingCancel(): void {
+    if (!this.pendingCancelSessionId) return;
+
+    const sub = this.sessionService.cancelSession(this.pendingCancelSessionId, { reason: 'Session cancelled before payment' }).subscribe({
+      next: () => {
+        this.notificationService.success('Session cancelled successfully.', 'Cancelled');
+        this.closePendingCancelConfirm();
+        this.loadUpcomingSessions();
+      },
+      error: (err) => {
+        console.error('Error cancelling session:', err);
+        this.closePendingCancelConfirm();
+      }
+    });
+    this.subscriptions.push(sub);
+  }
+
+  /**
+   * Close pending cancel confirmation modal
+   */
+  closePendingCancelConfirm(): void {
+    this.showPendingCancelConfirm = false;
+    this.pendingCancelSessionId = null;
   }
 
   /**

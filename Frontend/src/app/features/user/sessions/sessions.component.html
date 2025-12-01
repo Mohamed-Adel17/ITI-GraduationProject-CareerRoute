@@ -265,5 +265,38 @@
       </div>
     </div>
   </div>
+
+  <!-- Pending Cancel Confirmation Modal -->
+  <div *ngIf="showPendingCancelConfirm" class="fixed inset-0 z-50 overflow-y-auto" (click)="closePendingCancelConfirm()">
+    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+        (click)="$event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Cancel Session</h2>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6">
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            Are you sure you want to cancel this session? No payment has been made yet.
+          </p>
+          
+          <!-- Action Buttons -->
+          <div class="flex gap-3 justify-end">
+            <button (click)="closePendingCancelConfirm()"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              Keep Session
+            </button>
+            <button (click)="confirmPendingCancel()"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+              Yes, Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
