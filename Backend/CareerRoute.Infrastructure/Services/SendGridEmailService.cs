@@ -1,12 +1,9 @@
-﻿using CareerRoute.Core.Exceptions;
-using CareerRoute.Core.Services.Interfaces;
+﻿using CareerRoute.Core.Domain.Interfaces.Services;
+using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Settings;
 using Microsoft.Extensions.Options;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-
-
-
 
 namespace CareerRoute.Infrastructure.Services
 {
@@ -30,6 +27,9 @@ namespace CareerRoute.Infrastructure.Services
                 var from = new EmailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName);
                 var recipient = new EmailAddress(to);
                 var message = MailHelper.CreateSingleEmail(from, recipient, subject, plainTextContent, htmlContent);
+                
+                // Disable click tracking to show original URLs instead of SendGrid tracking URLs
+                message.SetClickTracking(false, false);
 
                 var response = await client.SendEmailAsync(message);
 
@@ -42,6 +42,43 @@ namespace CareerRoute.Infrastructure.Services
             catch (Exception ex) when (ex is not SendEmailException)
             {
                 throw new SendEmailException("An error occurred while sending the email.", ex);
+            }
+        }
+
+        public async Task SendEmailWithCalendarAsync(string to, string subject, string plainTextContent, string htmlContent, string calendarContent, string calendarFileName = "invite.ics")
+        {
+            if (string.IsNullOrWhiteSpace(to))
+                throw new ArgumentException("Recipient email cannot be empty.", nameof(to));
+
+            if (string.IsNullOrWhiteSpace(calendarContent))
+                throw new ArgumentException("Calendar content cannot be empty.", nameof(calendarContent));
+
+            try
+            {
+                var client = new SendGridClient(_emailSettings.SendGridApiKey);
+                var from = new EmailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName);
+                var recipient = new EmailAddress(to);
+                var message = MailHelper.CreateSingleEmail(from, recipient, subject, plainTextContent, htmlContent);
+
+                // Disable click tracking to show original URLs instead of SendGrid tracking URLs
+                message.SetClickTracking(false, false);
+
+                // Add calendar invitation as attachment
+                var calendarBytes = System.Text.Encoding.UTF8.GetBytes(calendarContent);
+                var calendarBase64 = Convert.ToBase64String(calendarBytes);
+                message.AddAttachment(calendarFileName, calendarBase64, "text/calendar", "attachment");
+
+                var response = await client.SendEmailAsync(message);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Body.ReadAsStringAsync();
+                    throw new SendEmailException($"Failed to send email with calendar: {response.StatusCode}, {responseBody}");
+                }
+            }
+            catch (Exception ex) when (ex is not SendEmailException)
+            {
+                throw new SendEmailException("An error occurred while sending the email with calendar.", ex);
             }
         }
 

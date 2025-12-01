@@ -1,6 +1,6 @@
 # API Endpoints Documentation Index
 
-**Last Updated:** 2025-11-10  
+**Last Updated:** 2025-11-30
 **Base URL:** `http://localhost:5000/api`
 
 ---
@@ -20,6 +20,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | **Skills** | [Skills-Endpoints.md](./Skills-Endpoints.md) |
 | **Mentors** | [Mentor-Endpoints.md](./Mentor-Endpoints.md) |
 | **Users** | [User-Profile-Endpoints.md](./User-Profile-Endpoints.md) |
+| **Notifications** | [Notification-Endpoints.md](./Notification-Endpoints.md) |
 
 ---
 
@@ -67,7 +68,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 ---
 
-### Mentors (9 endpoints)
+### Mentors (14 endpoints)
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
@@ -75,11 +76,16 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `GET` | `/api/mentors/search` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#2-search-mentors-by-keywords)** | ✅ Authoritative<br/>Simple keyword search |
 | `GET` | `/api/mentors/top-rated` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#3-get-top-rated-mentors)** | ✅ Authoritative |
 | `GET` | `/api/mentors/{id}` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#4-get-mentor-profile-by-id)** | ✅ Authoritative |
-| `POST` | `/api/mentors` | User | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#7-apply-to-become-a-mentor)** | ✅ Authoritative<br/>Application pending approval |
-| `PATCH` | `/api/mentors/{id}` | User/Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#8-update-mentor-profile)** | ✅ Authoritative<br/>Own profile or Admin |
-| `GET` | `/api/mentors/pending` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#9-get-pending-mentor-applications)** | ✅ Authoritative<br/>Review applications |
-| `PATCH` | `/api/mentors/{id}/approve` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#10-approve-mentor-application)** | ✅ Authoritative<br/>Approve application |
-| `PATCH` | `/api/mentors/{id}/reject` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#11-reject-mentor-application)** | ✅ Authoritative<br/>Reject with reason |
+| `GET` | `/api/mentors/{mentorId}/available-slots` | Public | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#13-get-available-time-slots-for-mentor-public)** | ✅ Authoritative<br/>View available TimeSlots<br/>📖 Referenced in [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#timeslot-integration) |
+| `GET` | `/api/mentors/me` | User | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#7-get-current-mentors-own-profile)** | ✅ Authoritative<br/>No Mentor role required |
+| `POST` | `/api/mentors` | User | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#8-apply-to-become-a-mentor)** | ✅ Authoritative<br/>Application pending approval |
+| `PATCH` | `/api/mentors/me` | User | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#9-update-current-mentors-own-profile)** | ✅ Authoritative<br/>Includes user & mentor fields<br/>No Mentor role required |
+| `POST` | `/api/mentors/{mentorId}/time-slots` | Mentor/Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#14-create-time-slots-for-mentor)** | ✅ Authoritative<br/>Create single or batch (max 50)<br/>📖 Referenced in [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#timeslot-integration) |
+| `GET` | `/api/mentors/{mentorId}/time-slots` | Mentor/Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#15-get-mentors-all-time-slots)** | ✅ Authoritative<br/>Manage all slots with pagination |
+| `DELETE` | `/api/mentors/{mentorId}/time-slots/{slotId}` | Mentor/Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#16-delete-time-slot)** | ✅ Authoritative<br/>Cannot delete booked slots |
+| `GET` | `/api/mentors/pending` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#10-get-pending-mentor-applications)** | ✅ Authoritative<br/>Review applications |
+| `PATCH` | `/api/mentors/{id}/approve` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#11-approve-mentor-application)** | ✅ Authoritative<br/>Approve application |
+| `PATCH` | `/api/mentors/{id}/reject` | Admin | **[Mentor-Endpoints.md](./Mentor-Endpoints.md#12-reject-mentor-application)** | ✅ Authoritative<br/>Reject with reason |
 
 ---
 
@@ -87,27 +93,29 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
-| `GET` | `/api/users/me` | User | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#1-get-current-user-profile)** | ✅ Authoritative |
-| `PATCH` | `/api/users/me` | User | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#2-update-current-user-profile)** | ✅ Authoritative<br/>⚠️ Does NOT update careerInterests |
+| `GET` | `/api/users/me` | User | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#1-get-current-user-profile)** | ✅ Authoritative<br/>Includes Roles, IsMentor, EmailConfirmed |
+| `PATCH` | `/api/users/me` | User | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#2-update-current-user-profile)** | ✅ Authoritative<br/>Includes CareerGoals field |
 | `DELETE` | `/api/users/me` | User | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#3-delete-current-user-account)** | ✅ Authoritative |
-| `GET` | `/api/users` | Admin/Mentor | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#4-get-all-users)** | ✅ Authoritative |
-| `GET` | `/api/users/{id}` | Admin/Mentor | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#5-get-user-by-id)** | ✅ Authoritative |
-| `PATCH` | `/api/users/{id}` | Admin | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#6-update-user-by-admin)** | ✅ Authoritative<br/>⚠️ Does NOT update careerInterests |
+| `GET` | `/api/users` | Admin/Mentor | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#4-get-all-users)** | ✅ Authoritative<br/>Filters out mentor profiles |
+| `GET` | `/api/users/{id}` | Admin/Mentor | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#5-get-user-by-id)** | ✅ Authoritative<br/>Filters out mentor profiles |
+| `PATCH` | `/api/users/{id}` | Admin | **[User-Profile-Endpoints.md](./User-Profile-Endpoints.md#6-update-user-by-admin)** | ✅ Authoritative<br/>Includes CareerGoals field |
 
 ---
 
-### Sessions (8 endpoints)
+### Sessions (10 endpoints)
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
-| `POST` | `/api/sessions` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#1-book-new-session)** | ✅ Authoritative<br/>Book session & create payment intent |
+| `POST` | `/api/sessions` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#1-book-new-session)** | ✅ Authoritative<br/>Book session with timeSlotId |
 | `GET` | `/api/sessions/{id}` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#2-get-session-detail)** | ✅ Authoritative<br/>View session details |
 | `GET` | `/api/sessions/upcoming` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#3-get-upcoming-sessions)** | ✅ Authoritative<br/>Paginated list |
 | `GET` | `/api/sessions/past` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#4-get-past-sessions)** | ✅ Authoritative<br/>Paginated list with review flags |
 | `PATCH` | `/api/sessions/{id}/reschedule` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#5-reschedule-session)** | ✅ Authoritative<br/>Requires mentor approval |
-| `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies |
+| `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies<br/>Releases TimeSlot |
 | `POST` | `/api/sessions/{id}/join` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#7-join-session-get-video-link)** | ✅ Authoritative<br/>Get video conference link |
 | `PATCH` | `/api/sessions/{id}/complete` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#8-complete-session)** | ✅ Authoritative<br/>Trigger payment release |
+| `GET` | `/api/sessions/{id}/recording` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#11-get-session-recording)** | ✅ Authoritative<br/>🎥 R2 recording access |
+| `GET` | `/api/sessions/{id}/transcript` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#12-get-session-transcript)** | ✅ Authoritative<br/>📝 Deepgram transcript |
 
 ---
 
@@ -115,9 +123,22 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
-| `POST` | `/api/payments/create-intent` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#9-create-payment-intent)** | ✅ Authoritative<br/>Stripe/Paymob integration |
-| `POST` | `/api/payments/confirm` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#10-confirm-payment)** | ✅ Authoritative<br/>Confirm & capture payment |
-| `GET` | `/api/payments/history` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#11-get-payment-history)** | ✅ Authoritative<br/>With summary stats |
+| `POST` | `/api/payments/create-intent` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#13-create-payment-intent)** | ✅ Authoritative<br/>Stripe/Paymob integration |
+| `POST` | `/api/payments/confirm` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#14-confirm-payment)** | ✅ Authoritative<br/>Confirm & capture payment |
+| `GET` | `/api/payments/history` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#15-get-payment-history)** | ✅ Authoritative<br/>With summary stats |
+
+---
+
+### Notifications (4 endpoints)
+
+| Method | Endpoint | Auth | Documented In | Notes |
+|--------|----------|------|---------------|-------|
+| `GET` | `/api/notifications` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#1-get-notifications)** | ✅ Authoritative<br/>Paginated list |
+| `GET` | `/api/notifications/unread-count` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#2-get-unread-count)** | ✅ Authoritative |
+| `PUT` | `/api/notifications/{id}/read` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#3-mark-notification-as-read)** | ✅ Authoritative |
+| `PUT` | `/api/notifications/read-all` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#4-mark-all-notifications-as-read)** | ✅ Authoritative |
+
+**Note:** Real-time notifications are delivered via SignalR hub at `/hubs/notifications`. See [Notification-Endpoints.md](./Notification-Endpoints.md#-real-time-notifications-signalr) for details.
 
 ---
 
@@ -166,28 +187,32 @@ Category-Endpoints.md
 
 ### Session-Payment-Mentor Flow
 
-Session booking and payments connect users with mentors:
+Session booking and payments connect users with mentors through TimeSlots:
 
 ```
 Mentor-Endpoints.md
     └─ Mentor discovery & profile viewing
            ↓
+    Mentor creates TimeSlots (availability)
+           ↓
 Session-Payment-Endpoints.md
-    ├─ POST /api/sessions (book with mentorId)
+    ├─ POST /api/sessions (book with timeSlotId)
     ├─ POST /api/payments/create-intent
     ├─ POST /api/payments/confirm → Confirms session
     ├─ Session management (upcoming, past, detail)
-    ├─ PATCH reschedule/cancel
+    ├─ PATCH reschedule/cancel → Releases TimeSlot
     ├─ POST /api/sessions/{id}/join → Video link
     └─ PATCH /api/sessions/{id}/complete → Payment release
 ```
 
 **Session Lifecycle:**
 1. **Discovery**: User finds mentor via [Mentor-Endpoints.md](./Mentor-Endpoints.md)
-2. **Booking**: POST /api/sessions creates session (Pending) + payment intent
-3. **Payment**: POST /api/payments/confirm confirms payment → session (Confirmed)
-4. **Session**: POST /api/sessions/{id}/join → video conference
-5. **Completion**: PATCH /api/sessions/{id}/complete → 72h payment hold → payout
+2. **View Availability**: User views mentor's available TimeSlots
+3. **Booking**: POST /api/sessions with timeSlotId creates session (Pending), marks TimeSlot as booked
+4. **Payment**: POST /api/payments/create-intent then POST /api/payments/confirm → session (Confirmed)
+5. **Session**: POST /api/sessions/{id}/join → video conference
+6. **Completion**: PATCH /api/sessions/{id}/complete → 72h payment hold → payout
+7. **Cancellation**: If cancelled, TimeSlot is released and becomes available again
 
 ---
 
@@ -220,12 +245,14 @@ Mentor-Endpoints.md (REFERENCES)
 | Authentication | 8 | 7 | 1 | 0 | 0 |
 | Categories | 6 | 2 | 0 | 4 | 0 |
 | Skills | 5 | 2 | 0 | 3 | 0 |
-| Mentors | 9 | 4 | 2 | 3 | 0 |
+| Mentors | 14 | 5 | 3 | 3 | 0 |
+| TimeSlots | (included in Mentors) | 1 | 3 | 0 | 0 |
 | Users | 6 | 0 | 4 | 2 | 0 |
-| Sessions | 8 | 0 | 8 | 0 | 0 |
+| Sessions | 10 | 0 | 10 | 0 | 0 |
 | Payments | 3 | 0 | 3 | 0 | 0 |
+| Notifications | 4 | 0 | 4 | 0 | 0 |
 | Webhooks | 2 | 0 | 0 | 0 | 2 |
-| **TOTAL** | **47** | **15** | **18** | **12** | **2** |
+| **TOTAL** | **57** | **16** | **24** | **12** | **2** |
 
 **Notes:**
 - **System**: Webhook endpoints called by payment gateways (Stripe, Paymob), not by frontend applications
@@ -260,6 +287,7 @@ Mentor-Endpoints.md (REFERENCES)
 - `GET /api/mentors/search`
 - `GET /api/mentors/top-rated`
 - `GET /api/mentors/{id}`
+- `GET /api/mentors/{mentorId}/available-slots` (view available TimeSlots)
 
 ### Authenticated Endpoints (User/Mentor/Admin)
 
@@ -267,17 +295,21 @@ Mentor-Endpoints.md (REFERENCES)
 - `POST /api/auth/change-password` (Any authenticated user)
 
 **Users:**
-- `GET /api/users/me` (Any authenticated user)
-- `PATCH /api/users/me` (Any authenticated user - includes `careerInterestIds`)
+- `GET /api/users/me` (Any authenticated user - includes Roles, IsMentor, EmailConfirmed)
+- `PATCH /api/users/me` (Any authenticated user - includes CareerGoals)
 - `DELETE /api/users/me` (Any authenticated user)
 
 **Users (Admin/Mentor):**
-- `GET /api/users` (Admin or Mentor)
-- `GET /api/users/{id}` (Admin or Mentor)
+- `GET /api/users` (Admin or Mentor - filters out mentor profiles)
+- `GET /api/users/{id}` (Admin or Mentor - filters out mentor profiles)
 
 **Mentors:**
+- `GET /api/mentors/me` (Any authenticated user with IsMentor=true - no Mentor role required)
 - `POST /api/mentors` (Any authenticated user - apply as mentor)
-- `PATCH /api/mentors/{id}` (Mentor own profile or Admin - includes `expertiseTagIds`)
+- `PATCH /api/mentors/me` (Any authenticated user with IsMentor=true - includes user & mentor fields, no Mentor role required)
+- `POST /api/mentors/{mentorId}/time-slots` (Mentor/Admin - create TimeSlots)
+- `GET /api/mentors/{mentorId}/time-slots` (Mentor/Admin - manage TimeSlots)
+- `DELETE /api/mentors/{mentorId}/time-slots/{slotId}` (Mentor/Admin - delete TimeSlot)
 
 **Sessions:**
 - `POST /api/sessions` (User - book session)
@@ -294,6 +326,12 @@ Mentor-Endpoints.md (REFERENCES)
 - `POST /api/payments/confirm` (User - confirm payment)
 - `GET /api/payments/history` (Any authenticated user)
 
+**Notifications:**
+- `GET /api/notifications` (Any authenticated user - paginated list)
+- `GET /api/notifications/unread-count` (Any authenticated user)
+- `PUT /api/notifications/{id}/read` (Any authenticated user - own notifications only)
+- `PUT /api/notifications/read-all` (Any authenticated user)
+
 ### Admin-Only Endpoints
 
 **Categories:**
@@ -307,14 +345,14 @@ Mentor-Endpoints.md (REFERENCES)
 - `DELETE /api/skills/{id}` (Admin)
 
 **Users:**
-- `PATCH /api/users/{id}` (Admin)
+- `PATCH /api/users/{id}` (Admin - includes CareerGoals)
 
 **Mentors:**
 - `GET /api/mentors/pending` (Admin - review applications)
 - `PATCH /api/mentors/{id}/approve` (Admin - approve mentor)
 - `PATCH /api/mentors/{id}/reject` (Admin - reject mentor)
 
-**Note:** Mentor profile updates (including `expertiseTagIds`) are handled via `PATCH /api/mentors/{id}` (see Mentors section).
+**Note:** Mentor profile updates (including user & mentor fields with `expertiseTagIds` and `categoryIds`) are handled via `PATCH /api/mentors/me` by the mentor themselves (see Mentors section). Admins can approve/reject applications but cannot directly update mentor profiles.
 
 ---
 
@@ -324,10 +362,11 @@ Mentor-Endpoints.md (REFERENCES)
 ```
 1. Register user → POST /api/auth/register
    📖 Authentication-Endpoints.md
+   (Can set IsMentor flag during registration)
 2. User receives verification email
 3. Click email link → POST /api/auth/verify-email (auto-called)
    📖 Authentication-Endpoints.md
-4. Update profile with career interests → PATCH /api/users/me (with careerInterestIds)
+4. Update profile with career goals → PATCH /api/users/me (with CareerGoals)
    📖 User-Profile-Endpoints.md
 ```
 
@@ -371,29 +410,43 @@ Mentor-Endpoints.md (REFERENCES)
 
 ### 6. Update User Profile
 ```
-1. Update profile (basic info + career interests) → PATCH /api/users/me
+1. Update profile (basic info + career goals) → PATCH /api/users/me
    📖 User-Profile-Endpoints.md
-   (Single request with optional careerInterestIds field)
+   (Single request with optional CareerGoals field)
 ```
 
-### 7. Book Mentorship Session Flow
+### 7. Update Mentor Profile
+```
+1. Get current mentor profile → GET /api/mentors/me
+   📖 Mentor-Endpoints.md
+2. Update profile (user fields + mentor fields) → PATCH /api/mentors/me
+   📖 Mentor-Endpoints.md
+   (Includes firstName, lastName, phoneNumber, profilePictureUrl, bio, rates, expertiseTagIds, categoryIds)
+   (No Mentor role required - accessible during pending approval)
+```
+
+### 8. Book Mentorship Session Flow
 ```
 1. Find mentor → GET /api/mentors/{id}
    📖 Mentor-Endpoints.md
-2. Book session → POST /api/sessions
+2. View available time slots → GET /api/mentors/{mentorId}/available-slots
    📖 Session-Payment-Endpoints.md
-   (Creates session + payment intent)
-3. Complete payment → POST /api/payments/confirm
+3. Book session with timeSlotId → POST /api/sessions
+   📖 Session-Payment-Endpoints.md
+   (Creates session with status Pending, marks TimeSlot as booked)
+4. Create payment intent → POST /api/payments/create-intent
+   📖 Session-Payment-Endpoints.md
+5. Complete payment → POST /api/payments/confirm
    📖 Session-Payment-Endpoints.md
    (Confirms session + generates video link)
-4. Join session → POST /api/sessions/{id}/join
+6. Join session → POST /api/sessions/{id}/join
    📖 Session-Payment-Endpoints.md
    (Get video conference link)
-5. Complete session → PATCH /api/sessions/{id}/complete (Mentor)
+7. Complete session → PATCH /api/sessions/{id}/complete (Mentor)
    📖 Session-Payment-Endpoints.md
 ```
 
-### 8. Admin Category Management
+### 9. Admin Category Management
 ```
 1. Create category → POST /api/categories
    📖 Category-Endpoints.md
@@ -436,6 +489,10 @@ Mentor-Endpoints.md (REFERENCES)
 | **SessionStatus (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Sessions |
 | **PaymentStatus (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Payments |
 | **PaymentMethod (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Payments |
+| **NotificationDto** | [Notification-Endpoints.md](./Notification-Endpoints.md#notificationdto) | Notifications |
+| **NotificationListResponseDto** | [Notification-Endpoints.md](./Notification-Endpoints.md#notificationlistresponsedto) | Notifications |
+| **UnreadCountResponseDto** | [Notification-Endpoints.md](./Notification-Endpoints.md#unreadcountresponsedto) | Notifications |
+| **NotificationType (Enum)** | [Notification-Endpoints.md](./Notification-Endpoints.md#notificationtype-enum) | Notifications |
 
 ---
 
@@ -457,10 +514,12 @@ Mentor-Endpoints.md (REFERENCES)
 - ⚠️ Always check this index before adding new endpoints
 
 ### Skills System Critical Info
-- ✅ **NEW: Consolidated Approach** - Skills now updated in profile endpoints
-- ✅ **User career interests**: Update via `PATCH /api/users/me` with `careerInterestIds` field
-- ✅ **Mentor expertise tags**: Update via `PATCH /api/mentors/{id}` with `expertiseTagIds` field
-- 🔄 **Single request updates**: All profile fields including skills in one API call
+- ✅ **Consolidated Approach** - Skills updated in profile endpoints
+- ✅ **User career goals**: Update via `PATCH /api/users/me` with `CareerGoals` field
+- ✅ **Mentor expertise tags**: Update via `PATCH /api/mentors/me` with `expertiseTagIds` field
+- ✅ **Mentor categories**: Update via `PATCH /api/mentors/me` with `categoryIds` field
+- 🔄 **Single request updates**: All profile fields including skills/categories in one API call
+- 🔓 **No Mentor role required**: Mentors can update profiles during pending approval
 
 ### Session & Payment Flow
 - 💳 **Payment Integration**: Stripe (international) + Paymob (Egypt - Meeza, InstaPay, Vodafone Cash)
@@ -515,10 +574,10 @@ Mentor-Endpoints.md (REFERENCES)
 4. Update the statistics section
 5. Add to Common Use Cases if applicable
 
-**Last Review:** 2025-11-10  
+**Last Review:** 2025-11-19
 
 ---
 
-**Total Documented Endpoints:** 47  
-**Total Contract Files:** 6  
+**Total Documented Endpoints:** 57
+**Total Contract Files:** 6
 **Documentation Status:** ✅ Complete & Synchronized

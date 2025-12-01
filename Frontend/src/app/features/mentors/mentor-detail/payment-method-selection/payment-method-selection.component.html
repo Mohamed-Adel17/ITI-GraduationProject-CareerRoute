@@ -1,0 +1,151 @@
+<!-- Payment Method Selection Modal -->
+<div *ngIf="isOpen"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     aria-labelledby="payment-method-modal-title"
+     role="dialog"
+     aria-modal="true">
+
+  <!-- Background overlay -->
+  <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
+
+  <!-- Modal content -->
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl transform transition-all">
+
+      <!-- Modal Header -->
+      <div class="bg-primary px-6 py-4 rounded-t-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 id="payment-method-modal-title" class="text-xl font-bold text-white flex items-center gap-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              </svg>
+              Select Payment Method
+            </h2>
+            <p class="text-white/80 text-sm mt-1">
+              Choose how you'd like to pay for your session with {{ mentorName }}
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="onClose()"
+            class="text-white hover:text-gray-200 transition-colors p-1">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6">
+        <!-- Amount Display -->
+        <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600 dark:text-gray-400">Session Amount:</span>
+            <span class="text-2xl font-bold text-primary">{{ amount }} EGP</span>
+          </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="space-y-4">
+          <!-- Stripe Option -->
+          <button
+            type="button"
+            (click)="selectStripe()"
+            class="w-full p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all group">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800 transition-colors">
+                <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z"/>
+                </svg>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Stripe</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Pay with credit or debit card (International)
+                </p>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">USD</span>
+                  <span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Secure 3D</span>
+                </div>
+              </div>
+              <svg class="w-6 h-6 text-gray-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          </button>
+
+          <!-- Paymob Card Option -->
+          <button
+            type="button"
+            (click)="selectPaymobCard()"
+            class="w-full p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all group">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-800 transition-colors">
+                <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Paymob Card</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Pay with Egyptian credit or debit card
+                </p>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">EGP</span>
+                  <span class="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">Visa/Mastercard</span>
+                </div>
+              </div>
+              <svg class="w-6 h-6 text-gray-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          </button>
+
+          <!-- Paymob Wallet Option -->
+          <button
+            type="button"
+            (click)="selectPaymobWallet()"
+            class="w-full p-6 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all group">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800 transition-colors">
+                <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Paymob Wallet</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Pay with mobile wallet (Vodafone Cash, etc.)
+                </p>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">EGP</span>
+                  <span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">OTP Verification</span>
+                </div>
+              </div>
+              <svg class="w-6 h-6 text-gray-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          </button>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-blue-900 dark:text-blue-100">Secure Payment</p>
+              <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                All payments are processed securely. Your card information is never stored on our servers.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

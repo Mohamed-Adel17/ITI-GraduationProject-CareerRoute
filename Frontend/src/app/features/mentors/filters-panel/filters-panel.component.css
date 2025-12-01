@@ -1,0 +1,385 @@
+/* Mobile Filter Toggle Button (Hidden - mentor-search handles mobile toggle) */
+.mobile-filter-toggle {
+  @apply hidden;
+}
+
+.mobile-toggle-btn {
+  @apply hidden;
+}
+
+.filter-badge {
+  @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center;
+}
+
+/* Filters Panel */
+.filters-panel {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-md h-fit;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Desktop: Sticky positioning */
+@media (min-width: 1024px) {
+  .filters-panel {
+    @apply sticky top-4;
+  }
+}
+
+/* Desktop: Collapsed state */
+.filters-panel.collapsed {
+  @apply w-16 overflow-hidden;
+}
+
+.filters-panel.collapsed .panel-content {
+  @apply hidden;
+}
+
+.filters-panel.collapsed .panel-header {
+  @apply p-2;
+}
+
+.filters-panel.collapsed .panel-title {
+  @apply hidden;
+}
+
+.filters-panel.collapsed .reset-btn {
+  @apply hidden;
+}
+
+.filters-panel.collapsed .collapse-btn {
+  @apply mx-auto block;
+}
+
+/* Panel Header */
+.panel-header {
+  @apply p-4 border-b border-gray-200 dark:border-gray-700;
+}
+
+.panel-title {
+  @apply text-lg font-bold text-gray-900 dark:text-white flex items-center;
+}
+
+.filter-count-badge {
+  @apply ml-2 bg-primary text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center;
+}
+
+.collapse-btn {
+  @apply p-2 text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary rounded-lg transition-colors;
+}
+
+.close-btn {
+  @apply hidden;
+}
+
+/* Reset Button */
+.reset-btn {
+  @apply mt-3 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors w-full justify-center;
+}
+
+.reset-btn.disabled {
+  @apply opacity-50 cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700;
+}
+
+/* Panel Content */
+.panel-content {
+  @apply p-4;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .panel-content {
+    @apply pb-20; /* Space for apply button */
+    max-height: none;
+  }
+}
+
+/* Filters Form */
+.filters-form {
+  @apply space-y-4;
+}
+
+/* Filter Group */
+.filter-group {
+  @apply space-y-2;
+}
+
+.filter-label {
+  @apply flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300;
+}
+
+.filter-label svg {
+  @apply flex-shrink-0;
+}
+
+/* Filter Input */
+.filter-input {
+  @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors;
+}
+
+.filter-input:focus {
+  @apply outline-none;
+}
+
+/* Filter Select */
+.filter-select {
+  @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors cursor-pointer;
+}
+
+.filter-select:focus {
+  @apply outline-none;
+}
+
+/* Filter Divider */
+.filter-divider {
+  @apply border-t border-gray-200 dark:border-gray-700 my-4;
+}
+
+/* Price Display */
+.price-display {
+  @apply flex items-center justify-center gap-2 py-2 text-lg font-bold text-primary;
+}
+
+.price-value {
+  @apply bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg;
+}
+
+.price-separator {
+  @apply text-gray-400;
+}
+
+/* Slider Group */
+.slider-group {
+  @apply space-y-1;
+}
+
+.slider-label {
+  @apply text-xs font-medium text-gray-600 dark:text-gray-400;
+}
+
+/* Price Slider */
+.price-slider {
+  @apply w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer;
+}
+
+.price-slider::-webkit-slider-thumb {
+  @apply appearance-none w-4 h-4 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors;
+}
+
+.price-slider::-moz-range-thumb {
+  @apply w-4 h-4 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors border-0;
+}
+
+.price-slider::-webkit-slider-runnable-track {
+  @apply w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg;
+}
+
+.price-slider::-moz-range-track {
+  @apply w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg;
+}
+
+.price-slider:focus {
+  @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+/* Checkbox Filters */
+.checkbox-label {
+  @apply flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors;
+}
+
+.filter-checkbox {
+  @apply w-5 h-5 text-primary bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary cursor-pointer;
+}
+
+.checkbox-text {
+  @apply flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300;
+}
+
+/* Mobile Apply Button (Hidden - mentor-search handles mobile actions) */
+.mobile-apply-btn {
+  @apply hidden;
+}
+
+.apply-btn {
+  @apply hidden;
+}
+
+/* Mobile Overlay (Hidden - mentor-search handles overlay) */
+.mobile-overlay {
+  @apply hidden;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Custom Scrollbar */
+.panel-content::-webkit-scrollbar {
+  @apply w-2;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-700 rounded-full;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500;
+}
+
+/* Smooth transitions */
+.filters-panel,
+.filter-input,
+.filter-select,
+.checkbox-label {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Focus visible for accessibility */
+.filter-input:focus-visible,
+.filter-select:focus-visible,
+.filter-checkbox:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+/* Loading state (if needed) */
+.filters-form.loading {
+  @apply opacity-50 pointer-events-none;
+}
+
+/* Disabled state */
+input:disabled,
+select:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* Hover effects */
+.filter-input:hover:not(:disabled),
+.filter-select:hover:not(:disabled) {
+  @apply border-gray-400 dark:border-gray-500;
+}
+
+/* Error state (if validation is added) */
+.filter-input.error,
+.filter-select.error {
+  @apply border-red-500 ring-2 ring-red-500;
+}
+
+/* Success state (if validation is added) */
+.filter-input.success,
+.filter-select.success {
+  @apply border-green-500 ring-2 ring-green-500;
+}
+
+/* Animation for filter count badge */
+.filter-count-badge {
+  animation: scaleIn 0.2s ease-in-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .filter-label {
+    @apply text-xs;
+  }
+
+  .filter-input,
+  .filter-select {
+    @apply text-sm py-2 px-3;
+  }
+
+  .price-display {
+    @apply text-base;
+  }
+}
+
+/* Print styles */
+@media print {
+  .filters-panel {
+    @apply hidden;
+  }
+}
+
+/* Dark mode specific adjustments */
+@media (prefers-color-scheme: dark) {
+  .filter-checkbox:checked {
+    @apply bg-primary border-primary;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .filters-panel,
+  .filter-input,
+  .filter-select,
+  .checkbox-label,
+  .mobile-overlay {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .filter-input,
+  .filter-select {
+    @apply border-2;
+  }
+
+  .filter-checkbox {
+    @apply border-2;
+  }
+}
+
+/* Sticky positioning for desktop */
+@media (min-width: 1024px) {
+  .filters-panel {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+
+  .panel-content {
+    max-height: calc(100vh - 200px);
+  }
+}
+
+/* Category icon in select */
+select option {
+  @apply py-2;
+}
+
+/* Range slider track fill effect (optional enhancement) */
+.price-slider {
+  background: linear-gradient(
+    to right,
+    var(--tw-gradient-from) 0%,
+    var(--tw-gradient-to) 100%
+  );
+}
+
+/* Additional spacing adjustments */
+.filter-group:last-child {
+  @apply mb-0;
+}
+
+/* Button states */
+button:active {
+  @apply transform scale-95;
+}
+
+/* Tooltip for collapsed state - badge positioning when collapsed */
+.filters-panel.collapsed .filter-count-badge {
+  @apply absolute top-2 right-2;
+}

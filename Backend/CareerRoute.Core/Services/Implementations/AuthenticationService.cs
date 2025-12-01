@@ -12,6 +12,7 @@ using CareerRoute.Core.Extentions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using CareerRoute.Core.Domain.Interfaces.Services;
 
 namespace CareerRoute.Core.Services.Implementations
 {
@@ -58,7 +59,7 @@ namespace CareerRoute.Core.Services.Implementations
             _emailService = emailService;
             _mapper = mapper;
             _jwtSettings = jwtSettings.Value;
-            _frontendUrl = configuration["FrontendUrl"] ?? "https://localhost:4200";
+            _frontendUrl = configuration["FrontendUrl"] ?? "http://localhost:4200";
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
             _emailValidator = emailValidator;
@@ -222,7 +223,8 @@ namespace CareerRoute.Core.Services.Implementations
                 PhoneNumber = request.PhoneNumber,
                 EmailConfirmed = false,
                 RegistrationDate = DateTime.UtcNow,
-                IsActive = true
+                IsActive = true,
+                IsMentor = request.RegisterAsMentor
             };
         }
 
@@ -433,7 +435,7 @@ namespace CareerRoute.Core.Services.Implementations
             return $@"
             <h2>Welcome {firstName}!</h2>
             <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
-            <a href='{verificationLink}' style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>Verify Email</a>
+            <a href=""{verificationLink}"" style=""display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;"">Verify Email</a>
             <p>Or copy and paste this link into your browser:</p>
             <p>{verificationLink}</p>
             <p>This link will expire in 24 hours.</p>";
@@ -445,7 +447,7 @@ namespace CareerRoute.Core.Services.Implementations
             <h2>Password Reset Request</h2>
             <p>Hi {firstName},</p>
             <p>We received a request to reset your password. Click the button below to reset it:</p>
-            <a href='{resetLink}' style='display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;'>Reset Password</a>
+            <a href=""{resetLink}"" style=""display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;"">Reset Password</a>
             <p>Or copy and paste this link into your browser:</p>
             <p>{resetLink}</p>
             <p>If you didn't request this, please ignore this email. This link will expire in 24 hours.</p>";

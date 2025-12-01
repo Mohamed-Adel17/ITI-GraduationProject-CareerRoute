@@ -1,0 +1,164 @@
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="flex justify-center items-center min-h-[400px]">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="errorMessage && !loading" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
+      <div class="flex">
+        <svg class="h-6 w-6 text-red-600 dark:text-red-400 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div>
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Error Loading Application</h3>
+          <p class="mt-2 text-sm text-red-700 dark:text-red-400">{{ errorMessage }}</p>
+          <button (click)="goToDashboard()" class="mt-4 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 underline">
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Status Content -->
+    <div *ngIf="mentorProfile && !loading && mentorProfile.approvalStatus === MentorApprovalStatus.Pending" class="space-y-6">
+      <!-- Status Banner -->
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+        <div class="flex items-start">
+          <svg class="h-8 w-8 text-yellow-600 dark:text-yellow-400 mr-4 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="flex-1">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Application Under Review</h1>
+            <p class="text-gray-700 dark:text-gray-300">
+              Your mentor application has been submitted successfully and is currently being reviewed by our team.
+            </p>
+            <div class="mt-4 flex items-center text-sm text-gray-600 dark:text-gray-400">
+              <span class="font-medium">Submitted:</span>
+              <span class="ml-2">{{ getFormattedDate(mentorProfile.createdAt) }}</span>
+              <span class="ml-4 text-gray-500 dark:text-gray-500">({{ getDaysSinceSubmission() }} days ago)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next Steps Card -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">What Happens Next?</h2>
+        <ol class="space-y-4">
+          <li class="flex items-start">
+            <span class="flex-shrink-0 w-6 h-6 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-medium mr-3">1</span>
+            <div>
+              <p class="text-gray-700 dark:text-gray-300 font-medium">Review Process</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Our admin team will review your profile, qualifications, and expertise to ensure quality mentorship for our users.</p>
+            </div>
+          </li>
+          <li class="flex items-start">
+            <span class="flex-shrink-0 w-6 h-6 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-medium mr-3">2</span>
+            <div>
+              <p class="text-gray-700 dark:text-gray-300 font-medium">Email Notification</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">You'll receive an email notification once your application has been reviewed (typically within 3-5 business days).</p>
+            </div>
+          </li>
+          <li class="flex items-start">
+            <span class="flex-shrink-0 w-6 h-6 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-medium mr-3">3</span>
+            <div>
+              <p class="text-gray-700 dark:text-gray-300 font-medium">Get Started</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Once approved, you'll gain access to your mentor dashboard where you can manage your profile, availability, and sessions.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- Application Summary Card -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Application Summary</h2>
+
+        <!-- Bio -->
+        <div class="mb-4">
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Bio</h3>
+          <p class="text-gray-700 dark:text-gray-300">{{ mentorProfile.bio }}</p>
+        </div>
+
+        <!-- Expertise Tags -->
+        <div class="mb-4">
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Expertise Areas</h3>
+          <div class="flex flex-wrap gap-2">
+            <span *ngFor="let skill of mentorProfile.expertiseTags"
+                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300">
+              {{ skill.name }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Experience & Certifications -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Years of Experience</h3>
+            <p class="text-gray-700 dark:text-gray-300 font-semibold">{{ mentorProfile.yearsOfExperience }} years</p>
+          </div>
+          <div>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Session Rates</h3>
+            <p class="text-gray-700 dark:text-gray-300 font-semibold">
+              {{ mentorProfile.rate30Min }} EGP (30 min) / {{ mentorProfile.rate60Min }} EGP (60 min)
+            </p>
+          </div>
+        </div>
+
+        <div *ngIf="mentorProfile.certifications" class="mb-4">
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Certifications</h3>
+          <p class="text-gray-700 dark:text-gray-300">{{ mentorProfile.certifications }}</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <button (click)="goToDashboard()"
+                  class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors font-medium">
+            Go to Home
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejected Status Content -->
+    <div *ngIf="mentorProfile && !loading && mentorProfile.approvalStatus === MentorApprovalStatus.Rejected" class="space-y-6">
+      <!-- Rejected Banner -->
+      <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+        <div class="flex items-start">
+          <svg class="h-8 w-8 text-red-600 dark:text-red-400 mr-4 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="flex-1">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Application Not Approved</h1>
+            <p class="text-gray-700 dark:text-gray-300 mb-4">
+              Unfortunately, your mentor application was not approved at this time. Please review the feedback below and consider reapplying.
+            </p>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 mt-4">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Admin Feedback:</h3>
+              <p class="text-gray-700 dark:text-gray-300">
+                <!-- Rejection reason would come from backend, for now showing placeholder -->
+                We appreciate your interest in becoming a mentor. After careful review, we've determined that your profile doesn't meet our current criteria. We encourage you to gain more experience and consider reapplying in the future.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons for Rejected Application -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">What Can You Do?</h2>
+        <div class="space-y-4">
+          <p class="text-gray-700 dark:text-gray-300">You can update your profile and reapply when you're ready. We look forward to reviewing your updated application.</p>
+          <div class="flex flex-wrap gap-3">
+            <button (click)="goToDashboard()"
+                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium">
+              Go to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

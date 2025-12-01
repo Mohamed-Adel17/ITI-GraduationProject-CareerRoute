@@ -1,0 +1,13 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace CareerRoute.Core.Services.Interfaces
+{
+    public interface ICacheService
+    {
+        Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default);
+        Task SetAsync<T>(string key, T value, TimeSpan? slidingExpiration = null, TimeSpan? absoluteExpiration = null, CancellationToken cancellationToken = default);
+        Task RemoveAsync(string key, CancellationToken cancellationToken = default);
+    }
+}

@@ -90,7 +90,7 @@ export class PasswordResetComponent implements OnInit {
   ngOnInit(): void {
     // Check if user is already logged in
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/user/dashboard']);
+      this.router.navigate(['/']);
       return;
     }
 
@@ -267,7 +267,7 @@ export class PasswordResetComponent implements OnInit {
     // Call AuthService
     this.authService.forgotPassword(request).subscribe({
       next: (response) => {
-        console.log('Password reset request successful:', response);
+        // console.log('Password reset request successful:', response);
 
         // Show success message in component
         // Note: Message comes from ApiResponse wrapper (handled by backend), not from response data
@@ -357,7 +357,7 @@ export class PasswordResetComponent implements OnInit {
     // Call AuthService
     this.authService.resetPassword(request).subscribe({
       next: (response) => {
-        console.log('Password reset successful:', response);
+        // console.log('Password reset successful:', response);
 
         // Backend always returns tokens for auto-login
         // AuthService.resetPassword() has already handled token storage and auth state update
@@ -371,7 +371,7 @@ export class PasswordResetComponent implements OnInit {
 
         // Redirect to dashboard after 3 seconds (user is now logged in)
         setTimeout(() => {
-          this.router.navigate(['/user/dashboard']);
+          this.router.navigate(['/']);
         }, 3000);
 
         this.loading = false;
@@ -418,7 +418,7 @@ export class PasswordResetComponent implements OnInit {
    * @param email User's email address
    */
   private handleUnverifiedEmail(email: string): void {
-    console.log('Handling unverified email for forgot password:', email);
+    // console.log('Handling unverified email for forgot password:', email);
 
     // Show info notification about email verification requirement
     this.notificationService.warning(

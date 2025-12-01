@@ -1,0 +1,129 @@
+<div *ngIf="isOpen" class="modal-backdrop" (click)="onBackdropClick($event)" (keydown)="onEscapeKey($event)" tabindex="-1">
+  <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h2 id="modal-title" class="modal-title">Cancel Session</h2>
+      <button type="button" class="close-button" (click)="close()" [disabled]="isSubmitting" aria-label="Close modal">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <!-- Session Details -->
+      <div class="session-details">
+        <h3 class="section-title">Session Details</h3>
+        <div class="detail-item">
+          <span class="detail-label">Mentor:</span>
+          <span class="detail-value">{{ participantName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Date & Time:</span>
+          <span class="detail-value">{{ formattedDateTime }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Topic:</span>
+          <span class="detail-value">{{ session.topic || 'No topic specified' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Price:</span>
+          <span class="detail-value">{{ formattedPrice }}</span>
+        </div>
+      </div>
+
+      <!-- Refund Information -->
+      <div class="refund-info">
+        <h3 class="section-title">Refund Information</h3>
+        <div class="refund-card">
+          <div class="refund-amount">
+            <span class="refund-label">Refund Amount:</span>
+            <span class="refund-value">{{ formattedRefundAmount }}</span>
+            <span class="refund-percentage">({{ refundInfo.percentage }}%)</span>
+          </div>
+          <p [class]="'refund-policy ' + refundPolicyColorClass">
+            {{ refundPolicyMessage }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Cancellation Form -->
+      <form [formGroup]="cancelForm" (ngSubmit)="onSubmit()">
+        <!-- Reason Field -->
+        <div class="form-group">
+          <label for="reason" class="form-label">
+            Cancellation Reason <span class="required">*</span>
+          </label>
+          <textarea
+            id="reason"
+            formControlName="reason"
+            class="form-textarea"
+            [class.error]="hasError('reason', 'required') || hasError('reason', 'minlength') || hasError('reason', 'maxlength')"
+            rows="4"
+            placeholder="Please provide a reason for cancelling this session (minimum 10 characters)"
+            [disabled]="isSubmitting"
+          ></textarea>
+          <div class="character-count">
+            {{ cancelForm.get('reason')?.value?.length || 0 }} / 500 characters
+          </div>
+          <div *ngIf="hasError('reason', 'required') || hasError('reason', 'minlength') || hasError('reason', 'maxlength')" class="error-message">
+            {{ getErrorMessage('reason') }}
+          </div>
+        </div>
+
+        <!-- Confirmation Checkbox -->
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              formControlName="confirmed"
+              class="checkbox-input"
+              [disabled]="isSubmitting"
+            />
+            <span class="checkbox-text">
+              I understand that cancelling this session {{ refundInfo.percentage === 0 ? 'will not result in a refund' : 'will result in a ' + refundInfo.percentage + '% refund' }}.
+            </span>
+          </label>
+          <div *ngIf="hasError('confirmed', 'required')" class="error-message">
+            {{ getErrorMessage('confirmed') }}
+          </div>
+        </div>
+
+        <!-- Warning Message for No Refund -->
+        <div *ngIf="refundInfo.percentage === 0" class="warning-message">
+          <svg class="warning-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <p>Cancelling within 24 hours of the session will not result in any refund.</p>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="close()"
+            [disabled]="isSubmitting"
+          >
+            Keep Session
+          </button>
+          <button
+            type="submit"
+            class="btn btn-danger"
+            [disabled]="isSubmitting || cancelForm.invalid"
+          >
+            <span *ngIf="!isSubmitting">Cancel Session</span>
+            <span *ngIf="isSubmitting" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Cancelling...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

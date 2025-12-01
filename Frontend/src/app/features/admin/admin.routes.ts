@@ -1,12 +1,15 @@
 import { Routes } from '@angular/router';
 
 /**
- * Admin routes - Protected by adminGuard at parent level in app.routes.ts
+ * Admin routes - Protected by adminRoleGuard at parent level in app.routes.ts
+ *
+ * Current routes:
+ * - mentor-approvals: Review and approve/reject pending mentor applications
  *
  * Future routes to implement:
  * - dashboard: Admin dashboard
  * - users: User management
- * - mentors: Mentor management
+ * - mentors: Mentor management (full CRUD)
  * - sessions: Session monitoring
  * - categories: Category management
  * - payments: Payment tracking
@@ -14,10 +17,21 @@ import { Routes } from '@angular/router';
  * - settings: Platform settings
  */
 export const ADMIN_ROUTES: Routes = [
-  // TODO: Add admin routes here as components are created
-  // Example:
-  // {
-  //   path: 'dashboard',
-  //   loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent)
-  // },
+  // Default redirect to mentor-approvals
+  {
+    path: '',
+    redirectTo: 'mentor-approvals',
+    pathMatch: 'full'
+  },
+
+  // Mentor Approvals - Review and approve/reject pending applications
+  {
+    path: 'mentor-approvals',
+    loadComponent: () =>
+      import('./mentor-approvals/mentor-approvals.component')
+        .then(m => m.MentorApprovalsComponent),
+    title: 'Mentor Approvals - Admin'
+  }
+
+  // TODO: Add more admin routes here as components are created
 ];

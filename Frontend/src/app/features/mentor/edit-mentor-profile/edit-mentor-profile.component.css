@@ -1,0 +1,42 @@
+/* edit-mentor-profile.component.css */
+
+/* Minimal custom styles - most styling done with Tailwind CSS */
+
+/* Custom focus styles for form inputs */
+.form-control:focus {
+  outline: 2px solid #9333ea; /* purple-600 */
+  outline-offset: 2px;
+}
+
+/* Character counter animation */
+.character-counter {
+  transition: color 0.2s ease-in-out;
+}
+
+/* Skill and category tag hover effects */
+.skill-tag:hover,
+.category-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Availability toggle switch animation */
+.toggle-switch {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Form section transitions */
+.form-section {
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

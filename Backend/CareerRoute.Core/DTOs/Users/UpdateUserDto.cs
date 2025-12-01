@@ -7,8 +7,8 @@
         public string? LastName { get; set; }
         public string? PhoneNumber { get; set; }
         public string? ProfilePictureUrl { get; set; }
-        public string? CareerGoal { get; set; }
-        public string? CareerInterest { get; set; }
+        public string? CareerGoals { get; set; }
+        public List<int>? CareerInterestIds { get; set; }
 
         //Excluded fields (require separate endpoints):
         // - UserName: Cannot be changed (login identifier)

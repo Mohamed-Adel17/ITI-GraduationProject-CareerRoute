@@ -35,14 +35,15 @@ namespace CareerRoute.Core.Validators.Users
                     .When(x => !string.IsNullOrEmpty(x.ProfilePictureUrl));
 
 
-            RuleFor(uuDto => uuDto.CareerGoal)
-                  .MaximumLength(500).WithMessage("Career Goal must not exceed 500 char long")
-                  .When(x => !string.IsNullOrEmpty(x.CareerGoal));
+            RuleFor(uuDto => uuDto.CareerGoals)
+                  .MaximumLength(500).WithMessage("Career Goals must not exceed 500 char long")
+                  .When(x => !string.IsNullOrEmpty(x.CareerGoals));
 
 
-            RuleFor(uuDto => uuDto.CareerInterest)
-                 .MaximumLength(500).WithMessage("Career Interest must not exceed 500 characters")
-                 .When(x => !string.IsNullOrEmpty(x.CareerInterest));
+            RuleFor(uuDto => uuDto.CareerInterestIds)
+                .Must(ids => ids == null || ids.All(id => id > 0))
+                    .WithMessage("All career interest IDs must be greater than 0")
+                .When(x => x.CareerInterestIds != null);
 
 
 

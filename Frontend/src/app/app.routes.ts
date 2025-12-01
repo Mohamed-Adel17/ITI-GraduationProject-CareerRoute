@@ -1,11 +1,22 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { mentorRoleGuard, adminRoleGuard } from './core/guards/role.guard';
+import { PaymentRedirectComponent } from './features/payment/payment-redirect/payment-redirect.component';
+import { RescheduleReviewComponent } from './features/sessions/reschedule-review/reschedule-review.component';
 
 export const routes: Routes = [
   {
     path: '',
     loadChildren: () => import('./features/public/public.routes').then(m => m.PUBLIC_ROUTES)
+  },
+  {
+    path: 'payment-redirect',
+    component: PaymentRedirectComponent
+  },
+  {
+    path: 'sessions/reschedule/:rescheduleId',
+    component: RescheduleReviewComponent,
+    canActivate: [authGuard]
   },
   {
     path: 'user',
@@ -14,7 +25,6 @@ export const routes: Routes = [
   },
   {
     path: 'mentor',
-    canActivate: [mentorRoleGuard],
     loadChildren: () => import('./features/mentor/mentor.routes').then(m => m.MENTOR_ROUTES)
   },
   {

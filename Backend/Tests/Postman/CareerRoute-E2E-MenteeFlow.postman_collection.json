@@ -1,0 +1,865 @@
+{
+  "info": {
+    "_postman_id": "careerroute-e2e-mentee-flow",
+    "name": "CareerRoute - E2E Mentee Session Flow",
+    "description": "End-to-end test flow for a mentee booking a session with a mentor.\n\n**Quick Test Flow (Folder 0):**\nUse for immediate testing - bypasses 24-hour booking rule.\n\n**Full Flow (Folders 1-8):**\n1. Login as Mentee\n2. Browse Mentors\n3. Select a Mentor\n4. Get Available Time Slots\n5. Book a Session\n6. Create Payment Intent\n7. Confirm Payment\n8. Get Session Details\n9. Join Session (Get Zoom Link)\n10. Get Recording (after meeting)\n11. Get Transcript (after processing)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Quick Test (Bypass Booking)",
+      "description": "Use these endpoints to quickly test Zoom integration without going through the full booking/payment flow. Session starts in 1 minute!",
+      "item": [
+        {
+          "name": "0.1 Login as Mentee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.environment.set('token', jsonData.data.token);",
+                  "    pm.environment.set('userId', jsonData.data.user.id);",
+                  "    console.log('Token saved. User:', jsonData.data.user.email);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{menteeEmail}}\",\n    \"password\": \"{{menteePassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "0.2 Seed Session + Create Zoom Meeting (1 min)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.sessionId) {",
+                  "    pm.environment.set('sessionId', jsonData.sessionId);",
+                  "    console.log('Session created:', jsonData.sessionId);",
+                  "    console.log('Zoom Meeting ID:', jsonData.zoomMeetingId);",
+                  "    console.log('Join URL:', jsonData.joinUrl);",
+                  "    console.log('Start URL (Host):', jsonData.startUrl);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test/zoom/seed-and-create-meeting?offsetMinutes=1&durationMinutes=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["test", "zoom", "seed-and-create-meeting"],
+              "query": [
+                {"key": "offsetMinutes", "value": "1"},
+                {"key": "durationMinutes", "value": "30"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.3 Join Session (Get Zoom Link)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 409', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 409]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Join URL:', jsonData.data.joinUrl);",
+                  "} else {",
+                  "    console.log('Wait for session start time or check response');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "join"]
+            }
+          }
+        },
+        {
+          "name": "0.4 Get Session Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "console.log('Status:', jsonData.data.status);",
+                  "console.log('Start Time:', jsonData.data.scheduledStartTime);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}"]
+            }
+          }
+        },
+        {
+          "name": "0.5 Get Recording (after meeting)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('Recording available!');",
+                  "} else {",
+                  "    console.log('Recording not ready yet');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/recording",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "recording"]
+            }
+          }
+        },
+        {
+          "name": "0.6 Get Transcript (after processing)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('Transcript available!');",
+                  "} else {",
+                  "    console.log('Transcript not ready yet');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/transcript",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "transcript"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "1.1 Login as Mentee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "var data = jsonData.data;",
+                  "if (data?.token) {",
+                  "    pm.environment.set('token', data.token);",
+                  "    pm.environment.set('refreshToken', data.refreshToken);",
+                  "    pm.environment.set('userId', data.user?.id);",
+                  "    console.log('Token saved successfully');",
+                  "    console.log('User ID:', data.user?.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{menteeEmail}}\",\n    \"password\": \"{{menteePassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Browse Mentors",
+      "item": [
+        {
+          "name": "2.1 Get All Mentors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Use pre-set mentorId if available, otherwise pick first",
+                  "var existingMentorId = pm.environment.get('mentorId');",
+                  "if (existingMentorId) {",
+                  "    console.log('Using pre-set Mentor ID:', existingMentorId);",
+                  "    return;",
+                  "}",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "var mentors = jsonData.data;",
+                  "if (Array.isArray(mentors) && mentors.length > 0) {",
+                  "    var firstMentor = mentors[0];",
+                  "    pm.environment.set('mentorId', firstMentor.id);",
+                  "    console.log('Selected Mentor:', firstMentor.firstName, firstMentor.lastName);",
+                  "    console.log('Mentor ID:', firstMentor.id);",
+                  "} else {",
+                  "    console.log('No mentors found!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mentors",
+              "host": ["{{baseUrl}}"],
+              "path": ["mentors"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2.2 Get Mentor Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "console.log('Mentor:', data?.firstName, data?.lastName);",
+                  "console.log('Rate (30 min):', data?.rate30Min);",
+                  "console.log('Rate (60 min):', data?.rate60Min);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mentors/{{mentorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["mentors", "{{mentorId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Time Slots",
+      "item": [
+        {
+          "name": "3.1 Get Available Time Slots",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    var slots = jsonData.data.availableSlots || jsonData.data.slots || jsonData.data;",
+                  "    ",
+                  "    pm.test('Response has slots', function () {",
+                  "        pm.expect(slots).to.be.an('array');",
+                  "    });",
+                  "    ",
+                  "    if (Array.isArray(slots) && slots.length > 0) {",
+                  "        var firstSlot = slots[0];",
+                  "        pm.environment.set('timeSlotId', firstSlot.id);",
+                  "        console.log('Selected Time Slot:', firstSlot.startDateTime);",
+                  "        console.log('Duration:', firstSlot.durationMinutes, 'minutes');",
+                  "        console.log('Time Slot ID:', firstSlot.id);",
+                  "    } else {",
+                  "        console.log('No available slots found!');",
+                  "    }",
+                  "} else {",
+                  "    console.log('No available slots - mentor may need to create time slots first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mentors/{{mentorId}}/available-slots",
+              "host": ["{{baseUrl}}"],
+              "path": ["mentors", "{{mentorId}}", "available-slots"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Book Session",
+      "item": [
+        {
+          "name": "4.1 Book Session with Time Slot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "var data = jsonData.data;",
+                  "var sessionId = data.sessionId || data.id;",
+                  "",
+                  "pm.test('Response has session ID', function () {",
+                  "    pm.expect(sessionId).to.exist;",
+                  "});",
+                  "",
+                  "if (sessionId) {",
+                  "    pm.environment.set('sessionId', sessionId);",
+                  "    console.log('Session ID:', sessionId);",
+                  "    console.log('Status:', data.status);",
+                  "    console.log('Amount:', data.amount || data.price);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"timeSlotId\": \"{{timeSlotId}}\",\n    \"topic\": \"Career Guidance Session\",\n    \"notes\": \"I would like to discuss career transition strategies and get advice on skill development.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Payment",
+      "item": [
+        {
+          "name": "5.1 Create Payment Intent (Stripe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "var data = jsonData.data;",
+                  "",
+                  "if (data) {",
+                  "    pm.environment.set('paymentIntentId', data.paymentIntentId);",
+                  "    pm.environment.set('clientSecret', data.clientSecret);",
+                  "    console.log('Payment Intent ID:', data.paymentIntentId);",
+                  "    console.log('Client Secret:', data.clientSecret);",
+                  "    console.log('Amount:', data.amount);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sessionId\": \"{{sessionId}}\",\n    \"paymentProvider\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/create-intent",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "create-intent"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5.2 Confirm Card Payment (Stripe API)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment confirmed with Stripe', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 402]);",
+                  "    if (pm.response.code === 200) {",
+                  "        const data = pm.response.json();",
+                  "        console.log('✓ Stripe Payment Status:', data.status);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [{"key": "username", "value": "{{stripeSecretKey}}", "type": "string"}]
+            },
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/x-www-form-urlencoded"}],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "payment_method", "value": "pm_card_visa", "type": "text"},
+                {"key": "return_url", "value": "https://example.com/payment-complete", "type": "text"}
+              ]
+            },
+            "url": {
+              "raw": "https://api.stripe.com/v1/payment_intents/{{paymentIntentId}}/confirm",
+              "protocol": "https",
+              "host": ["api", "stripe", "com"],
+              "path": ["v1", "payment_intents", "{{paymentIntentId}}", "confirm"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5.3 Confirm Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "console.log('Payment Status:', jsonData.data?.status);",
+                  "console.log('Message:', jsonData.message);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"paymentIntentId\": \"{{paymentIntentId}}\",\n    \"sessionId\": \"{{sessionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "confirm"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Session Management",
+      "item": [
+        {
+          "name": "6.1 Get Session Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "var data = jsonData.data;",
+                  "console.log('Session Status:', data?.status);",
+                  "console.log('Scheduled Time:', data?.scheduledStartTime);",
+                  "console.log('Duration:', data?.durationMinutes, 'minutes');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6.2 Get Upcoming Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Total upcoming sessions:', jsonData.data.sessions.length);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "upcoming"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Join Session",
+      "item": [
+        {
+          "name": "7.1 Join Session (Get Zoom Link)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 409', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 409]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    ",
+                  "    pm.test('Has join URL', function () {",
+                  "        pm.expect(jsonData.data).to.have.property('joinUrl');",
+                  "    });",
+                  "    ",
+                  "    console.log('Join URL:', jsonData.data.joinUrl);",
+                  "    console.log('Meeting ID:', jsonData.data.meetingId);",
+                  "} else {",
+                  "    console.log('Cannot join yet - session may not be within join window');",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Message:', jsonData.message);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "join"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Post-Session",
+      "item": [
+        {
+          "name": "8.1 Get Session Recording",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Recording available!');",
+                  "    console.log('Video URL:', jsonData.data.videoUrl);",
+                  "} else {",
+                  "    console.log('Recording not yet available - session may still be in progress or processing');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/recording",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "recording"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "8.2 Get Session Transcript",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Transcript available!');",
+                  "    console.log('Transcript:', jsonData.data.substring(0, 200) + '...');",
+                  "} else {",
+                  "    console.log('Transcript not yet available - may still be processing');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/transcript",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "transcript"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "8.3 Get Past Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Total past sessions:', jsonData.data.sessions.length);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/past",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "past"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('Request:', pm.info.requestName);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ]
+}

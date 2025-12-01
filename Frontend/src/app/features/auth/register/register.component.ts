@@ -52,7 +52,7 @@ export class RegisterComponent implements OnInit {
   ngOnInit(): void {
     // Check if user is already logged in
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/user/dashboard']);
+      this.router.navigate(['/']);
       return;
     }
 
@@ -238,7 +238,7 @@ export class RegisterComponent implements OnInit {
     this.authService.register(registerRequest).subscribe({
       next: (response) => {
         // Registration successful - AuthService has handled auth state updates
-        console.log('Registration successful:', response);
+        // console.log('Registration successful:', response);
 
         // Show success notification
         this.notificationService.success(
@@ -246,13 +246,17 @@ export class RegisterComponent implements OnInit {
           'Welcome!'
         );
 
+        // Check if user registered as mentor
+        const registerAsMentor = this.registerForm.value.userType === 'mentor';
+
         // Email verification is always required
         // Backend automatically sends verification email during registration
         // Navigate to send-email-verification page with email and emailAlreadySent flag
         this.router.navigate(['/auth/send-email-verification'], {
           state: {
             email: response.email || this.registerForm.value.email,
-            emailAlreadySent: true  // Backend already sent the email
+            emailAlreadySent: true,  // Backend already sent the email
+            registerAsMentor: registerAsMentor  // Pass mentor registration flag
           }
         });
       },

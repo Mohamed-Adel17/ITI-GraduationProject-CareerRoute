@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LoginRequest } from '../../../shared/models/auth.model';
+import { UserRole } from '../../../shared/models/user.model';
 
 /**
  * LoginComponent
@@ -38,7 +40,9 @@ export class LoginComponent implements OnInit {
   loading = false;
   errorMessage: string | null = null;
   showPassword = false;
-  returnUrl: string = '/user/dashboard';
+  returnUrl: string = '/';
+
+  private readonly mentorService = inject(MentorService);
 
   constructor(
     private fb: FormBuilder,
@@ -56,7 +60,7 @@ export class LoginComponent implements OnInit {
     }
 
     // Extract returnUrl from query params (for redirecting after login)
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/user/dashboard';
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
 
     // Initialize login form with validators
     this.loginForm = this.fb.group({
@@ -121,7 +125,7 @@ export class LoginComponent implements OnInit {
     this.authService.login(loginRequest).subscribe({
       next: (response) => {
         // Login successful - AuthService has stored tokens and updated auth state
-        console.log('Login successful:', response);
+        // console.log('Login successful:', response);
 
         // Show success notification
         this.notificationService.success(
@@ -129,8 +133,8 @@ export class LoginComponent implements OnInit {
           'Login Successful'
         );
 
-        // Navigate to returnUrl or dashboard
-        this.router.navigate([this.returnUrl]);
+        // Check if user registered as mentor but hasn't completed application
+        this.checkAndRedirectMentor(response.user.isMentor);
       },
       error: (error) => {
         // Login failed
@@ -169,13 +173,67 @@ export class LoginComponent implements OnInit {
    * @param email User's email address
    */
   private handleUnverifiedEmail(email: string): void {
-    console.log('Handling unverified email for:', email);
+    // console.log('Handling unverified email for:', email);
 
     // Navigate to send-email-verification page so user can manually send verification
     this.router.navigate(['/auth/send-email-verification'], {
       state: { email }
     });
     this.loading = false;
+  }
+
+  /**
+   * Checks if user registered as mentor and redirects appropriately
+   * Uses token claims to determine mentor status
+   *
+   * Flow:
+   * 1. Regular user (no isMentor flag) → returnUrl
+   * 2. Approved mentor (has Mentor role) → returnUrl
+   * 3. Pending mentor with submitted application (has mentor profile) → home page
+   * 4. Pending mentor without application (no mentor profile) → application form
+   *
+   * @param isMentor Whether user has isMentor flag in JWT token
+   */
+  private checkAndRedirectMentor(isMentor: boolean): void {
+    // If user is not a mentor, navigate to returnUrl
+    if (!isMentor) {
+      this.router.navigate([this.returnUrl]);
+      return;
+    }
+
+    // User has isMentor flag - check if they have Mentor role (approved)
+    const hasMentorRole = this.authService.hasRole(UserRole.Mentor);
+
+    if (hasMentorRole) {
+      // User is approved mentor - navigate to returnUrl or mentor dashboard
+      // console.log('User is approved mentor, navigating to:', this.returnUrl);
+      this.router.navigate([this.returnUrl]);
+    } else {
+      // User has applied but not approved yet - check if they have submitted application
+      this.mentorService.getCurrentMentorProfile().subscribe({
+        next: (mentorProfile) => {
+          // Mentor profile exists (application submitted and pending approval)
+          // Redirect to home page - they can use "Become a Mentor" button if needed
+          // console.log('Mentor application submitted and pending approval, navigating to home');
+          this.router.navigate(['/']);
+        },
+        error: (error) => {
+          // If 404, mentor profile doesn't exist - redirect to application form
+          if (error.status === 404) {
+            // console.log('Mentor profile not found - redirecting to application form');
+            this.notificationService.info(
+              'Please complete your mentor application to get started.',
+              'Complete Your Profile'
+            );
+            this.router.navigate(['/user/apply-mentor']);
+          } else {
+            // Other error - just navigate to returnUrl
+            console.error('Error checking mentor profile:', error);
+            this.router.navigate([this.returnUrl]);
+          }
+        }
+      });
+    }
   }
 
   /**

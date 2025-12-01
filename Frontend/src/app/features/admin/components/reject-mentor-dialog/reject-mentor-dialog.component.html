@@ -1,0 +1,133 @@
+<!-- Modal Overlay -->
+<div
+  *ngIf="visible"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
+  (click)="onBackdropClick($event)"
+  (keydown)="onEscapeKey($event)"
+  tabindex="-1"
+>
+  <!-- Modal Dialog -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dialog-title"
+  >
+    <!-- Dialog Header -->
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <h2 id="dialog-title" class="text-2xl font-bold text-gray-900 dark:text-white">
+        Reject Mentor Application
+      </h2>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        You are about to reject
+        <span class="font-semibold text-gray-900 dark:text-white">{{ mentorName }}'s</span>
+        application. Please provide a professional and constructive reason for rejection.
+      </p>
+    </div>
+
+    <!-- Dialog Body -->
+    <form [formGroup]="rejectForm" class="p-6">
+      <div class="space-y-4">
+        <!-- Reason Field -->
+        <div>
+          <label
+            for="rejection-reason"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Rejection Reason <span class="text-red-600">*</span>
+          </label>
+          <textarea
+            id="rejection-reason"
+            formControlName="reason"
+            rows="6"
+            placeholder="Enter a professional reason for rejection (e.g., 'Profile does not meet our minimum experience requirements. Please reapply with more detailed certifications.')"
+            class="w-full px-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors
+                   bg-white dark:bg-gray-700
+                   border-gray-300 dark:border-gray-600
+                   text-gray-900 dark:text-gray-100
+                   placeholder-gray-400 dark:placeholder-gray-500"
+            [class.border-red-500]="showReasonError"
+            [class.dark:border-red-500]="showReasonError"
+          ></textarea>
+
+          <!-- Character Counter -->
+          <div class="flex justify-between items-center mt-2">
+            <div class="text-xs">
+              <!-- Error Messages -->
+              <div *ngIf="showReasonError" class="text-red-600 dark:text-red-400 space-y-1">
+                <p *ngIf="hasRequiredError">
+                  Rejection reason is required
+                </p>
+                <p *ngIf="hasMinLengthError">
+                  Reason must be at least {{ MIN_REASON_LENGTH }} characters
+                </p>
+                <p *ngIf="hasMaxLengthError">
+                  Reason must not exceed {{ MAX_REASON_LENGTH }} characters
+                </p>
+              </div>
+
+              <!-- Help Text -->
+              <p *ngIf="!showReasonError" class="text-gray-500 dark:text-gray-400">
+                Be professional and constructive. This will be sent to the applicant.
+              </p>
+            </div>
+
+            <!-- Character Count -->
+            <div
+              class="text-xs font-medium"
+              [class.text-gray-500]="characterCount <= MAX_REASON_LENGTH"
+              [class.dark:text-gray-400]="characterCount <= MAX_REASON_LENGTH"
+              [class.text-red-600]="characterCount > MAX_REASON_LENGTH"
+              [class.dark:text-red-400]="characterCount > MAX_REASON_LENGTH"
+            >
+              {{ characterCount }} / {{ MAX_REASON_LENGTH }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Guidelines (Optional) -->
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <div class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="text-sm text-amber-800 dark:text-amber-300">
+              <p class="font-medium mb-1">Rejection Guidelines:</p>
+              <ul class="list-disc list-inside space-y-1 text-xs">
+                <li>Be specific about what was lacking</li>
+                <li>Provide actionable feedback when possible</li>
+                <li>Maintain a professional and respectful tone</li>
+                <li>Avoid personal criticism or harsh language</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- Dialog Footer -->
+    <div class="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+      <!-- Cancel Button -->
+      <button
+        type="button"
+        (click)="onCancel()"
+        class="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
+      >
+        Cancel
+      </button>
+
+      <!-- Confirm Rejection Button -->
+      <button
+        type="button"
+        (click)="onConfirm()"
+        [disabled]="rejectForm.invalid"
+        class="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600"
+      >
+        <svg class="w-4 h-4 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Confirm Rejection
+      </button>
+    </div>
+  </div>
+</div>
