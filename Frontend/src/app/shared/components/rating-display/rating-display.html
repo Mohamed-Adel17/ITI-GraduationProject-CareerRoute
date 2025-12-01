@@ -53,9 +53,6 @@
   @if (showNumericRating) {
     <span [class]="textSizeClass" class="font-medium text-gray-700 dark:text-gray-300 ml-1">
       {{ rating.toFixed(1) }}
-      @if (reviewCount !== undefined) {
-        <span class="text-gray-500 font-normal">({{ reviewCount }} reviews)</span>
-      }
     </span>
   }
 </div>
