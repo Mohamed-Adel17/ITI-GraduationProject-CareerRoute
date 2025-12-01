@@ -216,7 +216,7 @@ var hangfireDashboardOptions = new DashboardOptions
 
 app.UseHangfireDashboard("/hangfire", hangfireDashboardOptions);
 app.MapHub<PaymentHub>("hub/payment");
-app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<NotificationHub>("/hub/notification");
 
 app.MapControllers();
 

@@ -49,7 +49,7 @@ namespace CareerRoute.Core.Services.Implementations
         {
             var existingNotification=await _notificationRepository.GetByIdAsync(notificationId);
             if (existingNotification is null)
-                throw new NotFoundException("Not ");
+                throw new NotFoundException("Not Found Notification");
             await _notificationRepository.MarkAsReadAsync(notificationId, userId);
             await _notificationRepository.SaveChangesAsync();
         }
