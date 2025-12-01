@@ -107,6 +107,7 @@ export interface SessionSummary {
   price: number;
   videoConferenceLink?: string | null;
   hoursUntilSession?: number | null;
+  createdAt?: string;                     // ISO 8601 datetime (for payment countdown)
 }
 
 /**
@@ -131,6 +132,7 @@ export interface PastSessionItem {
   topic?: string | null;
   hasReview: boolean;                   // True if review exists for this session
   completedAt?: string | null;
+  cancellationReason?: string | null;   // Reason for cancellation (if cancelled)
 }
 
 /**

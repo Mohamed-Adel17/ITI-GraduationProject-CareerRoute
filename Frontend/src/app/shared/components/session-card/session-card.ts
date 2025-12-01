@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   SessionSummary,
@@ -48,7 +48,11 @@ import {
   templateUrl: './session-card.html',
   styleUrl: './session-card.css'
 })
-export class SessionCard {
+export class SessionCard implements OnInit, OnDestroy {
+  // Payment countdown timer (15 minutes)
+  private paymentCountdownInterval: ReturnType<typeof setInterval> | null = null;
+  paymentCountdown: string = '';
+  isPaymentExpired: boolean = false;
   /**
    * Session data to display
    */
@@ -94,8 +98,79 @@ export class SessionCard {
    */
   @Output() completePayment = new EventEmitter<string>();
 
+  /**
+   * Emitted when payment countdown expires (session will be auto-cancelled)
+   */
+  @Output() paymentExpired = new EventEmitter<string>();
+
   // Expose enums to template
   SessionStatus = SessionStatus;
+
+  ngOnInit(): void {
+    this.startPaymentCountdown();
+  }
+
+  ngOnDestroy(): void {
+    this.stopPaymentCountdown();
+  }
+
+  /**
+   * Start the payment countdown timer for pending sessions
+   */
+  private startPaymentCountdown(): void {
+    if (this.session.status !== SessionStatus.Pending) return;
+
+    const sessionSummary = this.session as SessionSummary;
+    if (!sessionSummary.createdAt) return;
+
+    // Update immediately
+    this.updatePaymentCountdown();
+
+    // Update every second
+    this.paymentCountdownInterval = setInterval(() => {
+      this.updatePaymentCountdown();
+    }, 1000);
+  }
+
+  /**
+   * Stop the payment countdown timer
+   */
+  private stopPaymentCountdown(): void {
+    if (this.paymentCountdownInterval) {
+      clearInterval(this.paymentCountdownInterval);
+      this.paymentCountdownInterval = null;
+    }
+  }
+
+  /**
+   * Update the payment countdown display
+   * 15 minutes from session creation
+   */
+  private updatePaymentCountdown(): void {
+    const sessionSummary = this.session as SessionSummary;
+    if (!sessionSummary.createdAt) {
+      this.paymentCountdown = '';
+      return;
+    }
+
+    const createdAt = new Date(sessionSummary.createdAt);
+    const expiresAt = new Date(createdAt.getTime() + 15 * 60 * 1000); // 15 minutes
+    const now = new Date();
+    const remainingMs = expiresAt.getTime() - now.getTime();
+
+    if (remainingMs <= 0) {
+      this.paymentCountdown = 'Expired';
+      this.isPaymentExpired = true;
+      this.stopPaymentCountdown();
+      this.paymentExpired.emit(this.session.id);
+      return;
+    }
+
+    const minutes = Math.floor(remainingMs / (1000 * 60));
+    const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+    this.paymentCountdown = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    this.isPaymentExpired = false;
+  }
 
   /**
    * Get the other participant's name based on user role
@@ -183,9 +258,20 @@ export class SessionCard {
 
   /**
    * Get time until session (countdown)
+   * Use backend value for hours/days, calculate frontend for minutes precision
    */
   get timeUntil(): string {
     const hoursUntil = (this.session as SessionSummary).hoursUntilSession;
+    
+    // For less than 1 hour, calculate precisely on frontend
+    if (hoursUntil !== undefined && hoursUntil !== null && hoursUntil < 1 && hoursUntil >= 0) {
+      const now = new Date();
+      const startTime = new Date(this.session.scheduledStartTime);
+      const minutesUntil = Math.round((startTime.getTime() - now.getTime()) / (1000 * 60));
+      if (minutesUntil <= 0) return 'Starting now';
+      return `${minutesUntil} minute${minutesUntil !== 1 ? 's' : ''}`;
+    }
+    
     return getTimeUntilSession(hoursUntil);
   }
 
@@ -195,7 +281,31 @@ export class SessionCard {
   get isUpcoming(): boolean {
     return this.session.status === SessionStatus.Confirmed ||
            this.session.status === SessionStatus.Pending ||
-           this.session.status === SessionStatus.PendingReschedule;
+           this.session.status === SessionStatus.PendingReschedule ||
+           this.session.status === SessionStatus.InProgress;
+  }
+
+  /**
+   * Check if session is currently in progress
+   * Either by status OR by time (session started but status not yet updated)
+   */
+  get isInProgress(): boolean {
+    if (this.session.status === SessionStatus.InProgress) {
+      return true;
+    }
+    
+    // Also check if session should be in progress based on time
+    // (for when backend status hasn't updated yet)
+    if (this.session.status === SessionStatus.Confirmed) {
+      const now = new Date();
+      const startTime = new Date(this.session.scheduledStartTime);
+      // Calculate end time from duration
+      const durationMinutes = this.session.duration === SessionDuration.ThirtyMinutes ? 30 : 60;
+      const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
+      return now >= startTime && now <= endTime;
+    }
+    
+    return false;
   }
 
   /**
@@ -204,6 +314,20 @@ export class SessionCard {
   get isPast(): boolean {
     return this.session.status === SessionStatus.Completed ||
            this.session.status === SessionStatus.Cancelled;
+  }
+
+  /**
+   * Check if session is cancelled
+   */
+  get isCancelled(): boolean {
+    return this.session.status === SessionStatus.Cancelled;
+  }
+
+  /**
+   * Get cancellation reason (for cancelled sessions)
+   */
+  get cancellationReason(): string | null {
+    return (this.session as PastSessionItem).cancellationReason ?? null;
   }
 
   /**
