@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 })
 export class RatingDisplay implements OnChanges {
   @Input() rating: number = 0;
+  @Input() reviewCount?: number;
   @Input() showNumericRating: boolean = true;
   @Input() maxStars: number = 5;
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
