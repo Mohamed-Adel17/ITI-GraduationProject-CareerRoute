@@ -42,7 +42,7 @@ import { Category } from '../../../shared/models/category.model';
 @Component({
   selector: 'app-mentor-profile-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RatingDisplayComponent],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './mentor-profile-form.component.html',
   styleUrls: ['./mentor-profile-form.component.css']
 })
@@ -433,8 +433,4 @@ export class MentorProfileFormComponent implements OnInit {
   setSubmitting(submitting: boolean): void {
     this.isSubmitting = submitting;
   }
-
-  rating: number = 4.5;          
-  totalReviews: number = 20;     
 }
-
