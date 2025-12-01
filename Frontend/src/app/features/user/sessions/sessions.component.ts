@@ -463,10 +463,6 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.selectedSession = null;
     // Refresh the sessions list to show updated status
     this.loadUpcomingSessions();
-    this.notificationService.success(
-      'Payment completed successfully! Your session is now confirmed.',
-      'Payment Successful'
-    );
   }
 
   /**

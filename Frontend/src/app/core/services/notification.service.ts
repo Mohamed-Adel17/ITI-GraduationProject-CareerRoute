@@ -152,13 +152,15 @@ export class NotificationService {
    * @param message The notification message
    * @param title Optional notification title
    * @param duration Optional custom duration in milliseconds
+   * @param redu
    */
-  info(message: string, title?: string, duration?: number): string {
+  info(message: string, title?: string, duration?: number,actionUrl?: string): string {
     return this.show({
       type: NotificationType.Info,
       message,
       title: title || 'Info',
-      duration: duration ?? this.config.duration
+      duration: duration ?? this.config.duration,
+      actionUrl: actionUrl
     });
   }
 

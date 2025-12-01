@@ -95,7 +95,7 @@ export class NotificationApiService {
    * @param notificationId ID of the notification
    * @returns Observable of notification DTO
    */
-  getNotification(notificationId: number): Observable<NotificationDto> {
+  getNotification(notificationId: string): Observable<NotificationDto> {
     return this.http.get<ApiResponse<NotificationDto>>(`${this.API_URL}/${notificationId}`).pipe(
       map(response => unwrapResponse(response))
     );

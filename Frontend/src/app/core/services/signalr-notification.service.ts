@@ -282,15 +282,6 @@ export class SignalRNotificationService implements OnDestroy {
     if (typeof typeRaw === 'number') {
       return numericTypeMap[typeRaw] ?? null;
     }
-
-    if (typeof typeRaw === 'string') {
-      // Check if it's a valid NotificationType string
-      const validTypes = Object.values(NotificationType);
-      if (validTypes.includes(typeRaw as NotificationType)) {
-        return typeRaw as NotificationType;
-      }
-    }
-
     return null;
   }
 

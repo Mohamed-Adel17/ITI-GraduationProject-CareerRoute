@@ -94,7 +94,7 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
   showPaymentModal: boolean = false;
   currentSession: any = null;
   selectedPaymentMethod: PaymentMethodSelection | null = null;
-  
+
   // Expose enums to template
   readonly PaymentProvider = PaymentProvider;
   readonly PaymobPaymentMethod = PaymobPaymentMethod;
@@ -455,12 +455,6 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
   handlePaymentSuccess(response: any): void {
     // console.log('Payment successful:', response);
     this.showPaymentModal = false;
-    
-    this.notificationService.success(
-      'Payment successful! Your session is confirmed.',
-      'Payment Complete'
-    );
-
     // Navigate to session details or sessions list
     this.router.navigate(['/user/sessions']);
   }
@@ -474,6 +468,9 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
       error || 'Payment failed. Please try again.',
       'Payment Failed'
     );
+    if (this.mentor) {
+      this.loadAvailableSlots(this.mentor.id);
+    }
   }
 
   /**
@@ -483,8 +480,13 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
     this.showPaymentModal = false;
     this.notificationService.info(
       'Payment cancelled. Your session is still pending payment.',
-      'Payment Cancelled'
+      'Payment Cancelled',
+      5000,
+      'user/sessions'
     );
+    if (this.mentor) {
+      this.loadAvailableSlots(this.mentor.id);
+    }
   }
 
   // ==========================================================================
@@ -568,10 +570,10 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
     this.sessionService.bookSession(request).subscribe({
       next: (response) => {
         this.submittingBooking = false;
-        this.notificationService.success(
-          'Session booked successfully! Please proceed to payment to confirm your booking.',
-          'Booking Created'
-        );
+        // this.notificationService.success(
+        //   'Session booked successfully! Please proceed to payment to confirm your booking.',
+        //   'Booking Created'
+        // );
         // Navigate to payment page with sessionId
         // TODO: Update route when payment page is implemented
         this.router.navigate(['/user/sessions'], {

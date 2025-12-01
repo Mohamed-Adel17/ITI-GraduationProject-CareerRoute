@@ -58,8 +58,10 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   readonly getNotificationColor = getNotificationColor;
   readonly formatNotificationTime = formatNotificationTime;
   readonly ConnectionState = ConnectionState;
+  protected hasBootstrapIcons:boolean = false;
 
   ngOnInit(): void {
+    this.hasBootstrapIcons = this.checkIconFontLoaded();
     this.subscribeToUnreadCount();
     this.subscribeToConnectionState();
     this.subscribeToNewNotifications();
@@ -242,5 +244,17 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
    */
   hasNotifications(): boolean {
     return this.notifications.length > 0;
+  }
+
+  private checkIconFontLoaded(): boolean {
+    // Check if the Bootstrap Icons CSS is loaded
+    const styleSheets = Array.from(document.styleSheets);
+    return styleSheets.some(sheet => {
+      try {
+        return sheet.href?.includes('bootstrap-icons');
+      } catch (e) {
+        return false;
+      }
+    });
   }
 }
