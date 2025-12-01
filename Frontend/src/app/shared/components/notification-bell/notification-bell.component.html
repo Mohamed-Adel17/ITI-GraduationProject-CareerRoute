@@ -1,0 +1,170 @@
+<div class="notification-bell-container relative">
+  <!-- Bell Button -->
+  <button
+    (click)="toggleDropdown()"
+    (keydown.enter)="toggleDropdown()"
+    (keydown.space)="toggleDropdown()"
+    (keydown.escape)="isDropdownOpen && toggleDropdown()"
+    class="relative p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+    [attr.aria-expanded]="isDropdownOpen"
+    aria-haspopup="true"
+    aria-label="Notifications">
+
+    <!-- Bell Icon -->
+    <svg
+      class="h-6 w-6 text-gray-600 dark:text-gray-300"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+      </path>
+    </svg>
+
+    <!-- Unread Count Badge -->
+    <span
+      *ngIf="unreadCount > 0"
+      class="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full"
+      aria-label="{{ unreadCount }} unread notifications">
+      {{ getDisplayCount() }}
+    </span>
+
+    <!-- Connection Status Indicator -->
+    <span
+      *ngIf="connectionState === ConnectionState.Reconnecting"
+      class="absolute bottom-0 right-0 w-2 h-2 bg-yellow-500 rounded-full animate-pulse"
+      title="Reconnecting...">
+    </span>
+    <span
+      *ngIf="connectionState === ConnectionState.Disconnected"
+      class="absolute bottom-0 right-0 w-2 h-2 bg-red-500 rounded-full"
+      title="Disconnected">
+    </span>
+  </button>
+
+  <!-- Dropdown Menu -->
+  <div
+    *ngIf="isDropdownOpen"
+    class="notification-dropdown absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+    role="menu"
+    aria-orientation="vertical"
+    aria-label="Notifications">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Notifications</h3>
+      <button
+        *ngIf="hasNotifications() && unreadCount > 0"
+        (click)="markAllAsRead()"
+        class="text-xs text-primary hover:text-primary/80 font-medium transition-colors">
+        Mark all as read
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex items-center justify-center py-8">
+      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Notifications List -->
+    <div *ngIf="!isLoading" class="max-h-96 overflow-y-auto">
+      <!-- Empty State -->
+      <div *ngIf="!hasNotifications()" class="flex flex-col items-center justify-center py-8 px-4">
+        <svg
+          class="h-12 w-12 text-gray-300 dark:text-gray-600 mb-3"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+          </path>
+        </svg>
+        <p class="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
+      </div>
+
+      <!-- Notification Items -->
+      <div *ngIf="hasNotifications()">
+        <button
+          *ngFor="let notification of notifications"
+          (click)="onNotificationClick(notification)"
+          class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+          [class.bg-blue-50]="!notification.isRead"
+          [class.dark:bg-blue-900/20]="!notification.isRead"
+          role="menuitem">
+          <div class="flex items-start gap-3">
+            <!-- Notification Type Icon -->
+            <div
+              class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+              [ngClass]="getNotificationColor(notification.type)"
+              [class.bg-gray-100]="notification.isRead"
+              [class.dark:bg-gray-700]="notification.isRead"
+              [class.bg-primary/10]="!notification.isRead">
+              <i [class]="getNotificationIcon(notification.type)" class="text-sm"></i>
+              <!-- Fallback SVG icon if Bootstrap Icons not available -->
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                </path>
+              </svg>
+            </div>
+
+            <!-- Notification Content -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p
+                  class="text-sm font-medium truncate"
+                  [class.text-gray-900]="!notification.isRead"
+                  [class.dark:text-white]="!notification.isRead"
+                  [class.text-gray-700]="notification.isRead"
+                  [class.dark:text-gray-300]="notification.isRead">
+                  {{ notification.title }}
+                </p>
+                <!-- Unread Indicator -->
+                <span
+                  *ngIf="!notification.isRead"
+                  class="flex-shrink-0 w-2 h-2 bg-primary rounded-full">
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                {{ notification.message }}
+              </p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                {{ formatNotificationTime(notification.createdAt) }}
+              </p>
+            </div>
+
+            <!-- Action Arrow (if has actionUrl) -->
+            <div *ngIf="notification.actionUrl" class="flex-shrink-0 self-center">
+              <svg
+                class="h-4 w-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7">
+                </path>
+              </svg>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

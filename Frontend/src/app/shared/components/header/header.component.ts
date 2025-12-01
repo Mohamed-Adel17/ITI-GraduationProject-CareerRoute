@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthUser } from '../../models/auth.model';
 import { UserRole } from '../../models/user.model';
+import { NotificationBellComponent } from '../notification-bell/notification-bell.component';
 
 /**
  * HeaderComponent
@@ -28,7 +29,7 @@ import { UserRole } from '../../models/user.model';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, NotificationBellComponent],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })

@@ -7,6 +7,10 @@
         [@notificationAnimation]
         [ngClass]="getNotificationClass(notification.type)"
         class="relative flex flex-col min-w-[300px] max-w-md p-4 rounded-lg shadow-lg bg-white dark:bg-gray-800 pointer-events-auto overflow-hidden"
+        [class.cursor-pointer]="notification.clickable"
+        [class.hover:bg-gray-50]="notification.clickable"
+        [class.dark:hover:bg-gray-700]="notification.clickable"
+        (click)="notification.clickable && onNotificationClick(notification)"
         role="alert"
         [attr.aria-live]="notification.type === NotificationType.Error ? 'assertive' : 'polite'"
       >
