@@ -42,7 +42,7 @@ import { Category } from '../../../shared/models/category.model';
 @Component({
   selector: 'app-mentor-profile-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RatingDisplayComponent],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './mentor-profile-form.component.html',
   styleUrls: ['./mentor-profile-form.component.css']
 })
@@ -77,7 +77,7 @@ export class MentorProfileFormComponent implements OnInit {
   showPricingHelp = false;
 
   // Pricing constraints (from API contract)
-  readonly MIN_PRICE = 0; // API allows min 0, max 10000
+  readonly MIN_PRICE = 50; // Minimum session rate
   readonly MAX_PRICE = 10000;
   readonly MIN_BIO_LENGTH = 50; // API: min 50, max 1000
   readonly MAX_BIO_LENGTH = 1000;
@@ -433,8 +433,4 @@ export class MentorProfileFormComponent implements OnInit {
   setSubmitting(submitting: boolean): void {
     this.isSubmitting = submitting;
   }
-
-  rating: number = 4.5;          
-  totalReviews: number = 20;     
 }
-
