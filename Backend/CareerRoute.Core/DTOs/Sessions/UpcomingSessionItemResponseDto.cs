@@ -19,6 +19,7 @@ namespace CareerRoute.Core.DTOs.Sessions
         public DateTime ScheduledStartTime { get; set; }
         public string Status { get; set; } = null!;
         public decimal Price { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         public string VideoConferenceLink { get; set; } = null!;
         public string? Topic { get; set; }
