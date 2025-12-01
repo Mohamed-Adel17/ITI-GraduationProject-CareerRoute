@@ -43,7 +43,7 @@ import {
 })
 export class SessionsComponent implements OnInit, OnDestroy {
   // Tab state
-  activeTab: 'upcoming' | 'past' = 'upcoming';
+  activeTab: 'upcoming' | 'completed' = 'upcoming';
 
   // Upcoming sessions state
   upcomingSessions: SessionSummary[] = [];
@@ -51,11 +51,18 @@ export class SessionsComponent implements OnInit, OnDestroy {
   loadingUpcoming: boolean = false;
   upcomingPage: number = 1;
 
-  // Past sessions state
-  pastSessions: PastSessionItem[] = [];
-  pastPagination: PaginationMetadata | null = null;
-  loadingPast: boolean = false;
-  pastPage: number = 1;
+  // Completed sessions state (renamed from past)
+  completedSessions: PastSessionItem[] = [];
+  completedPagination: PaginationMetadata | null = null;
+  loadingCompleted: boolean = false;
+  completedPage: number = 1;
+
+  // Cancelled sessions state (for modal)
+  cancelledSessions: PastSessionItem[] = [];
+  cancelledPagination: PaginationMetadata | null = null;
+  loadingCancelled: boolean = false;
+  cancelledPage: number = 1;
+  showCancelledModal: boolean = false;
 
   // General state
   pageSize: number = 10;
@@ -90,7 +97,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
   /**
    * Switch between tabs and load data if needed
    */
-  switchTab(tab: 'upcoming' | 'past'): void {
+  switchTab(tab: 'upcoming' | 'completed'): void {
     if (this.activeTab === tab) return;
 
     this.activeTab = tab;
@@ -98,8 +105,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
     // Load data for the tab if not already loaded
     if (tab === 'upcoming' && this.upcomingSessions.length === 0 && !this.loadingUpcoming) {
       this.loadUpcomingSessions();
-    } else if (tab === 'past' && this.pastSessions.length === 0 && !this.loadingPast) {
-      this.loadPastSessions();
+    } else if (tab === 'completed' && this.completedSessions.length === 0 && !this.loadingCompleted) {
+      this.loadCompletedSessions();
     }
   }
 
@@ -134,29 +141,72 @@ export class SessionsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load past sessions
+   * Load completed sessions (only Completed status, not Cancelled)
    */
-  loadPastSessions(): void {
-    this.loadingPast = true;
+  loadCompletedSessions(): void {
+    this.loadingCompleted = true;
 
-    const sub = this.sessionService.getPastSessions(this.pastPage, this.pageSize).subscribe({
+    const sub = this.sessionService.getPastSessions(this.completedPage, this.pageSize).subscribe({
       next: (response) => {
-        this.pastSessions = response.sessions;
-        this.pastPagination = response.pagination;
-        this.loadingPast = false;
+        // Filter to only show Completed sessions (not Cancelled)
+        this.completedSessions = response.sessions.filter(s => s.status === SessionStatus.Completed);
+        this.completedPagination = response.pagination;
+        this.loadingCompleted = false;
       },
       error: (err) => {
-        this.loadingPast = false;
-        // 404 means no sessions found - not an error, just empty state
+        this.loadingCompleted = false;
         if (err.status === 404) {
-          this.pastSessions = [];
-          this.pastPagination = null;
+          this.completedSessions = [];
+          this.completedPagination = null;
         }
-        console.error('Error loading past sessions:', err);
+        console.error('Error loading completed sessions:', err);
       }
     });
 
     this.subscriptions.push(sub);
+  }
+
+  /**
+   * Load cancelled sessions (only paid/confirmed ones that were cancelled)
+   */
+  loadCancelledSessions(): void {
+    this.loadingCancelled = true;
+
+    const sub = this.sessionService.getPastSessions(this.cancelledPage, this.pageSize).subscribe({
+      next: (response) => {
+        // Filter to only show Cancelled sessions
+        this.cancelledSessions = response.sessions.filter(s => s.status === SessionStatus.Cancelled);
+        this.cancelledPagination = response.pagination;
+        this.loadingCancelled = false;
+      },
+      error: (err) => {
+        this.loadingCancelled = false;
+        if (err.status === 404) {
+          this.cancelledSessions = [];
+          this.cancelledPagination = null;
+        }
+        console.error('Error loading cancelled sessions:', err);
+      }
+    });
+
+    this.subscriptions.push(sub);
+  }
+
+  /**
+   * Open cancelled sessions modal
+   */
+  openCancelledModal(): void {
+    this.showCancelledModal = true;
+    if (this.cancelledSessions.length === 0 && !this.loadingCancelled) {
+      this.loadCancelledSessions();
+    }
+  }
+
+  /**
+   * Close cancelled sessions modal
+   */
+  closeCancelledModal(): void {
+    this.showCancelledModal = false;
   }
 
   // ==========================================================================
@@ -174,12 +224,12 @@ export class SessionsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load next page of past sessions
+   * Load next page of completed sessions
    */
-  loadMorePast(): void {
-    if (this.pastPagination?.hasNextPage && !this.loadingPast) {
-      this.pastPage++;
-      this.loadPastSessions();
+  loadMoreCompleted(): void {
+    if (this.completedPagination?.hasNextPage && !this.loadingCompleted) {
+      this.completedPage++;
+      this.loadCompletedSessions();
     }
   }
 
@@ -192,11 +242,11 @@ export class SessionsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Go to specific page for past sessions
+   * Go to specific page for completed sessions
    */
-  goToPastPage(page: number): void {
-    this.pastPage = page;
-    this.loadPastSessions();
+  goToCompletedPage(page: number): void {
+    this.completedPage = page;
+    this.loadCompletedSessions();
   }
 
   // ==========================================================================
@@ -372,10 +422,17 @@ export class SessionsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if there are any past sessions
+   * Check if there are any completed sessions
    */
-  hasPastSessions(): boolean {
-    return this.pastSessions.length > 0;
+  hasCompletedSessions(): boolean {
+    return this.completedSessions.length > 0;
+  }
+
+  /**
+   * Check if there are any cancelled sessions
+   */
+  hasCancelledSessions(): boolean {
+    return this.cancelledSessions.length > 0;
   }
 
   /**
@@ -393,8 +450,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
       this.upcomingPage = 1;
       this.loadUpcomingSessions();
     } else {
-      this.pastPage = 1;
-      this.loadPastSessions();
+      this.completedPage = 1;
+      this.loadCompletedSessions();
     }
   }
 }

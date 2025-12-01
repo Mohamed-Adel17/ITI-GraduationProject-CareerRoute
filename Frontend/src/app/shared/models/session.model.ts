@@ -131,6 +131,7 @@ export interface PastSessionItem {
   topic?: string | null;
   hasReview: boolean;                   // True if review exists for this session
   completedAt?: string | null;
+  cancellationReason?: string | null;   // Reason for cancellation (if cancelled)
 }
 
 /**

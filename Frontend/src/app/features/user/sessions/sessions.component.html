@@ -27,28 +27,35 @@
 
     <!-- Tabs -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="flex gap-8" aria-label="Sessions tabs">
-        <button (click)="switchTab('upcoming')" [class]="activeTab === 'upcoming'
-            ? 'border-b-2 border-primary text-primary font-semibold'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-          class="pb-4 px-1 text-sm transition-colors">
-          Upcoming
-          <span *ngIf="upcomingPagination?.totalCount"
-            class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
-            {{ upcomingPagination?.totalCount }}
-          </span>
+      <div class="flex items-center justify-between">
+        <nav class="flex gap-8" aria-label="Sessions tabs">
+          <button (click)="switchTab('upcoming')" [class]="activeTab === 'upcoming'
+              ? 'border-b-2 border-primary text-primary font-semibold'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+            class="pb-4 px-1 text-sm transition-colors">
+            Upcoming
+            <span *ngIf="upcomingPagination?.totalCount"
+              class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
+              {{ upcomingPagination?.totalCount }}
+            </span>
+          </button>
+          <button (click)="switchTab('completed')" [class]="activeTab === 'completed'
+              ? 'border-b-2 border-primary text-primary font-semibold'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+            class="pb-4 px-1 text-sm transition-colors">
+            Completed
+            <span *ngIf="completedPagination?.totalCount"
+              class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
+              {{ completedSessions.length }}
+            </span>
+          </button>
+        </nav>
+        <!-- View Cancelled Sessions Link -->
+        <button (click)="openCancelledModal()" 
+          class="text-sm text-gray-500 dark:text-gray-400 hover:text-primary transition-colors pb-4">
+          View cancelled sessions
         </button>
-        <button (click)="switchTab('past')" [class]="activeTab === 'past'
-            ? 'border-b-2 border-primary text-primary font-semibold'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-          class="pb-4 px-1 text-sm transition-colors">
-          Past
-          <span *ngIf="pastPagination?.totalCount"
-            class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
-            {{ pastPagination?.totalCount }}
-          </span>
-        </button>
-      </nav>
+      </div>
     </div>
 
     <!-- Upcoming Sessions Tab -->
@@ -130,10 +137,10 @@
       </div>
     </div>
 
-    <!-- Past Sessions Tab -->
-    <div *ngIf="activeTab === 'past'">
+    <!-- Completed Sessions Tab -->
+    <div *ngIf="activeTab === 'completed'">
       <!-- Loading State -->
-      <div *ngIf="loadingPast && pastSessions.length === 0"
+      <div *ngIf="loadingCompleted && completedSessions.length === 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div *ngFor="let i of [1, 2, 3]" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 animate-pulse">
           <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
@@ -152,36 +159,36 @@
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="!loadingPast && !hasPastSessions()" class="text-center py-12">
+      <div *ngIf="!loadingCompleted && !hasCompletedSessions()" class="text-center py-12">
         <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor"
           viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Past Sessions</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Completed Sessions</h3>
         <p class="text-gray-600 dark:text-gray-400">
-          You haven't completed any sessions yet.
+          You haven't completed any sessions yet. Your finished sessions with recordings and AI summaries will appear here.
         </p>
       </div>
 
       <!-- Sessions Grid -->
-      <div *ngIf="hasPastSessions()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <app-session-card *ngFor="let session of pastSessions; trackBy: trackBySessionId" [session]="session"
+      <div *ngIf="hasCompletedSessions()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <app-session-card *ngFor="let session of completedSessions; trackBy: trackBySessionId" [session]="session"
           [userRole]="'mentee'" (viewDetails)="onViewDetails($event)">
         </app-session-card>
       </div>
 
       <!-- Pagination -->
-      <div *ngIf="pastPagination && pastPagination.totalPages > 1" class="mt-8 flex justify-center">
+      <div *ngIf="completedPagination && completedPagination.totalPages > 1" class="mt-8 flex justify-center">
         <div class="flex items-center gap-2">
-          <button (click)="goToPastPage(pastPage - 1)" [disabled]="!pastPagination.hasPreviousPage"
+          <button (click)="goToCompletedPage(completedPage - 1)" [disabled]="!completedPagination.hasPreviousPage"
             class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             Previous
           </button>
           <span class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
-            Page {{ pastPagination.currentPage }} of {{ pastPagination.totalPages }}
+            Page {{ completedPagination.currentPage }} of {{ completedPagination.totalPages }}
           </span>
-          <button (click)="goToPastPage(pastPage + 1)" [disabled]="!pastPagination.hasNextPage"
+          <button (click)="goToCompletedPage(completedPage + 1)" [disabled]="!completedPagination.hasNextPage"
             class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             Next
           </button>
@@ -189,10 +196,9 @@
       </div>
 
       <!-- Loading More Indicator -->
-      <div *ngIf="loadingPast && pastSessions.length > 0" class="mt-6 text-center">
+      <div *ngIf="loadingCompleted && completedSessions.length > 0" class="mt-6 text-center">
         <div class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-solid border-primary border-r-transparent">
-          </div>
+          <img src="/logo.png" alt="Loading" class="h-4 w-4 object-contain logo-spin" />
           Loading...
         </div>
       </div>
@@ -213,5 +219,51 @@
   <app-session-payment-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showPaymentModal"
     (closeModal)="onPaymentModalClose()" (paymentSuccess)="onPaymentSuccess()">
   </app-session-payment-modal>
+
+  <!-- Cancelled Sessions Modal -->
+  <div *ngIf="showCancelledModal" class="fixed inset-0 z-50 overflow-y-auto" (click)="closeCancelledModal()">
+    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
+        (click)="$event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Cancelled Sessions</h2>
+          <button (click)="closeCancelledModal()" 
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6 overflow-y-auto max-h-[60vh]">
+          <!-- Loading State -->
+          <div *ngIf="loadingCancelled" class="flex justify-center py-8">
+            <img src="/logo.png" alt="Loading" class="h-12 w-12 object-contain logo-spin" />
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="!loadingCancelled && !hasCancelledSessions()" class="text-center py-8">
+            <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Cancelled Sessions</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any cancelled sessions.</p>
+          </div>
+
+          <!-- Sessions List -->
+          <div *ngIf="!loadingCancelled && hasCancelledSessions()" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <app-session-card *ngFor="let session of cancelledSessions; trackBy: trackBySessionId" 
+              [session]="session"
+              [userRole]="'mentee'" 
+              [showActions]="false">
+            </app-session-card>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 

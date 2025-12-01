@@ -242,6 +242,20 @@ export class SessionCard {
   }
 
   /**
+   * Check if session is cancelled
+   */
+  get isCancelled(): boolean {
+    return this.session.status === SessionStatus.Cancelled;
+  }
+
+  /**
+   * Get cancellation reason (for cancelled sessions)
+   */
+  get cancellationReason(): string | null {
+    return (this.session as PastSessionItem).cancellationReason ?? null;
+  }
+
+  /**
    * Check if session can be joined
    * Can join 15 minutes before to 15 minutes after scheduled end time
    */
