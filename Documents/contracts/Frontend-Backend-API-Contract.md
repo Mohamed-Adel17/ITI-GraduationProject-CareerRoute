@@ -8,15 +8,15 @@
 
 ## 📋 Table of Contents
 1. [API Base URL Configuration](#api-base-url-configuration)
-2. [Authentication Endpoints (T057)](#authentication-endpoints-t057)
-3. [User Profile Endpoints (T058)](#user-profile-endpoints-t058)
+2. [Authentication Endpoints (T057)](./Authentication-Endpoints.md) - **See separate file**
+3. [User Profile Endpoints (T058)](./User-Profile-Endpoints.md) - **See separate file**
 4. [Mentor Profile Endpoints (T059)](#mentor-profile-endpoints-t059)
 5. [JWT Token Structure](#jwt-token-structure)
 6. [Request/Response DTOs](#requestresponse-dtos)
 7. [Error Response Format](#error-response-format)
 8. [CORS Configuration](#cors-configuration)
 9. [User & Mentor Models](#user--mentor-models)
-10. [Category Endpoints](#category-endpoints)
+10. [Category Endpoints (T085, T067)](./Category-Endpoints.md) - **See separate file**
 
 ---
 
@@ -38,797 +38,19 @@ apiUrl: 'http://localhost:5000/api'
 
 ---
 
-## 2. Authentication Endpoints
+## 2. Authentication Endpoints (T057)
 
-### 2.1 User Registration
-**Endpoint:** `POST /api/auth/register`
+**See: [Authentication-Endpoints.md](./Authentication-Endpoints.md)**
 
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "confirmPassword": "SecurePass123!",
-  "firstName": "John",
-  "lastName": "Doe",
-  "phoneNumber": "+1234567890",
-  "careerInterests": "Software Development, Cloud Computing",
-  "careerGoals": "Become a Solutions Architect",
-  "registerAsMentor": false
-}
-```
-
-**Field Requirements:**
-- `email` (string, required): Valid email format
-- `password` (string, required): Minimum 8 characters, at least one uppercase, one lowercase, one number
-- `confirmPassword` (string, required): Must match password
-- `firstName` (string, optional): User's first name (can be empty, defaults to empty string)
-- `lastName` (string, optional): User's last name (can be empty, defaults to empty string)
-- `phoneNumber` (string, optional): User's phone number
-- `careerInterests` (string, optional): User's career interests
-- `careerGoals` (string, optional): User's career goals
-- `registerAsMentor` (boolean, optional): Whether user wants to register as a mentor (default: false)
-
-**Response (Success - 201 Created):**
-```json
-{
-  "success": true,
-  "message": "Registration successful! Please check your email to verify your account.",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "user@example.com",
-  "requiresEmailVerification": true
-}
-```
-
-**Response (Error - 400 Validation Failed):**
-```json
-{
-  "success": false,
-  "message": "Validation failed",
-  "errors": {
-    "Email": ["Email is required", "Email format is invalid"],
-    "Password": ["Password must be at least 8 characters", "Password must contain at least one uppercase letter"],
-    "ConfirmPassword": ["Passwords do not match"]
-  },
-  "statusCode": 400
-}
-```
-
-**Response (Error - 409 Conflict - Email Already Exists):**
-```json
-{
-  "success": false,
-  "message": "Email already registered",
-  "errors": {
-    "Email": ["Email is already in use"]
-  },
-  "statusCode": 409
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/register`
-- Backend should:
-  - Validate all required fields (email, password, confirmPassword)
-  - Check if email already exists in database (return 409 if exists)
-  - Validate password strength (min 8 chars, uppercase, lowercase, number)
-  - Validate password and confirmPassword match
-  - Hash the password before storing
-  - Create new user record with provided information
-  - Set `emailConfirmed` to `false` initially
-  - Generate unique email verification token
-  - Store verification token with expiration (recommend 24-48 hours)
-  - Send verification email with link: `/auth/verify-email?userId={userId}&token={verificationToken}`
-  - Return success response with userId and email
-  - Do NOT send verification token in response (security - only via email)
-
-**Note:** The frontend currently sends minimal data (email, password, registerAsMentor) as firstName and lastName are commented out in the component. Backend should handle both cases - with or without firstName/lastName.
-
----
-
-### 2.2 User Login
-**Endpoint:** `POST /api/auth/login`
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "rememberMe": true
-}
-```
-
-**Field Requirements:**
-- `email` (string, required): User's email address
-- `password` (string, required): User's password
-- `rememberMe` (boolean, optional): Extend token expiration if true (default: false)
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh-token-string",
-  "expiresIn": 3600,
-  "tokenType": "Bearer",
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "emailConfirmed": true,
-    "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null,
-    "profilePictureUrl": "https://example.com/profile.jpg"
-  }
-}
-```
-
-**Response (Error - 401 Unauthorized - Invalid Credentials):**
-```json
-{
-  "success": false,
-  "message": "Invalid email or password",
-  "statusCode": 401
-}
-```
-
-**Response (Error - 403 Forbidden - Email Not Verified):**
-```json
-{
-  "success": false,
-  "message": "Please verify your email address before logging in. Check your inbox for the verification link.",
-  "statusCode": 403,
-  "errors": {
-    "EmailConfirmed": ["Email address not verified"]
-  }
-}
-```
-
-**Response (Error - 403 Forbidden - Account Locked/Disabled):**
-```json
-{
-  "success": false,
-  "message": "Your account has been disabled. Please contact support.",
-  "statusCode": 403
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/login`
-- Backend should:
-  - Validate email and password are provided
-  - Find user by email in database
-  - Verify password hash matches
-  - **Check if email is verified (`emailConfirmed === true`):**
-    - If not verified, return 403 with appropriate message
-    - Include option to resend verification email
-  - Check if account is active/not disabled
-  - Generate JWT access token with all required claims (see Section 5)
-  - Generate refresh token for token rotation
-  - Set token expiration based on `rememberMe`:
-    - `rememberMe: true` → Longer expiration (e.g., 7 days)
-    - `rememberMe: false` → Standard expiration (e.g., 1 hour)
-  - Update user's `lastLoginDate` in database
-  - Return tokens and user data
-  - Log successful login for security auditing
-
-**Security Considerations:**
-- Use generic error message for invalid credentials (don't reveal if email exists)
-- Implement rate limiting to prevent brute force attacks
-- Consider implementing account lockout after N failed attempts
-- Log failed login attempts for security monitoring
-
----
-
-### 2.3 Token Refresh
-**Endpoint:** `POST /api/auth/refresh`
-
-**Request Body:**
-```json
-{
-  "token": "current-access-token",
-  "refreshToken": "current-refresh-token"
-}
-```
-
-**Field Requirements:**
-- `token` (string, required): Current JWT access token (can be expired)
-- `refreshToken` (string, required): Current refresh token (must be valid)
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new-token...",
-  "refreshToken": "new-refresh-token-string",
-  "expiresIn": 3600
-}
-```
-
-**Response (Error - 401 Unauthorized - Invalid Refresh Token):**
-```json
-{
-  "success": false,
-  "message": "Invalid or expired refresh token. Please log in again.",
-  "statusCode": 401
-}
-```
-
-**Response (Error - 401 Unauthorized - Token Mismatch):**
-```json
-{
-  "success": false,
-  "message": "Token validation failed",
-  "statusCode": 401
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/refresh`
-- Backend should:
-  - **Accept expired access tokens** (frontend refreshes before/after expiration)
-  - Validate refresh token exists and is not expired
-  - Validate refresh token matches the user from access token
-  - Verify refresh token hasn't been revoked/used (if implementing token rotation)
-  - Extract user ID from the old access token
-  - Fetch latest user data from database (roles may have changed)
-  - Generate new JWT access token with updated user data
-  - Generate new refresh token (implement refresh token rotation)
-  - **Invalidate old refresh token** (mark as used/revoked)
-  - Store new refresh token in database with expiration
-  - Return new tokens with expiration time
-  - Log token refresh for security auditing
-
-**Token Rotation Security:**
-- Implement refresh token rotation (one-time use tokens)
-- Revoke old refresh token when new one is issued
-- Detect refresh token reuse attacks (if old token used again, revoke all user's tokens)
-- Store refresh tokens in database with expiration timestamps
-- Clean up expired tokens periodically
-
-**Frontend Auto-Refresh:**
-- Frontend automatically refreshes tokens **5 minutes before expiration**
-- Frontend uses timer based on `expiresIn` value from login/refresh response
-- If refresh fails (401), frontend logs user out automatically
-
----
-
-### 2.4 Email Verification
-**Endpoint:** `POST /api/auth/verify-email`
-
-**Request Body:**
-```json
-{
-  "userId": "user-guid",
-  "token": "email-verification-token"
-}
-```
-
-**Response (Success - 200, Auto-Login Enabled):**
-```json
-{
-  "success": true,
-  "message": "Email verified successfully! Logging you in...",
-  "autoLogin": true,
-  "loginToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh-token-string",
-  "user": {
-    "id": "user-guid",
-    "email": "user@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "emailConfirmed": true,
-    "roles": ["User"],
-    "isMentor": false
-  }
-}
-```
-
-**Response (Success - 200, Auto-Login Disabled):**
-```json
-{
-  "success": true,
-  "message": "Email verified successfully! You can now log in.",
-  "autoLogin": false,
-  "loginToken": null,
-  "refreshToken": null,
-  "user": null
-}
-```
-
-**Response (Error - 400 Invalid/Expired Token):**
-```json
-{
-  "success": false,
-  "message": "Invalid or expired verification link",
-  "statusCode": 400
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/verify-email`
-- Request body: `{ "userId": "user-guid", "token": "verification-token" }`
-- Backend should:
-  - Validate token exists and is not expired
-  - Validate token matches the userId
-  - Update user's `emailConfirmed` field to `true`
-  - Invalidate the verification token (mark as used/delete)
-  - **Option 1 - Auto-Login (Recommended):**
-    - Generate JWT access token and refresh token
-    - Return `autoLogin: true` with tokens and user data
-    - Frontend automatically logs user in after verification
-  - **Option 2 - Manual Login:**
-    - Return `autoLogin: false` with null tokens
-    - User must manually navigate to login page
-  - Return appropriate success/error response
-
-**Note:** The `autoLogin` feature provides better UX by automatically logging the user in after email verification, eliminating the need for them to manually enter credentials again.
-
----
-
-### 2.5 Resend Email Verification
-**Endpoint:** `POST /api/auth/resend-verification`
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-**Field Requirements:**
-- `email` (string, required): User's email address
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "message": "Verification email has been sent. Please check your inbox."
-}
-```
-
-**Response (Error - 400 Email Already Verified):**
-```json
-{
-  "success": false,
-  "message": "Email address is already verified",
-  "statusCode": 400
-}
-```
-
-**Response (Error - 429 Too Many Requests):**
-```json
-{
-  "success": false,
-  "message": "Please wait before requesting another verification email",
-  "statusCode": 429
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/resend-verification`
-- Backend should:
-  - Find user by email
-  - Check if email is already verified (return 400 if already verified)
-  - Check rate limiting (e.g., max 1 request per 5 minutes per email)
-  - Invalidate previous verification token
-  - Generate new verification token with expiration
-  - Send new verification email with link
-  - Return success response **even if email doesn't exist** (security best practice)
-  - Log resend attempts for monitoring
-
-**Rate Limiting:**
-- Limit to 1 resend per 5 minutes per email address
-- Prevent spam and abuse
-- Return 429 status code if rate limit exceeded
-
----
-
-### 2.6 Forgot Password (Initiate Reset)
-**Endpoint:** `POST /api/auth/forgot-password`
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-**Field Requirements:**
-- `email` (string, required): User's email address
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "message": "If an account with that email exists, a password reset link has been sent. Please check your inbox."
-}
-```
-
-**Response (Error - 400 Validation Failed):**
-```json
-{
-  "success": false,
-  "message": "Invalid email format",
-  "errors": {
-    "Email": ["Please enter a valid email address"]
-  },
-  "statusCode": 400
-}
-```
-
-**Response (Error - 429 Too Many Requests):**
-```json
-{
-  "success": false,
-  "message": "Too many password reset requests. Please try again later.",
-  "statusCode": 429
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/forgot-password`
-- Request body: `{ "email": "user@example.com" }`
-- Backend should:
-  - Validate email format
-  - Check rate limiting (e.g., max 3 requests per hour per IP/email)
-  - Find user by email in database
-  - **If user exists:**
-    - Generate unique, time-limited reset token (recommend 1-2 hour expiration)
-    - Store token in database with email association and expiration timestamp
-    - Invalidate any previous unused reset tokens for this email
-    - Send email containing reset link: `/auth/reset-password?email=user@example.com&token=abc123xyz`
-  - **If user doesn't exist:**
-    - Do nothing (don't send email)
-  - Return **same success response regardless** (security best practice to prevent email enumeration)
-  - Log reset attempts for security monitoring
-
-**Security Considerations:**
-- Always return the same success message (don't reveal if email exists)
-- Implement rate limiting to prevent abuse
-- Use cryptographically secure random tokens
-- Set short expiration time (1-2 hours maximum)
-- Invalidate token after successful password reset
-- Log all reset attempts with timestamp and IP address
-
----
-
-### 2.7 Reset Password (Complete Reset)
-**Endpoint:** `POST /api/auth/reset-password`
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "token": "password-reset-token",
-  "newPassword": "NewSecurePass123!",
-  "confirmPassword": "NewSecurePass123!"
-}
-```
-
-**Field Requirements:**
-- `email` (string, required): User's email address from reset link
-- `token` (string, required): Password reset token from email link
-- `newPassword` (string, required): New password (min 8 chars, uppercase, lowercase, number)
-- `confirmPassword` (string, required): Must match newPassword
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "message": "Your password has been reset successfully. You can now log in with your new password."
-}
-```
-
-**Response (Error - 400 Invalid/Expired Token):**
-```json
-{
-  "success": false,
-  "message": "Invalid or expired password reset link. Please request a new password reset.",
-  "statusCode": 400
-}
-```
-
-**Response (Error - 400 Validation Failed):**
-```json
-{
-  "success": false,
-  "message": "Password validation failed",
-  "errors": {
-    "NewPassword": ["Password must be at least 8 characters", "Password must contain at least one uppercase letter"],
-    "ConfirmPassword": ["Passwords do not match"]
-  },
-  "statusCode": 400
-}
-```
-
-**Response (Error - 400 Token/Email Mismatch):**
-```json
-{
-  "success": false,
-  "message": "Invalid password reset request",
-  "statusCode": 400
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/reset-password`
-- Request body:
-  ```json
-  {
-    "email": "user@example.com",
-    "token": "abc123xyz",
-    "newPassword": "NewSecurePass123!",
-    "confirmPassword": "NewSecurePass123!"
-  }
-  ```
-- Backend should:
-  - Validate all required fields are provided
-  - Find reset token in database by token and email
-  - Validate token exists and is not expired (check expiration timestamp)
-  - Validate token matches the email
-  - Validate newPassword meets security requirements (min 8 chars, complexity)
-  - Validate newPassword === confirmPassword
-  - Prevent password reuse (optional: check against previous N passwords)
-  - Hash the new password using strong hashing algorithm
-  - Update user's password in database
-  - **Invalidate the reset token** (mark as used or delete)
-  - Invalidate all existing refresh tokens for this user (force re-login)
-  - Log successful password reset for security auditing
-  - Optionally send confirmation email to user
-  - Return success response
-
-**Security Considerations:**
-- Use same error message for all validation failures (don't reveal specific issues)
-- Invalidate token immediately after use (one-time use)
-- Consider invalidating all active sessions after password reset
-- Log password reset completion with timestamp and IP
-- Optionally notify user via email that password was changed
-
----
-
-### 2.8 Change Password (Logged-in User)
-**Endpoint:** `POST /api/auth/change-password`
-
-**Headers:**
-```
-Authorization: Bearer {access-token}
-```
-
-**Request Body:**
-```json
-{
-  "currentPassword": "OldPass123!",
-  "newPassword": "NewPass123!",
-  "confirmPassword": "NewPass123!"
-}
-```
-
-**Field Requirements:**
-- `currentPassword` (string, required): User's current password for verification
-- `newPassword` (string, required): New password (min 8 chars, uppercase, lowercase, number)
-- `confirmPassword` (string, required): Must match newPassword
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "message": "Your password has been changed successfully."
-}
-```
-
-**Response (Error - 400 Current Password Incorrect):**
-```json
-{
-  "success": false,
-  "message": "Current password is incorrect",
-  "errors": {
-    "CurrentPassword": ["The current password you entered is incorrect"]
-  },
-  "statusCode": 400
-}
-```
-
-**Response (Error - 400 Validation Failed):**
-```json
-{
-  "success": false,
-  "message": "Password validation failed",
-  "errors": {
-    "NewPassword": ["Password must be at least 8 characters", "Password must contain at least one number"],
-    "ConfirmPassword": ["Passwords do not match"]
-  },
-  "statusCode": 400
-}
-```
-
-**Response (Error - 400 Same as Current Password):**
-```json
-{
-  "success": false,
-  "message": "New password must be different from current password",
-  "errors": {
-    "NewPassword": ["New password cannot be the same as current password"]
-  },
-  "statusCode": 400
-}
-```
-
-**Response (Error - 401 Unauthorized):**
-```json
-{
-  "success": false,
-  "message": "Unauthorized access",
-  "statusCode": 401
-}
-```
-
-**Expected Backend Behavior:**
-- Endpoint: `POST /api/auth/change-password`
-- **Requires Authentication:** Extract user ID from JWT token
-- Backend should:
-  - Validate access token and extract user ID
-  - Find user in database by ID
-  - Verify currentPassword matches user's stored password hash
-  - Validate newPassword meets security requirements
-  - Validate newPassword === confirmPassword
-  - Ensure newPassword is different from currentPassword
-  - Prevent password reuse (optional: check against previous N passwords)
-  - Hash the new password
-  - Update user's password in database
-  - Invalidate all existing refresh tokens except current one (optional)
-  - Log password change for security auditing
-  - Optionally send confirmation email to user
-  - Return success response
-
-**Security Considerations:**
-- Require current password to prevent unauthorized changes if device is left unlocked
-- Implement rate limiting (e.g., max 5 attempts per hour)
-- Log all password change attempts (successful and failed)
-- Notify user via email that password was changed
-- Consider requiring re-authentication after password change
-- Optionally invalidate all other sessions (force re-login on other devices)
+All authentication endpoints (register, login, token refresh, email verification, password reset) have been moved to a separate document for better organization.
 
 ---
 
 ## 3. User Profile Endpoints (T058)
 
-### 3.1 Get User Profile
-**Endpoint:** `GET /api/users/{id}`
+**See: [User-Profile-Endpoints.md](./User-Profile-Endpoints.md)**
 
-**Headers:**
-```
-Authorization: Bearer {access-token}
-```
-
-**Path Parameters:**
-- `id` (string, GUID): User ID to retrieve
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "john.doe@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "emailConfirmed": true,
-    "phoneNumber": "+1234567890",
-    "profilePictureUrl": "https://example.com/profiles/john.jpg",
-    "careerInterests": "Software Development, Cloud Computing",
-    "careerGoals": "Become a Solutions Architect",
-    "registrationDate": "2025-01-15T10:30:00Z",
-    "lastLoginDate": "2025-10-29T14:20:00Z",
-    "isActive": true,
-    "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null
-  }
-}
-```
-
-**Response (Error - 401 Unauthorized):**
-```json
-{
-  "success": false,
-  "message": "Unauthorized access",
-  "statusCode": 401
-}
-```
-
-**Response (Error - 404 Not Found):**
-```json
-{
-  "success": false,
-  "message": "User not found",
-  "statusCode": 404
-}
-```
-
-**Authorization:**
-- Users can view their own profile
-- Admins can view any user profile
-
----
-
-### 3.2 Update User Profile
-**Endpoint:** `PUT /api/users/{id}`
-
-**Headers:**
-```
-Authorization: Bearer {access-token}
-```
-
-**Path Parameters:**
-- `id` (string, GUID): User ID to update
-
-**Request Body:**
-```json
-{
-  "firstName": "John",
-  "lastName": "Doe",
-  "phoneNumber": "+1234567890",
-  "careerInterests": "Software Development, AI, Cloud Computing",
-  "careerGoals": "Become a Solutions Architect within 2 years",
-  "profilePictureUrl": "https://example.com/profiles/john-new.jpg"
-}
-```
-
-**Note:** Email cannot be changed via this endpoint. Use change email flow if needed.
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "message": "Profile updated successfully",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "john.doe@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "emailConfirmed": true,
-    "phoneNumber": "+1234567890",
-    "profilePictureUrl": "https://example.com/profiles/john-new.jpg",
-    "careerInterests": "Software Development, AI, Cloud Computing",
-    "careerGoals": "Become a Solutions Architect within 2 years",
-    "registrationDate": "2025-01-15T10:30:00Z",
-    "lastLoginDate": "2025-10-29T14:20:00Z",
-    "isActive": true,
-    "roles": ["User"],
-    "isMentor": false,
-    "mentorId": null
-  }
-}
-```
-
-**Response (Error - 400 Validation Error):**
-```json
-{
-  "success": false,
-  "message": "Validation failed",
-  "errors": {
-    "FirstName": ["First name is required"],
-    "PhoneNumber": ["Invalid phone number format"]
-  },
-  "statusCode": 400
-}
-```
-
-**Response (Error - 403 Forbidden):**
-```json
-{
-  "success": false,
-  "message": "You can only update your own profile",
-  "statusCode": 403
-}
-```
-
-**Authorization:**
-- Users can only update their own profile
-- Admins can update any user profile
+All user profile endpoints (get profile, update profile) have been moved to a separate document for better organization.
 
 ---
 
@@ -1228,7 +450,7 @@ app.UseCors("AllowFrontend");
   "lastName": "string",
   "phoneNumber": "string | null",
   "profilePictureUrl": "string | null",
-  "careerInterests": "string | null",
+  "careerInterests": "string[] | null",
   "careerGoals": "string | null",
   "registrationDate": "ISO 8601 date string",
   "lastLoginDate": "ISO 8601 date string | null",
@@ -1249,7 +471,7 @@ app.UseCors("AllowFrontend");
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
   "profilePictureUrl": "https://example.com/profiles/john.jpg",
-  "careerInterests": "Software Development, Cloud Computing",
+  "careerInterests": ["Software Development", "Cloud Computing", "Data Science"],
   "careerGoals": "Become a Solutions Architect",
   "registrationDate": "2025-01-15T10:30:00Z",
   "lastLoginDate": "2025-10-29T14:20:00Z",
@@ -1320,154 +542,13 @@ app.UseCors("AllowFrontend");
   "approvedDate": "2025-01-25T15:30:00Z"
 }
 ```
-
 ---
 
-## 10. Category Endpoints (T085)
+## 10. Category Endpoints (T085, T067)
 
-### 10.1 Get All Categories
-**Endpoint:** `GET /api/categories`
+**See: [Category-Endpoints.md](./Category-Endpoints.md)**
 
-**Headers:**
-```
-Authorization: Bearer {access-token} (optional - public endpoint)
-```
-
-**Query Parameters:**
-- None (returns all active categories)
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "IT Careers",
-      "description": "Information Technology and Software Development career guidance",
-      "iconUrl": "https://example.com/icons/it.svg",
-      "mentorCount": 45
-    },
-    {
-      "id": 2,
-      "name": "Business & Finance",
-      "description": "Business strategy, finance, and entrepreneurship mentorship",
-      "iconUrl": "https://example.com/icons/business.svg",
-      "mentorCount": 32
-    },
-    {
-      "id": 3,
-      "name": "Healthcare",
-      "description": "Medical and healthcare career mentorship",
-      "iconUrl": "https://example.com/icons/healthcare.svg",
-      "mentorCount": 18
-    }
-  ]
-}
-```
-
-**Category Model:**
-```typescript
-{
-  "id": "number",
-  "name": "string",
-  "description": "string | null",
-  "iconUrl": "string | null",
-  "mentorCount": "number (optional)"
-}
-```
-
-**Note:** This is a public endpoint - can be accessed without authentication for browsing.
-
----
-
-### 10.2 Get Mentors by Category
-**Endpoint:** `GET /api/categories/{id}/mentors`
-
-**Headers:**
-```
-Authorization: Bearer {access-token} (optional - public endpoint)
-```
-
-**Path Parameters:**
-- `id` (number): Category ID
-
-**Query Parameters:**
-- `page` (number, optional): Page number (default: 1)
-- `pageSize` (number, optional): Items per page (default: 10, max: 50)
-- `sortBy` (string, optional): Sort field - `rating`, `price`, `experience`, `sessions` (default: `rating`)
-- `sortOrder` (string, optional): `asc` or `desc` (default: `desc`)
-- `minPrice` (decimal, optional): Minimum 30-min rate filter
-- `maxPrice` (decimal, optional): Maximum 30-min rate filter
-- `minRating` (decimal, optional): Minimum rating filter (0-5)
-- `keywords` (string, optional): Search in bio and expertise tags
-
-**Example Request:**
-```
-GET /api/categories/1/mentors?page=1&pageSize=10&sortBy=rating&minRating=4.0&keywords=react
-```
-
-**Response (Success - 200):**
-```json
-{
-  "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "550e8400-e29b-41d4-a716-446655440000",
-        "bio": "Senior Software Engineer with 10 years...",
-        "expertiseTags": "React, Node.js, AWS, Docker, Kubernetes",
-        "yearsOfExperience": 10,
-        "rate30Min": 50.00,
-        "rate60Min": 90.00,
-        "averageRating": 4.8,
-        "totalReviews": 45,
-        "totalSessionsCompleted": 120,
-        "isVerified": true,
-        "isAvailable": true,
-        "user": {
-          "id": "550e8400-e29b-41d4-a716-446655440000",
-          "firstName": "John",
-          "lastName": "Doe",
-          "profilePictureUrl": "https://example.com/profiles/john.jpg"
-        }
-      }
-    ],
-    "totalCount": 45,
-    "page": 1,
-    "pageSize": 10,
-    "totalPages": 5
-  }
-}
-```
-
-**Response (Error - 404 Not Found):**
-```json
-{
-  "success": false,
-  "message": "Category not found",
-  "statusCode": 404
-}
-```
-
-**Pagination Response Schema:**
-```typescript
-{
-  "items": "Mentor[]",
-  "totalCount": "number",
-  "page": "number",
-  "pageSize": "number",
-  "totalPages": "number"
-}
-```
-
-**Business Rules:**
-- Only returns mentors with `approvalStatus: "Approved"`
-- Only returns mentors with `isAvailable: true` (unless user is viewing their own profile)
-- Results are paginated (default 10 per page, max 50)
-- Default sort by rating (highest first)
-
-**Note:** This is a public endpoint - can be accessed without authentication for browsing mentors.
+All category endpoints (CRUD operations, get mentors by category) have been moved to a separate document for better organization.
 
 ---
 
@@ -1671,8 +752,33 @@ Backend should implement **server-side validation** for all fields to prevent ma
   - [ ] Not found (404)
 
 - [ ] **GET /api/categories**
-  - [ ] Success case (returns all categories)
+  - [ ] Success case (returns all active categories)
+  - [ ] Success with type filter (`?type=CareerInterest`)
   - [ ] Empty result when no categories exist
+  - [ ] Sorted by displayOrder then name
+
+- [ ] **GET /api/categories/{id}**
+  - [ ] Success case (returns single category)
+  - [ ] Not found (404) - invalid ID
+
+- [ ] **POST /api/categories**
+  - [ ] Success case (admin creates category)
+  - [ ] Validation errors (400) - missing name, invalid type
+  - [ ] Duplicate name (400) - name exists for same type
+  - [ ] Unauthorized (401) - not logged in
+  - [ ] Forbidden (403) - not admin
+
+- [ ] **PUT /api/categories/{id}**
+  - [ ] Success case (admin updates category)
+  - [ ] Validation errors (400)
+  - [ ] Forbidden (403) - not admin
+  - [ ] Not found (404) - invalid ID
+
+- [ ] **DELETE /api/categories/{id}**
+  - [ ] Success case (admin deletes category)
+  - [ ] Category in use (400) - referenced by users/mentors
+  - [ ] Forbidden (403) - not admin
+  - [ ] Not found (404) - invalid ID
 
 - [ ] **GET /api/categories/{id}/mentors**
   - [ ] Success case with pagination
@@ -1764,17 +870,7 @@ Access-Control-Allow-Credentials: true
 
 ---
 
-## 18. Contact & Questions
-
-### Frontend Developer
-- **Name:** [Your Name]
-- **Email:** [Your Email]
-- **Tasks Completed:** T061, T062, T063, T064
-
-### Documentation References
-- Frontend Models: `Frontend/src/app/shared/models/`
-- Auth Service: `Frontend/src/app/core/services/auth.service.ts`
-- Environment Config: `Frontend/src/environments/`
+## 18. Questions
 
 ### Questions to Clarify with Backend Team
 
@@ -1843,7 +939,7 @@ Content-Type: application/json
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+1234567890",
-  "careerInterests": "Software Development, AI",
+  "careerInterests": ["Software Development", "AI", "Cloud Computing"],
   "careerGoals": "Become a Solutions Architect"
 }
 ```
@@ -1936,8 +1032,15 @@ GET http://localhost:5000/api/categories/1/mentors?page=1&pageSize=10&sortBy=rat
 - [ ] Mentor profile shows correct approval status
 - [ ] Public can view approved mentor profiles
 
-**Categories (T085):**
+**Categories (T085, T067):**
 - [ ] Public can browse all categories
+- [ ] Categories can be filtered by type (CareerInterest, MentorSpecialization)
+- [ ] Categories are sorted by displayOrder then name
+- [ ] At least 20 career interests available
+- [ ] Admin can create new categories
+- [ ] Admin can update existing categories
+- [ ] Admin can delete categories (with validation)
+- [ ] Users can see career interests in edit profile page
 - [ ] Public can view mentors by category
 - [ ] Filtering by price, rating, keywords works
 - [ ] Sorting by rating, price, experience works
@@ -1950,71 +1053,6 @@ GET http://localhost:5000/api/categories/1/mentors?page=1&pageSize=10&sortBy=rat
 - [ ] All endpoints return correct status codes
 - [ ] JWT token includes all required claims
 - [ ] Validation errors show field-specific messages
-
----
-
-**Document Version:** 2.2
-**Last Updated:** 2025-10-30
-**Frontend Tasks Completed:** T061, T062, T063, T064, T065 (UserService)
-**Frontend Tasks In Progress:** T066 (MentorService - Partial)
-**Backend Tasks Covered:** T057, T058, T059, T085
-**Next Frontend Tasks:** T066 (MentorService - Complete), T067 (Category Service)
-
----
-
-## 22. Frontend Implementation Status
-
-### T061 - T064: Auth Service & Infrastructure (Completed)
-- ✅ AuthService with full authentication flows (login, register, logout, token refresh)
-- ✅ Email verification and password reset flows
-- ✅ Auth guards for route protection (authGuard, guestGuard, role-based guards)
-- ✅ HTTP interceptors (authInterceptor for token attachment, errorInterceptor for global error handling)
-- ✅ NotificationService for user feedback
-
-### T065: UserService (Completed ✅)
-- ✅ `getUserProfile(userId)`: Retrieve user profile by ID
-- ✅ `getCurrentUserProfile()`: Get authenticated user's profile
-- ✅ `updateUserProfile(userId, profileUpdate)`: Update user profile
-- ✅ `updateCurrentUserProfile(profileUpdate)`: Update current user's profile
-- ✅ Profile caching for performance optimization
-- ✅ Cached access methods: `getCachedUserProfile()`, `getCachedCurrentUserProfile()`
-- ✅ Profile refresh: `refreshCurrentUserProfile()`
-- ✅ Helper methods: `formatUserFullName()`, `getUserInitials()`, `userHasRole()`, `currentUserIsMentor()`
-- ✅ Observable streams: `currentUserProfile$` for reactive UI updates
-- ✅ Error handling with automatic notifications
-- ✅ Integration with AuthService and NotificationService
-
-**Implementation Location:** `Frontend/src/app/core/services/user.service.ts`
-**Documentation:** `Frontend/src/app/core/services/README.md`
-
-### T066: MentorService (In Progress 🔄)
-- ✅ `applyToBecomeMentor(application)`: Submit mentor application
-- ✅ `getMentorProfile(mentorId)`: Get mentor profile by ID
-- ✅ `getCurrentMentorProfile()`: Get authenticated user's mentor profile
-- ✅ `updateMentorProfile(mentorId, profileUpdate)`: Update mentor profile
-- ✅ `updateCurrentMentorProfile(profileUpdate)`: Update current user's profile
-- ✅ Profile caching for performance optimization
-- ✅ Cached access methods: `getCachedMentorProfile()`, `getCachedCurrentMentorProfile()`
-- ✅ Application status tracking: `getMentorApplicationStatusObs()`
-- ✅ Status checking methods: `isCurrentUserApprovedMentor()`, `hasCurrentUserPendingApplication()`
-- ✅ Helper methods: `calculateProfileCompletionPercentage()`, `hasAppliedToBecomeMentor()`
-- ✅ Observable streams: `currentMentorProfile$`, `mentorApplication$` for reactive UI
-- ✅ Error handling with automatic notifications
-- ✅ Integration with AuthService and NotificationService
-
-**Implementation Location:** `Frontend/src/app/core/services/mentor.service.ts`
-**Documentation:** `Frontend/src/app/core/services/README.md`
-
-**Partial Implementation Covers:**
-- Apply to become mentor (POST /api/mentors)
-- Get mentor profile (GET /api/mentors/{id})
-- Update mentor profile (PUT /api/mentors/{id})
-
-**Not Yet Implemented (T066 Future):**
-- Mentor search and filtering
-- Mentor listing by category
-- Category endpoints
-- Mentor statistics and analytics
 
 ---
 

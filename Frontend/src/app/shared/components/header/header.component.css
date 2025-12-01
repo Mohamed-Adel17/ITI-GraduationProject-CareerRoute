@@ -1,0 +1,154 @@
+/* Header Component Styles */
+
+/* Smooth transitions for all interactive elements */
+.site-header a,
+.site-header button {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Focus visible styles for accessibility */
+.site-header a:focus-visible,
+.site-header button:focus-visible {
+  outline: 2px solid #1193d4;
+  outline-offset: 2px;
+}
+
+/* User menu dropdown animation */
+.site-header [role="menu"] {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile menu animation */
+.site-header nav[aria-label="Mobile navigation"] {
+  animation: slideDown 0.2s ease-out;
+}
+
+/* Avatar hover effect */
+.site-header img[alt],
+.site-header .h-8.w-8.rounded-full {
+  transition: transform 0.2s ease-in-out;
+}
+
+.site-header button:hover img[alt],
+.site-header button:hover .h-8.w-8.rounded-full {
+  transform: scale(1.05);
+}
+
+/* Dropdown arrow rotation */
+.site-header svg.rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* Active link indicator */
+.site-header a[routerLinkActive] {
+  position: relative;
+}
+
+/* Desktop navigation active state underline */
+@media (min-width: 1024px) {
+  .site-header nav[aria-label="Main navigation"] a.text-primary::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #1193d4;
+  }
+}
+
+/* Ensure dropdown is above other content */
+.site-header [role="menu"] {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .site-header [role="menu"] {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Smooth scrolling for sticky header */
+.site-header {
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Mobile menu item hover effect */
+.site-header nav[aria-label="Mobile navigation"] a {
+  border-left: 3px solid transparent;
+}
+
+.site-header nav[aria-label="Mobile navigation"] a:hover {
+  border-left-color: #1193d4;
+}
+
+.site-header nav[aria-label="Mobile navigation"] a.bg-primary\/10 {
+  border-left-color: #1193d4;
+}
+
+/* User menu item icons alignment */
+.site-header [role="menuitem"] span {
+  display: flex;
+  align-items: center;
+}
+
+/* Hamburger menu animation */
+.site-header button[aria-label="Toggle navigation menu"] svg {
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Logo hover effect */
+.site-header a[routerLink="/"] svg {
+  transition: transform 0.3s ease-in-out;
+}
+
+.site-header a[routerLink="/"]:hover svg {
+  transform: scale(1.1) scaleX(-1);
+}
+
+/* Responsive container adjustments */
+@media (max-width: 640px) {
+  .site-header .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Ensure proper z-index stacking */
+.site-header {
+  z-index: 1000;
+}
+
+.site-header [role="menu"] {
+  z-index: 1001;
+}
+
+/* Solid background - no transparency or blur */
+.site-header {
+  background-color: #ffffff;
+}
+
+/* @media (prefers-color-scheme: dark) {
+  .site-header {
+    background-color: #101c22;
+  }
+} */
+
+/* Print styles - hide header when printing */
+@media print {
+  .site-header {
+    display: none;
+  }
+}

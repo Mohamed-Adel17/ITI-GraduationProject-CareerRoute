@@ -1,0 +1,152 @@
+<div *ngIf="isOpen" class="modal-backdrop" (click)="onBackdropClick($event)" (keydown)="onEscapeKey($event)" tabindex="-1">
+  <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h2 id="modal-title" class="modal-title">Reschedule Session</h2>
+      <button type="button" class="close-button" (click)="close()" [disabled]="isSubmitting" aria-label="Close modal">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <!-- Current Session Details -->
+      <div class="session-details">
+        <h3 class="section-title">Current Session</h3>
+        <div class="detail-item">
+          <span class="detail-label">Mentor:</span>
+          <span class="detail-value">{{ participantName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Current Date & Time:</span>
+          <span class="detail-value">{{ originalDateTime }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Topic:</span>
+          <span class="detail-value">{{ session.topic || 'No topic specified' }}</span>
+        </div>
+      </div>
+
+      <!-- Info Message -->
+      <div class="info-message">
+        <svg class="info-icon" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+        <p>Reschedule requests require mentor approval. The new time must be at least 24 hours in the future.</p>
+      </div>
+
+      <!-- Reschedule Form -->
+      <form [formGroup]="rescheduleForm" (ngSubmit)="onSubmit()">
+        <!-- Slot Picker for Mentee -->
+        <div *ngIf="userRole === 'mentee'" class="form-group">
+          <label class="form-label">
+            Select New Time Slot <span class="required">*</span>
+          </label>
+          
+          <!-- Loading State -->
+          <div *ngIf="isLoadingSlots" class="slots-loading">
+            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Loading available slots...</span>
+          </div>
+
+          <!-- No Slots Available -->
+          <div *ngIf="!isLoadingSlots && availableSlots.length === 0" class="no-slots">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>No available slots. The mentor hasn't added any availability yet.</span>
+          </div>
+
+          <!-- Slot List -->
+          <div *ngIf="!isLoadingSlots && availableSlots.length > 0" class="slots-list">
+            <button
+              *ngFor="let slot of availableSlots"
+              type="button"
+              class="slot-item"
+              [class.selected]="selectedSlot?.id === slot.id"
+              (click)="selectSlot(slot)"
+            >
+              <span class="slot-date">{{ formatSlotDisplay(slot) }}</span>
+            </button>
+          </div>
+          <div class="help-text">
+            Choose from the mentor's available time slots
+          </div>
+        </div>
+
+        <!-- DateTime Picker for Mentor -->
+        <div *ngIf="userRole === 'mentor'" class="form-group">
+          <label for="newScheduledStartTime" class="form-label">
+            New Date & Time <span class="required">*</span>
+          </label>
+          <input
+            type="datetime-local"
+            id="newScheduledStartTime"
+            formControlName="newScheduledStartTime"
+            class="form-input"
+            [class.error]="hasError('newScheduledStartTime', 'required') || hasError('newScheduledStartTime', 'futureTime')"
+            [min]="minDateTime"
+          />
+          <div class="help-text">
+            Select a new date and time at least 24 hours from now
+          </div>
+          <div *ngIf="hasError('newScheduledStartTime', 'required') || hasError('newScheduledStartTime', 'futureTime')" class="error-message">
+            {{ getErrorMessage('newScheduledStartTime') }}
+          </div>
+        </div>
+
+        <!-- Reason Field -->
+        <div class="form-group">
+          <label for="reason" class="form-label">
+            Reason for Rescheduling <span class="required">*</span>
+          </label>
+          <textarea
+            id="reason"
+            formControlName="reason"
+            class="form-textarea"
+            [class.error]="hasError('reason', 'required') || hasError('reason', 'minlength') || hasError('reason', 'maxlength')"
+            rows="4"
+            placeholder="Please explain why you need to reschedule (minimum 10 characters)"
+          ></textarea>
+          <div class="character-count">
+            {{ rescheduleForm.get('reason')?.value?.length || 0 }} / 500 characters
+          </div>
+          <div *ngIf="hasError('reason', 'required') || hasError('reason', 'minlength') || hasError('reason', 'maxlength')" class="error-message">
+            {{ getErrorMessage('reason') }}
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="close()"
+            [disabled]="isSubmitting"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isSubmitting || !canSubmit"
+          >
+            <span *ngIf="!isSubmitting">Request Reschedule</span>
+            <span *ngIf="isSubmitting" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Submitting...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

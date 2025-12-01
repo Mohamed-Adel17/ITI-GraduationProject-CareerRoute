@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { Subscription } from 'rxjs';
 import {
@@ -48,6 +49,8 @@ import {
   ]
 })
 export class NotificationComponent implements OnInit, OnDestroy {
+  private readonly router = inject(Router);
+
   notifications: Notification[] = [];
   private subscription?: Subscription;
 
@@ -79,6 +82,17 @@ export class NotificationComponent implements OnInit, OnDestroy {
    */
   dismiss(id: string): void {
     this.notificationService.dismiss(id);
+  }
+
+  /**
+   * Handle notification click - navigate to actionUrl if present
+   * @param notification The clicked notification
+   */
+  onNotificationClick(notification: Notification): void {
+    if (notification.actionUrl) {
+      this.notificationService.dismiss(notification.id);
+      this.router.navigateByUrl(notification.actionUrl);
+    }
   }
 
   /**

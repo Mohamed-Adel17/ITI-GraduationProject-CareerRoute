@@ -1,0 +1,74 @@
+/**
+ * HomeComponent Styles
+ *
+ * Most styling is done via Tailwind CSS utility classes in the template.
+ * This file contains only custom animations and styles that can't be achieved with Tailwind.
+ *
+ * Design System:
+ * - Primary Color: #1193d4 (CareerRoute Blue)
+ * - Font: Manrope (defined in global styles)
+ * - Mobile-first responsive design
+ */
+
+/* Hero Section */
+.hero-section {
+  /* Ensure full viewport height on mobile devices */
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+}
+
+/* Smooth animations for interactive elements */
+@media (prefers-reduced-motion: no-preference) {
+  /* Scroll down indicator animation */
+  .animate-bounce {
+    animation: bounce 2s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-bounce {
+    animation: none;
+  }
+
+  .transform,
+  .transition-all {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Image optimization: Ensure background image covers properly */
+.hero-section img {
+  object-fit: cover;
+  object-position: center;
+}
+
+/* High contrast mode support for accessibility */
+@media (prefers-contrast: high) {
+  .hero-section .bg-gradient-to-br {
+    background: rgba(0, 0, 0, 0.85);
+  }
+}
+
+/* Print styles: Hide decorative elements */
+@media print {
+  .hero-section {
+    min-height: auto;
+    page-break-after: always;
+  }
+
+  .hero-section img,
+  .animate-bounce {
+    display: none;
+  }
+}

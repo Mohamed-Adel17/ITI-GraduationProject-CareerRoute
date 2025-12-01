@@ -8,5 +8,10 @@ namespace CareerRoute.Core.Domain.Enums
 {
     public enum PaymentStatusOptions
     {
+        Pending,
+        Captured,
+        Failed,
+        Refunded,
+        Canceled
     }
 }

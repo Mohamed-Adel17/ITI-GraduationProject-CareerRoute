@@ -182,6 +182,178 @@ export const premiumRoleGuard: CanActivateFn = createRoleGuard({
 });
 
 /**
+ * Guard for mentor application - denies access to users who are already mentors
+ * Redirects mentors to their mentor dashboard
+ */
+export const notMentorGuard: CanActivateFn = createRoleGuard({
+  deniedRoles: ['Mentor'],
+  redirectTo: '/mentor/dashboard'
+});
+
+/**
+ * Guard for mentor application form - allows access only to users who:
+ * 1. Have isMentor flag in token (registered as mentor during signup)
+ * 2. Don't have Mentor role (not approved yet)
+ * 3. Don't have a mentor profile record yet (haven't submitted application)
+ *
+ * Blocks:
+ * - Regular users (no isMentor flag) → Redirects to home
+ * - Approved mentors (have Mentor role) → Redirects to /mentor/dashboard
+ * - Users who already applied (have mentor profile) → Redirects to /mentor/application-pending
+ *
+ * Note: isMentor flag is set in JWT token during registration when user selects 'mentor' type
+ */
+export const canApplyAsMentorGuard: CanActivateFn = (
+  route: ActivatedRouteSnapshot,
+  state: RouterStateSnapshot
+): boolean | UrlTree => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Check if user is authenticated
+  if (!authService.isAuthenticated() || authService.isTokenExpired()) {
+    console.warn('Can Apply As Mentor Guard: User not authenticated, redirecting to login');
+    authService.removeTokens();
+    return router.createUrlTree(['/login'], {
+      queryParams: { returnUrl: state.url }
+    });
+  }
+
+  // Get user information from token
+  const user = authService.getUserFromToken();
+
+  if (!user) {
+    console.warn('Can Apply As Mentor Guard: Unable to decode user token, redirecting to login');
+    authService.removeTokens();
+    return router.createUrlTree(['/login']);
+  }
+
+  // Check for isMentor flag (user registered as mentor)
+  const isMentor = user['is_mentor'] === true || user['is_mentor'] === 'true' || user['isMentor'] === true;
+
+  if (!isMentor) {
+    // User didn't register as mentor - block access
+    console.warn('Can Apply As Mentor Guard: User is not registered as mentor (no isMentor flag), redirecting to home');
+    return router.createUrlTree(['/']);
+  }
+
+  // Check for Mentor role (approved mentors)
+  const userRoles = extractUserRoles(user);
+  const hasMentorRole = userRoles.includes('Mentor');
+
+  if (hasMentorRole) {
+    // User is already an approved mentor
+    console.warn('Can Apply As Mentor Guard: User is already an approved mentor, redirecting to dashboard');
+    return router.createUrlTree(['/mentor/dashboard']);
+  }
+
+  // User registered as mentor but not approved yet
+  // They might have already submitted application (need to check via API in component)
+  // Allow access - the component will check if profile exists and redirect if needed
+  console.info('Can Apply As Mentor Guard: Access granted (user registered as mentor, can apply)');
+  return true;
+};
+
+/**
+ * Guard for pending mentors - checks if user has isMentor flag in token
+ * Allows access to both pending and approved mentors (anyone with a mentor profile)
+ * Redirects to /user/apply-mentor if user doesn't have isMentor flag
+ *
+ * Use this guard for routes that pending mentors should access (e.g., application status page)
+ */
+export const pendingMentorGuard: CanActivateFn = (
+  route: ActivatedRouteSnapshot,
+  state: RouterStateSnapshot
+): boolean | UrlTree => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Check if user is authenticated
+  if (!authService.isAuthenticated() || authService.isTokenExpired()) {
+    console.warn('Pending Mentor Guard: User not authenticated, redirecting to login');
+    authService.removeTokens();
+    return router.createUrlTree(['/login'], {
+      queryParams: { returnUrl: state.url }
+    });
+  }
+
+  // Get user information from token
+  const user = authService.getUserFromToken();
+
+  if (!user) {
+    console.warn('Pending Mentor Guard: Unable to decode user token, redirecting to login');
+    authService.removeTokens();
+    return router.createUrlTree(['/login']);
+  }
+
+  // Check for isMentor flag in token (both pending and approved mentors have this)
+  const isMentor = user['is_mentor'] === true || user['is_mentor'] === 'true' || user['isMentor'] === true;
+
+  if (!isMentor) {
+    console.warn('Pending Mentor Guard: User does not have mentor profile, redirecting to application form');
+    return router.createUrlTree(['/user/apply-mentor']);
+  }
+
+  console.info('Pending Mentor Guard: Access granted (user has mentor profile)');
+  return true;
+};
+
+/**
+ * Guard for approved mentors only - checks if user has Mentor role in token
+ * For pending mentors (have isMentor but no Mentor role), redirects to application-pending page
+ * For non-mentors, redirects to unauthorized page
+ *
+ * Use this guard for routes that only approved mentors should access (e.g., mentor dashboard, sessions, earnings)
+ */
+export const approvedMentorGuard: CanActivateFn = (
+  route: ActivatedRouteSnapshot,
+  state: RouterStateSnapshot
+): boolean | UrlTree => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Check if user is authenticated
+  if (!authService.isAuthenticated() || authService.isTokenExpired()) {
+    console.warn('Approved Mentor Guard: User not authenticated, redirecting to login');
+    authService.removeTokens();
+    return router.createUrlTree(['/login'], {
+      queryParams: { returnUrl: state.url }
+    });
+  }
+
+  // Get user information from token
+  const user = authService.getUserFromToken();
+
+  if (!user) {
+    console.warn('Approved Mentor Guard: Unable to decode user token, redirecting to login');
+    authService.removeTokens();
+    return router.createUrlTree(['/login']);
+  }
+
+  // Check for Mentor role (only approved mentors have this)
+  const userRoles = extractUserRoles(user);
+  const hasMentorRole = userRoles.includes('Mentor');
+
+  if (hasMentorRole) {
+    console.info('Approved Mentor Guard: Access granted (user has Mentor role)');
+    return true;
+  }
+
+  // Check if user has isMentor flag (pending mentor with profile but no role yet)
+  const isMentor = user['is_mentor'] === true || user['is_mentor'] === 'true' || user['isMentor'] === true;
+
+  if (isMentor) {
+    // User has applied as mentor but not approved yet - redirect to pending status page
+    console.warn('Approved Mentor Guard: User is pending mentor, redirecting to application-pending page');
+    return router.createUrlTree(['/mentor/application-pending']);
+  }
+
+  // User is not a mentor at all
+  console.warn('Approved Mentor Guard: User is not a mentor, redirecting to unauthorized');
+  return router.createUrlTree(['/unauthorized']);
+};
+
+/**
  * Core authorization logic
  * Extracted for reusability and testing
  */

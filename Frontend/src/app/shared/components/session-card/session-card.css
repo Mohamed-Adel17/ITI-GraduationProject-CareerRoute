@@ -1,0 +1,103 @@
+/* Session Card Component Styles */
+
+/* Card hover effect */
+:host {
+  display: block;
+}
+
+:host > div {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:host > div:hover {
+  transform: translateY(-2px);
+}
+
+/* Status badge pulse animation for pending states */
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Line clamp utility for topic text */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Button hover effects */
+button {
+  transition: all 0.2s ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Join button glow effect */
+button[class*="bg-primary"]:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+/* Pay Now button glow effect */
+button[class*="bg-green-600"]:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+}
+
+/* Cancel button subtle effect */
+button[class*="bg-red"]:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.2);
+}
+
+/* Avatar hover effect */
+img[class*="rounded-full"] {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:host > div:hover img[class*="rounded-full"] {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Ensure buttons have consistent minimum width on small screens */
+@media (max-width: 640px) {
+  button {
+    min-width: 80px !important;
+  }
+}
+
+/* Focus visible styles */
+button:focus-visible {
+  outline: 2px solid theme('colors.primary.DEFAULT');
+  outline-offset: 2px;
+}
+
+/* Dark mode shadow adjustments */
+@media (prefers-color-scheme: dark) {
+  :host > div:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Print styles */
+@media print {
+  :host > div {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #e5e7eb;
+  }
+  
+  button {
+    display: none;
+  }
+}

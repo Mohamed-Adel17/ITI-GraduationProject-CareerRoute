@@ -1,0 +1,170 @@
+/* CategoryBrowseComponent Styles */
+/* Tailwind CSS classes with CareerRoute-MVP-Design specifications */
+
+/* Line clamp utility for description truncation */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Fallback for browsers that don't support line-clamp */
+  line-height: 1.5;
+  max-height: 4.5em; /* 3 lines * 1.5 line-height */
+}
+
+/* Custom animations for loading state */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Category card hover effects */
+.category-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Icon container styling */
+.icon-container {
+  transition: background-color 0.3s ease;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 640px) {
+  .category-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .category-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .category-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1281px) {
+  .category-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Dark mode specific adjustments */
+@media (prefers-color-scheme: dark) {
+  .category-card {
+    background-color: var(--background-dark);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .category-card:hover {
+    border-color: rgba(17, 147, 212, 0.5);
+  }
+}
+
+/* Focus styles for accessibility */
+.category-card:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Loading spinner improvements */
+.loading-spinner {
+  border-color: rgba(17, 147, 212, 0.2);
+  border-top-color: var(--primary);
+}
+
+/* Error state styling */
+.error-container {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.1) 100%);
+  border-left: 4px solid var(--error);
+}
+
+/* Empty state illustration */
+.empty-state-icon {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .empty-state-icon {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  }
+}
+
+/* Smooth transitions for text color changes */
+.text-transition {
+  transition: color 0.2s ease;
+}
+
+/* Card shadow variations */
+.card-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.card-shadow-hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Primary color variable references */
+:root {
+  --primary: #1193d4;
+  --primary-hover: #0e7bb8;
+  --background-light: #f6f7f8;
+  --background-dark: #101c22;
+  --error: #ef4444;
+}
+
+/* Ensure proper contrast in light mode */
+@media (prefers-color-scheme: light) {
+  .category-card {
+    background-color: var(--background-light);
+  }
+}
+
+/* Micro-interactions for better UX */
+.category-card:active {
+  transform: translateY(-2px);
+}
+
+/* Icon hover effect */
+.icon-hover:hover {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+/* Mentor count badge styling */
+.mentor-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+/* Button hover states */
+.btn-primary {
+  background-color: var(--primary);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}

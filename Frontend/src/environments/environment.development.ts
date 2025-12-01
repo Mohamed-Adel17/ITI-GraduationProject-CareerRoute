@@ -11,12 +11,12 @@ export const environment = {
    *
    * For testing with mock HTTP interceptor:
    */
-  apiUrl: 'http://localhost:4200/api',
+  // apiUrl: 'http://localhost:4200/api',
 
   /**
    * Uncomment below when backend is ready on localhost:5000
    */
-  // apiUrl: 'http://localhost:5000/api',
+  apiUrl: 'https://careerroute.runasp.net/api',
 
   /**
    * Authentication Configuration
@@ -48,8 +48,25 @@ export const environment = {
   services: {
     // Zoom video conferencing (if using separate frontend integration)
     zoomRedirectUrl: 'http://localhost:4200/zoom/callback',
-    // Stripe public key (use test key in development)
-    stripePublicKey: 'pk_test_YOUR_STRIPE_TEST_KEY_HERE',
+  },
+
+  /**
+   * Payment Provider Configuration
+   */
+  payment: {
+    // Stripe configuration
+    stripe: {
+      publishableKey: 'pk_test_51SQj1nB7cctyvNSxIOsiv6EM6mcrIZ2nP9MUq8Q8oXZm5TOFh7wI8yjvWWvC8A8m6wgKaEPHZ3k5XZYZUTWncbe100STm2bT8X', // Replace with actual Stripe test key
+    },
+    // Paymob configuration
+    paymob: {
+      iframeId: '983026', // Replace with actual Paymob iframe ID
+      apiUrl: 'https://accept.paymob.com/api/acceptance',
+    },
+    // SignalR hub for real-time payment status updates
+    signalr: {
+      hubUrl: 'https://localhost:7023/hub/payment',
+    },
   },
 
   /**

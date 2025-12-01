@@ -1,4 +1,5 @@
 import { User, UserSummary } from './user.model';
+import { Skill } from './skill.model';
 
 /**
  * Mentor Model
@@ -10,10 +11,12 @@ import { User, UserSummary } from './user.model';
  * - Mentor.Id is a foreign key to User.Id (one-to-one relationship)
  * - A user can become a mentor by applying and getting approved
  * - Mentors have pricing, ratings, and expertise information
+ * - Based on Mentor-Endpoints.md contract (MentorProfileDto)
  */
 
 /**
  * Mentor approval status enum
+ * Backend sends numeric values: 0 = Pending, 1 = Approved, 2 = Rejected
  */
 export enum MentorApprovalStatus {
   Pending = 'Pending',
@@ -30,26 +33,53 @@ export enum SessionType {
 }
 
 /**
- * Main Mentor interface representing a mentor profile
+ * Category association for mentor (CategoryDto)
+ */
+export interface MentorCategory {
+  id: number;
+  name: string;
+  description?: string | null;
+  iconUrl?: string | null;
+  mentorCount?: number | null;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string | null;
+}
+
+/**
+ * Main Mentor interface representing a mentor profile (MentorProfileDto)
+ * Based on Mentor-Endpoints.md contract
  */
 export interface Mentor {
   /** Mentor ID (same as User.Id - FK to User) */
   id: string;
 
-  /** Associated user information */
-  user?: User | UserSummary;
+  /** User's first name */
+  firstName: string;
+
+  /** User's last name */
+  lastName: string;
+
+  /** Computed full name */
+  fullName: string;
+
+  /** User's email address */
+  email: string;
+
+  /** Profile picture URL */
+  profilePictureUrl?: string | null;
 
   /** Professional biography / introduction */
-  bio: string;
+  bio: string | null;
 
-  /** Comma-separated or array of expertise tags (e.g., "React, Node.js, AWS") */
-  expertiseTags: string | string[];
+  /** Expertise tags as array of Skill objects (not strings) */
+  expertiseTags: Skill[];
 
   /** Years of professional experience */
-  yearsOfExperience: number;
+  yearsOfExperience: number | null;
 
-  /** Certifications or credentials (optional, e.g., "AWS Certified, PMP") */
-  certifications?: string;
+  /** Certifications or credentials */
+  certifications?: string | null;
 
   /** Rate for 30-minute session (in USD) */
   rate30Min: number;
@@ -72,30 +102,23 @@ export interface Mentor {
   /** Current approval status */
   approvalStatus: MentorApprovalStatus;
 
-  /** Whether mentor is currently available for booking */
-  isAvailable?: boolean;
+  /** Date when mentor profile was created (ISO 8601) */
+  createdAt: string;
+
+  /** Date when mentor was last updated (ISO 8601) */
+  updatedAt: string | null;
 
   /** Categories/specializations the mentor belongs to */
   categories?: MentorCategory[];
 
-  /** Category IDs (for simpler use cases) */
-  categoryIds?: number[];
+  /** Response time estimate (e.g., "within 2 hours") */
+  responseTime?: string | null;
 
-  /** Date when mentor profile was created */
-  createdDate?: Date | string;
+  /** Completion rate percentage (e.g., 98.5) */
+  completionRate?: number | null;
 
-  /** Date when mentor was approved (if approved) */
-  approvedDate?: Date | string;
-}
-
-/**
- * Category association for mentor
- */
-export interface MentorCategory {
-  id: number;
-  name: string;
-  description?: string;
-  iconUrl?: string;
+  /** Whether mentor is currently available for booking */
+  isAvailable?: boolean | null;
 }
 
 /**
@@ -105,18 +128,48 @@ export interface MentorListItem {
   id: string;
   firstName: string;
   lastName: string;
-  profilePictureUrl?: string;
+  fullName: string;
+  email: string;
+  profilePictureUrl?: string | null;
   bio: string;
-  expertiseTags: string | string[];
+  expertiseTags: Skill[];
   yearsOfExperience: number;
+  certifications?: string | null;
   rate30Min: number;
   rate60Min: number;
   averageRating: number;
   totalReviews: number;
   totalSessionsCompleted: number;
   isVerified: boolean;
+  approvalStatus: MentorApprovalStatus;
+  createdAt: string;
+  updatedAt: string | null;
+  categories?: MentorCategory[];
+  responseTime?: string | null;
+  completionRate?: number | null;
   isAvailable: boolean;
-  categories: MentorCategory[];
+}
+
+/**
+ * Review preview for mentor detail page (ReviewPreviewDto)
+ */
+export interface ReviewPreview {
+  id: string;
+  rating: number; // 1-5 stars
+  reviewText: string;
+  reviewerFirstName: string;
+  reviewerLastNameInitial: string; // e.g., "K."
+  sessionDate: string; // ISO 8601
+  createdAt: string; // ISO 8601
+}
+
+/**
+ * Availability preview for mentor profiles (AvailabilityPreviewDto)
+ */
+export interface AvailabilityPreview {
+  hasAvailability: boolean;
+  nextAvailableSlot: string | null; // ISO 8601 datetime
+  totalSlotsNext7Days: number;
 }
 
 /**
@@ -124,56 +177,85 @@ export interface MentorListItem {
  */
 export interface MentorDetail {
   id: string;
-  user: User | UserSummary;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  profilePictureUrl?: string | null;
   bio: string;
-  expertiseTags: string[];
+  expertiseTags: Skill[];
   yearsOfExperience: number;
-  certifications?: string;
+  certifications?: string | null;
   rate30Min: number;
   rate60Min: number;
   averageRating: number;
   totalReviews: number;
   totalSessionsCompleted: number;
   isVerified: boolean;
-  isAvailable: boolean;
   approvalStatus: MentorApprovalStatus;
+  createdAt: string;
+  updatedAt: string | null;
   categories: MentorCategory[];
-  recentReviews?: any[]; // Will be typed when Review model is created
-  availableSlots?: Date[]; // Available time slots for booking
+  responseTime: string | null;
+  completionRate: number | null;
+  isAvailable: boolean;
+  recentReviews?: ReviewPreview[];
+  availabilityPreview?: AvailabilityPreview;
 }
 
 /**
- * Mentor profile update data
+ * Mentor profile update data (UpdateMentorProfileDto)
+ * All fields are optional - only provided fields will be updated
+ * Based on Mentor-Endpoints.md - Endpoint #9: PATCH /api/mentors/me
+ *
+ * @remarks
+ * - User-related fields update the ApplicationUser entity (firstName, lastName, phoneNumber, profilePictureUrl)
+ * - Mentor-specific fields update the Mentor entity (bio, yearsOfExperience, certifications, rates, isAvailable, expertiseTagIds, categoryIds)
+ * - Empty array [] for expertiseTagIds clears all expertise tags
  */
 export interface MentorProfileUpdate {
-  bio: string;
-  expertiseTags: string | string[];
-  yearsOfExperience: number;
-  certifications?: string;
-  rate30Min: number;
-  rate60Min: number;
-  categoryIds: number[];
-  isAvailable?: boolean;
+  // User-related fields
+  firstName?: string; // Min 2 chars, max 50 chars
+  lastName?: string; // Min 2 chars, max 50 chars
+  phoneNumber?: string; // Valid phone number format
+  profilePictureUrl?: string; // Valid URL format, max 200 chars
+
+  // Mentor-specific fields
+  bio?: string; // Min 50 chars, max 1000 chars
+  yearsOfExperience?: number; // Min 0, integer
+  certifications?: string; // Max 500 chars
+  rate30Min?: number; // Min 0, max 10000
+  rate60Min?: number; // Min 0, max 10000
+  isAvailable?: boolean; // Availability status
+  expertiseTagIds?: number[]; // Array of skill IDs, empty array [] clears all
+  categoryIds?: number[]; // Array of category IDs, 1-5 categories
 }
 
 /**
- * Mentor application data (when user applies to become mentor)
+ * Mentor application data (when user applies to become mentor) (CreateMentorProfileDto)
+ *
+ * @remarks
+ * - According to updated API contract (Endpoint #7: POST /api/mentors)
+ * - Includes expertiseTagIds and categoryIds arrays
+ * - expertiseTagIds: Array of skill IDs (integers) for mentor's expertise areas
+ * - categoryIds: Array of category IDs (integers) for mentor's service categories
+ * - Both arrays are required in the application
  */
 export interface MentorApplication {
-  bio: string;
-  expertiseTags: string | string[];
-  yearsOfExperience: number;
-  certifications?: string;
-  rate30Min: number;
-  rate60Min: number;
-  categoryIds: number[];
+  bio: string; // Required: Min 50, max 1000 chars
+  expertiseTagIds: number[]; // Required: Array of skill IDs
+  yearsOfExperience: number; // Required: Min 0, integer
+  certifications?: string; // Optional: Max 500 chars
+  rate30Min: number; // Required: Min 0, max 10000
+  rate60Min: number; // Required: Min 0, max 10000
+  categoryIds: number[]; // Required: Array of category IDs
 }
 
 /**
  * Mentor search/filter request parameters
  */
 export interface MentorSearchParams {
-  /** Search keyword (searches in bio and expertise tags) */
+  /** Search keyword (searches in name, bio, expertise tags) */
   keywords?: string;
 
   /** Filter by category ID */
@@ -189,10 +271,7 @@ export interface MentorSearchParams {
   minRating?: number;
 
   /** Sort by field */
-  sortBy?: 'rating' | 'price' | 'experience' | 'sessions';
-
-  /** Sort direction */
-  sortDirection?: 'asc' | 'desc';
+  sortBy?: 'popularity' | 'rating' | 'priceAsc' | 'priceDesc';
 
   /** Page number (for pagination) */
   page?: number;
@@ -208,16 +287,36 @@ export interface MentorSearchParams {
 }
 
 /**
- * Mentor search response with pagination
+ * Pagination metadata
  */
-export interface MentorSearchResponse {
-  mentors: MentorListItem[];
+export interface PaginationMetadata {
   totalCount: number;
-  page: number;
+  currentPage: number;
   pageSize: number;
   totalPages: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+}
+
+/**
+ * Applied filters returned with search results
+ */
+export interface AppliedFilters {
+  keywords: string | null;
+  categoryId: number | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  minRating: number | null;
+  sortBy: string;
+}
+
+/**
+ * Mentor search response with pagination (PaginatedMentorResult)
+ */
+export interface MentorSearchResponse {
+  mentors: MentorListItem[];
+  pagination: PaginationMetadata;
+  appliedFilters: AppliedFilters;
 }
 
 /**
@@ -234,30 +333,27 @@ export interface MentorStatistics {
 }
 
 /**
- * Helper function to get mentor's full name
+ * Rejection request body (RejectMentorDto)
  */
-export function getMentorFullName(mentor: Mentor | MentorListItem | MentorDetail): string {
-  if ('user' in mentor && mentor.user) {
-    const user = mentor.user;
-    return `${user.firstName} ${user.lastName}`.trim();
-  }
-  if ('firstName' in mentor && 'lastName' in mentor) {
-    return `${mentor.firstName} ${mentor.lastName}`.trim();
-  }
-  return 'Unknown Mentor';
+export interface RejectMentorRequest {
+  reason: string; // Required: Min 10, max 500 chars
 }
 
 /**
- * Helper function to format expertise tags
+ * Helper function to get mentor's full name
+ */
+export function getMentorFullName(mentor: Mentor | MentorListItem | MentorDetail): string {
+  return mentor.fullName || `${mentor.firstName} ${mentor.lastName}`.trim() || 'Unknown Mentor';
+}
+
+/**
+ * Helper function to format expertise tags from Skill objects
  */
 export function getExpertiseTags(mentor: Mentor | MentorListItem | MentorDetail): string[] {
-  if (Array.isArray(mentor.expertiseTags)) {
-    return mentor.expertiseTags;
+  if (!mentor.expertiseTags || !Array.isArray(mentor.expertiseTags)) {
+    return [];
   }
-  if (typeof mentor.expertiseTags === 'string') {
-    return mentor.expertiseTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-  }
-  return [];
+  return mentor.expertiseTags.map(skill => skill.name);
 }
 
 /**
@@ -342,6 +438,23 @@ export function getApprovalStatusColor(status: MentorApprovalStatus): string {
 }
 
 /**
+ * Helper function to get approval status display text
+ * Converts numeric enum value to readable string
+ */
+export function getApprovalStatusText(status: MentorApprovalStatus): string {
+  switch (status) {
+    case MentorApprovalStatus.Approved:
+      return 'Approved';
+    case MentorApprovalStatus.Pending:
+      return 'Pending';
+    case MentorApprovalStatus.Rejected:
+      return 'Rejected';
+    default:
+      return 'Unknown';
+  }
+}
+
+/**
  * Helper function to calculate hourly rate from 30-min rate
  */
 export function getHourlyRate(rate30Min: number): number {
@@ -351,8 +464,8 @@ export function getHourlyRate(rate30Min: number): number {
 /**
  * Helper function to format price
  */
-export function formatPrice(price: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatPrice(price: number, currency: string = 'EGP'): string {
+  return new Intl.NumberFormat('en-EG', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 0,
@@ -364,7 +477,7 @@ export function formatPrice(price: number, currency: string = 'USD'): string {
  * Helper function to get price range display
  */
 export function getPriceRange(mentor: Mentor | MentorListItem | MentorDetail): string {
-  return `${formatPrice(mentor.rate30Min)}/30min - ${formatPrice(mentor.rate60Min)}/60min`;
+  return `From ${mentor.rate30Min} EGP`;
 }
 
 /**
@@ -385,15 +498,16 @@ export function matchesSearchCriteria(mentor: MentorListItem, params: MentorSear
   if (params.availableOnly && !mentor.isAvailable) return false;
 
   // Category filter
-  if (params.categoryId && !mentor.categories.some(c => c.id === params.categoryId)) return false;
+  if (params.categoryId && mentor.categories && !mentor.categories.some(c => c.id === params.categoryId)) return false;
 
   // Keyword search (if client-side filtering is needed)
   if (params.keywords) {
     const keywords = params.keywords.toLowerCase();
-    const bio = mentor.bio.toLowerCase();
+    const bio = mentor.bio?.toLowerCase() || '';
     const tags = getExpertiseTagsString(mentor).toLowerCase();
+    const name = getMentorFullName(mentor).toLowerCase();
 
-    if (!bio.includes(keywords) && !tags.includes(keywords)) return false;
+    if (!bio.includes(keywords) && !tags.includes(keywords) && !name.includes(keywords)) return false;
   }
 
   return true;
@@ -405,11 +519,20 @@ export function matchesSearchCriteria(mentor: MentorListItem, params: MentorSear
 export function isMentor(obj: any): obj is Mentor {
   return obj
     && typeof obj.id === 'string'
-    && typeof obj.bio === 'string'
-    && (typeof obj.expertiseTags === 'string' || Array.isArray(obj.expertiseTags))
-    && typeof obj.yearsOfExperience === 'number'
+    && typeof obj.firstName === 'string'
+    && typeof obj.lastName === 'string'
+    && typeof obj.email === 'string'
+    && (obj.bio === null || typeof obj.bio === 'string')
+    && Array.isArray(obj.expertiseTags)
+    && (obj.yearsOfExperience === null || typeof obj.yearsOfExperience === 'number')
     && typeof obj.rate30Min === 'number'
-    && typeof obj.rate60Min === 'number';
+    && typeof obj.rate60Min === 'number'
+    && typeof obj.averageRating === 'number'
+    && typeof obj.totalReviews === 'number'
+    && typeof obj.totalSessionsCompleted === 'number'
+    && typeof obj.isVerified === 'boolean'
+    && typeof obj.approvalStatus === 'string'
+    && typeof obj.createdAt === 'string';
 }
 
 /**
@@ -460,7 +583,7 @@ export function validatePricing(rate30Min: number, rate60Min: number): { valid: 
  */
 export function sortMentors(
   mentors: MentorListItem[],
-  sortBy: 'rating' | 'price' | 'experience' | 'sessions',
+  sortBy: 'popularity' | 'rating' | 'priceAsc' | 'priceDesc',
   direction: 'asc' | 'desc' = 'desc'
 ): MentorListItem[] {
   const sorted = [...mentors].sort((a, b) => {
@@ -470,15 +593,18 @@ export function sortMentors(
       case 'rating':
         comparison = a.averageRating - b.averageRating;
         break;
-      case 'price':
+      case 'priceAsc':
+      case 'priceDesc':
         comparison = a.rate30Min - b.rate30Min;
         break;
-      case 'experience':
-        comparison = a.yearsOfExperience - b.yearsOfExperience;
-        break;
-      case 'sessions':
+      case 'popularity':
         comparison = a.totalSessionsCompleted - b.totalSessionsCompleted;
         break;
+    }
+
+    // For priceDesc, we want descending order
+    if (sortBy === 'priceDesc') {
+      return -comparison;
     }
 
     return direction === 'asc' ? comparison : -comparison;

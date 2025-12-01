@@ -5,49 +5,52 @@ using System.Text;
 using System.Threading.Tasks;
 using CareerRoute.Core.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using CareerRoute.Infrastructure.Data;
 namespace CareerRoute.Infrastructure.Repositories
 {
     public class GenericRepository<T> : IBaseRepository<T> where T : class
     {
-        private readonly ApplicationDbContext dbContext;
+        protected readonly ApplicationDbContext dbContext;
 
         public GenericRepository(ApplicationDbContext dbContext)
         {
             this.dbContext = dbContext;
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public virtual async Task<IEnumerable<T>> GetAllAsync()
         {
             return await dbContext.Set<T>().ToListAsync();
         }
 
-        public async Task<T?> GetByIdAsync(string id)
+        public virtual async Task<T?> GetByIdAsync(string id)
         {
             return await dbContext.Set<T>().FindAsync(id);
         }
 
-        public async Task AddAsync(T entity)
+        public virtual async Task AddAsync(T entity)
         {
             await dbContext.Set<T>().AddAsync(entity);
-            //not saved in DB yet
         }
 
-        public void Update(T entity)
+        public virtual void Update(T entity)
         {
             dbContext.Set<T>().Update(entity);
-            //not saved in DB  yet
         }
 
-        public void Delete(T entity)
+        public virtual void Delete(T entity)
         {
             dbContext.Set<T>().Remove(entity);
-            //not saved in DB yet
         }
 
         public async Task<int> SaveChangesAsync()
         {
             return await dbContext.SaveChangesAsync();
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await dbContext.Database.BeginTransactionAsync();
         }
 
     }

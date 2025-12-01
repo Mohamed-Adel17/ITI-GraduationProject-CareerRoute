@@ -32,6 +32,7 @@ import {
   getAuthErrorMessage
 } from '../../shared/models/auth.model';
 import { UserRole } from '../../shared/models/user.model';
+import { ApiResponse, unwrapResponse, unwrapVoidResponse } from '../../shared/models/api-response.model';
 
 /**
  * AuthService
@@ -49,12 +50,15 @@ import { UserRole } from '../../shared/models/user.model';
  * - Auth state management with reactive updates
  * - Automatic token expiration handling
  * - Integration with NotificationService for user feedback
+ * - Uses shared unwrapResponse() utility for consistent error handling
  *
  * @remarks
  * - Tokens are stored in localStorage
  * - Auth state is managed with BehaviorSubject for reactive UI updates
  * - Automatic token refresh starts on login
  * - Token expiration triggers automatic logout
+ * - Error handling delegated to errorInterceptor for consistency
+ * - Uses unwrapResponse() from api-response.model.ts (same pattern as other services)
  */
 @Injectable({
   providedIn: 'root'
@@ -116,7 +120,9 @@ export class AuthService {
           lastName: payload.family_name || '',
           emailConfirmed: payload.email_verified || false,
           roles: getRolesFromToken(payload),
-          isMentor: payload.is_mentor || false,
+          // JWT claims are transmitted as strings, so "false" string is truthy
+          // Must explicitly check for string "true" to convert to boolean correctly
+          isMentor: payload.is_mentor === true || payload.is_mentor === 'true',
           mentorId: payload.mentor_id,
           profilePictureUrl: payload.picture
         };
@@ -147,7 +153,7 @@ export class AuthService {
   /**
    * Register a new user
    * @param data User registration data
-   * @returns Observable of registration response
+   * @returns Observable of registration response (unwrapped from ApiResponse)
    *
    * @remarks
    * This method handles only authentication logic (API call, loading state).
@@ -161,16 +167,16 @@ export class AuthService {
   register(data: RegisterRequest): Observable<RegisterResponse> {
     this.setLoading(true);
 
-    return this.http.post<RegisterResponse>(`${this.AUTH_URL}/register`, data).pipe(
-      tap(response => {
-        if (response.success) {
-          // Just update loading state, component handles notifications and navigation
-          this.authStateSubject.next({
-            ...this.authStateSubject.value,
-            loading: false,
-            error: null
-          });
-        }
+    return this.http.post<ApiResponse<RegisterResponse>>(`${this.AUTH_URL}/register`, data).pipe(
+      map(response => unwrapResponse(response)),
+      tap(registerResponse => {
+        // Response was successfully unwrapped, update loading state
+        // Component handles notifications and navigation
+        this.authStateSubject.next({
+          ...this.authStateSubject.value,
+          loading: false,
+          error: null
+        });
       }),
       catchError(error => {
         // Error interceptor has already processed the error
@@ -192,7 +198,7 @@ export class AuthService {
   /**
    * Login user with email and password
    * @param data Login credentials
-   * @returns Observable of login response
+   * @returns Observable of login response (unwrapped from ApiResponse)
    *
    * @remarks
    * This method handles only authentication logic:
@@ -211,20 +217,21 @@ export class AuthService {
   login(data: LoginRequest): Observable<LoginResponse> {
     this.setLoading(true);
 
-    return this.http.post<LoginResponse>(`${this.AUTH_URL}/login`, data).pipe(
-      tap(response => {
-        if (response.success && response.token) {
+    return this.http.post<ApiResponse<LoginResponse>>(`${this.AUTH_URL}/login`, data).pipe(
+      map(response => unwrapResponse(response)),
+      tap(loginResponse => {
+        if (loginResponse.token) {
           // Store tokens
-          this.setToken(response.token);
-          this.setRefreshToken(response.refreshToken);
+          this.setToken(loginResponse.token);
+          this.setRefreshToken(loginResponse.refreshToken);
 
           // Update auth state
-          const tokenPayload = decodeToken(response.token);
+          const tokenPayload = decodeToken(loginResponse.token);
           this.authStateSubject.next({
             isAuthenticated: true,
-            user: response.user,
-            token: response.token,
-            refreshToken: response.refreshToken,
+            user: loginResponse.user,
+            token: loginResponse.token,
+            refreshToken: loginResponse.refreshToken,
             tokenExpiration: tokenPayload?.exp || null,
             loading: false,
             error: null
@@ -335,7 +342,7 @@ export class AuthService {
 
   /**
    * Refresh access token using refresh token
-   * @returns Observable of token refresh response
+   * @returns Observable of token refresh response (unwrapped from ApiResponse)
    */
   refreshToken(): Observable<TokenRefreshResponse> {
     const token = this.getToken();
@@ -347,22 +354,25 @@ export class AuthService {
 
     const request: TokenRefreshRequest = { token, refreshToken };
 
-    return this.http.post<TokenRefreshResponse>(`${this.AUTH_URL}/refresh`, request).pipe(
-      tap(response => {
-        if (response.success && response.token) {
+    return this.http.post<ApiResponse<TokenRefreshResponse>>(`${this.AUTH_URL}/refresh`, request).pipe(
+      map(response => unwrapResponse(response)),
+      tap(tokenResponse => {
+        if (tokenResponse.token) {
           // Update tokens
-          this.setToken(response.token);
-          this.setRefreshToken(response.refreshToken);
+          this.setToken(tokenResponse.token);
+          this.setRefreshToken(tokenResponse.refreshToken);
 
-          // Update auth state
-          const currentState = this.authStateSubject.value;
-          const tokenPayload = decodeToken(response.token);
+          // Update auth state with refreshed user data
+          const tokenPayload = decodeToken(tokenResponse.token);
 
           this.authStateSubject.next({
-            ...currentState,
-            token: response.token,
-            refreshToken: response.refreshToken,
-            tokenExpiration: tokenPayload?.exp || null
+            isAuthenticated: true,
+            user: tokenResponse.user, // User data is now included in the refresh response
+            token: tokenResponse.token,
+            refreshToken: tokenResponse.refreshToken,
+            tokenExpiration: tokenPayload?.exp || null,
+            loading: false,
+            error: null
           });
 
           // Restart token refresh timer
@@ -424,59 +434,41 @@ export class AuthService {
   /**
    * Verify email address with token
    * @param request Email verification request
-   * @returns Observable of verification response
+   * @returns Observable of verification response (unwrapped from ApiResponse)
    *
    * @remarks
-   * This method does NOT handle navigation or notifications.
+   * This method handles authentication logic (storing tokens, updating auth state).
    * The EmailVerificationComponent is responsible for:
    * - Displaying success/error messages
-   * - Storing the auto-login token if provided
    * - Handling navigation with countdown timer
+   *
+   * The backend always returns AuthResponseDto with tokens for auto-login after verification.
    */
   verifyEmail(request: EmailVerificationRequest): Observable<EmailVerificationResponse> {
-    return this.http.post<EmailVerificationResponse>(`${this.AUTH_URL}/verify-email`, request).pipe(
-      tap(response => {
-        // If auto-login is enabled and token is provided, update auth state
-        if (response.success && response.autoLogin && response.loginToken) {
-          // Decode token to get user info
-          const tokenPayload = decodeToken(response.loginToken);
-          if (tokenPayload) {
-            const user: AuthUser = {
-              id: tokenPayload.sub,
-              email: tokenPayload.email,
-              firstName: tokenPayload.given_name || '',
-              lastName: tokenPayload.family_name || '',
-              emailConfirmed: true, // Email is now verified
-              roles: getRolesFromToken(tokenPayload),
-              isMentor: tokenPayload.is_mentor || false,
-              mentorId: tokenPayload.mentor_id,
-              profilePictureUrl: tokenPayload.picture
-            };
+    return this.http.post<ApiResponse<EmailVerificationResponse>>(`${this.AUTH_URL}/verify-email`, request).pipe(
+      map(response => unwrapResponse(response)),
+      tap(verifyResponse => {
+        // Backend always returns tokens for auto-login
+        // Store tokens in localStorage
+        this.setToken(verifyResponse.token);
+        this.setRefreshToken(verifyResponse.refreshToken);
 
-            // Store tokens in localStorage
-            this.setToken(response.loginToken);
-            if (response.refreshToken) {
-              this.setRefreshToken(response.refreshToken);
-            }
+        // console.log('[AUTH SERVICE] Auto-login after email verification - tokens stored');
+        // console.log('[AUTH SERVICE] User authenticated:', verifyResponse.user.email);
 
-            console.log('[AUTH SERVICE] Auto-login after email verification - tokens stored');
-            console.log('[AUTH SERVICE] User authenticated:', user.email);
+        // Update auth state with verified user
+        this.authStateSubject.next({
+          isAuthenticated: true,
+          user: verifyResponse.user,
+          token: verifyResponse.token,
+          refreshToken: verifyResponse.refreshToken,
+          tokenExpiration: decodeToken(verifyResponse.token)?.exp || null,
+          loading: false,
+          error: null
+        });
 
-            // Update auth state
-            this.authStateSubject.next({
-              isAuthenticated: true,
-              user,
-              token: response.loginToken,
-              refreshToken: response.refreshToken || '',
-              tokenExpiration: tokenPayload.exp,
-              loading: false,
-              error: null
-            });
-
-            // Start token refresh timer
-            this.startTokenRefreshTimer();
-          }
-        }
+        // Start token refresh timer
+        this.startTokenRefreshTimer();
       }),
       catchError(error => {
         // Don't use handleAuthError as it shows notification
@@ -489,20 +481,16 @@ export class AuthService {
   /**
    * Resend email verification
    * @param request Resend verification request
-   * @returns Observable of response
+   * @returns Observable of response (unwrapped from ApiResponse)
    *
    * @remarks
-   * Success notification is shown automatically.
-   * Error handling is delegated to the calling component.
+   * This method handles only authentication logic (API call).
+   * UI concerns (notifications) are delegated to the calling component.
+   * The component should show success/error notifications.
    */
   resendVerificationEmail(request: ResendVerificationEmailRequest): Observable<any> {
-    return this.http.post(`${this.AUTH_URL}/resend-verification`, request).pipe(
-      tap(() => {
-        this.notificationService.success(
-          'Verification email has been sent. Please check your inbox.',
-          'Email Sent'
-        );
-      }),
+    return this.http.post<ApiResponse<any>>(`${this.AUTH_URL}/resend-verification`, request).pipe(
+      map(response => unwrapResponse(response)),
       catchError(error => {
         // Error interceptor has already processed the error
         // Component will handle error display
@@ -516,17 +504,26 @@ export class AuthService {
   /**
    * Initiate password reset (forgot password)
    * @param request Password reset request with email
-   * @returns Observable of response
+   * @returns Observable of API response with success message
    *
    * @remarks
    * This method handles only authentication logic (API call).
    * UI concerns (notifications) are delegated to the calling component.
    * The component should:
-   * - Show success message on successful request
+   * - Show success message using response.message on successful request
    * - Show error notification if request fails
+   *
+   * Returns the full ApiResponse to preserve the success message from backend.
    */
-  forgotPassword(request: PasswordResetRequest): Observable<PasswordResetRequestResponse> {
-    return this.http.post<PasswordResetRequestResponse>(`${this.AUTH_URL}/forgot-password`, request).pipe(
+  forgotPassword(request: PasswordResetRequest): Observable<ApiResponse<PasswordResetRequestResponse>> {
+    return this.http.post<ApiResponse<PasswordResetRequestResponse>>(`${this.AUTH_URL}/forgot-password`, request).pipe(
+      map(response => {
+        // Return full ApiResponse so component can access response.message
+        if (response.success) {
+          return response;
+        }
+        throw new Error(response.message || 'Failed to send password reset email');
+      }),
       catchError(error => {
         // Error interceptor has already processed the error
         // Component will handle error display
@@ -538,18 +535,42 @@ export class AuthService {
   /**
    * Reset password with token from email
    * @param request Password reset data with token
-   * @returns Observable of response
+   * @returns Observable of response (unwrapped from ApiResponse)
    *
    * @remarks
-   * This method handles only authentication logic (API call).
-   * UI concerns (notifications, navigation) are delegated to the calling component.
-   * The component should:
-   * - Show success message on successful reset
-   * - Navigate to login page after successful reset
-   * - Show error notification if reset fails
+   * This method handles authentication logic (storing tokens, updating auth state).
+   * The PasswordResetComponent is responsible for:
+   * - Displaying success/error messages
+   * - Handling navigation with countdown timer
+   *
+   * The backend always returns AuthResponseDto with tokens for auto-login after password reset.
    */
   resetPassword(request: PasswordReset): Observable<PasswordResetResponse> {
-    return this.http.post<PasswordResetResponse>(`${this.AUTH_URL}/reset-password`, request).pipe(
+    return this.http.post<ApiResponse<PasswordResetResponse>>(`${this.AUTH_URL}/reset-password`, request).pipe(
+      map(response => unwrapResponse(response)),
+      tap(resetResponse => {
+        // Backend always returns tokens for auto-login
+        // Store tokens in localStorage
+        this.setToken(resetResponse.token);
+        this.setRefreshToken(resetResponse.refreshToken);
+
+        // console.log('[AUTH SERVICE] Auto-login after password reset - tokens stored');
+        // console.log('[AUTH SERVICE] User authenticated:', resetResponse.user.email);
+
+        // Update auth state with authenticated user
+        this.authStateSubject.next({
+          isAuthenticated: true,
+          user: resetResponse.user,
+          token: resetResponse.token,
+          refreshToken: resetResponse.refreshToken,
+          tokenExpiration: decodeToken(resetResponse.token)?.exp || null,
+          loading: false,
+          error: null
+        });
+
+        // Start token refresh timer
+        this.startTokenRefreshTimer();
+      }),
       catchError(error => {
         // Error interceptor has already processed the error
         // Component will handle error display
@@ -561,15 +582,16 @@ export class AuthService {
   /**
    * Change password for logged-in user
    * @param request Change password request
-   * @returns Observable of response
+   * @returns Observable of response (unwrapped from ApiResponse)
    *
    * @remarks
    * Success notification is shown automatically.
    * Error handling is delegated to the calling component.
    */
   changePassword(request: ChangePasswordRequest): Observable<ChangePasswordResponse> {
-    return this.http.post<ChangePasswordResponse>(`${this.AUTH_URL}/change-password`, request).pipe(
+    return this.http.post<ApiResponse<ChangePasswordResponse>>(`${this.AUTH_URL}/change-password`, request).pipe(
       tap(response => {
+        // Show success notification using wrapper's message
         if (response.success) {
           this.notificationService.success(
             response.message || 'Password changed successfully!',
@@ -577,6 +599,7 @@ export class AuthService {
           );
         }
       }),
+      map(response => unwrapResponse(response)),
       catchError(error => {
         // Error interceptor has already processed the error
         // Component will handle error display

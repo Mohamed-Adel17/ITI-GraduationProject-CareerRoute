@@ -6,24 +6,34 @@ import { Subscription } from 'rxjs';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { SkillService } from '../../../core/services/skill.service';
 import { User, UserProfileUpdate } from '../../../shared/models/user.model';
+import { Skill } from '../../../shared/models/skill.model';
 
 /**
  * EditProfileComponent
  *
  * @description
  * Allows authenticated users to edit their profile information using reactive forms.
- * Supports updating personal info, career interests (as array), and career goals.
+ * Supports updating personal info, career interests, and career goals.
  *
  * Features:
  * - Reactive forms with validation
  * - Pre-populated with current user data
- * - Multi-select career interests support
+ * - Career interests multi-select with skill IDs
  * - Form validation feedback
- * - Save changes to backend API
+ * - Save changes to backend API via PATCH /api/users/me
  * - Cancel and return to profile view
  * - Success/error notifications
  * - Loading state during save
+ *
+ * @remarks
+ * - Based on User-Profile-Endpoints.md contract
+ * - Uses GET /api/users/me to load profile
+ * - Uses GET /api/skills to load available skills
+ * - Uses PATCH /api/users/me to update profile (including careerInterestIds)
+ * - careerInterests are now managed directly via careerInterestIds field in profile update
+ * - All update fields are optional (PATCH semantics)
  *
  * @example
  * Route: /user/profile/edit
@@ -38,36 +48,11 @@ import { User, UserProfileUpdate } from '../../../shared/models/user.model';
 export class EditProfileComponent implements OnInit, OnDestroy {
   profileForm!: FormGroup;
   user: User | null = null;
+  availableSkills: Skill[] = [];
+  selectedSkillIds: number[] = [];
   loading: boolean = true;
   saving: boolean = false;
   error: string | null = null;
-
-  // Predefined career interests for selection
-  availableInterests: string[] = [
-    'Software Development',
-    'Data Science',
-    'Machine Learning',
-    'Artificial Intelligence',
-    'Cloud Computing',
-    'DevOps',
-    'Cybersecurity',
-    'Mobile Development',
-    'Web Development',
-    'Database Administration',
-    'UI/UX Design',
-    'Project Management',
-    'Business Analysis',
-    'Quality Assurance',
-    'Network Engineering',
-    'Blockchain',
-    'Game Development',
-    'IoT',
-    'Embedded Systems',
-    'Other'
-  ];
-
-  // Selected interests tracking
-  selectedInterests: Set<string> = new Set();
 
   private subscription?: Subscription;
 
@@ -76,12 +61,13 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     private userService: UserService,
     private authService: AuthService,
     private notificationService: NotificationService,
+    private skillService: SkillService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.initializeForm();
-    this.loadUserProfile();
+    this.loadData();
   }
 
   ngOnDestroy(): void {
@@ -104,38 +90,73 @@ export class EditProfileComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load current user profile and populate form
+   * Load user profile data
+   *
+   * @remarks
+   * - Loads user profile via GET /api/users/me (critical)
+   * - Attempts to load skills separately (non-blocking)
+   * - Profile loads even if skills endpoint is not available
+   * - Career interests are editable via multi-select if skills are available
+   *
+   * No authentication check needed here because:
+   * - Route is protected by authGuard
+   * - API calls require authentication (401 handled by errorInterceptor)
    */
-  private loadUserProfile(): void {
+  private loadData(): void {
     this.loading = true;
     this.error = null;
 
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      this.error = 'User not authenticated';
-      this.loading = false;
-      this.notificationService.error('Please log in to edit your profile', 'Authentication Required');
-      this.router.navigate(['/auth/login']);
-      return;
-    }
-
-    this.subscription = this.userService.getUserProfile(currentUser.id).subscribe({
+    // Load user profile (critical - must succeed)
+    this.subscription = this.userService.getCurrentUserProfile().subscribe({
       next: (user) => {
         this.user = user;
+
+        // Extract selected skill IDs from user's career interests
+        this.selectedSkillIds = user.careerInterests?.map(skill => skill.id) || [];
+
         this.populateForm(user);
         this.loading = false;
+
+        // Try to load skills (non-critical - optional)
+        this.loadSkillsIfAvailable();
       },
       error: (err) => {
-        this.error = 'Failed to load profile';
+        this.error = 'Failed to load profile data';
         this.loading = false;
         this.notificationService.error('Could not load your profile. Please try again.', 'Error');
-        console.error('Error loading user profile:', err);
+        console.error('Error loading profile data:', err);
+      }
+    });
+  }
+
+  /**
+   * Load available skills for career interests selection
+   *
+   * @remarks
+   * - Non-blocking operation (profile still works if this fails)
+   * - Skills endpoint may not be implemented yet on backend
+   * - Silently fails if endpoint is unavailable
+   * - User can still edit other profile fields without skills
+   */
+  private loadSkillsIfAvailable(): void {
+    this.skillService.getAllSkills().subscribe({
+      next: (skills) => {
+        this.availableSkills = skills;
+      },
+      error: (err) => {
+        // Skills endpoint not ready - silently fail
+        // User can still edit firstName, lastName, phoneNumber, careerGoals
+        console.warn('Skills endpoint not available yet. Career interests selection disabled.', err);
+        this.availableSkills = []; // Ensure it's empty array, not undefined
       }
     });
   }
 
   /**
    * Populate form with current user data
+   *
+   * @remarks
+   * Updates all editable fields including selected career interest IDs
    */
   private populateForm(user: User): void {
     this.profileForm.patchValue({
@@ -145,29 +166,43 @@ export class EditProfileComponent implements OnInit, OnDestroy {
       profilePictureUrl: user.profilePictureUrl || '',
       careerGoals: user.careerGoals || ''
     });
-
-    // Initialize selected interests
-    if (user.careerInterests && user.careerInterests.length > 0) {
-      this.selectedInterests = new Set(user.careerInterests);
-    }
   }
 
   /**
-   * Toggle career interest selection
+   * Toggle skill selection
+   *
+   * @param skillId - Skill ID to toggle
    */
-  toggleInterest(interest: string): void {
-    if (this.selectedInterests.has(interest)) {
-      this.selectedInterests.delete(interest);
+  toggleSkill(skillId: number): void {
+    const index = this.selectedSkillIds.indexOf(skillId);
+    if (index > -1) {
+      // Remove skill
+      this.selectedSkillIds.splice(index, 1);
     } else {
-      this.selectedInterests.add(interest);
+      // Add skill
+      this.selectedSkillIds.push(skillId);
     }
+    // Mark form as dirty
+    this.profileForm.markAsDirty();
   }
 
   /**
-   * Check if an interest is selected
+   * Check if skill is selected
+   *
+   * @param skillId - Skill ID to check
+   * @returns True if skill is selected
    */
-  isInterestSelected(interest: string): boolean {
-    return this.selectedInterests.has(interest);
+  isSkillSelected(skillId: number): boolean {
+    return this.selectedSkillIds.includes(skillId);
+  }
+
+  /**
+   * Group available skills by category
+   *
+   * @returns Map of category names to skill arrays
+   */
+  getSkillsByCategory(): Map<string, Skill[]> {
+    return this.skillService.groupSkillsByCategory(this.availableSkills);
   }
 
   /**
@@ -187,6 +222,11 @@ export class EditProfileComponent implements OnInit, OnDestroy {
 
   /**
    * Submit form and save profile updates
+   *
+   * @remarks
+   * Uses PATCH /api/users/me endpoint via UserService.updateCurrentUserProfile()
+   * Sends all editable fields including careerInterestIds array
+   * Empty careerInterestIds array clears all career interests
    */
   onSubmit(): void {
     if (this.profileForm.invalid) {
@@ -200,23 +240,25 @@ export class EditProfileComponent implements OnInit, OnDestroy {
 
     this.saving = true;
 
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      this.saving = false;
-      this.notificationService.error('User not authenticated', 'Error');
-      return;
-    }
-
+    // Prepare update data with all fields
     const updateData: UserProfileUpdate = {
       firstName: this.profileForm.value.firstName,
       lastName: this.profileForm.value.lastName,
-      phoneNumber: this.profileForm.value.phoneNumber || undefined,
-      profilePictureUrl: this.profileForm.value.profilePictureUrl || undefined,
-      careerInterests: Array.from(this.selectedInterests),
-      careerGoals: this.profileForm.value.careerGoals || undefined
+      careerInterestIds: this.selectedSkillIds // Include career interest IDs
     };
 
-    this.userService.updateUserProfile(currentUser.id, updateData).subscribe({
+    // Add optional fields only if they have values
+    if (this.profileForm.value.phoneNumber) {
+      updateData.phoneNumber = this.profileForm.value.phoneNumber;
+    }
+    if (this.profileForm.value.profilePictureUrl) {
+      updateData.profilePictureUrl = this.profileForm.value.profilePictureUrl;
+    }
+    if (this.profileForm.value.careerGoals) {
+      updateData.careerGoals = this.profileForm.value.careerGoals;
+    }
+
+    this.userService.updateCurrentUserProfile(updateData).subscribe({
       next: (updatedUser) => {
         this.saving = false;
         this.notificationService.success('Your profile has been updated successfully!', 'Profile Updated');
@@ -224,7 +266,7 @@ export class EditProfileComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.saving = false;
-        this.notificationService.error('Failed to update profile. Please try again.', 'Update Failed');
+        this.notificationService.error(err.message || 'Failed to update profile. Please try again.', 'Update Failed');
         console.error('Error updating profile:', err);
       }
     });
