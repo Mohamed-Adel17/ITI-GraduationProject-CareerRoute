@@ -77,6 +77,10 @@ namespace CareerRoute.API.Controllers.Webhooks
                 case "endpoint.url_validation":
                     return HandleUrlValidation(payload);
 
+                case "meeting.started":
+                    await HandleMeetingStartedEvent(payload);
+                    break;
+
                 case "recording.completed":
                     await HandleRecordingCompletedEvent(payload);
                     break;
@@ -123,6 +127,18 @@ namespace CareerRoute.API.Controllers.Webhooks
                 plainToken = plainToken,
                 encryptedToken = encryptedToken
             });
+        }
+
+        private async Task HandleMeetingStartedEvent(ZoomWebhookPayload payload)
+        {
+            var meetingId = payload.Payload.Object.Id;
+            var topic = payload.Payload.Object.Topic;
+
+            _logger.LogInformation(
+                "[ZoomWebhook] [AUDIT] Meeting started. MeetingId: {MeetingId}, Topic: {Topic}",
+                meetingId, topic);
+
+            await _sessionService.MarkSessionAsInProgressAsync(meetingId);
         }
 
         private async Task HandleRecordingCompletedEvent(ZoomWebhookPayload payload)

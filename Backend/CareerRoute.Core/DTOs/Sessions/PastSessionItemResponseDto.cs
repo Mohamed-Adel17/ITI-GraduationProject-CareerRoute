@@ -28,6 +28,7 @@ namespace CareerRoute.Core.DTOs.Sessions
 
             public string Status { get; set; } = null!;
             public string Topic { get; set; } = null!;
+            public string? CancellationReason { get; set; }
 
             public bool HasReview { get; set; }
             public DateTime? CompletedAt { get; set; }
