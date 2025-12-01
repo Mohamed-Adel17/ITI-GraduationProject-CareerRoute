@@ -80,7 +80,7 @@ builder.Services.AddAuthentication(
                 // If the request is for our notification hub
                 var path = context.HttpContext.Request.Path;
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    path.StartsWithSegments("/hubs/notifications"))
+                    path.StartsWithSegments("/hub/notification"))
                 {
                     // Read the token from the query string
                     context.Token = accessToken;

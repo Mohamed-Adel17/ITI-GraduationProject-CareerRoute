@@ -35,6 +35,9 @@ export interface Notification {
   position?: NotificationPosition;
   dismissible?: boolean;
   timestamp: Date;
+  actionUrl?: string;
+  /** Whether the notification is clickable (has actionUrl) */
+  clickable?: boolean;
 }
 
 /**
@@ -149,13 +152,15 @@ export class NotificationService {
    * @param message The notification message
    * @param title Optional notification title
    * @param duration Optional custom duration in milliseconds
+   * @param redu
    */
-  info(message: string, title?: string, duration?: number): string {
+  info(message: string, title?: string, duration?: number,actionUrl?: string): string {
     return this.show({
       type: NotificationType.Info,
       message,
       title: title || 'Info',
-      duration: duration ?? this.config.duration
+      duration: duration ?? this.config.duration,
+      actionUrl: actionUrl
     });
   }
 
@@ -171,6 +176,7 @@ export class NotificationService {
     duration?: number;
     position?: NotificationPosition;
     dismissible?: boolean;
+    actionUrl?: string;
   }): string {
     const notification: Notification = {
       id: this.generateId(),
@@ -180,7 +186,9 @@ export class NotificationService {
       duration: options.duration ?? this.config.duration,
       position: options.position ?? this.config.position,
       dismissible: options.dismissible ?? this.config.dismissible,
-      timestamp: new Date()
+      timestamp: new Date(),
+      actionUrl: options.actionUrl,
+      clickable: !!options.actionUrl
     };
 
     const currentNotifications = this.notificationsSubject.value;

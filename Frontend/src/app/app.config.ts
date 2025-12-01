@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, provideAppInitializer, inject } from '@angular/core';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -6,6 +6,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
+import { NotificationToastBridgeService } from './core/services/notification-toast-bridge.service';
 // import { mockHttpInterceptor } from './core/interceptors/mock-http.interceptor';
 
 /**
@@ -39,6 +40,9 @@ export const appConfig: ApplicationConfig = {
         // Error Interceptor - KEEP THIS (handles HTTP errors globally)
         errorInterceptor
       ])
-    )
+    ),
+    provideAppInitializer(() => {
+      inject(NotificationToastBridgeService);
+    })
   ]
 };

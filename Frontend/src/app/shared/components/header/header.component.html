@@ -1,7 +1,7 @@
 <header class="site-header w-full bg-white sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800 shadow-sm">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-20">
-      
+
       <!-- Logo/Brand -->
       <div class="flex items-center">
         <a routerLink="/" class="flex items-center gap-1 hover:opacity-80 transition-opacity" (click)="closeMenus()">
@@ -38,14 +38,14 @@
 
       <!-- Auth Area -->
       <div class="flex items-center gap-2">
-        
+
         <!-- Unauthenticated State -->
         <ng-container *ngIf="(isAuthenticated$ | async) === false">
-          <a routerLink="/auth/login" 
+          <a routerLink="/auth/login"
              class="hidden sm:inline-block px-4 py-2 text-sm font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
             Log In
           </a>
-          <a routerLink="/auth/register" 
+          <a routerLink="/auth/register"
              class="hidden sm:inline-block px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors">
             Sign Up
           </a>
@@ -53,6 +53,9 @@
 
         <!-- Authenticated State -->
         <ng-container *ngIf="isAuthenticated$ | async">
+          <!-- Notification Bell - Requirements: 5.1 -->
+          <app-notification-bell class="mr-2"></app-notification-bell>
+
           <div class="relative">
             <!-- User Menu Trigger -->
             <button
@@ -64,16 +67,16 @@
               [attr.aria-expanded]="userMenuOpen"
               aria-haspopup="true"
               aria-label="User menu">
-              
+
               <!-- User Avatar -->
               <div class="relative">
                 <ng-container *ngIf="currentUser$ | async as user">
-                  <img 
-                    *ngIf="user.profilePictureUrl" 
-                    [src]="user.profilePictureUrl" 
-                    [alt]="getUserDisplayName(user)" 
+                  <img
+                    *ngIf="user.profilePictureUrl"
+                    [src]="user.profilePictureUrl"
+                    [alt]="getUserDisplayName(user)"
                     class="h-8 w-8 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"/>
-                  <div 
+                  <div
                     *ngIf="!user.profilePictureUrl"
                     class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
                     {{ getUserInitials(user) }}
@@ -87,23 +90,23 @@
               </span>
 
               <!-- Dropdown Arrow -->
-              <svg 
+              <svg
                 class="h-4 w-4 text-gray-600 dark:text-gray-400 transition-transform"
                 [class.rotate-180]="userMenuOpen"
-                fill="none" 
-                stroke="currentColor" 
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
 
             <!-- User Dropdown Menu -->
-            <div 
+            <div
               *ngIf="userMenuOpen"
               class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50"
               role="menu"
               aria-orientation="vertical">
-              
+
               <!-- User Info Section -->
               <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700" *ngIf="currentUser$ | async as user">
                 <p class="text-sm font-medium text-gray-900 dark:text-white">{{ getUserDisplayName(user) }}</p>
@@ -111,7 +114,7 @@
               </div>
 
               <!-- Menu Items -->
-              <!-- <a 
+              <!-- <a
                 routerLink="/user/dashboard"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -138,7 +141,7 @@
                 </span>
               </a>
 
-              <!-- <a 
+              <!-- <a
                 routerLink="/user/bookings"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -167,7 +170,7 @@
               </a>
 
               <!-- Mentor Dashboard (if user is mentor) -->
-              <!-- <a 
+              <!-- <a
                 *ngIf="hasRole((currentUser$ | async), UserRole.Mentor)"
                 routerLink="/mentor/dashboard"
                 (click)="closeMenus()"
@@ -182,7 +185,7 @@
               </a> -->
 
               <!-- Admin Dashboard (if user is admin) -->
-              <a 
+              <a
                 *ngIf="hasRole((currentUser$ | async), UserRole.Admin)"
                 routerLink="/admin"
                 (click)="closeMenus()"
@@ -199,7 +202,7 @@
 
               <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
-              <!-- <a 
+              <!-- <a
                 routerLink="/user/settings"
                 (click)="closeMenus()"
                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -213,7 +216,7 @@
                 </span>
               </a> -->
 
-              <button 
+              <button
                 (click)="onLogout()"
                 class="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 role="menuitem">
@@ -236,18 +239,18 @@
           [attr.aria-expanded]="menuOpen"
           aria-label="Toggle navigation menu">
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path 
+            <path
               *ngIf="!menuOpen"
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              stroke-width="2" 
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
               d="M4 6h16M4 12h16m-7 6h7">
             </path>
-            <path 
+            <path
               *ngIf="menuOpen"
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              stroke-width="2" 
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
               d="M6 18L18 6M6 6l12 12">
             </path>
           </svg>
@@ -292,12 +295,12 @@
         <!-- Mobile Auth Links (Unauthenticated) -->
         <ng-container *ngIf="(isAuthenticated$ | async) === false">
           <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-          <a routerLink="/auth/login" 
+          <a routerLink="/auth/login"
              (click)="closeMenus()"
              class="px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
             Log In
           </a>
-          <a routerLink="/auth/register" 
+          <a routerLink="/auth/register"
              (click)="closeMenus()"
              class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-md hover:bg-primary/90 transition-colors text-center">
             Sign Up

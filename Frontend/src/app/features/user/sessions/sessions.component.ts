@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { SignalRNotificationService } from '../../../core/services/signalr-notification.service';
 import { SessionCard } from '../../../shared/components/session-card/session-card';
 import { CancelModalComponent } from '../../../shared/components/cancel-modal/cancel-modal.component';
 import { RescheduleModalComponent } from '../../../shared/components/reschedule-modal/reschedule-modal.component';
@@ -14,6 +15,7 @@ import {
   PaginationMetadata,
   SessionStatus
 } from '../../../shared/models/session.model';
+import { NotificationType } from '../../../shared/models/notification.model';
 
 /**
  * SessionsComponent
@@ -80,12 +82,38 @@ export class SessionsComponent implements OnInit, OnDestroy {
   constructor(
     private sessionService: SessionService,
     private notificationService: NotificationService,
+    private signalRNotificationService: SignalRNotificationService,
     private router: Router
   ) { }
 
   ngOnInit(): void {
     // Load initial data for the active tab
     this.loadUpcomingSessions();
+
+    // Subscribe to session-related notifications to auto-refresh
+    this.subscribeToSessionNotifications();
+  }
+
+  /**
+   * Subscribe to session-related notifications to auto-refresh the sessions list
+   */
+  private subscribeToSessionNotifications(): void {
+    const sessionNotificationTypes = [
+      NotificationType.SessionBooked,
+      NotificationType.SessionCancelled,
+      NotificationType.RescheduleRequested,
+      NotificationType.RescheduleApproved,
+      NotificationType.RescheduleRejected    ];
+
+    const sub = this.signalRNotificationService.notification$.subscribe(notification => {
+      if (sessionNotificationTypes.includes(notification.type)) {
+        console.log('[UserSessions] Received session notification, refreshing...', notification.type);
+        // Refresh the current tab's data
+        this.refresh();
+      }
+    });
+
+    this.subscriptions.push(sub);
   }
 
   ngOnDestroy(): void {
@@ -435,10 +463,6 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.selectedSession = null;
     // Refresh the sessions list to show updated status
     this.loadUpcomingSessions();
-    this.notificationService.success(
-      'Payment completed successfully! Your session is now confirmed.',
-      'Payment Successful'
-    );
   }
 
   /**
