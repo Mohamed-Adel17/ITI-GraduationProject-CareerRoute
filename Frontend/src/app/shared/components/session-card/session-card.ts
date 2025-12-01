@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   SessionSummary,
@@ -48,7 +48,11 @@ import {
   templateUrl: './session-card.html',
   styleUrl: './session-card.css'
 })
-export class SessionCard {
+export class SessionCard implements OnInit, OnDestroy {
+  // Payment countdown timer (15 minutes)
+  private paymentCountdownInterval: ReturnType<typeof setInterval> | null = null;
+  paymentCountdown: string = '';
+  isPaymentExpired: boolean = false;
   /**
    * Session data to display
    */
@@ -94,8 +98,79 @@ export class SessionCard {
    */
   @Output() completePayment = new EventEmitter<string>();
 
+  /**
+   * Emitted when payment countdown expires (session will be auto-cancelled)
+   */
+  @Output() paymentExpired = new EventEmitter<string>();
+
   // Expose enums to template
   SessionStatus = SessionStatus;
+
+  ngOnInit(): void {
+    this.startPaymentCountdown();
+  }
+
+  ngOnDestroy(): void {
+    this.stopPaymentCountdown();
+  }
+
+  /**
+   * Start the payment countdown timer for pending sessions
+   */
+  private startPaymentCountdown(): void {
+    if (this.session.status !== SessionStatus.Pending) return;
+
+    const sessionSummary = this.session as SessionSummary;
+    if (!sessionSummary.createdAt) return;
+
+    // Update immediately
+    this.updatePaymentCountdown();
+
+    // Update every second
+    this.paymentCountdownInterval = setInterval(() => {
+      this.updatePaymentCountdown();
+    }, 1000);
+  }
+
+  /**
+   * Stop the payment countdown timer
+   */
+  private stopPaymentCountdown(): void {
+    if (this.paymentCountdownInterval) {
+      clearInterval(this.paymentCountdownInterval);
+      this.paymentCountdownInterval = null;
+    }
+  }
+
+  /**
+   * Update the payment countdown display
+   * 15 minutes from session creation
+   */
+  private updatePaymentCountdown(): void {
+    const sessionSummary = this.session as SessionSummary;
+    if (!sessionSummary.createdAt) {
+      this.paymentCountdown = '';
+      return;
+    }
+
+    const createdAt = new Date(sessionSummary.createdAt);
+    const expiresAt = new Date(createdAt.getTime() + 15 * 60 * 1000); // 15 minutes
+    const now = new Date();
+    const remainingMs = expiresAt.getTime() - now.getTime();
+
+    if (remainingMs <= 0) {
+      this.paymentCountdown = 'Expired';
+      this.isPaymentExpired = true;
+      this.stopPaymentCountdown();
+      this.paymentExpired.emit(this.session.id);
+      return;
+    }
+
+    const minutes = Math.floor(remainingMs / (1000 * 60));
+    const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+    this.paymentCountdown = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    this.isPaymentExpired = false;
+  }
 
   /**
    * Get the other participant's name based on user role

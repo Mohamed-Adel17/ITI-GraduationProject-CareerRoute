@@ -276,6 +276,38 @@ This document tracks all UI/UX enhancements made to the CareerRoute frontend app
 
 ---
 
+## Recent Updates (December 1, 2025)
+
+### Logo Branding
+- Added CareerRoute logo (logo.png) to header and footer
+- Logo displays with "CareerRoute" title text
+- Consistent branding across the application
+
+### Animated Loading Spinner
+- Created custom logo-spin animation (pulse + rotate)
+- Loading spinner now uses the CareerRoute logo
+- Applied to all loading states: session details, payment modal, summary/transcript viewers
+- Added `.logo-spin` CSS class in global styles
+
+### Session Card Improvements
+- **Fixed "0 minutes" bug:** Time now calculates precisely on frontend when less than 1 hour remains
+- **In Progress status:** Added detection for sessions currently in progress
+- **Live indicator:** Pulsing green dot with "Live Now" badge for active sessions
+- **Cancellation reason:** Displays reason on cancelled session cards with red info icon
+
+### Sessions Page Restructure (Mentee & Mentor)
+- Renamed "Past" tab to "Completed" (shows only completed sessions)
+- Added "View cancelled sessions" link in tab bar
+- Cancelled sessions now display in a modal popup
+- Consistent structure for both mentee and mentor dashboards
+
+### Animation Utilities Added
+| Class | Description |
+|-------|-------------|
+| `.logo-spin` | Combined pulse and rotate animation for logo loading |
+
+---
+
 ## Next Steps (Planned)
 
 - [ ] Add page transition animations
@@ -304,4 +336,4 @@ This document tracks all UI/UX enhancements made to the CareerRoute frontend app
 
 ---
 
-*Last Updated: December 1, 2025*
+*Last Updated: December 1, 2025 (Session tabs restructure & cancellation reason)*

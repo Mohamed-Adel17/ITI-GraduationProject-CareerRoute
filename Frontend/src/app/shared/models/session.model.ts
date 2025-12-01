@@ -107,6 +107,7 @@ export interface SessionSummary {
   price: number;
   videoConferenceLink?: string | null;
   hoursUntilSession?: number | null;
+  createdAt?: string;                     // ISO 8601 datetime (for payment countdown)
 }
 
 /**

@@ -403,6 +403,21 @@ export class SessionsComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * Handle payment expired (15-minute countdown finished)
+   * Refreshes the sessions list to reflect the cancelled session
+   */
+  onPaymentExpired(sessionId: string): void {
+    this.notificationService.warning(
+      'Payment time expired. The session has been cancelled.',
+      'Session Expired'
+    );
+    // Refresh after a short delay to allow backend to process
+    setTimeout(() => {
+      this.loadUpcomingSessions();
+    }, 2000);
+  }
+
   // ==========================================================================
   // UTILITY METHODS
   // ==========================================================================
