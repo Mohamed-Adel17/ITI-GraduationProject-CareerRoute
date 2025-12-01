@@ -68,6 +68,7 @@ namespace CareerRoute.Core.Mappings
                 .ForMember(dest => dest.SessionType,opt => opt.MapFrom(src => src.SessionType.ToString()))
                 .ForMember(dest => dest.Duration,opt => opt.MapFrom(src => src.Duration.ToString()))
                 .ForMember(dest => dest.Status,opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CancellationReason, opt => opt.MapFrom(src => src.CancellationReason))
                 .ForMember(dest => dest.HasReview, opt => opt.MapFrom(src => src.Review != null));
 
 

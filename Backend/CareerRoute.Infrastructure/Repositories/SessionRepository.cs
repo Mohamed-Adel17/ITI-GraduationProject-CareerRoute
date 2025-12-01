@@ -67,10 +67,12 @@ namespace CareerRoute.Infrastructure.Repositories
             // Admin can see all, no filter
 
             // Filter by status and future sessions
-            query = query.Where(s => (s.Status == SessionStatusOptions.Confirmed
-                                      || s.Status == SessionStatusOptions.Pending
-                                      || s.Status == SessionStatusOptions.PendingReschedule)
-                                      && s.ScheduledStartTime >= now);
+            query = query.Where(s => 
+                s.Status == SessionStatusOptions.InProgress ||
+                ((s.Status == SessionStatusOptions.Confirmed
+                  || s.Status == SessionStatusOptions.Pending
+                  || s.Status == SessionStatusOptions.PendingReschedule)
+                  && s.ScheduledStartTime >= now));
 
             // Order by start time
             query = query.OrderBy(s => s.ScheduledStartTime);

@@ -593,7 +593,7 @@ namespace CareerRoute.Core.Services.Implementations
             if (session.MentorId != userId && session.MenteeId != userId)
                 throw new UnauthorizedException("You are not a participant in this session.");
 
-            if (session.Status != SessionStatusOptions.Confirmed)
+            if (session.Status != SessionStatusOptions.Confirmed && session.Status != SessionStatusOptions.InProgress)
                 throw new ConflictException("Session is not confirmed yet and cannot be joined.");
 
             var earlyJoinLimit = session.ScheduledStartTime.AddMinutes(-SessionConstants.EarlyJoinWindowMinutes);
@@ -624,7 +624,8 @@ namespace CareerRoute.Core.Services.Implementations
 
             dto.MinutesUntilStart = (int)(session.ScheduledStartTime - DateTime.UtcNow).TotalMinutes;
             //dto.MinutesUntilStart = session.HoursUntilSession * 60;
-            dto.CanJoinNow = DateTime.UtcNow >= earlyJoinLimit && DateTime.UtcNow <= lateJoinLimit && session.Status == SessionStatusOptions.Confirmed;
+            dto.CanJoinNow = DateTime.UtcNow >= earlyJoinLimit && DateTime.UtcNow <= lateJoinLimit && 
+                             (session.Status == SessionStatusOptions.Confirmed || session.Status == SessionStatusOptions.InProgress);
             dto.VideoConferenceLink = session.VideoConferenceLink ?? string.Empty;
             dto.Provider = "Zoom"; //may be changed 
             dto.Instructions = "Click the link to join the session. Please join 5 minutes early to test your audio and video.";
@@ -1123,6 +1124,23 @@ namespace CareerRoute.Core.Services.Implementations
                         // Session starts in less than 15 minutes, send email immediately
                         _jobScheduler.EnqueueAsync<ISessionService>(svc => svc.SendZoomLinkEmailAsync(session.Id));
                         _logger.LogInformation("[Session] Session {SessionId} starts soon, sending Zoom link email immediately", sessionId);
+                    }
+
+                    // Schedule marking session as InProgress at start time
+                    var inProgressDelay = session.ScheduledStartTime - DateTime.UtcNow;
+                    if (inProgressDelay > TimeSpan.Zero)
+                    {
+                        _jobScheduler.Schedule<ISessionService>(
+                            svc => svc.MarkSessionAsInProgressByIdAsync(session.Id),
+                            inProgressDelay);
+                        _logger.LogInformation("[Session] Scheduled InProgress status update for session {SessionId} at {ScheduledTime}", 
+                            sessionId, session.ScheduledStartTime);
+                    }
+                    else
+                    {
+                        // Session already started, mark as InProgress immediately
+                        _jobScheduler.EnqueueAsync<ISessionService>(svc => svc.MarkSessionAsInProgressByIdAsync(session.Id));
+                        _logger.LogInformation("[Session] Session {SessionId} already started, marking as InProgress immediately", sessionId);
                     }
 
                     // Schedule automatic meeting termination (ScheduledEndTime + 2 minutes grace period)
@@ -1823,6 +1841,56 @@ CareerRoute Team";
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Session] Failed to send Zoom link emails for session {SessionId}", sessionId);
+            }
+        }
+
+        public async Task MarkSessionAsInProgressAsync(long meetingId)
+        {
+            _logger.LogInformation("[Session] Marking session as InProgress for Zoom meeting: {MeetingId}", meetingId);
+
+            var sessions = await _sessionRepository.GetAllAsync();
+            var session = sessions.FirstOrDefault(s => s.ZoomMeetingId == meetingId);
+
+            if (session == null)
+            {
+                _logger.LogWarning("[Session] No session found for Zoom meeting ID: {MeetingId}", meetingId);
+                return;
+            }
+
+            if (session.Status == SessionStatusOptions.Confirmed)
+            {
+                session.Status = SessionStatusOptions.InProgress;
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+                _logger.LogInformation("[Session] Session {SessionId} marked as InProgress", session.Id);
+            }
+            else
+            {
+                _logger.LogInformation("[Session] Session {SessionId} status is {Status}, not updating to InProgress", session.Id, session.Status);
+            }
+        }
+
+        public async Task MarkSessionAsInProgressByIdAsync(string sessionId)
+        {
+            _logger.LogInformation("[Session] Marking session {SessionId} as InProgress (scheduled job)", sessionId);
+
+            var session = await _sessionRepository.GetByIdAsync(sessionId);
+            if (session == null)
+            {
+                _logger.LogWarning("[Session] Session {SessionId} not found", sessionId);
+                return;
+            }
+
+            if (session.Status == SessionStatusOptions.Confirmed)
+            {
+                session.Status = SessionStatusOptions.InProgress;
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+                _logger.LogInformation("[Session] Session {SessionId} marked as InProgress by scheduled job", sessionId);
+            }
+            else
+            {
+                _logger.LogInformation("[Session] Session {SessionId} status is {Status}, not updating to InProgress", sessionId, session.Status);
             }
         }
 

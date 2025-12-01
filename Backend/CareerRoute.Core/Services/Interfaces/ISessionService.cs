@@ -108,5 +108,13 @@ namespace CareerRoute.Core.Services.Interfaces
         /// Sends Zoom meeting link email to both mentor and mentee (scheduled 15 min before session).
         /// </summary>
         Task SendZoomLinkEmailAsync(string sessionId);
+        /// <summary>
+        /// Marks a session as InProgress when meeting starts.
+        /// </summary>
+        Task MarkSessionAsInProgressAsync(long meetingId);
+        /// <summary>
+        /// Marks a session as InProgress by session ID (for background job).
+        /// </summary>
+        Task MarkSessionAsInProgressByIdAsync(string sessionId);
     }
 }
