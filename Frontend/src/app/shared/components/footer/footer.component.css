@@ -1,0 +1,23 @@
+/* Footer Component Styles */
+
+/* Smooth link transitions */
+footer a {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Social icon hover glow effect */
+footer a[aria-label]:hover {
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+}
+
+/* Link hover slide effect */
+footer ul a:hover {
+  transform: translateX(4px);
+}
+
+/* Print styles - hide footer */
+@media print {
+  footer {
+    display: none;
+  }
+}

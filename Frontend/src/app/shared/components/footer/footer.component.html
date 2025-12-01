@@ -1,0 +1,97 @@
+<footer class="bg-gray-900 text-gray-300">
+  <!-- Main Footer Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      
+      <!-- Brand Section -->
+      <div class="lg:col-span-1">
+        <a routerLink="/" class="flex items-center gap-3 mb-4 group">
+          <div class="text-primary">
+            <svg class="h-8 w-8 transform -scale-x-100 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 48 48">
+              <path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-white">CareerRoute</span>
+        </a>
+        <p class="text-sm text-gray-400 mb-6 leading-relaxed">
+          Connect with experienced professionals for personalized career guidance. 
+          Your journey to success starts here.
+        </p>
+        
+        <!-- Social Links -->
+        <div class="flex items-center gap-4">
+          <a *ngFor="let social of socialLinks" 
+             [href]="social.url" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="w-10 h-10 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-all duration-300 hover:scale-110"
+             [attr.aria-label]="social.name">
+            <i [class]="'bi bi-' + social.icon + ' text-lg'"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Platform Links -->
+      <div>
+        <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Platform</h3>
+        <ul class="space-y-3">
+          <li *ngFor="let link of footerLinks.platform">
+            <a [routerLink]="link.route" 
+               [fragment]="link.fragment"
+               class="text-sm text-gray-400 hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block">
+              {{ link.label }}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Company Links -->
+      <div>
+        <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Company</h3>
+        <ul class="space-y-3">
+          <li *ngFor="let link of footerLinks.company">
+            <a [routerLink]="link.route" 
+               class="text-sm text-gray-400 hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block">
+              {{ link.label }}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Support Links -->
+      <div>
+        <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Support</h3>
+        <ul class="space-y-3">
+          <li *ngFor="let link of footerLinks.support">
+            <a [routerLink]="link.route" 
+               class="text-sm text-gray-400 hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block">
+              {{ link.label }}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="border-t border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-sm text-gray-500">
+          © {{ currentYear }} CareerRoute. All rights reserved.
+        </p>
+        <div class="flex items-center gap-6">
+          <a routerLink="/terms" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+            Terms
+          </a>
+          <a routerLink="/privacy" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+            Privacy
+          </a>
+          <a routerLink="/cookies" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+            Cookies
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
