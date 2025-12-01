@@ -27,7 +27,8 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                 .HasMaxLength(450);
 
             builder.Property(s => s.TimeSlotId)
-                .IsRequired(false); // Nullable for backward compatibility
+                .IsRequired(false) // Nullable for backward compatibility
+                .HasMaxLength(450);
 
             builder.Property(s => s.PaymentId)
                 .IsRequired(false); // Nullable
@@ -87,15 +88,12 @@ namespace CareerRoute.Infrastructure.Data.Configurations
 
             // Relationship: Session optionally linked to TimeSlot (configured in TimeSlotConfiguration)
 
-            // Indexes for performance
-            builder.HasIndex(s => new { s.MentorId, s.ScheduledStartTime })
-                .HasDatabaseName("IX_Sessions_MentorId_ScheduledStartTime");
+            // Optimized indexes for GetUpcomingSessions/GetPastSessions queries
+            builder.HasIndex(s => new { s.MentorId, s.Status, s.ScheduledStartTime })
+                .HasDatabaseName("IX_Sessions_MentorId_Status_Time");
 
-            builder.HasIndex(s => new { s.MenteeId, s.ScheduledStartTime })
-                .HasDatabaseName("IX_Sessions_MenteeId_ScheduledStartTime");
-
-            builder.HasIndex(s => s.Status)
-                .HasDatabaseName("IX_Sessions_Status");
+            builder.HasIndex(s => new { s.MenteeId, s.Status, s.ScheduledStartTime })
+                .HasDatabaseName("IX_Sessions_MenteeId_Status_Time");
         }
     }
 }

@@ -78,7 +78,7 @@ export class EmailVerificationComponent implements OnInit {
     // Check if user is already logged in
     if (this.authService.isAuthenticated()) {
       this.notificationService.info('You are already logged in.');
-      this.router.navigate(['/user/dashboard']);
+      this.router.navigate(['/']);
       return;
     }
 
@@ -113,7 +113,7 @@ export class EmailVerificationComponent implements OnInit {
     // Call AuthService to verify email
     this.authService.verifyEmail(request).subscribe({
       next: (response) => {
-        console.log('Email verification successful:', response);
+        // console.log('Email verification successful:', response);
 
         // Set success state
         this.verificationState = 'success';
@@ -128,8 +128,16 @@ export class EmailVerificationComponent implements OnInit {
           'Welcome to CareerRoute'
         );
 
-        // Start countdown and redirect to dashboard
-        this.startRedirectCountdown('/user/dashboard');
+        // Check if user registered as mentor and needs to complete application
+        const isMentor = response.user.isMentor;
+
+        if (isMentor) {
+          // User registered as mentor - redirect to application form
+          this.startRedirectCountdown('/user/apply-mentor');
+        } else {
+          // Regular user - redirect to home
+          this.startRedirectCountdown('/');
+        }
       },
       error: (error) => {
         console.error('Email verification failed:', error);
@@ -190,7 +198,7 @@ export class EmailVerificationComponent implements OnInit {
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval);
     }
-    this.router.navigate(['/user/dashboard']);
+    this.router.navigate(['/']);
   }
 
   /**

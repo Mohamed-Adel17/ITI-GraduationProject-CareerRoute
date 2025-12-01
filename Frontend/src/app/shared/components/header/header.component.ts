@@ -164,4 +164,50 @@ export class HeaderComponent implements OnInit {
   hasRole(user: AuthUser | null, role: UserRole): boolean {
     return user?.roles?.includes(role) || false;
   }
+
+  /**
+   * Get the appropriate profile route based on user role and mentor status
+   * Priority: Approved Mentor > Pending Mentor > Regular User
+   *
+   * @param user The authenticated user
+   * @returns Profile route path
+   */
+  getProfileRoute(user: AuthUser | null): string {
+    if (!user) return '/user/profile';
+
+    // Approved mentors: Route to mentor profile
+    if (this.hasRole(user, UserRole.Mentor)) {
+      return '/mentor/profile';
+    }
+
+    // Pending mentors: Route to application-pending page
+    // (Users with isMentor=true but no Mentor role - Types 2 & 3)
+    if (user.isMentor) {
+      return '/mentor/application-pending';
+    }
+
+    // Default to user profile for all other cases:
+    // - Regular users (Type 1)
+    // - Admins (unless they're also approved mentors)
+    return '/user/profile';
+  }
+
+  /**
+   * Get the appropriate sessions route based on user role
+   * Approved mentors go to mentor sessions, others go to user sessions
+   *
+   * @param user The authenticated user
+   * @returns Sessions route path
+   */
+  getSessionsRoute(user: AuthUser | null): string {
+    if (!user) return '/user/sessions';
+
+    // Approved mentors: Route to mentor sessions
+    if (this.hasRole(user, UserRole.Mentor)) {
+      return '/mentor/sessions';
+    }
+
+    // All other users (regular users, pending mentors): Route to user sessions
+    return '/user/sessions';
+  }
 }

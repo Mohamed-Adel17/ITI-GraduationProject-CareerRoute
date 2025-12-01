@@ -510,7 +510,76 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 
 ## Authenticated Endpoints (Require Authentication)
 
-### 7. Apply to Become a Mentor
+### 7. Get Current Mentor's Own Profile
+
+**Endpoint:** `GET /api/mentors/me`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Authenticated user with mentor profile (IsMentor = true)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentor profile retrieved successfully",
+  "data": {
+    "id": "cc0e8400-e29b-41d4-a716-446655440007",
+    "firstName": "Sarah",
+    "lastName": "Johnson",
+    "fullName": "Sarah Johnson",
+    "email": "sarah.johnson@example.com",
+    "profilePictureUrl": "https://example.com/profiles/sarah.jpg",
+    "bio": "Full-stack developer with 8 years of experience...",
+    "expertiseTags": [
+      { "id": 15, "name": "React", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" },
+      { "id": 18, "name": "Node.js", "categoryId": 3, "categoryName": "IT Careers & Technical Consultation" }
+    ],
+    "yearsOfExperience": 8,
+    "certifications": "AWS Certified Solutions Architect - Professional",
+    "rate30Min": 25.00,
+    "rate60Min": 45.00,
+    "averageRating": 4.8,
+    "totalReviews": 67,
+    "totalSessionsCompleted": 142,
+    "isVerified": true,
+    "approvalStatus": "Approved",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-10-29T14:20:00Z"
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Mentor profile not found",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token claims
+- Fetch mentor profile for current user
+- Return complete mentor profile including approval status
+- Return 404 if user doesn't have a mentor profile (IsMentor = false)
+- **Authorization**: Does NOT require Mentor role - users can access their mentor profile even while pending approval
+
+**Note:** This endpoint allows users to check their mentor application status and profile details before admin approval.
+
+---
+
+### 8. Apply to Become a Mentor
 
 **Endpoint:** `POST /api/mentors`
 **Requires:** `Authorization: Bearer {token}`
@@ -520,10 +589,16 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 ```json
 {
   "bio": "Full-stack developer with 8 years of experience building scalable enterprise software...",
+  "expertiseTagIds": [
+    0
+  ],
   "yearsOfExperience": 8,
   "certifications": "AWS Certified Solutions Architect - Professional, Google Cloud Professional Cloud Architect",
   "rate30Min": 25.00,
-  "rate60Min": 45.00
+  "rate60Min": 45.00,
+  "categoryIds": [
+    0
+  ]
 }
 ```
 
@@ -547,7 +622,15 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
     "email": "sarah.johnson@example.com",
     "profilePictureUrl": "https://example.com/profiles/sarah.jpg",
     "bio": "Full-stack developer with 8 years of experience...",
-    "expertiseTags": [],
+    "expertiseTags": [
+      {
+        "id": 0,
+        "name": "string",
+        "categoryId": 0,
+        "categoryName": "string",
+        "isActive": true
+      }
+    ],
     "yearsOfExperience": 8,
     "certifications": "AWS Certified Solutions Architect - Professional, Google Cloud Professional Cloud Architect",
     "rate30Min": 25.00,
@@ -602,42 +685,56 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - Check if user already has a mentor profile (return 400 if exists)
 - Validate all required fields
 - Create mentor profile with `approvalStatus: "Pending"`
+- Set `IsMentor = true` flag on user account
 - Set default values: averageRating=0, totalReviews=0, totalSessionsCompleted=0, isVerified=false
 - Notify admins of new application (optional)
 - Return created mentor profile
 
-**Note:** After approval by admin, mentor should add expertise tags using the `expertiseTagIds` field in `PATCH /api/mentors/{id}` endpoint
+**Note:** After approval by admin, mentor should add expertise tags using the `expertiseTagIds` field in `PATCH /api/mentors/me` endpoint
 
 ---
 
-### 8. Update Mentor Profile
+### 9. Update Current Mentor's Own Profile
 
-**Endpoint:** `PATCH /api/mentors/{id}`
+**Endpoint:** `PATCH /api/mentors/me`
 **Requires:** `Authorization: Bearer {token}`
-**Roles:** Mentor (own profile) or Admin
-
-**Path Parameters:**
-- `id` (string, GUID): Mentor ID to update
+**Roles:** Authenticated user with mentor profile (IsMentor = true)
 
 **Request Body:**
 ```json
 {
+  "firstName": "Sarah",
+  "lastName": "Johnson",
+  "phoneNumber": "+1234567890",
+  "profilePictureUrl": "https://example.com/profiles/sarah-new.jpg",
   "bio": "Updated bio...",
   "yearsOfExperience": 9,
   "certifications": "Updated certifications...",
   "rate30Min": 30.00,
   "rate60Min": 50.00,
-  "expertiseTagIds": [5, 15, 20, 25, 30]
+  "expertiseTagIds": [5, 15, 20, 25, 30],
+  "isAvailable": true,
+  "categoryIds": [1, 3]
 }
 ```
 
 **Field Requirements:**
+
+**User-related fields:**
+- `firstName` (optional): Min 2 chars, max 50 chars
+- `lastName` (optional): Min 2 chars, max 50 chars
+- `phoneNumber` (optional): Valid phone number format
+- `profilePictureUrl` (optional): Valid URL format, max 200 chars
+
+**Mentor-specific fields:**
 - `bio` (optional): Min 50 chars, max 1000 chars
 - `yearsOfExperience` (optional): Min 0, integer
 - `certifications` (optional): Max 500 chars
 - `rate30Min` (optional): Decimal, min 0, max 10000
 - `rate60Min` (optional): Decimal, min 0, max 10000
+- `isAvailable` (optional): Boolean - availability status
 - `expertiseTagIds` (optional): Array of skill IDs (integers), all IDs must be valid active skills, empty array [] clears all expertise tags
+- `categoryIds` (optional): Array of category IDs (integers), 1-5 categories
 
 **Note:** All fields are optional. Only provided fields will be updated.
 
@@ -680,8 +777,10 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
     "success": false,
     "message": "Validation failed",
     "errors": {
+      "FirstName": ["First name must be at least 2 characters"],
       "Bio": ["Bio must be at least 50 characters"],
-      "ExpertiseTagIds": ["One or more skill IDs are invalid or inactive"]
+      "ExpertiseTagIds": ["One or more skill IDs are invalid or inactive"],
+      "ProfilePictureUrl": ["Profile picture URL must be a valid URL"]
     },
     "statusCode": 400
   }
@@ -696,15 +795,6 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
   }
   ```
 
-- **403 Forbidden:**
-  ```json
-  {
-    "success": false,
-    "message": "You can only update your own mentor profile",
-    "statusCode": 403
-  }
-  ```
-
 - **404 Not Found:**
   ```json
   {
@@ -715,25 +805,27 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
   ```
 
 **Backend Behavior:**
-- Extract user ID from JWT token
-- Verify user owns this mentor profile OR user is Admin
+- Extract user ID from JWT token claims
+- Fetch mentor profile for current user
 - Validate all provided fields
 - Update only provided fields (PATCH semantics)
+- **User fields**: Update ApplicationUser entity (FirstName, LastName, PhoneNumber, ProfilePictureUrl)
+- **Mentor fields**: Update Mentor entity (Bio, YearsOfExperience, Certifications, Rates, IsAvailable)
 - If `expertiseTagIds` is provided:
-  - Get mentor's UserId from Mentor table
   - Validate all skill IDs exist and are active
   - Use database transaction: DELETE existing UserSkills for mentor's UserId, INSERT new UserSkills for provided IDs
   - Empty array [] clears all expertise tags
 - Update `updatedAt` timestamp
 - **Skills Integration**: Join mentor's UserSkills to get expertiseTags with full SkillDto structure in response
 - Return updated mentor profile
-- Return 403 if user doesn't own profile and is not Admin
+- Return 404 if user doesn't have a mentor profile
+- **Authorization**: Does NOT require Mentor role - users can update their mentor profile even while pending approval
 
 ---
 
 ## Admin Endpoints (Require Admin Role)
 
-### 9. Get Pending Mentor Applications
+### 10. Get Pending Mentor Applications
 
 **Endpoint:** `GET /api/mentors/pending`
 **Requires:** `Authorization: Bearer {token}`
@@ -799,7 +891,7 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 
 ---
 
-### 10. Approve Mentor Application
+### 11. Approve Mentor Application
 
 **Endpoint:** `PATCH /api/mentors/{id}/approve`
 **Requires:** `Authorization: Bearer {token}`
@@ -859,15 +951,17 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - Fetch mentor by ID
 - Check if mentor is in "Pending" status (return 400 if already approved/rejected)
 - Update `approvalStatus: "Approved"`
+- Update `isVerified: true` and `isAvailable: true`
+- Ensure `IsMentor = true` flag is set on user account (defensive check)
 - Update `updatedAt` timestamp
-- Send approval notification email to mentor
 - Add "Mentor" role to user account
+- Send approval notification email to mentor
 - Return success message
 - Return 403 if user is not Admin
 
 ---
 
-### 11. Reject Mentor Application
+### 12. Reject Mentor Application
 
 **Endpoint:** `PATCH /api/mentors/{id}/reject`
 **Requires:** `Authorization: Bearer {token}`
@@ -1015,16 +1109,25 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 ### UpdateMentorProfileDto
 ```typescript
 {
-  "bio": "string | optional",              // Optional: Min 50, max 1000 chars
+  // User-related fields
+  "firstName": "string | optional",         // Optional: Min 2, max 50 chars
+  "lastName": "string | optional",          // Optional: Min 2, max 50 chars
+  "phoneNumber": "string | optional",       // Optional: Valid phone format
+  "profilePictureUrl": "string | optional", // Optional: Valid URL, max 200 chars
+  
+  // Mentor-specific fields
+  "bio": "string | optional",               // Optional: Min 50, max 1000 chars
   "yearsOfExperience": "number | optional", // Optional: Min 0, integer
-  "certifications": "string | optional",   // Optional: Max 500 chars
-  "rate30Min": "decimal | optional",       // Optional: Min 0, max 10000
-  "rate60Min": "decimal | optional",       // Optional: Min 0, max 10000
-  "expertiseTagIds": "number[] | optional" // Optional: Array of skill IDs, empty array [] clears all
+  "certifications": "string | optional",    // Optional: Max 500 chars
+  "rate30Min": "decimal | optional",        // Optional: Min 0, max 10000
+  "rate60Min": "decimal | optional",        // Optional: Min 0, max 10000
+  "isAvailable": "boolean | optional",      // Optional: Availability status
+  "expertiseTagIds": "number[] | optional", // Optional: Array of skill IDs, empty array [] clears all
+  "categoryIds": "number[] | optional"      // Optional: Array of category IDs, 1-5 categories
 }
 ```
 
-**Note:** All fields are optional. Only provided fields will be updated.
+**Note:** All fields are optional. Only provided fields will be updated. User-related fields update the ApplicationUser entity, while mentor-specific fields update the Mentor entity.
 
 ### RejectMentorDto
 ```typescript
@@ -1253,6 +1356,13 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 ### GET /api/categories/{id}/mentors
 - [ ] See [Category-Endpoints.md](./Category-Endpoints.md#testing-checklist) for full testing checklist
 
+### GET /api/mentors/me (Get Own Profile)
+- [ ] Get own mentor profile with valid token
+- [ ] Get profile without token (401)
+- [ ] Get profile when not a mentor (404)
+- [ ] Verify all fields are returned including approval status
+- [ ] Verify works for pending mentors (before approval)
+
 ### POST /api/mentors (Apply as Mentor)
 - [ ] Apply with valid data as authenticated user
 - [ ] Apply with missing required fields (400)
@@ -1260,17 +1370,25 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - [ ] Apply when already have mentor profile (400)
 - [ ] Apply without authentication (401)
 - [ ] Verify approvalStatus is "Pending"
+- [ ] Verify IsMentor flag is set to true
 - [ ] Verify mentor profile is created
 
-### PATCH /api/mentors/{id} (Update Profile)
-- [ ] Update own profile with valid data
+### PATCH /api/mentors/me (Update Own Profile)
+- [ ] Update own profile with valid data (user fields)
+- [ ] Update own profile with valid data (mentor fields)
 - [ ] Update with partial data (only some fields)
-- [ ] Update as Admin (should succeed)
-- [ ] Update other mentor's profile as non-Admin (403)
+- [ ] Update firstName, lastName, phoneNumber, profilePictureUrl
+- [ ] Update bio, rates, certifications, availability
+- [ ] Update expertiseTagIds
+- [ ] Update with invalid firstName (too short) (400)
 - [ ] Update with invalid bio (too short) (400)
+- [ ] Update with invalid profilePictureUrl (400)
 - [ ] Update non-existent mentor (404)
 - [ ] Update without authentication (401)
 - [ ] Verify updatedAt is updated
+- [ ] Verify user fields update ApplicationUser entity
+- [ ] Verify mentor fields update Mentor entity
+- [ ] Verify works for pending mentors (before approval)
 
 ### GET /api/mentors/pending (Admin)
 - [ ] Get pending applications as Admin
@@ -1286,6 +1404,9 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - [ ] Approve without authentication (401)
 - [ ] Approve non-existent mentor (404)
 - [ ] Verify approvalStatus is "Approved"
+- [ ] Verify IsMentor flag is set to true
+- [ ] Verify isVerified is set to true
+- [ ] Verify isAvailable is set to true
 - [ ] Verify user gets "Mentor" role
 
 ### PATCH /api/mentors/{id}/reject (Admin)
@@ -1297,6 +1418,480 @@ Mentor endpoints handle the complete mentor lifecycle: public discovery, mentor 
 - [ ] Reject without authentication (401)
 - [ ] Reject non-existent mentor (404)
 - [ ] Verify approvalStatus is "Rejected"
+
+---
+
+## TimeSlot Availability Management
+
+### 13. Get Available Time Slots for Mentor (Public)
+
+**Endpoint:** `GET /api/mentors/{mentorId}/available-slots`
+**Requires:** None (public access)
+**Roles:** Public
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+
+**Query Parameters:**
+- `startDate` (datetime, optional): Filter slots from this date (default: 24 hours from now)
+- `endDate` (datetime, optional): Filter slots until this date (default: startDate + 90 days, max range: 90 days)
+- `durationMinutes` (integer, optional): Filter by slot duration (30 or 60)
+
+**Default Behavior (No Query Parameters):**
+- Returns all available slots starting **24 hours from now** (respects advance booking rule)
+- Extends up to **90 days** into the future
+- Only includes unbooked slots (`IsBooked = false`)
+- Automatically filters out slots less than 24 hours away
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Available slots retrieved successfully",
+  "data": {
+    "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+    "mentorName": "Sarah Johnson",
+    "availableSlots": [
+      {
+        "id": "ts_123456789",
+        "startDateTime": "2025-12-15T14:00:00Z",
+        "endDateTime": "2025-12-15T15:00:00Z",
+        "durationMinutes": 60,
+        "price": 45.00
+      },
+      {
+        "id": "ts_987654321",
+        "startDateTime": "2025-12-15T16:00:00Z",
+        "endDateTime": "2025-12-15T16:30:00Z",
+        "durationMinutes": 30,
+        "price": 25.00
+      }
+    ],
+    "totalCount": 12,
+    "dateRange": {
+      "startDate": "2025-11-22",
+      "endDate": "2026-02-20"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request (Invalid Parameters):**
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed",
+    "errors": {
+      "StartDate": ["Start date must be before end date"],
+      "DurationMinutes": ["Duration must be 30 or 60 minutes"],
+      "DateRange": ["Date range cannot exceed 90 days"]
+    },
+    "statusCode": 400
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "No available slots found for the specified date range",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Validate mentor exists and is approved
+- Default start date: **24 hours from current time** (not midnight, ensures 24-hour advance booking)
+- Default end date: **90 days from start date**
+- Only return slots where `IsBooked = false`
+- **Always enforce 24-hour minimum advance booking** (even if user provides earlier startDate)
+- Filter by date range and duration if provided
+- Calculate price from mentor's `rate30Min` or `rate60Min` based on duration
+- Order by `startDateTime` ASC
+- Return 404 if no available slots found
+
+---
+
+### 14. Create Time Slot(s) for Mentor
+
+**Endpoint:** `POST /api/mentors/{mentorId}/time-slots`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Mentor (owner) or Admin
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+
+**Request Body (Single Slot):**
+```json
+{
+  "startDateTime": "2025-12-15T14:00:00Z",
+  "durationMinutes": 60
+}
+```
+
+**Request Body (Batch - Max 50 Slots):**
+```json
+{
+  "slots": [
+    {
+      "startDateTime": "2025-12-15T14:00:00Z",
+      "durationMinutes": 60
+    },
+    {
+      "startDateTime": "2025-12-15T16:00:00Z",
+      "durationMinutes": 30
+    }
+  ]
+}
+```
+
+**Field Requirements:**
+- `startDateTime` (required): ISO 8601 datetime, must be at least 24 hours in the future
+- `durationMinutes` (required): Integer, must be 30 or 60
+- `slots` (for batch): Array of slot objects, min 1, max 50
+
+**Success Response (201) - Single Slot:**
+```json
+{
+  "success": true,
+  "message": "Time slot created successfully",
+  "data": {
+    "id": "ts_123456789",
+    "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+    "startDateTime": "2025-12-15T14:00:00Z",
+    "endDateTime": "2025-12-15T15:00:00Z",
+    "durationMinutes": 60,
+    "isBooked": false,
+    "sessionId": null,
+    "createdAt": "2025-11-21T10:00:00Z",
+    "canDelete": true
+  },
+  "statusCode": 201
+}
+```
+
+**Success Response (201) - Batch:**
+```json
+{
+  "success": true,
+  "message": "5 time slots created successfully",
+  "data": [
+    {
+      "id": "ts_123456789",
+      "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+      "startDateTime": "2025-12-15T14:00:00Z",
+      "endDateTime": "2025-12-15T15:00:00Z",
+      "durationMinutes": 60,
+      "isBooked": false,
+      "sessionId": null,
+      "createdAt": "2025-11-21T10:00:00Z",
+      "canDelete": true
+    }
+  ],
+  "statusCode": 201
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request (Validation):**
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed",
+    "errors": {
+      "StartDateTime": ["Time slot must be at least 24 hours in the future"],
+      "DurationMinutes": ["Duration must be 30 or 60 minutes"],
+      "Slots": ["Cannot create more than 50 slots in one request"]
+    },
+    "statusCode": 400
+  }
+  ```
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You can only manage time slots for your own mentor profile",
+    "statusCode": 403
+  }
+  ```
+
+- **409 Conflict (Duplicate):**
+  ```json
+  {
+    "success": false,
+    "message": "A time slot already exists at 2025-12-15 14:00",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token
+- Verify user is mentor owner or admin
+- Validate all slots are at least 24 hours in future
+- Validate duration is 30 or 60 minutes
+- Check for duplicate slots at same time
+- For batch: validate all slots before creating any (atomic operation)
+- Create TimeSlot entities with `IsBooked = false`, `SessionId = null`
+- Return created slot(s) with calculated `endDateTime` and `canDelete` flag
+
+---
+
+### 15. Get Mentor's All Time Slots
+
+**Endpoint:** `GET /api/mentors/{mentorId}/time-slots`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Mentor (owner) or Admin
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+
+**Query Parameters:**
+- `startDate` (datetime, optional): Filter slots from this date (default: today)
+- `endDate` (datetime, optional): Filter slots until this date (default: startDate + 30 days, max range: 90 days)
+- `isBooked` (boolean, optional): Filter by booking status (true = booked, false = available, null = all)
+- `page` (integer, optional): Page number (default: 1, min: 1)
+- `pageSize` (integer, optional): Items per page (default: 20, min: 1, max: 100)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Time slots retrieved successfully",
+  "data": {
+    "timeSlots": [
+      {
+        "id": "ts_123456789",
+        "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+        "startDateTime": "2025-12-15T14:00:00Z",
+        "endDateTime": "2025-12-15T15:00:00Z",
+        "durationMinutes": 60,
+        "isBooked": true,
+        "sessionId": "session_abc123",
+        "session": {
+          "id": "session_abc123",
+          "menteeFirstName": "John",
+          "menteeLastName": "Doe",
+          "status": "Confirmed",
+          "topic": "System Design Interview Prep"
+        },
+        "createdAt": "2025-11-21T10:00:00Z",
+        "canDelete": false
+      },
+      {
+        "id": "ts_987654321",
+        "mentorId": "cc0e8400-e29b-41d4-a716-446655440007",
+        "startDateTime": "2025-12-15T16:00:00Z",
+        "endDateTime": "2025-12-15T16:30:00Z",
+        "durationMinutes": 30,
+        "isBooked": false,
+        "sessionId": null,
+        "session": null,
+        "createdAt": "2025-11-21T10:00:00Z",
+        "canDelete": true
+      }
+    ],
+    "pagination": {
+      "totalCount": 45,
+      "currentPage": 1,
+      "pageSize": 20,
+      "totalPages": 3,
+      "hasNextPage": true,
+      "hasPreviousPage": false
+    },
+    "summary": {
+      "totalSlots": 45,
+      "availableSlots": 32,
+      "bookedSlots": 13
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request:**
+  ```json
+  {
+    "success": false,
+    "message": "Validation failed",
+    "errors": {
+      "Page": ["Page must be greater than or equal to 1"],
+      "PageSize": ["Page size must be between 1 and 100"],
+      "DateRange": ["Date range cannot exceed 90 days"]
+    },
+    "statusCode": 400
+  }
+  ```
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You can only manage time slots for your own mentor profile",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "No time slots found",
+    "statusCode": 404
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token
+- Verify user is mentor owner or admin
+- Default date range: today to 30 days from today
+- Filter by date range, booking status if provided
+- Include session details for booked slots (mentee name, status, topic)
+- Calculate `canDelete` flag (true if not booked)
+- Order by `startDateTime` ASC
+- Apply pagination
+- Calculate summary statistics (total, available, booked counts)
+- Return 404 if no slots found
+
+---
+
+### 16. Delete Time Slot
+
+**Endpoint:** `DELETE /api/mentors/{mentorId}/time-slots/{slotId}`
+**Requires:** `Authorization: Bearer {token}`
+**Roles:** Mentor (owner) or Admin
+
+**Path Parameters:**
+- `mentorId` (string, GUID): Mentor ID
+- `slotId` (string, GUID): Time slot ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Time slot deleted successfully"
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized:**
+  ```json
+  {
+    "success": false,
+    "message": "Invalid authentication token",
+    "statusCode": 401
+  }
+  ```
+
+- **403 Forbidden:**
+  ```json
+  {
+    "success": false,
+    "message": "You can only manage time slots for your own mentor profile",
+    "statusCode": 403
+  }
+  ```
+
+- **404 Not Found:**
+  ```json
+  {
+    "success": false,
+    "message": "Time slot not found",
+    "statusCode": 404
+  }
+  ```
+
+- **409 Conflict (Booked Slot):**
+  ```json
+  {
+    "success": false,
+    "message": "Cannot delete a booked time slot. Please cancel the session first.",
+    "statusCode": 409
+  }
+  ```
+
+**Backend Behavior:**
+- Extract user ID from JWT token
+- Verify user is mentor owner or admin
+- Validate slot exists and belongs to this mentor
+- Check slot is not booked (`IsBooked = false`)
+- Return 409 if slot is booked
+- Delete slot from database
+- Return success message
+
+**Note:** When a session is cancelled, the associated TimeSlot is automatically released (`IsBooked = false`, `SessionId = null`) and becomes available for booking again.
+
+---
+
+## Testing Checklist
+
+### GET /api/mentors/{mentorId}/available-slots (Public)
+- [ ] Get available slots without filters
+- [ ] Filter by date range (startDate, endDate)
+- [ ] Filter by duration (30 or 60 minutes)
+- [ ] Invalid date range (startDate > endDate) (400)
+- [ ] Date range exceeds 90 days (400)
+- [ ] Invalid duration (not 30 or 60) (400)
+- [ ] Mentor not found (404)
+- [ ] No available slots (404)
+- [ ] Verify only slots >24h in future are returned
+- [ ] Verify only IsBooked=false slots are returned
+- [ ] Verify price calculated from mentor's rates
+
+### POST /api/mentors/{mentorId}/time-slots (Authenticated)
+- [ ] Create single slot successfully
+- [ ] Create batch slots (2-50 slots)
+- [ ] Create slot <24h in future (400)
+- [ ] Create slot with invalid duration (400)
+- [ ] Create batch with >50 slots (400)
+- [ ] Create duplicate slot (409)
+- [ ] Create as non-owner mentor (403)
+- [ ] Create without authentication (401)
+- [ ] Verify admin can create for any mentor
+- [ ] Verify batch is atomic (all or nothing)
+
+### GET /api/mentors/{mentorId}/time-slots (Authenticated)
+- [ ] Get all slots with pagination
+- [ ] Filter by date range
+- [ ] Filter by isBooked status
+- [ ] Invalid pagination parameters (400)
+- [ ] Get as non-owner mentor (403)
+- [ ] Get without authentication (401)
+- [ ] Verify session details included for booked slots
+- [ ] Verify summary statistics are correct
+- [ ] Verify admin can view any mentor's slots
+
+### DELETE /api/mentors/{mentorId}/time-slots/{slotId} (Authenticated)
+- [ ] Delete available slot successfully
+- [ ] Delete booked slot (409)
+- [ ] Delete non-existent slot (404)
+- [ ] Delete as non-owner mentor (403)
+- [ ] Delete without authentication (401)
+- [ ] Verify admin can delete any mentor's slots
+- [ ] Verify slot belongs to specified mentor
 
 ---
 
@@ -1337,6 +1932,12 @@ GET http://localhost:5000/api/mentors/top-rated?count=20
 GET http://localhost:5000/api/mentors/cc0e8400-e29b-41d4-a716-446655440007
 ```
 
+**Get Current Mentor's Own Profile:**
+```bash
+GET http://localhost:5000/api/mentors/me
+Authorization: Bearer {access-token}
+```
+
 **Get All Categories:**
 ```bash
 # See Category-Endpoints.md for full examples
@@ -1364,15 +1965,21 @@ Content-Type: application/json
 }
 ```
 
-**Update Mentor Profile:**
+**Update Current Mentor's Own Profile:**
 ```bash
-PATCH http://localhost:5000/api/mentors/cc0e8400-e29b-41d4-a716-446655440007
+PATCH http://localhost:5000/api/mentors/me
 Authorization: Bearer {access-token}
 Content-Type: application/json
 
 {
+  "firstName": "Sarah",
+  "lastName": "Johnson",
+  "phoneNumber": "+1234567890",
+  "profilePictureUrl": "https://example.com/profiles/sarah-new.jpg",
   "bio": "Updated bio...",
-  "rate30Min": 30.00
+  "rate30Min": 30.00,
+  "isAvailable": true,
+  "expertiseTagIds": [15, 18, 22, 25, 30]
 }
 ```
 

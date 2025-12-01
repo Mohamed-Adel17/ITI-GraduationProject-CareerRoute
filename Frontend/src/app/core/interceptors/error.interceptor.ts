@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../services/notification.service';
 import { ApiResponse, getApiErrorMessage } from '../../shared/models/api-response.model';
 
 /**
@@ -30,6 +31,7 @@ export const errorInterceptor: HttpInterceptorFn = (
 ): Observable<HttpEvent<unknown>> => {
   const router = inject(Router);
   const authService = inject(AuthService);
+  const notificationService = inject(NotificationService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {

@@ -1,0 +1,107 @@
+<div class="transcript-viewer-container">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+        <img src="/logo.png" alt="Loading" class="logo-spin" style="width: 48px; height: 48px; object-fit: contain;" />
+        <p class="loading-text">Loading transcript...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!isLoading && errorMessage" class="error-state">
+        <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <p class="error-message">{{ errorMessage }}</p>
+        <button class="retry-button" (click)="refreshTranscript()">
+            <svg class="retry-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                </path>
+            </svg>
+            Retry
+        </button>
+    </div>
+
+    <!-- Transcript Not Available -->
+    <div *ngIf="!isLoading && !errorMessage && !isAvailable" class="empty-state">
+        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+            </path>
+        </svg>
+        <h3 class="empty-title">Transcript Not Available</h3>
+        <p class="empty-message">
+            The transcript for this session is not yet available. Transcripts are generated automatically after the
+            session is completed.
+        </p>
+    </div>
+
+    <!-- Transcript Available -->
+    <div *ngIf="!isLoading && !errorMessage && isAvailable" class="transcript-content">
+        <!-- Header with Actions -->
+        <div class="transcript-header">
+            <div class="header-info">
+                <h3 class="transcript-title">Session Transcript</h3>
+                <p class="transcript-meta">{{ totalLines }} lines</p>
+            </div>
+            <div class="header-actions">
+                <button class="action-button copy-button" (click)="copyToClipboard()" title="Copy to clipboard">
+                    <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    Copy
+                </button>
+                <button class="action-button download-button" (click)="downloadTranscript()"
+                    title="Download transcript">
+                    <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    Download
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input type="text" class="search-input" placeholder="Search transcript..." [(ngModel)]="searchQuery"
+                    (input)="onSearchChange()" />
+                <button *ngIf="isSearching" class="clear-search-button" (click)="clearSearch()" title="Clear search">
+                    <svg class="clear-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <p *ngIf="isSearching" class="search-results">
+                Showing {{ filteredLineCount }} of {{ totalLines }} lines
+            </p>
+        </div>
+
+        <!-- Transcript Lines -->
+        <div class="transcript-lines">
+            <div *ngIf="filteredLineCount === 0" class="no-results">
+                <svg class="no-results-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="no-results-text">No results found for "{{ searchQuery }}"</p>
+            </div>
+
+            <div *ngFor="let line of filteredLines; let i = index" class="transcript-line">
+                <div class="line-header">
+                    <span class="line-timestamp">{{ line.timestamp }}</span>
+                    <span class="line-speaker">{{ line.speaker }}</span>
+                </div>
+                <p class="line-text">{{ line.text }}</p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -135,18 +135,16 @@
   z-index: 1001;
 }
 
-/* Backdrop blur fallback for older browsers */
-@supports not (backdrop-filter: blur(8px)) {
-  .site-header {
-    background-color: rgba(246, 247, 248, 0.95);
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    .site-header {
-      background-color: rgba(16, 28, 34, 0.95);
-    }
-  }
+/* Solid background - no transparency or blur */
+.site-header {
+  background-color: #ffffff;
 }
+
+/* @media (prefers-color-scheme: dark) {
+  .site-header {
+    background-color: #101c22;
+  }
+} */
 
 /* Print styles - hide header when printing */
 @media print {

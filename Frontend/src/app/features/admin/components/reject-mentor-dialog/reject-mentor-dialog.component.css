@@ -1,0 +1,19 @@
+/* RejectMentorDialogComponent Styles */
+
+/* All styling is handled by Tailwind CSS utility classes in the template */
+/* This file is kept minimal as per CLAUDE.md guidelines */
+
+/* Backdrop blur animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Optional: Add fade-in animation for modal */
+.modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}

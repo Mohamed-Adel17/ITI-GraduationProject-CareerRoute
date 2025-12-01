@@ -1,9 +1,29 @@
 /* Login Component Styles */
 
+/* Page entrance animation */
+:host {
+  display: block;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Form Input Focus States */
 input:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Input field transitions */
+input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Custom Checkbox Styling */
@@ -23,7 +43,11 @@ button[type='button']:hover svg {
   transition: transform 0.2s ease-in-out;
 }
 
-/* Submit Button Loading State */
+/* Submit Button States */
+button[type='submit'] {
+  transition: all 0.2s ease-in-out;
+}
+
 button[type='submit']:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -31,8 +55,11 @@ button[type='submit']:disabled {
 
 button[type='submit']:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+button[type='submit']:not(:disabled):active {
+  transform: translateY(0);
 }
 
 /* Error Message Animation */
@@ -87,16 +114,49 @@ a {
   transition: color 0.2s ease-in-out;
 }
 
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* Feature Card Hover Effect (Right Panel) */
-.lg\:flex .space-y-4 > div:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease-in-out;
+.space-y-4 > div {
+  transition: all 0.3s ease;
+}
+
+.space-y-4 > div:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Feature icon animation */
+.space-y-4 > div svg {
+  transition: transform 0.3s ease;
+}
+
+.space-y-4 > div:hover svg {
+  transform: scale(1.1);
+}
+
+/* Staggered animation for feature cards */
+.space-y-4 > div:nth-child(1) { animation: slideUp 0.4s ease-out 0.1s both; }
+.space-y-4 > div:nth-child(2) { animation: slideUp 0.4s ease-out 0.2s both; }
+.space-y-4 > div:nth-child(3) { animation: slideUp 0.4s ease-out 0.3s both; }
+.space-y-4 > div:nth-child(4) { animation: slideUp 0.4s ease-out 0.4s both; }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Responsive Design Adjustments */
 @media (max-width: 1024px) {
-  /* Stack layout on smaller screens */
   .min-h-screen {
     flex-direction: column;
   }
@@ -106,6 +166,10 @@ a {
 @media (prefers-color-scheme: dark) {
   input:focus {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+  
+  .space-y-4 > div:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -127,4 +191,12 @@ a {
 
 .max-w-lg {
   max-width: 32rem;
+}
+
+/* Print styles */
+@media print {
+  .bg-blue-50,
+  .dark\:bg-blue-900\/10 {
+    display: none;
+  }
 }

@@ -16,6 +16,7 @@ import { Skill } from './skill.model';
 
 /**
  * Mentor approval status enum
+ * Backend sends numeric values: 0 = Pending, 1 = Approved, 2 = Rejected
  */
 export enum MentorApprovalStatus {
   Pending = 'Pending',
@@ -205,30 +206,49 @@ export interface MentorDetail {
 /**
  * Mentor profile update data (UpdateMentorProfileDto)
  * All fields are optional - only provided fields will be updated
+ * Based on Mentor-Endpoints.md - Endpoint #9: PATCH /api/mentors/me
+ *
+ * @remarks
+ * - User-related fields update the ApplicationUser entity (firstName, lastName, phoneNumber, profilePictureUrl)
+ * - Mentor-specific fields update the Mentor entity (bio, yearsOfExperience, certifications, rates, isAvailable, expertiseTagIds, categoryIds)
+ * - Empty array [] for expertiseTagIds clears all expertise tags
  */
 export interface MentorProfileUpdate {
+  // User-related fields
+  firstName?: string; // Min 2 chars, max 50 chars
+  lastName?: string; // Min 2 chars, max 50 chars
+  phoneNumber?: string; // Valid phone number format
+  profilePictureUrl?: string; // Valid URL format, max 200 chars
+
+  // Mentor-specific fields
   bio?: string; // Min 50 chars, max 1000 chars
   yearsOfExperience?: number; // Min 0, integer
   certifications?: string; // Max 500 chars
   rate30Min?: number; // Min 0, max 10000
   rate60Min?: number; // Min 0, max 10000
+  isAvailable?: boolean; // Availability status
   expertiseTagIds?: number[]; // Array of skill IDs, empty array [] clears all
+  categoryIds?: number[]; // Array of category IDs, 1-5 categories
 }
 
 /**
  * Mentor application data (when user applies to become mentor) (CreateMentorProfileDto)
  *
  * @remarks
- * - According to API contract, expertise tags are NOT included in initial application
- * - After approval, mentor can add expertise tags using PATCH /api/mentors/{id} with expertiseTagIds
- * - Initial application starts with empty expertiseTags array
+ * - According to updated API contract (Endpoint #7: POST /api/mentors)
+ * - Includes expertiseTagIds and categoryIds arrays
+ * - expertiseTagIds: Array of skill IDs (integers) for mentor's expertise areas
+ * - categoryIds: Array of category IDs (integers) for mentor's service categories
+ * - Both arrays are required in the application
  */
 export interface MentorApplication {
   bio: string; // Required: Min 50, max 1000 chars
+  expertiseTagIds: number[]; // Required: Array of skill IDs
   yearsOfExperience: number; // Required: Min 0, integer
   certifications?: string; // Optional: Max 500 chars
   rate30Min: number; // Required: Min 0, max 10000
   rate60Min: number; // Required: Min 0, max 10000
+  categoryIds: number[]; // Required: Array of category IDs
 }
 
 /**
@@ -418,6 +438,23 @@ export function getApprovalStatusColor(status: MentorApprovalStatus): string {
 }
 
 /**
+ * Helper function to get approval status display text
+ * Converts numeric enum value to readable string
+ */
+export function getApprovalStatusText(status: MentorApprovalStatus): string {
+  switch (status) {
+    case MentorApprovalStatus.Approved:
+      return 'Approved';
+    case MentorApprovalStatus.Pending:
+      return 'Pending';
+    case MentorApprovalStatus.Rejected:
+      return 'Rejected';
+    default:
+      return 'Unknown';
+  }
+}
+
+/**
  * Helper function to calculate hourly rate from 30-min rate
  */
 export function getHourlyRate(rate30Min: number): number {
@@ -427,8 +464,8 @@ export function getHourlyRate(rate30Min: number): number {
 /**
  * Helper function to format price
  */
-export function formatPrice(price: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatPrice(price: number, currency: string = 'EGP'): string {
+  return new Intl.NumberFormat('en-EG', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 0,
@@ -440,7 +477,7 @@ export function formatPrice(price: number, currency: string = 'USD'): string {
  * Helper function to get price range display
  */
 export function getPriceRange(mentor: Mentor | MentorListItem | MentorDetail): string {
-  return `${formatPrice(mentor.rate30Min)}/30min - ${formatPrice(mentor.rate60Min)}/60min`;
+  return `From ${mentor.rate30Min} EGP`;
 }
 
 /**

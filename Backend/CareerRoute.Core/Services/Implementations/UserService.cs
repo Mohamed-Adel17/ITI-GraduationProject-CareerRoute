@@ -27,25 +27,46 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly UserManager<ApplicationUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IValidator<UpdateUserDto> updateValidator;
+        private readonly ISkillService skillService;
 
 
         public UserService(IMapper mapper , 
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager,
-             IValidator<UpdateUserDto> updateValidator) {
+             IValidator<UpdateUserDto> updateValidator, ISkillService skillService) {
 
             //this.userRepository = userRepository;
             this.mapper = mapper;
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.updateValidator = updateValidator;
+            this.skillService = skillService;
         }
       
         public async Task<IEnumerable<RetrieveUserDto>> GetAllUsersAsync()
         {
             //retrieve users using manager not pure repository
 
-            var users = await userManager.Users.ToListAsync();
-            return mapper.Map<IEnumerable<RetrieveUserDto>>(users);
+            var users = await userManager.Users
+                .Where(u => !u.IsMentor)
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .ToListAsync();
+            
+            var userDtos = mapper.Map<IEnumerable<RetrieveUserDto>>(users);
+            
+            // Set roles for each user
+            foreach (var userDto in userDtos)
+            {
+                var user = users.FirstOrDefault(u => u.Id == userDto.Id);
+                if (user != null)
+                {
+                    var roles = await userManager.GetRolesAsync(user);
+                    userDto.Roles = roles.ToList();
+                }
+            }
+            
+            return userDtos;
         }
 
 
@@ -53,23 +74,74 @@ namespace CareerRoute.Core.Services.Implementations
         {
             //retrieve users using manager not pure repository
 
-            var user = await userManager.FindByIdAsync(id);
+            var user = await userManager.Users
+                .Where(u => !u.IsMentor)
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .FirstOrDefaultAsync(u => u.Id == id);
+            
             if (user == null)
             {
                 throw new NotFoundException("User", id);
             }
-            return mapper.Map<RetrieveUserDto>(user);
+            
+            var userDto = mapper.Map<RetrieveUserDto>(user);
+            var roles = await userManager.GetRolesAsync(user);
+            userDto.Roles = roles.ToList();
+            
+            return userDto;
         }
 
         public async Task<RetrieveUserDto> UpdateUserByIdAsync(string id , UpdateUserDto uuDto)
         {
             await updateValidator.ValidateAndThrowCustomAsync(uuDto);
 
-            var user = await userManager.FindByIdAsync(id);
+            var user = await userManager.Users
+                .Where(u => !u.IsMentor)
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .FirstOrDefaultAsync(u => u.Id == id);
+                
             if (user == null)
                 throw new NotFoundException("User", id);
 
-            mapper.Map(uuDto, user);
+            // Handle CareerInterestIds - Update UserSkills junction table
+            if (uuDto.CareerInterestIds != null)
+            {
+                // Validate skill IDs
+                var isValid = await skillService.ValidateSkillIdsAsync(uuDto.CareerInterestIds);
+                if (!isValid)
+                {
+                    throw new Exceptions.ValidationException(new Dictionary<string, string[]>
+                    {
+                        ["CareerInterestIds"] = new[] { "One or more skill IDs are invalid or inactive" }
+                    });
+                }
+
+                // Remove existing UserSkills
+                var existingSkills = user.UserSkills.ToList();
+                user.UserSkills.Clear();
+
+                // Add new UserSkills
+                foreach (var skillId in uuDto.CareerInterestIds)
+                {
+                    user.UserSkills.Add(new UserSkill
+                    {
+                        UserId = id,
+                        SkillId = skillId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            // Map other fields (excluding CareerInterestIds which was already handled)
+            if (uuDto.FirstName != null) user.FirstName = uuDto.FirstName;
+            if (uuDto.LastName != null) user.LastName = uuDto.LastName;
+            if (uuDto.PhoneNumber != null) user.PhoneNumber = uuDto.PhoneNumber;
+            if (uuDto.ProfilePictureUrl != null) user.ProfilePictureUrl = uuDto.ProfilePictureUrl;
+            if (uuDto.CareerGoals != null) user.CareerGoal = uuDto.CareerGoals;
 
             var result = await userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -78,7 +150,19 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException($"Update failed: {errors}");
             }
 
-            return mapper.Map<RetrieveUserDto>(user);
+            // Reload user with skills to get updated data
+            user = await userManager.Users
+                .Where(u => !u.IsMentor)
+                .Include(u => u.UserSkills)
+                    .ThenInclude(us => us.Skill)
+                        .ThenInclude(s => s.Category)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            var userDto = mapper.Map<RetrieveUserDto>(user);
+            var roles = await userManager.GetRolesAsync(user);
+            userDto.Roles = roles.ToList();
+
+            return userDto;
         }
 
 
@@ -86,7 +170,9 @@ namespace CareerRoute.Core.Services.Implementations
         {
             //delete user using manager not pure repository
 
-            var user = await userManager.FindByIdAsync(id);
+            var user = await userManager.Users
+                .Where(u => !u.IsMentor)
+                .FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
                 throw new NotFoundException("User", id);
 

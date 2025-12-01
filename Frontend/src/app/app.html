@@ -1,7 +1,15 @@
 <!-- Career Route Application Root Template -->
-<app-header />
-<!-- Notification Component - displays toast notifications globally -->
-<app-notification></app-notification>
+<div class="flex flex-col min-h-screen">
+  <app-header />
+  
+  <!-- Notification Component - displays toast notifications globally -->
+  <app-notification></app-notification>
 
-<!-- Router Outlet - renders routed components -->
-<router-outlet />
+  <!-- Main Content Area -->
+  <main class="flex-1">
+    <router-outlet />
+  </main>
+
+  <!-- Footer -->
+  <app-footer />
+</div>

@@ -1,0 +1,177 @@
+using AutoMapper;
+using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Interfaces;
+using CareerRoute.Core.DTOs.Categories;
+using CareerRoute.Core.Exceptions;
+using CareerRoute.Core.Extentions;
+using CareerRoute.Core.Services.Interfaces;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+
+namespace CareerRoute.Core.Services.Implementations
+{
+    public class CategoryService : ICategoryService
+    {
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly IMapper _mapper;
+        private readonly ILogger<CategoryService> _logger;
+        private readonly IValidator<CreateCategoryDto> _createValidator;
+        private readonly IValidator<UpdateCategoryDto> _updateValidator;
+        private readonly ICacheService _cache;
+        private const string CategoriesCacheKey = "AllCategories";
+
+        public CategoryService(
+            ICategoryRepository categoryRepository,
+            IMapper mapper,
+            ILogger<CategoryService> logger,
+            IValidator<CreateCategoryDto> createValidator,
+            IValidator<UpdateCategoryDto> updateValidator,
+            ICacheService cache)
+        {
+            _categoryRepository = categoryRepository;
+            _mapper = mapper;
+            _logger = logger;
+            _createValidator = createValidator;
+            _updateValidator = updateValidator;
+            _cache = cache;
+        }
+
+        public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()
+        {
+            var cachedCategories = await _cache.GetAsync<IEnumerable<CategoryDto>>(CategoriesCacheKey);
+            if (cachedCategories != null)
+            {
+                _logger.LogInformation("Fetching categories from cache");
+                return cachedCategories;
+            }
+
+            _logger.LogInformation("Fetching categories from database");
+            var categories = await _categoryRepository.GetAllActiveAsync();
+            var categoryDtos = _mapper.Map<IEnumerable<CategoryDto>>(categories).ToList();
+            
+            // Get mentor counts for all categories
+            var mentorCounts = await _categoryRepository.GetMentorCountsAsync();
+            
+            // Populate mentor count for each category
+            foreach (var categoryDto in categoryDtos)
+            {
+                categoryDto.MentorCount = mentorCounts.TryGetValue(categoryDto.Id, out var count) ? count : 0;
+            }
+
+            await _cache.SetAsync(CategoriesCacheKey, categoryDtos, TimeSpan.FromMinutes(30), TimeSpan.FromHours(2));
+            
+            return categoryDtos;
+        }
+
+        public async Task<CategoryDto> GetCategoryByIdAsync(int id)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            
+            if (category == null)
+            {
+                throw new NotFoundException("Category", id.ToString());
+            }
+
+            var categoryDto = _mapper.Map<CategoryDto>(category);
+            
+            // Get mentor count for this category
+            var mentorCounts = await _categoryRepository.GetMentorCountsAsync();
+            categoryDto.MentorCount = mentorCounts.TryGetValue(categoryDto.Id, out var count) ? count : 0;
+
+            return categoryDto;
+        }
+
+        public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto)
+        {
+            await _createValidator.ValidateAndThrowCustomAsync(dto);
+
+            // Check for duplicate category name
+            var exists = await _categoryRepository.ExistsAsync(dto.Name);
+            if (exists)
+            {
+                throw new ConflictException($"Category with name '{dto.Name}' already exists");
+            }
+
+            var category = _mapper.Map<Category>(dto);
+            category.IsActive = true;
+            category.CreatedAt = DateTime.UtcNow;
+
+            await _categoryRepository.AddAsync(category);
+            await _categoryRepository.SaveChangesAsync();
+
+            await _cache.RemoveAsync(CategoriesCacheKey);
+            _logger.LogInformation("Category '{CategoryName}' created successfully with ID: {CategoryId}", category.Name, category.Id);
+
+            return _mapper.Map<CategoryDto>(category);
+        }
+
+        public async Task<CategoryDto> UpdateCategoryAsync(int id, UpdateCategoryDto dto)
+        {
+            await _updateValidator.ValidateAndThrowCustomAsync(dto);
+
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category == null)
+            {
+                throw new NotFoundException("Category", id.ToString());
+            }
+
+            // Check if name is being changed and if new name already exists
+            if (dto.Name != null && dto.Name != category.Name)
+            {
+                var exists = await _categoryRepository.ExistsAsync(dto.Name);
+                if (exists)
+                {
+                    throw new ConflictException($"Category name '{dto.Name}' already exists");
+                }
+                category.Name = dto.Name;
+            }
+
+            // Update other fields if provided
+            if (dto.Description != null)
+            {
+                category.Description = dto.Description;
+            }
+
+            if (dto.IconUrl != null)
+            {
+                category.IconUrl = dto.IconUrl;
+            }
+
+            if (dto.IsActive.HasValue)
+            {
+                category.IsActive = dto.IsActive.Value;
+            }
+
+            category.UpdatedAt = DateTime.UtcNow;
+
+            _categoryRepository.Update(category);
+            await _categoryRepository.SaveChangesAsync();
+            
+            await _cache.RemoveAsync(CategoriesCacheKey);
+            _logger.LogInformation("Category '{CategoryName}' (ID: {CategoryId}) updated successfully", category.Name, category.Id);
+
+            return _mapper.Map<CategoryDto>(category);
+        }
+
+        public async Task DeleteCategoryAsync(int id)
+        {
+            var category = await _categoryRepository.GetByIdWithSkillsAsync(id);
+            if (category == null)
+            {
+                throw new NotFoundException("Category", id.ToString());
+            }
+
+            // Check if category has skills
+            if (category.Skills != null && category.Skills.Any())
+            {
+                throw new ConflictException($"Cannot delete category '{category.Name}'. It has {category.Skills.Count} skill(s) associated with it");
+            }
+
+            _categoryRepository.Delete(category);
+            await _categoryRepository.SaveChangesAsync();
+            
+            await _cache.RemoveAsync(CategoriesCacheKey);
+            _logger.LogInformation("Category '{CategoryName}' (ID: {CategoryId}) deleted successfully", category.Name, id);
+        }
+    }
+}

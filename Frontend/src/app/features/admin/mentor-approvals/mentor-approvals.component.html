@@ -1,0 +1,66 @@
+<div class="container mx-auto px-4 py-8">
+  <!-- Header Section -->
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      Pending Mentor Applications
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400">
+      Review and approve or reject mentor applications from users.
+    </p>
+  </header>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex flex-col items-center justify-center py-16">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+    <p class="text-gray-600 dark:text-gray-400">Loading applications...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div
+    *ngIf="!loading && applications.length === 0"
+    class="flex flex-col items-center justify-center py-16 px-4"
+  >
+    <svg class="w-24 h-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+      No Pending Applications
+    </h3>
+    <p class="text-gray-600 dark:text-gray-400 text-center max-w-md">
+      There are no mentor applications pending review at this time.
+    </p>
+  </div>
+
+  <!-- Applications Grid -->
+  <div
+    *ngIf="!loading && applications.length > 0"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+  >
+    <app-mentor-application-card
+      *ngFor="let application of applications; trackBy: trackByMentorId"
+      [application]="application"
+      (approve)="onApprove($event)"
+      (reject)="onReject($event)"
+    ></app-mentor-application-card>
+  </div>
+
+  <!-- Statistics Section (Optional) -->
+  <div
+    *ngIf="!loading && applications.length > 0"
+    class="mt-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-100 dark:border-indigo-800"
+  >
+    <p class="text-sm text-indigo-800 dark:text-indigo-300">
+      <span class="font-semibold">{{ applications.length }}</span>
+      {{ applications.length === 1 ? 'application' : 'applications' }} pending review
+    </p>
+  </div>
+</div>
+
+<!-- Rejection Dialog -->
+<app-reject-mentor-dialog
+  *ngIf="showRejectDialog"
+  [visible]="showRejectDialog"
+  [mentorName]="selectedMentorName || 'Mentor'"
+  (confirm)="onRejectConfirm($event)"
+  (cancel)="onRejectCancel()"
+></app-reject-mentor-dialog>

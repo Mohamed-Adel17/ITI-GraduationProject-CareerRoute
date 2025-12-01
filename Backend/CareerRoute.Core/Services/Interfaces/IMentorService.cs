@@ -17,11 +17,17 @@ namespace CareerRoute.Core.Services.Interfaces
         // Create a new mentor profile (user applying to become a mentor)
         Task<MentorProfileDto> CreateMentorProfileAsync(string userId, CreateMentorProfileDto createDto);
 
-        // Search mentors by keywords (bio, expertise tags, name)
+        // Search mentors by keywords (bio, expertise tags, name) - simple search
         Task<IEnumerable<MentorProfileDto>> SearchMentorsAsync(string searchTerm);
+
+        // Advanced search with filters, sorting, and pagination (US2)
+        Task<MentorSearchResponseDto> SearchMentorsAsync(MentorSearchRequestDto request);
 
         // Get top-rated mentors (for featured sections)
         Task<IEnumerable<MentorProfileDto>> GetTopRatedMentorsAsync(int count = 10);
+
+        // Get mentors by category ID (for category browsing)
+        Task<IEnumerable<MentorProfileDto>> GetMentorsByCategoryAsync(int categoryId);
 
         // Get all mentors pending admin approval (admin-only)
         Task<IEnumerable<MentorProfileDto>> GetPendingMentorApplicationsAsync();
