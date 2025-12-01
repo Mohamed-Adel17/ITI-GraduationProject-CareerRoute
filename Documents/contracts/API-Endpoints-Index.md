@@ -1,6 +1,6 @@
 # API Endpoints Documentation Index
 
-**Last Updated:** 2025-11-19
+**Last Updated:** 2025-11-30
 **Base URL:** `http://localhost:5000/api`
 
 ---
@@ -20,6 +20,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | **Skills** | [Skills-Endpoints.md](./Skills-Endpoints.md) |
 | **Mentors** | [Mentor-Endpoints.md](./Mentor-Endpoints.md) |
 | **Users** | [User-Profile-Endpoints.md](./User-Profile-Endpoints.md) |
+| **Notifications** | [Notification-Endpoints.md](./Notification-Endpoints.md) |
 
 ---
 
@@ -125,6 +126,19 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `POST` | `/api/payments/create-intent` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#13-create-payment-intent)** | ✅ Authoritative<br/>Stripe/Paymob integration |
 | `POST` | `/api/payments/confirm` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#14-confirm-payment)** | ✅ Authoritative<br/>Confirm & capture payment |
 | `GET` | `/api/payments/history` | User | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#15-get-payment-history)** | ✅ Authoritative<br/>With summary stats |
+
+---
+
+### Notifications (4 endpoints)
+
+| Method | Endpoint | Auth | Documented In | Notes |
+|--------|----------|------|---------------|-------|
+| `GET` | `/api/notifications` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#1-get-notifications)** | ✅ Authoritative<br/>Paginated list |
+| `GET` | `/api/notifications/unread-count` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#2-get-unread-count)** | ✅ Authoritative |
+| `PUT` | `/api/notifications/{id}/read` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#3-mark-notification-as-read)** | ✅ Authoritative |
+| `PUT` | `/api/notifications/read-all` | User | **[Notification-Endpoints.md](./Notification-Endpoints.md#4-mark-all-notifications-as-read)** | ✅ Authoritative |
+
+**Note:** Real-time notifications are delivered via SignalR hub at `/hubs/notifications`. See [Notification-Endpoints.md](./Notification-Endpoints.md#-real-time-notifications-signalr) for details.
 
 ---
 
@@ -236,8 +250,9 @@ Mentor-Endpoints.md (REFERENCES)
 | Users | 6 | 0 | 4 | 2 | 0 |
 | Sessions | 10 | 0 | 10 | 0 | 0 |
 | Payments | 3 | 0 | 3 | 0 | 0 |
+| Notifications | 4 | 0 | 4 | 0 | 0 |
 | Webhooks | 2 | 0 | 0 | 0 | 2 |
-| **TOTAL** | **53** | **16** | **20** | **12** | **2** |
+| **TOTAL** | **57** | **16** | **24** | **12** | **2** |
 
 **Notes:**
 - **System**: Webhook endpoints called by payment gateways (Stripe, Paymob), not by frontend applications
@@ -310,6 +325,12 @@ Mentor-Endpoints.md (REFERENCES)
 - `POST /api/payments/create-intent` (User - create payment intent)
 - `POST /api/payments/confirm` (User - confirm payment)
 - `GET /api/payments/history` (Any authenticated user)
+
+**Notifications:**
+- `GET /api/notifications` (Any authenticated user - paginated list)
+- `GET /api/notifications/unread-count` (Any authenticated user)
+- `PUT /api/notifications/{id}/read` (Any authenticated user - own notifications only)
+- `PUT /api/notifications/read-all` (Any authenticated user)
 
 ### Admin-Only Endpoints
 
@@ -468,6 +489,10 @@ Mentor-Endpoints.md (REFERENCES)
 | **SessionStatus (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Sessions |
 | **PaymentStatus (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Payments |
 | **PaymentMethod (Enum)** | [Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#enums) | Payments |
+| **NotificationDto** | [Notification-Endpoints.md](./Notification-Endpoints.md#notificationdto) | Notifications |
+| **NotificationListResponseDto** | [Notification-Endpoints.md](./Notification-Endpoints.md#notificationlistresponsedto) | Notifications |
+| **UnreadCountResponseDto** | [Notification-Endpoints.md](./Notification-Endpoints.md#unreadcountresponsedto) | Notifications |
+| **NotificationType (Enum)** | [Notification-Endpoints.md](./Notification-Endpoints.md#notificationtype-enum) | Notifications |
 
 ---
 
@@ -553,6 +578,6 @@ Mentor-Endpoints.md (REFERENCES)
 
 ---
 
-**Total Documented Endpoints:** 53
+**Total Documented Endpoints:** 57
 **Total Contract Files:** 6
 **Documentation Status:** ✅ Complete & Synchronized

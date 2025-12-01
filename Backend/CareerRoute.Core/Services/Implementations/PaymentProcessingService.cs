@@ -35,6 +35,8 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IPaymentNotificationService _paymentNotificationService;
         private readonly IEmailTemplateService _emailTemplateService;
         private readonly IJobScheduler _jobScheduler;
+        private readonly ISignalRNotificationService _notificationService;
+        private readonly ISessionReminderJobService _sessionReminderJobService;
 
 
         public PaymentProcessingService(
@@ -52,7 +54,9 @@ namespace CareerRoute.Core.Services.Implementations
             IMapper mapper,
             IPaymentNotificationService paymentNotificationService,
             IEmailTemplateService emailTemplateService,
-            IJobScheduler jobScheduler)
+            IJobScheduler jobScheduler,
+            ISignalRNotificationService notificationService,
+            ISessionReminderJobService sessionReminderJobService)
         {
             _paymentRepository = paymentRepository;
             _sessionRepository = sessionRepository;
@@ -69,6 +73,8 @@ namespace CareerRoute.Core.Services.Implementations
             _paymentNotificationService = paymentNotificationService;
             _emailTemplateService = emailTemplateService;
             _jobScheduler = jobScheduler;
+            _notificationService = notificationService;
+            _sessionReminderJobService = sessionReminderJobService;
         }
 
         public async Task<PaymentIntentResponseDto> CreatePaymentIntentAsync(PaymentIntentRequestDto request, string userId)
@@ -470,6 +476,68 @@ namespace CareerRoute.Core.Services.Implementations
 
             // Notify client via SignalR
             await _paymentNotificationService.NotifyPaymentStatusAsync(payment.PaymentIntentId, PaymentStatusOptions.Captured);
+
+            // Send real-time notifications for payment completed and session booked
+            try
+            {
+                var scheduledTime = session.ScheduledStartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
+                
+                // Notify mentee about payment completed
+                await _notificationService.SendNotificationAsync(
+                    session.MenteeId,
+                    NotificationType.PaymentCompleted,
+                    "Payment Successful",
+                    $"Your payment of {payment.Amount} {payment.Currency} has been processed successfully.",
+                    $"user/sessions/{session.Id}");
+                
+                // Notify mentee about session booked
+                await _notificationService.SendNotificationAsync(
+                    session.MenteeId,
+                    NotificationType.SessionBooked,
+                    "Session Booked",
+                    $"Your session with {mentor.User.FirstName} {mentor.User.LastName} is confirmed for {scheduledTime}.",
+                    $"user/sessions/{session.Id}");
+                
+                // Notify mentor about new session booked
+                await _notificationService.SendNotificationAsync(
+                    session.MentorId,
+                    NotificationType.SessionBooked,
+                    "New Session Booked",
+                    $"{mentee.FirstName} {mentee.LastName} has booked a session with you for {scheduledTime}.",
+                    $"mentor/sessions/{session.Id}");
+                
+                _logger.LogInformation("[Payment] Session booked notifications sent for session {SessionId}", session.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Payment] Failed to send session booked notifications for session {SessionId}", session.Id);
+                // Don't throw - notification failure shouldn't fail the payment confirmation
+            }
+
+            // Schedule session reminder notification (15 minutes before session)
+            try
+            {
+                var reminderJobId = _sessionReminderJobService.ScheduleReminder(
+                    session.Id,
+                    session.MentorId,
+                    session.MenteeId,
+                    $"{mentor.User.FirstName} {mentor.User.LastName}",
+                    $"{mentee.FirstName} {mentee.LastName}",
+                    session.ScheduledStartTime);
+                
+                if (!string.IsNullOrEmpty(reminderJobId))
+                {
+                    session.ReminderJobId = reminderJobId;
+                    _sessionRepository.Update(session);
+                    await _sessionRepository.SaveChangesAsync();
+                    _logger.LogInformation("[Payment] Scheduled reminder job {JobId} for session {SessionId}", reminderJobId, session.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Payment] Failed to schedule reminder for session {SessionId}", session.Id);
+                // Don't throw - reminder scheduling failure shouldn't fail the payment confirmation
+            }
 
             return _mapper.Map<PaymentConfirmResponseDto>(payment);
         }

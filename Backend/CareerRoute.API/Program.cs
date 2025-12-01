@@ -68,6 +68,26 @@ builder.Services.AddAuthentication(
             ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = key,
         };
+
+        // Configure JWT authentication for SignalR
+        // SignalR sends the access token in the query string for WebSocket connections
+        option.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                // If the request is for our notification hub
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs/notifications"))
+                {
+                    // Read the token from the query string
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     }
     );
 
@@ -196,6 +216,7 @@ var hangfireDashboardOptions = new DashboardOptions
 
 app.UseHangfireDashboard("/hangfire", hangfireDashboardOptions);
 app.MapHub<PaymentHub>("hub/payment");
+app.MapHub<NotificationHub>("/hub/notification");
 
 app.MapControllers();
 

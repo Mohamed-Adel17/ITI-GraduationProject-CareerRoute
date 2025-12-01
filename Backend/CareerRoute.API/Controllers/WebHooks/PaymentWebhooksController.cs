@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace CareerRoute.API.Controllers.WebHooks
+namespace CareerRoute.API.Controllers.Webhooks
 {
 
     /// <summary>

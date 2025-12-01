@@ -47,6 +47,12 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IDeepgramService _deepgramService;
         private readonly IBlobStorageService _blobStorageService;
         private readonly IJobScheduler _jobScheduler;
+        
+        // Notification service for real-time notifications
+        private readonly ISignalRNotificationService _notificationService;
+        
+        // Session reminder job service for scheduling/cancelling reminders
+        private readonly ISessionReminderJobService _sessionReminderJobService;
 
         // Semaphore for sequential processing of reschedule requests
         private static readonly SemaphoreSlim _rescheduleLock = new SemaphoreSlim(1, 1);
@@ -71,7 +77,9 @@ namespace CareerRoute.Core.Services.Implementations
             ICalendarService calendarService,
             IDeepgramService deepgramService,
             IBlobStorageService blobStorageService,
-            IJobScheduler jobScheduler)
+            IJobScheduler jobScheduler,
+            ISignalRNotificationService notificationService,
+            ISessionReminderJobService sessionReminderJobService)
         {
             _logger = logger;
             _mapper = mapper;
@@ -94,6 +102,8 @@ namespace CareerRoute.Core.Services.Implementations
             _deepgramService = deepgramService;
             _blobStorageService = blobStorageService;
             _jobScheduler = jobScheduler;
+            _notificationService = notificationService;
+            _sessionReminderJobService = sessionReminderJobService;
         }
 
 
@@ -375,18 +385,28 @@ namespace CareerRoute.Core.Services.Implementations
                 await SendRescheduleRequestEmailAsync(receiverEmail, receiverName, requesterName, rescheduleSession, session);
             }
 
+            // Send real-time notification to the other participant
+            try
+            {
+                var newScheduledTime = dto.NewScheduledStartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
+                var receiverId = isMentorRequester ? session.MenteeId : session.MentorId;
+                var path = isMentorRequester ?$"user/sessions/{sessionId}" : $"mentor/sessions/{sessionId}";
+                await _notificationService.SendNotificationAsync(
+                    receiverId,
+                    NotificationType.RescheduleRequested,
+                    "Reschedule Request",
+                    $"{requesterName} has requested to reschedule your session to {newScheduledTime}. Please review and respond.",
+                    path);
+                
+                _logger.LogInformation("[Session] Reschedule request notification sent for session {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to send reschedule request notification for session {SessionId}", sessionId);
+                // Don't throw - notification failure shouldn't fail the reschedule request
+            }
+
             return _mapper.Map<RescheduleSessionResponseDto>(rescheduleSession);
-
-            //confirmation ?
-            //rejection ?
-            //schedulingsession entity  //Type of it will be confirmed / rejected 
-            //session entity updates : RescheduleId , UpdatedAt 
-            //session.RescheduleId = rescheduleRequest.Id;
-            //session.UpdatedAt = DateTime.Now;
-            //_sessionRepository.Update(session);
-            //await _sessionRepository.SaveChangesAsync();
-
-            //time slot updates => free the old , create new with booked = true  
 
         }
 
@@ -468,6 +488,13 @@ namespace CareerRoute.Core.Services.Implementations
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("[Session] Session {SessionId} cancelled successfully. Refund: {RefundPercentage}% ({RefundAmount})", sessionId, refundPercentage, refundAmount);
+                
+                // Cancel the scheduled reminder job
+                if (!string.IsNullOrEmpty(session.ReminderJobId))
+                {
+                    _sessionReminderJobService.CancelReminder(session.ReminderJobId);
+                    _logger.LogInformation("[Session] Cancelled reminder job {JobId} for session {SessionId}", session.ReminderJobId, sessionId);
+                }
             }
             catch
             {
@@ -512,6 +539,40 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 _logger.LogError(ex, "[Session] Failed to send cancellation emails for session {SessionId}", sessionId);
                 // Don't throw - email failure shouldn't fail the cancellation
+            }
+
+            // Send real-time notifications to affected participant
+            try
+            {
+                var cancellerName = isMentorRequester ? session.Mentor?.User?.FirstName : session.Mentee?.FirstName;
+                var scheduledTime = session.ScheduledStartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
+                
+                // Notify the other participant (not the one who cancelled)
+                if (isMentorRequester && !string.IsNullOrEmpty(session.MenteeId))
+                {
+                    await _notificationService.SendNotificationAsync(
+                        session.MenteeId,
+                        NotificationType.SessionCancelled,
+                        "Session Cancelled",
+                        $"Your session with {cancellerName} scheduled for {scheduledTime} has been cancelled.",
+                        $"user/sessions/{sessionId}");
+                }
+                else if (isMenteeRequester && !string.IsNullOrEmpty(session.MentorId))
+                {
+                    await _notificationService.SendNotificationAsync(
+                        session.MentorId,
+                        NotificationType.SessionCancelled,
+                        "Session Cancelled",
+                        $"Your session with {cancellerName} scheduled for {scheduledTime} has been cancelled.",
+                        $"mentor/sessions/{sessionId}");
+                }
+                
+                _logger.LogInformation("[Session] Cancellation notification sent for session {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to send cancellation notification for session {SessionId}", sessionId);
+                // Don't throw - notification failure shouldn't fail the cancellation
             }
 
             return _mapper.Map<CancelSessionResponseDto>(cancel);
@@ -776,10 +837,67 @@ namespace CareerRoute.Core.Services.Implementations
                 }
             }
 
+            // Cancel old reminder and schedule new one for the rescheduled time
+            try
+            {
+                // Cancel the old reminder job
+                if (!string.IsNullOrEmpty(session.ReminderJobId))
+                {
+                    _sessionReminderJobService.CancelReminder(session.ReminderJobId);
+                    _logger.LogInformation("[Session] Cancelled old reminder job {JobId} for rescheduled session {SessionId}", session.ReminderJobId, session.Id);
+                }
+                
+                // Schedule new reminder for the new time
+                var mentorName = $"{session.Mentor?.User?.FirstName} {session.Mentor?.User?.LastName}";
+                var menteeName = $"{session.Mentee?.FirstName} {session.Mentee?.LastName}";
+                var newReminderJobId = _sessionReminderJobService.ScheduleReminder(
+                    session.Id,
+                    session.MentorId,
+                    session.MenteeId,
+                    mentorName,
+                    menteeName,
+                    session.ScheduledStartTime);
+                
+                if (!string.IsNullOrEmpty(newReminderJobId))
+                {
+                    session.ReminderJobId = newReminderJobId;
+                    _sessionRepository.Update(session);
+                    await _sessionRepository.SaveChangesAsync();
+                    _logger.LogInformation("[Session] Scheduled new reminder job {JobId} for rescheduled session {SessionId}", newReminderJobId, session.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to reschedule reminder for session {SessionId}", session.Id);
+                // Don't throw - reminder scheduling failure shouldn't fail the reschedule approval
+            }
+
             // Send email to requester
             string requesterEmail = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.Email! : session.Mentee.Email!;
             string requesterName = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.FirstName : session.Mentee.FirstName;
             await SendRescheduleApprovedEmailAsync(requesterEmail, requesterName, session, reschedule);
+
+            // Send real-time notification to the requester
+            try
+            {
+                var isRequestByMentor = reschedule.RequestedBy == "Mentor";
+                var requesterId = isRequestByMentor ? session.MentorId : session.MenteeId;
+                var path = isRequestByMentor ? $"mentor/sessions/{session.Id}": $"user/sessions/{session.Id}";
+                var newScheduledTime = reschedule.NewScheduledStartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
+                await _notificationService.SendNotificationAsync(
+                    requesterId,
+                    NotificationType.RescheduleApproved,
+                    "Reschedule Approved",
+                    $"Your reschedule request has been approved. Your session is now scheduled for {newScheduledTime}.",
+                    path);
+                
+                _logger.LogInformation("[Session] Reschedule approved notification sent for session {SessionId}", session.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to send reschedule approved notification for session {SessionId}", session.Id);
+                // Don't throw - notification failure shouldn't fail the approval
+            }
 
             return _mapper.Map<RescheduleSessionResponseDto>(reschedule);
         }
@@ -822,6 +940,30 @@ namespace CareerRoute.Core.Services.Implementations
             string requesterEmail = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.Email! : session.Mentee.Email!;
             string requesterName = reschedule.RequestedBy == "Mentor" ? session.Mentor.User.FirstName : session.Mentee.FirstName;
             await SendRescheduleRejectedEmailAsync(requesterEmail, requesterName, session, reschedule);
+
+            // Send real-time notification to the requester
+            try
+            {
+
+                var isRequestByMentor = reschedule.RequestedBy == "Mentor";
+                var requesterId = isRequestByMentor ? session.MentorId : session.MenteeId;
+                var path = isRequestByMentor ? $"mentor/sessions/{session.Id}" : $"user/sessions/{session.Id}";
+                var originalScheduledTime = session.ScheduledStartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
+                
+                await _notificationService.SendNotificationAsync(
+                    requesterId,
+                    NotificationType.RescheduleRejected,
+                    "Reschedule Rejected",
+                    $"Your reschedule request has been rejected. Your session remains scheduled for {originalScheduledTime}.",
+                    $"/sessions/{session.Id}");
+                
+                _logger.LogInformation("[Session] Reschedule rejected notification sent for session {SessionId}", session.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Session] Failed to send reschedule rejected notification for session {SessionId}", session.Id);
+                // Don't throw - notification failure shouldn't fail the rejection
+            }
 
             return _mapper.Map<RescheduleSessionResponseDto>(reschedule);
         }

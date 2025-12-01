@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IRescheduleSessionService, RescheduleSessionService>();
         services.AddScoped<IAiSummaryService, AiSummaryService>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         services.AddAutoMapper(options =>
         {
@@ -37,6 +38,7 @@ public static class DependencyInjection
             options.AddProfile<PaymentProfile>();
             options.AddProfile<TimeSlotMappingProfile>();
             options.AddProfile<SessionProfile>();
+            options.AddProfile<NotificationProfile>();
         });
 
         // ============ FLUENTVALIDATION ============
