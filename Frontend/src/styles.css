@@ -199,6 +199,26 @@
     @apply bg-gray-200 dark:bg-gray-700 rounded animate-pulse;
   }
 
+  /* Logo spin animation for loading states */
+  .logo-spin {
+    animation: logoSpin 1.5s ease-in-out infinite;
+  }
+
+  @keyframes logoSpin {
+    0% {
+      transform: rotate(0deg) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: rotate(180deg) scale(1.1);
+      opacity: 0.7;
+    }
+    100% {
+      transform: rotate(360deg) scale(1);
+      opacity: 1;
+    }
+  }
+
   /* Text gradient */
   .text-gradient {
     @apply bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent;

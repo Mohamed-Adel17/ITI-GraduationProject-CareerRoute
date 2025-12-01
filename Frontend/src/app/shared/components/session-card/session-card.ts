@@ -183,9 +183,20 @@ export class SessionCard {
 
   /**
    * Get time until session (countdown)
+   * Use backend value for hours/days, calculate frontend for minutes precision
    */
   get timeUntil(): string {
     const hoursUntil = (this.session as SessionSummary).hoursUntilSession;
+    
+    // For less than 1 hour, calculate precisely on frontend
+    if (hoursUntil !== undefined && hoursUntil !== null && hoursUntil < 1 && hoursUntil >= 0) {
+      const now = new Date();
+      const startTime = new Date(this.session.scheduledStartTime);
+      const minutesUntil = Math.round((startTime.getTime() - now.getTime()) / (1000 * 60));
+      if (minutesUntil <= 0) return 'Starting now';
+      return `${minutesUntil} minute${minutesUntil !== 1 ? 's' : ''}`;
+    }
+    
     return getTimeUntilSession(hoursUntil);
   }
 
@@ -195,7 +206,31 @@ export class SessionCard {
   get isUpcoming(): boolean {
     return this.session.status === SessionStatus.Confirmed ||
            this.session.status === SessionStatus.Pending ||
-           this.session.status === SessionStatus.PendingReschedule;
+           this.session.status === SessionStatus.PendingReschedule ||
+           this.session.status === SessionStatus.InProgress;
+  }
+
+  /**
+   * Check if session is currently in progress
+   * Either by status OR by time (session started but status not yet updated)
+   */
+  get isInProgress(): boolean {
+    if (this.session.status === SessionStatus.InProgress) {
+      return true;
+    }
+    
+    // Also check if session should be in progress based on time
+    // (for when backend status hasn't updated yet)
+    if (this.session.status === SessionStatus.Confirmed) {
+      const now = new Date();
+      const startTime = new Date(this.session.scheduledStartTime);
+      // Calculate end time from duration
+      const durationMinutes = this.session.duration === SessionDuration.ThirtyMinutes ? 30 : 60;
+      const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
+      return now >= startTime && now <= endTime;
+    }
+    
+    return false;
   }
 
   /**

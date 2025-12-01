@@ -1,11 +1,23 @@
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
   <!-- Card Header with Status Badge -->
   <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-    <span [class]="'px-3 py-1 rounded-full text-xs font-semibold ' + statusColorClass">
+    <!-- In Progress with live indicator -->
+    <span *ngIf="isInProgress" class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 flex items-center gap-1.5">
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+      </span>
+      In Progress
+    </span>
+    <!-- Other statuses -->
+    <span *ngIf="!isInProgress" [class]="'px-3 py-1 rounded-full text-xs font-semibold ' + statusColorClass">
       {{ statusText }}
     </span>
-    <span *ngIf="isUpcoming && !isPendingPayment" class="text-sm text-gray-500 dark:text-gray-400">
+    <span *ngIf="isUpcoming && !isPendingPayment && !isInProgress" class="text-sm text-gray-500 dark:text-gray-400">
       {{ timeUntil }}
+    </span>
+    <span *ngIf="isInProgress" class="text-sm text-green-600 dark:text-green-400 font-medium">
+      Live Now
     </span>
     <span *ngIf="isPendingPayment" class="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
       Payment Required
