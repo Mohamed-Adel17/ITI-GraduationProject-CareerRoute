@@ -3,6 +3,7 @@ using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Validators.Mentors;
 using CareerRoute.Core.Validators.Payments;
+using CareerRoute.Core.Validators.Reviews;
 using CareerRoute.Core.Validators.Sessions;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IRescheduleSessionService, RescheduleSessionService>();
         services.AddScoped<IAiSummaryService, AiSummaryService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IReviewService, ReviewService>();
 
         services.AddAutoMapper(options =>
         {
@@ -39,6 +41,7 @@ public static class DependencyInjection
             options.AddProfile<TimeSlotMappingProfile>();
             options.AddProfile<SessionProfile>();
             options.AddProfile<NotificationProfile>();
+            options.AddProfile<ReviewsProfile>();
         });
 
         // ============ FLUENTVALIDATION ============
@@ -48,7 +51,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<BookSessionRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<RescheduleSessionRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<CancelSessionRequestValidator>();
-
+        services.AddValidatorsFromAssemblyContaining<CreateReviewRequestValidator>();
         return services;
     }
 }

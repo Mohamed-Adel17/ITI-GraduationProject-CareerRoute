@@ -1,5 +1,7 @@
 using CareerRoute.API.Models;
+using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.DTOs.Mentors;
+using CareerRoute.Core.DTOs.Reviews;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +20,16 @@ namespace CareerRoute.API.Controllers
     public class MentorsController : ControllerBase
     {
         private readonly IMentorService _mentorService;
+        private readonly IReviewService _reviewService;
         private readonly ILogger<MentorsController> _logger;
 
         public MentorsController(
             IMentorService mentorService,
+            IReviewService reviewService,
             ILogger<MentorsController> logger)
         {
             _mentorService = mentorService;
+            _reviewService = reviewService;
             _logger = logger;
         }
 
@@ -168,6 +173,47 @@ namespace CareerRoute.API.Controllers
             var mentors = await _mentorService.GetTopRatedMentorsAsync(count);
             return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(mentors));
         }
+
+
+
+        /// <summary>
+        /// Retrieve paginated reviews for a specific mentor(public)
+        /// </summary>
+        /// <remarks>
+        /// Returns a list of reviews submitted for the mentor, including rating, comment, 
+        /// creation date, and the mentor's name. Supports pagination through query parameters.
+        ///
+        /// <b>Pagination:</b><br/>
+        /// - <c>page</c>: Current page number (default 1)<br/>
+        /// - <c>pageSize</c>: Number of reviews per page (default 10)<br/>
+        ///
+        /// <b>Use cases:</b><br/>
+        /// - Display mentor reviews on profile page<br/>
+        /// - Analyze mentor performance<br/>
+        /// - Filter recent reviews using pagination
+        /// </remarks>
+        /// <param name="mentorId">The unique identifier of the mentor.</param>
+        /// <param name="page">Page number (optional, default 1).</param>
+        /// <param name="pageSize">Number of reviews per page (optional, default 10).</param>
+        /// <returns>Paginated list of reviews for the mentor.</returns>
+        /// <response code="200">Reviews retrieved successfully.</response>
+        /// <response code="404">No reviews found for the specified mentor.</response>
+
+        [HttpGet("{mentorId}/reviews")]
+        public async Task<ActionResult> GetReviewsForMentor(
+          string mentorId,
+          [FromQuery] int page = 1,
+          [FromQuery] int pageSize = 10)
+        {
+            _logger.LogInformation("[Review] getting reviews for mentor {MentorId}", mentorId);
+
+            var result = await _reviewService.GetReviewsForMentorAsync(mentorId, page, pageSize);
+
+            return Ok(new ApiResponse<MentorReviewsDto>(
+                            result,
+                            "Reviews retrieved successfully."));
+        }
+
 
         // ============ AUTHENTICATED ENDPOINTS ============
 
