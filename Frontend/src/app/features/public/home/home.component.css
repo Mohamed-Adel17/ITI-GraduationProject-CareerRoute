@@ -10,11 +10,34 @@
  * - Mobile-first responsive design
  */
 
-/* Hero Section */
-.hero-section {
-  /* Ensure full viewport height on mobile devices */
-  min-height: 100vh;
-  min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+/* Hero Section Animations */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out 0.3s forwards;
+  opacity: 0;
 }
 
 /* Smooth animations for interactive elements */
@@ -36,14 +59,17 @@
 
 /* Accessibility: Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .animate-bounce {
+  .animate-bounce,
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-pulse {
     animation: none;
+    opacity: 1;
   }
 
   .transform,
   .transition-all {
     transition: none !important;
-    transform: none !important;
   }
 }
 
