@@ -106,7 +106,8 @@
         <app-session-card *ngFor="let session of upcomingSessions; trackBy: trackBySessionId" [session]="session"
           [userRole]="'mentee'" (joinSession)="onJoinSession($event)" (cancelSession)="onCancelSession($event)"
           (rescheduleSession)="onRescheduleSession($event)" (viewDetails)="onViewDetails($event)"
-          (completePayment)="onCompletePayment($event)" (paymentExpired)="onPaymentExpired($event)">
+          (completePayment)="onCompletePayment($event)" (paymentExpired)="onPaymentExpired($event)"
+          (endMeetingTest)="onEndMeetingTest($event)">
         </app-session-card>
       </div>
 

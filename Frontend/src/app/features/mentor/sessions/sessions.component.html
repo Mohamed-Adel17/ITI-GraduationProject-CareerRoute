@@ -121,7 +121,7 @@
         <app-session-card *ngFor="let session of upcomingSessions; trackBy: trackBySessionId" [session]="session"
           [userRole]="'mentor'" (joinSession)="onJoinSession($event)" (completeSession)="onCompleteSession($event)"
           (cancelSession)="onCancelSession($event)" (rescheduleSession)="onRescheduleSession($event)"
-          (viewDetails)="onViewDetails($event)">
+          (viewDetails)="onViewDetails($event)" (endMeetingTest)="onEndMeetingTest($event)">
         </app-session-card>
       </div>
 
