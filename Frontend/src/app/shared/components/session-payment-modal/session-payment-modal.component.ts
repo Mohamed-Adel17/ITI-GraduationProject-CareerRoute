@@ -230,7 +230,14 @@ export class SessionPaymentModalComponent implements OnChanges {
    */
   onPaymentFailure(error: any): void {
     console.error('Payment failed:', error);
-    // Reset to payment method selection to allow retry with different method
+    
+    // If there's an existing payment intent, don't reset to method selection
+    // Let the payment component show its failed state with retry option
+    if (this.hasExistingPaymentIntent) {
+      return;
+    }
+    
+    // Otherwise, reset to payment method selection to allow retry with different method
     this.resetPaymentFlow();
     this.showPaymentMethodSelection = true;
   }
