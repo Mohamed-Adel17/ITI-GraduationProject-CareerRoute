@@ -21,6 +21,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IMentorRepository _mentorRepository;
         private readonly IUserRepository _userRepository;
         private readonly ISkillService _skillService;
+        private readonly IMentorBalanceService _mentorBalanceService;
         private readonly ICategoryRepository _categoryRepository;
         private readonly IValidator<CreateMentorProfileDto> _createValidator;
         private readonly IValidator<UpdateMentorProfileDto> _updateValidator;
@@ -43,7 +44,8 @@ namespace CareerRoute.Core.Services.Implementations
             IValidator<RejectMentorDto> rejectValidator,
             UserManager<ApplicationUser> userManager,
             ICacheService cache,
-            ISignalRNotificationService notificationService)
+            ISignalRNotificationService notificationService,
+            IMentorBalanceService mentorBalanceService)
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
@@ -57,8 +59,9 @@ namespace CareerRoute.Core.Services.Implementations
             _userManager = userManager;
             _cache = cache;
             _notificationService = notificationService;
+            _mentorBalanceService = mentorBalanceService;
         }
-        
+
         // Get mentor profile by ID
         public async Task<MentorProfileDto> GetMentorProfileAsync(string mentorId)
         {
@@ -325,6 +328,8 @@ namespace CareerRoute.Core.Services.Implementations
             }
             
             _logger.LogInformation("Mentor profile created successfully for user ID: {UserId}", userId);
+
+            await _mentorBalanceService.InitializeMentorBalanceAsync(userId);
 
             var createdMentor = await _mentorRepository.GetMentorWithUserByIdAsync(userId);
 

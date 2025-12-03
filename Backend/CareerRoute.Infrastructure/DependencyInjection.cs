@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using CareerRoute.Infrastructure.BackgroundJobs;
 
 namespace CareerRoute.Infrastructure;
 
@@ -55,6 +56,8 @@ public static class DependencyInjection
         services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IMentorBalanceRepository, MentorBalanceRepository>();
+        services.AddScoped<IPayoutRepository, PayoutRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
         // Infrastructure Service Registration
@@ -71,6 +74,8 @@ public static class DependencyInjection
         services.AddScoped<IBlobStorageService, CloudflareR2Service>();
         services.AddScoped<IJobScheduler, HangfireJobScheduler>();
         services.AddScoped<ISessionReminderJobService, SessionReminderJobService>();
+        services.AddScoped<IReleasePaymentJob, ReleasePaymentBackgroundJob>();
+
 
         // AI Client Registration
         services.AddHttpClient<OpenAiClient>(c => c.Timeout = TimeSpan.FromMinutes(5));
