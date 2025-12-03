@@ -43,8 +43,12 @@ export const USER_ROUTES: Routes = [
     path: 'sessions/:id',
     loadComponent: () => import('../../shared/components/session-details/session-details.component').then(m => m.SessionDetailsComponent),
     title: 'Session Details - Career Route'
+  },
+  {
+    path: 'payments/history',
+    loadComponent: () => import('../payments/payment-history/payment-history.component').then(m => m.PaymentHistoryComponent),
+    title: 'Payment History - Career Route'
   }
   // TODO: Add more user routes here as components are created
   // - dashboard - User dashboard
-  // - payments - Payment history
 ];

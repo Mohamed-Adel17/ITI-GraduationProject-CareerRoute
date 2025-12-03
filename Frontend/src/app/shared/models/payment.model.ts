@@ -209,7 +209,7 @@ export interface PaginationMetadata {
  */
 export interface PaymentHistoryResponse {
   payments: PaymentHistoryItem[];
-  pagination: PaginationMetadata;
+  paginationMetadata: PaginationMetadata;  // Backend returns 'paginationMetadata' not 'pagination'
   summary: PaymentHistorySummary;
 }
 
