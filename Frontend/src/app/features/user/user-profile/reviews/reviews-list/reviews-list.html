@@ -1,0 +1,35 @@
+<div class="mb-4">
+  <h3 class="text-lg font-semibold">Reviews ({{reviews.length}}) - Avg: {{avgRating | number:'1.1-1'}}</h3>
+  <div *ngFor="let review of reviews" class="p-4 bg-white rounded shadow my-2">
+    <div class="flex justify-between items-center">
+      <span class="font-semibold">{{review.menteeName}}</span>
+      <span class="text-yellow-400">{{'★'.repeat(review.rating)}}{{'☆'.repeat(5 - review.rating)}}</span>
+    </div>
+    <p class="mt-2">{{review.comment}}</p>
+    <small class="text-gray-400">{{review.createdAt | date:'shortDate'}}</small>
+  </div>
+</div>
+
+<!-- evaluation area shown after session ends -->
+<div *ngIf="sessionEnded" class="mb-4 p-4 bg-gray-50 border rounded">
+  <h4 class="font-semibold mb-2">Session Evaluation</h4>
+  <form [formGroup]="evaluationForm" (ngSubmit)="submitEvaluation()">
+    <div class="mb-2">
+      <label class="block mb-1">Rating</label>
+      <select formControlName="rating" class="w-24 p-1 border rounded">
+        <option *ngFor="let r of [1,2,3,4,5]" [value]="r">{{r}}</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="block mb-1">Your opinion</label>
+      <textarea formControlName="comment" rows="3" class="w-full p-2 border rounded"></textarea>
+    </div>
+    <div>
+      <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded" [disabled]="evaluationForm.invalid">Submit Evaluation</button>
+    </div>
+  </form>
+</div>
+
+<!-- pass mentorId so modal uses correct mentor when adding -->
+<app-add-review-modal [mentorId]="mentorId" (reviewAdded)="onReviewAdded($event)"></app-add-review-modal>
+

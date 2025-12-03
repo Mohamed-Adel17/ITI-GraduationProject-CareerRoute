@@ -1,0 +1,16 @@
+<div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white p-6 rounded shadow-lg w-96">
+    <h2 class="text-xl font-semibold mb-4">Add Review</h2>
+    <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+      <label class="block mb-2">Rating</label>
+      <select formControlName="rating" class="w-full p-2 border rounded mb-4">
+        <option value="">Select rating</option>
+        <option *ngFor="let r of [1,2,3,4,5]" [value]="r">{{r}}</option>
+      </select>
+
+      <label class="block mb-2">Comment</label>
+      <textarea formControlName="comment" class="w-full p-2 border rounded mb-4"></textarea>
+      <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Submit</button>
+    </form>
+  </div>
+</div>
