@@ -151,7 +151,7 @@ export class PaymentHistoryComponent implements OnInit {
         this.totalRefundedEGP = 0;
 
         allPayments.forEach(payment => {
-            const isUSD = (payment as any).paymentProvider === 'Stripe';
+            const isUSD = payment.paymentProvider === 'Stripe';
 
             // Count successful payments (Captured)
             if (payment.status === PaymentStatus.Captured) {
@@ -223,9 +223,9 @@ export class PaymentHistoryComponent implements OnInit {
             currency = 'EGP';
         } else {
             // For individual payments - detect currency from provider
-            amount = (payment as any).amount;
+            amount = payment.amount;
             // Stripe uses USD, Paymob uses EGP
-            currency = (payment as any).paymentProvider === 'Stripe' ? 'USD' : 'EGP';
+            currency = payment.paymentProvider === 'Stripe' ? 'USD' : 'EGP';
         }
 
         return new Intl.NumberFormat('en-US', {
@@ -241,7 +241,7 @@ export class PaymentHistoryComponent implements OnInit {
         if (!payment.refundAmount) return '';
 
         // Use the same currency logic as formatAmount
-        const currency = (payment as any).paymentProvider === 'Stripe' ? 'USD' : 'EGP';
+        const currency = payment.paymentProvider === 'Stripe' ? 'USD' : 'EGP';
 
         return new Intl.NumberFormat('en-US', {
             style: 'currency',

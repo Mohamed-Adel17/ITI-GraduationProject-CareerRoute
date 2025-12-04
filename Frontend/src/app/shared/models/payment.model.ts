@@ -103,6 +103,7 @@ export interface PaymentHistoryItem {
   mentorName: string;
   sessionTopic?: string | null;
   amount: number;
+  paymentProvider: PaymentProvider;   // Stripe (USD) or Paymob (EGP)
   paymentMethod: string;              // Visa, Mastercard, Meeza, etc.
   status: PaymentStatus;
   transactionId: string;

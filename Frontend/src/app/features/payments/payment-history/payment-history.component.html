@@ -144,7 +144,13 @@
                     <tr *ngFor="let payment of payments"
                         class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                         <td class="p-4 text-gray-600 dark:text-gray-300">
-                            {{ formatDate(payment.paidAt) }}
+                            <ng-container *ngIf="payment.paidAt; else noDate">
+                                {{ formatDate(payment.paidAt) }}
+                            </ng-container>
+                            <ng-template #noDate>
+                                <span *ngIf="payment.status === PaymentStatus.Pending" class="text-yellow-600 dark:text-yellow-400">Awaiting payment</span>
+                                <span *ngIf="payment.status !== PaymentStatus.Pending">—</span>
+                            </ng-template>
                         </td>
                         <td class="p-4 text-gray-900 dark:text-white font-medium">
                             {{ formatAmount(payment) }}
