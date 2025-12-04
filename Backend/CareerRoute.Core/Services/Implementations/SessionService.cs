@@ -666,7 +666,7 @@ namespace CareerRoute.Core.Services.Implementations
             session.Status = SessionStatusOptions.Completed;
             session.CompletedAt = DateTime.UtcNow;
 
-            if (session.Payment != null)
+            if (session.PaymentId != null)
             {
                 // Delegate balance update and payment release scheduling to the balance service
                 await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(sessionId);
