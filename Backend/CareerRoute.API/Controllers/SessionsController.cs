@@ -830,5 +830,26 @@ namespace CareerRoute.API.Controllers
         }
 
 
+        /// <summary>
+        /// Get the review for a session (Mentee or Mentor only).
+        /// </summary>
+        [HttpGet("{sessionId}/review")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<ReviewDetailsItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetSessionReview([FromRoute] string sessionId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            var review = await _reviewService.GetSessionReviewAsync(sessionId, userId);
+
+            return Ok(new ApiResponse<ReviewDetailsItemDto?>(
+                review,
+                review != null ? "Review retrieved successfully." : "No review exists for this session."
+            ));
+        }
+
     }
 }

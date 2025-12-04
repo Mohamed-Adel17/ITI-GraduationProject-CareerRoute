@@ -97,6 +97,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(s => s.Mentee)
                 .Include(s => s.Mentor)
                 .ThenInclude(m => m.User)
+                .Include(s => s.Review)
                 .AsQueryable();
 
             // Filter by user role

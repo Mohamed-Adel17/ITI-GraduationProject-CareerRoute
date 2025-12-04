@@ -40,6 +40,14 @@ namespace CareerRoute.Infrastructure.Repositories
                 .FirstOrDefaultAsync(r => r.Id == reviewId);
         }
 
+        public async Task<ReviewSession?> GetBySessionIdAsync(string sessionId)
+        {
+            return await dbContext.ReviewSessions
+                .Include(r => r.Session)
+                    .ThenInclude(s => s.Mentee)
+                .FirstOrDefaultAsync(r => r.SessionId == sessionId);
+        }
+
 
         public async Task<(List<ReviewSession> Items, int TotalCount)> GetReviewsForMentorAsync(string mentorId, int page, int pageSize)
         {
@@ -47,8 +55,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(r => r.Session)
                     .ThenInclude(s => s.Mentee)
                 .Where(r => r.Session.MentorId == mentorId)
-                .AsQueryable();
-
+                .OrderByDescending(r => r.CreatedAt);
 
             var totalCount = await query.CountAsync();
 

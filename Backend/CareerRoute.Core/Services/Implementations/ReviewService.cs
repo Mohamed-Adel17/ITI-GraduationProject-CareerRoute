@@ -12,15 +12,8 @@ using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Validators.Sessions;
 using FluentValidation;
 using Hangfire;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace CareerRoute.Core.Services.Implementations
 {
@@ -33,6 +26,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly IEmailService _emailService;
         private readonly IMapper _mapper;
         private readonly ILogger<ReviewService> _logger;
+        private readonly string _frontendUrl;
 
 
         public ReviewService(
@@ -41,9 +35,9 @@ namespace CareerRoute.Core.Services.Implementations
             IMentorRepository mentorRepository,
             IValidator<CreateReviewRequestDto> createReviewRequestDto,
             IEmailService emailService,
-        IMapper mapper,
-            ILogger<ReviewService> logger
-)
+            IMapper mapper,
+            ILogger<ReviewService> logger,
+            IConfiguration configuration)
         {
             _mentorRepository = mentorRepository;
             _reviewsRepository = reviewsRepository;
@@ -52,6 +46,26 @@ namespace CareerRoute.Core.Services.Implementations
             _emailService = emailService;
             _mapper = mapper;
             _logger = logger;
+            _frontendUrl = configuration["FrontendUrl"] ?? "https://careerroute.netlify.app";
+        }
+
+        public async Task<ReviewDetailsItemDto?> GetSessionReviewAsync(string sessionId, string userId)
+        {
+            _logger.LogInformation("[Review] User {UserId} requesting review for session {SessionId}", userId, sessionId);
+
+            var session = await _sessionRepository.GetByIdWithRelationsAsync(sessionId);
+            if (session == null)
+                throw new NotFoundException("Session not found.");
+
+            // Only mentee or mentor can view the review
+            if (session.MenteeId != userId && session.MentorId != userId)
+                throw new UnauthorizedException("You can only view reviews for sessions you participated in.");
+
+            var review = await _reviewsRepository.GetBySessionIdAsync(sessionId);
+            if (review == null)
+                return null;
+
+            return _mapper.Map<ReviewDetailsItemDto>(review);
         }
 
         public async Task<CreateReviewResponseDto> AddReviewAsync(string sessionId, string menteeId, CreateReviewRequestDto dto)
@@ -111,6 +125,9 @@ namespace CareerRoute.Core.Services.Implementations
                 await _reviewsRepository.SaveChangesAsync();
 
                 var mentor = await _mentorRepository.GetByIdAsync(session.MentorId);
+                if (mentor == null)
+                    throw new NotFoundException("Mentor not found.");
+                    
                 mentor.AverageRating = await _reviewsRepository.GetMentorAverageRatingAsync(session.MentorId);
                 mentor.TotalReviews++;
                 _mentorRepository.Update(mentor);
@@ -181,7 +198,7 @@ namespace CareerRoute.Core.Services.Implementations
             // Send to Mentee
             var menteeSubject = $"We Value Your Feedback - Review Your Session";
 
-            var reviewLink = $"https://careerroute.netlify.app/sessions/{sessionId}/review";//Front route 
+            var reviewLink = $"{_frontendUrl}/sessions/{sessionId}/review";
 
             var menteeHtmlBody = $@"
 <p>Hello {session.Mentee.FirstName},</p>
