@@ -175,44 +175,51 @@ namespace CareerRoute.API.Controllers
         }
 
 
-
         /// <summary>
-        /// Retrieve paginated reviews for a specific mentor(public)
+        /// Retrieve paginated reviews for a specific mentor (public).
+        /// Returns a list of reviews submitted for the mentor, including rating, comment, creation date, and mentee info.
+        /// Supports pagination via query parameters.
         /// </summary>
-        /// <remarks>
-        /// Returns a list of reviews submitted for the mentor, including rating, comment, 
-        /// creation date, and the mentor's name. Supports pagination through query parameters.
-        ///
-        /// <b>Pagination:</b><br/>
-        /// - <c>page</c>: Current page number (default 1)<br/>
-        /// - <c>pageSize</c>: Number of reviews per page (default 10)<br/>
-        ///
-        /// <b>Use cases:</b><br/>
-        /// - Display mentor reviews on profile page<br/>
-        /// - Analyze mentor performance<br/>
-        /// - Filter recent reviews using pagination
-        /// </remarks>
-        /// <param name="mentorId">The unique identifier of the mentor.</param>
-        /// <param name="page">Page number (optional, default 1).</param>
-        /// <param name="pageSize">Number of reviews per page (optional, default 10).</param>
-        /// <returns>Paginated list of reviews for the mentor.</returns>
-        /// <response code="200">Reviews retrieved successfully.</response>
-        /// <response code="404">No reviews found for the specified mentor.</response>
-
+        /// <param name="mentorId">The unique identifier of the mentor whose reviews are being requested.</param>
+        /// <param name="page">Page number (optional, default = 1).</param>
+        /// <param name="pageSize">Number of reviews per page (optional, default = 10).</param>
+        /// <response code="200">Mentor exists. Returns paginated reviews (can be empty).</response>
+        /// <response code="400">Invalid query parameters (mentorId empty, page <= 0, pageSize <= 0).</response>
+        /// <response code="404">Mentor not found.</response>
         [HttpGet("{mentorId}/reviews")]
+        [ProducesResponseType(typeof(ApiResponse<MentorReviewsDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetReviewsForMentor(
-          string mentorId,
-          [FromQuery] int page = 1,
-          [FromQuery] int pageSize = 10)
+            string mentorId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
-            _logger.LogInformation("[Review] getting reviews for mentor {MentorId}", mentorId);
+            // Validate query parameters
+            if (string.IsNullOrWhiteSpace(mentorId))
+                return BadRequest(ApiResponse.Error("Mentor ID is required.", StatusCodes.Status400BadRequest));
 
+            if (page <= 0 || pageSize <= 0)
+                return BadRequest(ApiResponse.Error("Page and pageSize must be greater than zero.", StatusCodes.Status400BadRequest));
+
+            _logger.LogInformation("[Review] Getting reviews for mentor {MentorId}, Page {Page}, PageSize {PageSize}", mentorId, page, pageSize);
+
+            // Call service to get paginated reviews
             var result = await _reviewService.GetReviewsForMentorAsync(mentorId, page, pageSize);
 
-            return Ok(new ApiResponse<MentorReviewsDto>(
-                            result,
-                            "Reviews retrieved successfully."));
+            if (result == null)
+                return NotFound(ApiResponse.Error("Mentor not found.", StatusCodes.Status404NotFound));
+
+            // Return reviews wrapped in ApiResponse
+            return Ok(new ApiResponse<MentorReviewsDto>(result, "Reviews retrieved successfully."));
         }
+
+
+
+
+
+
+
 
 
         // ============ AUTHENTICATED ENDPOINTS ============

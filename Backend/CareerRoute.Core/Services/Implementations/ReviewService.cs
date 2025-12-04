@@ -136,6 +136,10 @@ namespace CareerRoute.Core.Services.Implementations
         {
             _logger.LogInformation("[Review] Fetching reviews for mentor {MentorId} with page {Page} and pageSize {PageSize}", mentorId, page, pageSize);
 
+            var mentor = await _mentorRepository.GetByIdAsync(mentorId);
+            if (mentor == null)
+                throw new NotFoundException("Mentor not Found");
+
             var (reviews, totalCount) = await _reviewsRepository.GetReviewsForMentorAsync(mentorId, page, pageSize);
 
             // If no reviews, just create an empty list
