@@ -103,6 +103,11 @@ export class SessionCard implements OnInit, OnDestroy {
    */
   @Output() paymentExpired = new EventEmitter<string>();
 
+  /**
+   * Emitted when user clicks End Meeting (Test) button
+   */
+  @Output() endMeetingTest = new EventEmitter<string>();
+
   // Expose enums to template
   SessionStatus = SessionStatus;
 
@@ -349,9 +354,10 @@ export class SessionCard implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if session can be cancelled
+   * Check if session can be cancelled (only mentees can cancel)
    */
   get canCancel(): boolean {
+    if (this.userRole === 'mentor') return false;
     return this.session.status === SessionStatus.Confirmed ||
            this.session.status === SessionStatus.Pending ||
            this.session.status === SessionStatus.PendingReschedule;
@@ -425,5 +431,17 @@ export class SessionCard implements OnInit, OnDestroy {
 
   onCompletePaymentClick(): void {
     this.completePayment.emit(this.session.id);
+  }
+
+  /**
+   * Check if session can be ended via test endpoint
+   * Available only for InProgress sessions
+   */
+  get canEndMeetingTest(): boolean {
+    return this.session.status === SessionStatus.InProgress;
+  }
+
+  onEndMeetingTestClick(): void {
+    this.endMeetingTest.emit(this.session.id);
   }
 }

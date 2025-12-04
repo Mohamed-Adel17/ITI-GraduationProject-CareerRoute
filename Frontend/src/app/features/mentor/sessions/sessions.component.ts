@@ -350,6 +350,26 @@ export class MentorSessionsComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle end meeting test action (for demo purposes)
+   */
+  onEndMeetingTest(sessionId: string): void {
+    const sub = this.sessionService.endMeetingTest(sessionId).subscribe({
+      next: () => {
+        this.notificationService.success(
+          'Meeting ended and session marked as completed',
+          'Session Completed'
+        );
+        this.loadUpcomingSessions();
+        this.loadCompletedSessions();
+      },
+      error: (err) => {
+        console.error('Error ending meeting:', err);
+      }
+    });
+    this.subscriptions.push(sub);
+  }
+
+  /**
    * Handle view recording action
    * Navigates to session detail page with recording tab
    */

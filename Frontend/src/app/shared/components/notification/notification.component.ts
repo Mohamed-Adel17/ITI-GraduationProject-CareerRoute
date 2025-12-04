@@ -162,16 +162,16 @@ export class NotificationComponent implements OnInit, OnDestroy {
    */
   getPositionClass(position?: NotificationPosition): string {
     if (!position) {
-      return 'top-0 right-0';
+      return 'top-20 right-0';
     }
 
     switch (position) {
       case NotificationPosition.TopRight:
-        return 'top-0 right-0';
+        return 'top-20 right-0';
       case NotificationPosition.TopLeft:
-        return 'top-0 left-0';
+        return 'top-20 left-0';
       case NotificationPosition.TopCenter:
-        return 'top-0 left-1/2 -translate-x-1/2';
+        return 'top-20 left-1/2 -translate-x-1/2';
       case NotificationPosition.BottomRight:
         return 'bottom-0 right-0';
       case NotificationPosition.BottomLeft:
@@ -179,7 +179,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
       case NotificationPosition.BottomCenter:
         return 'bottom-0 left-1/2 -translate-x-1/2';
       default:
-        return 'top-0 right-0';
+        return 'top-20 right-0';
     }
   }
 

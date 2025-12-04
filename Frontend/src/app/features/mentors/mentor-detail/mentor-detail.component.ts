@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { MentorService } from '../../../core/services/mentor.service';
 import { TimeslotService } from '../../../core/services/timeslot.service';
@@ -13,6 +13,7 @@ import { BookingCalendarModalComponent } from './booking-calendar-modal/booking-
 import { StripePaymentComponent } from '../../payment/stripe-payment/stripe-payment.component';
 import { PaymobCardPaymentComponent } from '../../payment/paymob-card-payment/paymob-card-payment.component';
 import { PaymobWalletPaymentComponent } from '../../payment/paymob-wallet-payment/paymob-wallet-payment.component';
+import { PaymentMethodSelectionComponent } from './payment-method-selection/payment-method-selection.component';
 import { PaymentProvider, PaymobPaymentMethod } from '../../../shared/models/payment.model';
 import { PaymentMethodSelection } from '../../../shared/models/payment-flow.model';
 import {
@@ -68,7 +69,7 @@ import { BookSessionRequest, BookingRules } from '../../../shared/models/booking
 @Component({
   selector: 'app-mentor-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent, StripePaymentComponent, PaymobCardPaymentComponent, PaymobWalletPaymentComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, FormsModule, RatingDisplay, BookingCalendarModalComponent, StripePaymentComponent, PaymobCardPaymentComponent, PaymobWalletPaymentComponent, PaymentMethodSelectionComponent],
   templateUrl: './mentor-detail.component.html',
   styleUrls: ['./mentor-detail.component.css']
 })
@@ -487,6 +488,94 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
     if (this.mentor) {
       this.loadAvailableSlots(this.mentor.id);
     }
+  }
+
+  // ==========================================================================
+  // TEST BOOKING (Demo purposes)
+  // ==========================================================================
+
+  isBookingTest: boolean = false;
+  showTestBookingForm: boolean = false;
+  showTestPaymentMethodSelection: boolean = false;
+  testBookingTopic: string = '';
+  testBookingNotes: string = '';
+
+  /**
+   * Open test booking form (step 1)
+   */
+  bookTestSession(): void {
+    if (!this.mentor || !this.canBook) return;
+
+    if (!this.authService.getCurrentUser()?.id) {
+      this.notificationService.warning('Please log in to book a session', 'Login Required');
+      return;
+    }
+
+    this.testBookingTopic = '';
+    this.testBookingNotes = '';
+    this.showTestBookingForm = true;
+  }
+
+  /**
+   * Submit test booking form and create session (step 2)
+   */
+  submitTestBooking(): void {
+    if (!this.mentor) return;
+
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.id) return;
+
+    this.isBookingTest = true;
+    this.showTestBookingForm = false;
+
+    this.sessionService.seedTestSession(
+      this.mentor.id,
+      currentUser.id,
+      5,
+      60,
+      this.testBookingTopic || undefined,
+      this.testBookingNotes || undefined
+    ).subscribe({
+      next: (response) => {
+        this.isBookingTest = false;
+        this.currentSession = {
+          id: response.sessionId,
+          price: response.price,
+          mentorFirstName: this.mentor?.firstName,
+          mentorLastName: this.mentor?.lastName,
+          topic: this.testBookingTopic || undefined,
+          notes: this.testBookingNotes || undefined
+        };
+        this.showTestPaymentMethodSelection = true;
+      },
+      error: (err) => {
+        this.isBookingTest = false;
+        console.error('Test booking failed:', err);
+      }
+    });
+  }
+
+  /**
+   * Close test booking form
+   */
+  closeTestBookingForm(): void {
+    this.showTestBookingForm = false;
+  }
+
+  /**
+   * Handle payment method selection for test booking
+   */
+  onTestPaymentMethodSelected(selection: PaymentMethodSelection): void {
+    this.showTestPaymentMethodSelection = false;
+    this.selectedPaymentMethod = selection;
+    this.showPaymentModal = true;
+  }
+
+  /**
+   * Close test payment method selection modal
+   */
+  closeTestPaymentMethodSelection(): void {
+    this.showTestPaymentMethodSelection = false;
   }
 
   // ==========================================================================

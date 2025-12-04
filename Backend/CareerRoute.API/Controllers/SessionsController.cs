@@ -677,6 +677,57 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
+        /// Generate AI preparation guide for an upcoming session (mentor only).
+        /// </summary>
+        /// <remarks>
+        /// Generates an AI-powered preparation guide to help the mentor prepare for the session.
+        /// 
+        /// **What's Generated:**
+        /// - Key talking points based on session topic
+        /// - Suggested questions to ask the mentee
+        /// - Topics/resources to review beforehand
+        /// - Potential challenges the mentee might face
+        /// - Suggested session structure
+        /// 
+        /// **Behavior:**
+        /// - If already generated, returns existing guide (WasAlreadyGenerated=true)
+        /// - If topic/notes empty, provides general guidance with note to clarify with mentee
+        /// 
+        /// **Authorization:** Only the session mentor can generate preparation guides.
+        /// </remarks>
+        /// <param name="sessionId">The unique session identifier</param>
+        /// <returns>AI-generated preparation guide</returns>
+        /// <response code="200">Preparation guide generated or retrieved successfully</response>
+        /// <response code="400">Session is completed, cancelled, or no-show</response>
+        /// <response code="401">User not authenticated</response>
+        /// <response code="403">User is not the mentor for this session</response>
+        /// <response code="404">Session not found</response>
+        [HttpPost("{sessionId}/generate-preparation")]
+        [Authorize(Policy = AppPolicies.RequireMentorOrAdminRole)]
+        [ProducesResponseType(typeof(ApiResponse<GeneratePreparationResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GeneratePreparation(string sessionId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            _logger.LogInformation("Mentor {UserId} requesting AI preparation for session {SessionId}", userId, sessionId);
+
+            var result = await _sessionService.GeneratePreparationAsync(sessionId, userId);
+
+            var message = result.WasAlreadyGenerated
+                ? "Preparation guide retrieved successfully (previously generated)"
+                : "Preparation guide generated successfully";
+
+            return Ok(new ApiResponse<GeneratePreparationResponseDto>(result, message));
+        }
+
+        /// <summary>
         /// Ends an active session and its associated Zoom meeting (mentor only).
         /// </summary>
         /// <remarks>

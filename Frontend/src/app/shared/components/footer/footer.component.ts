@@ -26,8 +26,7 @@ export class FooterComponent {
     ],
     company: [
       { label: 'About Us', route: '/about' },
-      { label: 'Contact', route: '/contact' },
-      { label: 'Careers', route: '/careers' }
+      { label: 'Contact', route: '/contact' }
     ],
     support: [
       { label: 'Help Center', route: '/help' },

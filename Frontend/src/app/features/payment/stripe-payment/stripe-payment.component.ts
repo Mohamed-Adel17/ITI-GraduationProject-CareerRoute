@@ -339,7 +339,14 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
    */
   retryPayment(): void {
     this.errorMessage = null;
+    // Destroy existing card element before creating new one
+    if (this.cardElement) {
+      this.cardElement.destroy();
+      this.cardElement = null;
+    }
     this.currentStatus = PaymentFlowStatus.ProcessingPayment;
+    // Wait for DOM to render before creating new card element
+    setTimeout(() => this.createCardElement(), 0);
   }
 
   /**

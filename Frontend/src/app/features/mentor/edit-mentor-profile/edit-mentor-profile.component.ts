@@ -87,9 +87,7 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
 
   /**
    * Initialize the reactive form with validation rules
-   *
-   * @remarks
-   * Includes both user-related fields and mentor-specific fields
+   * Matches backend UpdateMentorProfileValidator rules
    */
   private initializeForm(): void {
     this.profileForm = this.fb.group({
@@ -97,14 +95,14 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
       firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       phoneNumber: ['', [Validators.pattern(/^[\d\s\-\+\(\)]+$/)]],
-      profilePictureUrl: ['', [Validators.pattern(/^https?:\/\/.+/)]],
+      profilePictureUrl: ['', [Validators.maxLength(200)]],
 
       // Mentor-specific fields
-      bio: ['', [Validators.required, Validators.minLength(50), Validators.maxLength(1000)]],
-      yearsOfExperience: [0, [Validators.required, Validators.min(0)]],
-      certifications: ['', [Validators.maxLength(500)]],
-      rate30Min: [0, [Validators.required, Validators.min(0), Validators.max(10000)]],
-      rate60Min: [0, [Validators.required, Validators.min(0), Validators.max(10000)]],
+      bio: ['', [Validators.required, Validators.minLength(100), Validators.maxLength(2000)]],
+      yearsOfExperience: [1, [Validators.required, Validators.min(1), Validators.max(60)]],
+      certifications: ['', [Validators.maxLength(1000)]],
+      rate30Min: [50, [Validators.required, Validators.min(50), Validators.max(1000)]],
+      rate60Min: [50, [Validators.required, Validators.min(50), Validators.max(1000)]],
       isAvailable: [true]
     });
   }
