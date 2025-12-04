@@ -3,24 +3,24 @@
   <!-- Simple background decoration -->
   <div class="absolute top-0 right-0 w-1/2 h-full bg-primary/10 skew-x-12 transform origin-top-right"></div>
   
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-28 sm:pb-32 md:pb-40 flex flex-col md:flex-row items-center">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 md:pt-16 pb-32 sm:pb-36 md:pb-40 flex flex-col-reverse md:flex-row items-center gap-8 md:gap-0">
     
     <!-- Left Content -->
-    <div class="w-full md:w-1/2 z-10 md:pr-12 text-center md:text-left mb-12 md:mb-0 animate-slide-up">
-      <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+    <div class="w-full md:w-1/2 z-10 md:pr-12 text-center md:text-left animate-slide-up">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 sm:mb-6">
         Find Your Perfect <br class="hidden md:block" />
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-300">Career Mentor.</span>
       </h1>
-      <p class="text-slate-300 text-lg md:text-xl mb-8 leading-relaxed max-w-xl mx-auto md:mx-0">
+      <p class="text-slate-300 text-base sm:text-lg md:text-xl mb-6 sm:mb-8 leading-relaxed max-w-xl mx-auto md:mx-0">
         Connect with experienced professionals for personalized 1-on-1 mentorship. 
         Get career advice, interview prep, and skill development guidance.
       </p>
       
       <!-- CTA Buttons -->
-      <div class="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
+      <div class="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3 sm:gap-4">
         <button 
           (click)="browseMentors()"
-          class="px-8 py-4 bg-primary hover:bg-primary/90 text-white text-lg font-semibold rounded-full transition-all shadow-lg hover:shadow-primary/30 w-full sm:w-auto"
+          class="px-6 sm:px-8 py-3 sm:py-4 bg-primary hover:bg-primary/90 text-white text-base sm:text-lg font-semibold rounded-full transition-all shadow-lg hover:shadow-primary/30 w-full sm:w-auto"
         >
           Browse Mentors
         </button>
@@ -28,7 +28,7 @@
         <button
           *ngIf="showBecomeAMentorButton"
           (click)="becomeMentor()"
-          class="px-8 py-4 bg-transparent border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white text-lg font-medium rounded-full transition-all w-full sm:w-auto"
+          class="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white text-base sm:text-lg font-medium rounded-full transition-all w-full sm:w-auto"
         >
           Become a Mentor
         </button>
@@ -37,7 +37,7 @@
           *ngIf="showCheckApprovalButton"
           (click)="checkApprovalStatus()"
           [disabled]="checkingApprovalStatus"
-          class="px-8 py-4 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 disabled:cursor-not-allowed text-white text-lg font-semibold rounded-full transition-all w-full sm:w-auto flex items-center justify-center gap-2"
+          class="px-6 sm:px-8 py-3 sm:py-4 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 disabled:cursor-not-allowed text-white text-base sm:text-lg font-semibold rounded-full transition-all w-full sm:w-auto flex items-center justify-center gap-2"
         >
           <svg *ngIf="checkingApprovalStatus" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -49,7 +49,7 @@
     </div>
 
     <!-- Right Image -->
-    <div class="w-full md:w-1/2 relative z-10 h-[280px] sm:h-[350px] md:h-[450px] animate-slide-up">
+    <div class="w-full md:w-1/2 relative z-10 h-[220px] sm:h-[300px] md:h-[450px] animate-slide-up">
       <div class="absolute inset-0 bg-primary rounded-3xl transform rotate-3 opacity-20 translate-x-4 translate-y-4"></div>
       <div class="relative h-full w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800/50">
         <img 
@@ -66,7 +66,7 @@
 
 <!-- Stats Bar - Floating Card -->
 <section class="relative z-20 px-4 md:px-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-100 dark:border-gray-700 p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8 max-w-5xl mx-auto -mt-28 md:-mt-32">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-100 dark:border-gray-700 p-4 sm:p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto -mt-24 sm:-mt-28 md:-mt-32">
     
     <!-- Expert Mentors -->
     <div class="flex items-center gap-4 w-full md:w-auto md:flex-1 justify-center border-b md:border-b-0 md:border-r border-slate-100 dark:border-gray-700 pb-4 md:pb-0">
