@@ -168,6 +168,9 @@ export interface SessionDetailResponse {
   hoursUntilSession?: number | null;
   createdAt: string;
   updatedAt: string;
+  // AI Preparation fields (mentor only)
+  aiPreparationGuide?: string | null;         // Markdown-formatted AI guide
+  aiPreparationGeneratedAt?: string | null;   // ISO 8601 datetime when generated
 }
 
 // ===========================
@@ -374,6 +377,17 @@ export interface SessionSummaryResponse {
   sessionId: string;
   summary: string;                    // AI-generated summary (markdown/plain text)
   isAvailable: boolean;               // True if summary is ready
+}
+
+/**
+ * AI Preparation Guide Response
+ * Response for POST /api/sessions/{id}/generate-preparation
+ */
+export interface AIPreparationResponse {
+  sessionId: string;
+  preparationGuide: string;           // Markdown-formatted AI-generated guide
+  generatedAt: string;                // ISO 8601 datetime
+  wasAlreadyGenerated: boolean;       // True if returning cached result
 }
 // ===========================
 // Paginated Responses
