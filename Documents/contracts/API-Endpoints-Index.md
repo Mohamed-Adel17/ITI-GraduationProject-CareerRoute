@@ -102,7 +102,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 
 ---
 
-### Sessions (10 endpoints)
+### Sessions (16 endpoints)
 
 | Method | Endpoint | Auth | Documented In | Notes |
 |--------|----------|------|---------------|-------|
@@ -114,6 +114,7 @@ This index provides a comprehensive map of all API endpoints across the CareerRo
 | `PATCH` | `/api/sessions/{id}/cancel` | User/Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#6-cancel-session)** | ✅ Authoritative<br/>Refund policy applies<br/>Releases TimeSlot |
 | `POST` | `/api/sessions/{id}/join` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#7-join-session-get-video-link)** | ✅ Authoritative<br/>Get video conference link |
 | `PATCH` | `/api/sessions/{id}/complete` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#8-complete-session)** | ✅ Authoritative<br/>Trigger payment release |
+| `POST` | `/api/sessions/{id}/generate-preparation` | Mentor/Admin | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#9-generate-ai-preparation)** | ✅ Authoritative<br/>🤖 AI preparation guide |
 | `GET` | `/api/sessions/{id}/recording` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#11-get-session-recording)** | ✅ Authoritative<br/>🎥 R2 recording access |
 | `GET` | `/api/sessions/{id}/transcript` | User/Mentor | **[Session-Payment-Endpoints.md](./Session-Payment-Endpoints.md#12-get-session-transcript)** | ✅ Authoritative<br/>📝 Deepgram transcript |
 
@@ -248,11 +249,11 @@ Mentor-Endpoints.md (REFERENCES)
 | Mentors | 14 | 5 | 3 | 3 | 0 |
 | TimeSlots | (included in Mentors) | 1 | 3 | 0 | 0 |
 | Users | 6 | 0 | 4 | 2 | 0 |
-| Sessions | 10 | 0 | 10 | 0 | 0 |
+| Sessions | 16 | 0 | 16 | 0 | 0 |
 | Payments | 3 | 0 | 3 | 0 | 0 |
 | Notifications | 4 | 0 | 4 | 0 | 0 |
 | Webhooks | 2 | 0 | 0 | 0 | 2 |
-| **TOTAL** | **57** | **16** | **24** | **12** | **2** |
+| **TOTAL** | **63** | **16** | **30** | **12** | **2** |
 
 **Notes:**
 - **System**: Webhook endpoints called by payment gateways (Stripe, Paymob), not by frontend applications
@@ -320,6 +321,7 @@ Mentor-Endpoints.md (REFERENCES)
 - `PATCH /api/sessions/{id}/cancel` (User/Mentor/Admin - cancel session)
 - `POST /api/sessions/{id}/join` (User/Mentor - get video link)
 - `PATCH /api/sessions/{id}/complete` (Mentor/Admin - mark completed)
+- `POST /api/sessions/{id}/generate-preparation` (Mentor/Admin - AI preparation guide)
 
 **Payments:**
 - `POST /api/payments/create-intent` (User - create payment intent)
@@ -578,6 +580,6 @@ Mentor-Endpoints.md (REFERENCES)
 
 ---
 
-**Total Documented Endpoints:** 57
+**Total Documented Endpoints:** 63
 **Total Contract Files:** 6
 **Documentation Status:** ✅ Complete & Synchronized
