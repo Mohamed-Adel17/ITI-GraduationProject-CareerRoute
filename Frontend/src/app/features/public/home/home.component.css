@@ -10,6 +10,17 @@
  * - Mobile-first responsive design
  */
 
+/* CSS Custom Property for header height (h-20 = 5rem = 80px) */
+:host {
+  --header-height: 5rem;
+}
+
+/* Hero section full viewport height minus header */
+.hero-section {
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height)); /* Dynamic viewport height for mobile browsers */
+}
+
 /* Page Load Animations */
 @keyframes fade-in {
   from {
