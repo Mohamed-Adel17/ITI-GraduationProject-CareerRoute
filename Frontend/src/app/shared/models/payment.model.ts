@@ -103,6 +103,7 @@ export interface PaymentHistoryItem {
   mentorName: string;
   sessionTopic?: string | null;
   amount: number;
+  paymentProvider: PaymentProvider;   // Stripe (USD) or Paymob (EGP)
   paymentMethod: string;              // Visa, Mastercard, Meeza, etc.
   status: PaymentStatus;
   transactionId: string;
@@ -209,7 +210,7 @@ export interface PaginationMetadata {
  */
 export interface PaymentHistoryResponse {
   payments: PaymentHistoryItem[];
-  pagination: PaginationMetadata;
+  paginationMetadata: PaginationMetadata;  // Backend returns 'paginationMetadata' not 'pagination'
   summary: PaymentHistorySummary;
 }
 

@@ -1,0 +1,210 @@
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Payment History</h1>
+        <p class="text-gray-600 dark:text-gray-400">View all your payment transactions and manage your billing history.
+        </p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div *ngIf="summary" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Spent USD Card -->
+        <div class="bg-white dark:bg-background-dark/50 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Spent (USD)</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                        {{ formatAmount({ amount: totalSpentUSD, paymentProvider: 'Stripe' } ) }}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                    <span class="text-xl font-bold text-blue-600 dark:text-blue-400">$</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Spent EGP Card -->
+        <div class="bg-white dark:bg-background-dark/50 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Spent (EGP)</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                        {{ formatAmount({ amount: totalSpentEGP, paymentProvider: 'Paymob' } ) }}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <span class="text-xl font-bold text-green-600 dark:text-green-400">E£</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Refunded Card -->
+        <div class="bg-white dark:bg-background-dark/50 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Refunded</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                        {{ formatAmount({ amount: totalRefundedUSD, paymentProvider: 'Stripe' }) }}
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        + {{ formatAmount({ amount: totalRefundedEGP, paymentProvider: 'Paymob' }) }}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Spent Card -->
+        <div class="bg-white dark:bg-background-dark/50 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Net Spent (EGP)</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                        {{ formatAmount({ amount: combinedNetSpentEGP, paymentProvider: 'Paymob' }) }}
+                    </p>
+                </div>
+                <div
+                    class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Filter (Optional) -->
+    <div class="mb-6">
+        <label for="status-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Filter by Status
+        </label>
+        <select id="status-filter" [(ngModel)]="selectedStatus" (change)="onStatusFilter(selectedStatus)"
+            class="block w-full md:w-64 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent">
+            <option [ngValue]="null">All Statuses</option>
+            <option [ngValue]="PaymentStatus.Captured">Completed</option>
+            <option [ngValue]="PaymentStatus.Pending">Pending</option>
+            <option [ngValue]="PaymentStatus.Refunded">Refunded</option>
+            <option [ngValue]="PaymentStatus.Failed">Failed</option>
+        </select>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="bg-white dark:bg-background-dark/50 rounded-xl p-12 text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-primary"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400">Loading payment history...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="errorMessage && !isLoading"
+        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-red-800 dark:text-red-300">{{ errorMessage }}</p>
+        </div>
+    </div>
+
+    <!-- Payment Table -->
+    <div *ngIf="!isLoading && !errorMessage"
+        class="bg-white dark:bg-background-dark/50 rounded-xl overflow-hidden shadow-sm">
+        <!-- Empty State -->
+        <div *ngIf="!hasPayments" class="p-12 text-center">
+            <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">No payment history</h3>
+            <p class="text-gray-600 dark:text-gray-400">You don't have any payment transactions yet.</p>
+        </div>
+
+        <!-- Table with Payments -->
+        <div *ngIf="hasPayments" class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                        <th class="p-4 font-semibold text-gray-600 dark:text-gray-300">Date</th>
+                        <th class="p-4 font-semibold text-gray-600 dark:text-gray-300">Amount</th>
+                        <th class="p-4 font-semibold text-gray-600 dark:text-gray-300">Description</th>
+                        <th class="p-4 font-semibold text-gray-600 dark:text-gray-300 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let payment of payments"
+                        class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <td class="p-4 text-gray-600 dark:text-gray-300">
+                            <ng-container *ngIf="payment.paidAt; else noDate">
+                                {{ formatDate(payment.paidAt) }}
+                            </ng-container>
+                            <ng-template #noDate>
+                                <span *ngIf="payment.status === PaymentStatus.Pending" class="text-yellow-600 dark:text-yellow-400">Awaiting payment</span>
+                                <span *ngIf="payment.status !== PaymentStatus.Pending">—</span>
+                            </ng-template>
+                        </td>
+                        <td class="p-4 text-gray-900 dark:text-white font-medium">
+                            {{ formatAmount(payment) }}
+                        </td>
+                        <td class="p-4 text-gray-600 dark:text-gray-300">
+                            <div class="font-medium text-gray-900 dark:text-white">{{ payment.mentorName }}</div>
+                            <div class="text-sm" *ngIf="payment.sessionTopic">{{ payment.sessionTopic }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ payment.paymentMethod }}</div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <span [ngClass]="getStatusBadgeClass(payment.status)">
+                                {{ getStatusText(payment.status) }}
+                            </span>
+                            <div *ngIf="payment.refundAmount && payment.refundedAt"
+                                class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Refunded: {{ formatRefundAmount(payment) }}
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="showPagination && !isLoading" class="mt-6 flex items-center justify-between">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+            Showing {{ ((pagination?.currentPage ?? 1) - 1) * pageSize + 1 }} to
+            {{ Math.min((pagination?.currentPage ?? 1) * pageSize, pagination?.totalCount ?? 0) }} of
+            {{ pagination?.totalCount ?? 0 }} payments
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Previous Button -->
+            <button (click)="onPageChange(currentPage - 1)" [disabled]="!pagination?.hasPreviousPage"
+                class="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Previous
+            </button>
+
+            <!-- Page Numbers -->
+            <div class="hidden sm:flex items-center gap-2">
+                <button *ngFor="let page of pageNumbers" (click)="onPageChange(page)" [ngClass]="{
+            'bg-primary text-white': page === currentPage,
+            'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700': page !== currentPage
+          }" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors">
+                    {{ page }}
+                </button>
+            </div>
+
+            <!-- Next Button -->
+            <button (click)="onPageChange(currentPage + 1)" [disabled]="!pagination?.hasNextPage"
+                class="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Next
+            </button>
+        </div>
+    </div>
+</div>
