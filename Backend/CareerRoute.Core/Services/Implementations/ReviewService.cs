@@ -147,6 +147,7 @@ namespace CareerRoute.Core.Services.Implementations
                 ? _mapper.Map<List<ReviewDetailsItemDto>>(reviews)
                 : new List<ReviewDetailsItemDto>();
 
+
             var pagination = new PaginationMetadataDto
             {
                 TotalCount = totalCount,

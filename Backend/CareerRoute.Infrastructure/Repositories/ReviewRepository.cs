@@ -45,8 +45,7 @@ namespace CareerRoute.Infrastructure.Repositories
         {
             var query = dbContext.ReviewSessions
                 .Include(r => r.Session)
-                    .ThenInclude(s => s.Mentor)
-                        .ThenInclude(m => m.User)
+                    .ThenInclude(s => s.Mentee)
                 .Where(r => r.Session.MentorId == mentorId)
                 .AsQueryable();
 

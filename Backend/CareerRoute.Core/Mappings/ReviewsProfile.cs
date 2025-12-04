@@ -29,11 +29,9 @@ namespace CareerRoute.Core.Mappings
 
 
             CreateMap<ReviewSession, ReviewDetailsItemDto>()
-                .ForMember(dest => dest.MentorId, opt => opt.MapFrom(src => src.Session.Mentor.Id))
-                .ForMember(dest => dest.MentorFirstName, opt => opt.MapFrom(src => src.Session.Mentor.User.FirstName))
-                .ForMember(dest => dest.MentorLastName, opt => opt.MapFrom(src => src.Session.Mentor.User.LastName));
-   
-      
+                .ForMember(dest => dest.MeteeId, opt => opt.MapFrom(src => src.Session.Mentee.Id))
+                .ForMember(dest => dest.MenteeFullName, opt => opt.MapFrom(src => src.Session.Mentee.FullName));
+
 
 
 

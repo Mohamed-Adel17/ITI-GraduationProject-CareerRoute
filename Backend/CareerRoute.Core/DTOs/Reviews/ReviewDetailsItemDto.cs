@@ -13,9 +13,8 @@ namespace CareerRoute.Core.DTOs.Reviews
         public int Rating { get; set; }
         public string? Comment { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string MentorId { get; set; } = null!;
-        public string MentorFirstName { get; set; } = null!;
-        public string MentorLastName { get; set; } = null!;
+        public string MeteeId { get; set; } = null!;
+        public string MenteeFullName { get; set; } = null!;
 
 
     }
