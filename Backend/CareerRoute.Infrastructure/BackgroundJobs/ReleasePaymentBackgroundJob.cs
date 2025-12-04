@@ -29,6 +29,7 @@ namespace CareerRoute.Infrastructure.BackgroundJobs
         {
             _logger.LogInformation("Executing payment release for session {SessionId}", sessionId);
 
+            await using var transaction = await _mentorBalanceRepository.BeginTransactionAsync();
             try
             {
                 var session = await _sessionRepository.GetByIdAsync(sessionId);
@@ -78,6 +79,7 @@ namespace CareerRoute.Infrastructure.BackgroundJobs
                 _mentorBalanceRepository.Update(balance);
                 _paymentRepository.Update(payment);
                 await _mentorBalanceRepository.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 _logger.LogInformation(
                     "Successfully released {Amount} to available balance for mentor {MentorId} (Session: {SessionId})",
@@ -85,6 +87,7 @@ namespace CareerRoute.Infrastructure.BackgroundJobs
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error executing payment release for session {SessionId}", sessionId);
                 throw; // Rethrow to let Hangfire retry
             }

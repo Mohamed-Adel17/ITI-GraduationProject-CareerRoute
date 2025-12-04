@@ -56,7 +56,7 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException($"Insufficient balance. Requested: {request.Amount:C}, Available: {balance.AvailableBalance:C}");
             }
 
-            using var transaction = await _payoutRepository.BeginTransactionAsync();
+            await using var transaction = await _payoutRepository.BeginTransactionAsync();
             try
             {
                 var payout = new Payout
@@ -136,7 +136,7 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException($"Cannot perform operation on payout {payoutId}. Current status: {payout.Status}, Required status: {PayoutStatus.Pending}");
             }
 
-            using var transaction = await _payoutRepository.BeginTransactionAsync();
+            await using var transaction = await _payoutRepository.BeginTransactionAsync();
             try
             {
                 payout.Status = PayoutStatus.Processing;
@@ -145,14 +145,14 @@ namespace CareerRoute.Core.Services.Implementations
                 await _payoutRepository.SaveChangesAsync();
 
                 _logger.LogInformation("Payout {PayoutId} status updated to Processing", payoutId);
+                
+                // TODO: Replace with actual payment gateway integration (Stripe/Paymob payout API)
+                // Current implementation is a placeholder for demo purposes
+                await Task.Delay(TimeSpan.FromSeconds(1)); // Simulated processing time
 
-                // Simulate processing delay
-                await Task.Delay(TimeSpan.FromSeconds(3));
-
-                // Simulate success or failure (80% success rate)
-                var random = new Random();
-                var isSuccess = random.Next(100) < 80;
-
+                // TODO: Implement actual payout processing logic
+                var isSuccess = true; // Default to success until real integration
+                
                 if (isSuccess)
                 {
                     payout.Status = PayoutStatus.Completed;
@@ -211,7 +211,7 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new BusinessException($"Cannot perform operation on payout {payoutId}. Current status: {payout.Status}, Required status: {PayoutStatus.Pending}");
             }
 
-            using var transaction = await _payoutRepository.BeginTransactionAsync();
+            await using var transaction = await _payoutRepository.BeginTransactionAsync();
             try
             {
                 payout.Status = PayoutStatus.Cancelled;

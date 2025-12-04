@@ -97,7 +97,7 @@ namespace CareerRoute.Core.Services.Implementations
             if (payment is null)
             {
                 _logger.LogError("No payment found for session {SessionId}, skipping balance update", sessionId);
-                throw new NotFoundException($"Paymet for session id :{sessionId} not found");
+                throw new NotFoundException($"Paymet for session {sessionId} not found");
             }
 
             // Calculate mentor payout amount
