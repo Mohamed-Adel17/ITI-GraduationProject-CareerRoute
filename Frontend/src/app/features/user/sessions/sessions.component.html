@@ -27,35 +27,38 @@
 
     <!-- Tabs -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <div class="flex items-center justify-between">
-        <nav class="flex gap-8" aria-label="Sessions tabs">
-          <button (click)="switchTab('upcoming')" [class]="activeTab === 'upcoming'
-              ? 'border-b-2 border-primary text-primary font-semibold'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-            class="pb-4 px-1 text-sm transition-colors">
-            Upcoming
-            <span *ngIf="upcomingPagination?.totalCount"
-              class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
-              {{ upcomingPagination?.totalCount }}
-            </span>
-          </button>
-          <button (click)="switchTab('completed')" [class]="activeTab === 'completed'
-              ? 'border-b-2 border-primary text-primary font-semibold'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-            class="pb-4 px-1 text-sm transition-colors">
-            Completed
-            <span *ngIf="completedPagination?.totalCount"
-              class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
-              {{ completedSessions.length }}
-            </span>
-          </button>
-        </nav>
-        <!-- View Cancelled Sessions Link -->
-        <button (click)="openCancelledModal()" 
-          class="text-sm text-gray-500 dark:text-gray-400 hover:text-primary transition-colors pb-4">
-          View cancelled sessions
+      <nav class="flex gap-8" aria-label="Sessions tabs">
+        <button (click)="switchTab('upcoming')" [class]="activeTab === 'upcoming'
+            ? 'border-b-2 border-primary text-primary font-semibold'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+          class="pb-4 px-1 text-sm transition-colors">
+          Upcoming
+          <span *ngIf="upcomingPagination?.totalCount"
+            class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
+            {{ upcomingPagination?.totalCount }}
+          </span>
         </button>
-      </div>
+        <button (click)="switchTab('completed')" [class]="activeTab === 'completed'
+            ? 'border-b-2 border-primary text-primary font-semibold'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+          class="pb-4 px-1 text-sm transition-colors">
+          Completed
+          <span *ngIf="completedPagination?.totalCount"
+            class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
+            {{ completedSessions.length }}
+          </span>
+        </button>
+        <button (click)="switchTab('cancelled')" [class]="activeTab === 'cancelled'
+            ? 'border-b-2 border-primary text-primary font-semibold'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+          class="pb-4 px-1 text-sm transition-colors">
+          Cancelled
+          <span *ngIf="cancelledSessions.length"
+            class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
+            {{ cancelledSessions.length }}
+          </span>
+        </button>
+      </nav>
     </div>
 
     <!-- Upcoming Sessions Tab -->
@@ -204,6 +207,32 @@
         </div>
       </div>
     </div>
+
+    <!-- Cancelled Sessions Tab -->
+    <div *ngIf="activeTab === 'cancelled'">
+      <!-- Loading State -->
+      <div *ngIf="loadingCancelled" class="flex justify-center py-12">
+        <svg class="animate-spin h-12 w-12 text-primary" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!loadingCancelled && !hasCancelledSessions()" class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Cancelled Sessions</h3>
+        <p class="text-gray-600 dark:text-gray-400">You don't have any cancelled sessions.</p>
+      </div>
+
+      <!-- Sessions Grid -->
+      <div *ngIf="!loadingCancelled && hasCancelledSessions()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <app-session-card *ngFor="let session of cancelledSessions; trackBy: trackBySessionId" 
+          [session]="session"
+          [userRole]="'mentee'" 
+          [showActions]="false">
+        </app-session-card>
+      </div>
+    </div>
   </div>
 
   <!-- Cancel Session Modal -->
@@ -220,52 +249,6 @@
   <app-session-payment-modal *ngIf="selectedSession" [session]="selectedSession" [isOpen]="showPaymentModal"
     (closeModal)="onPaymentModalClose()" (paymentSuccess)="onPaymentSuccess()">
   </app-session-payment-modal>
-
-  <!-- Cancelled Sessions Modal -->
-  <div *ngIf="showCancelledModal" class="fixed inset-0 z-50 overflow-y-auto" (click)="closeCancelledModal()">
-    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-    <div class="flex min-h-full items-center justify-center p-4">
-      <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
-        (click)="$event.stopPropagation()">
-        <!-- Modal Header -->
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Cancelled Sessions</h2>
-          <button (click)="closeCancelledModal()" 
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Modal Body -->
-        <div class="p-6 overflow-y-auto max-h-[60vh]">
-          <!-- Loading State -->
-          <div *ngIf="loadingCancelled" class="flex justify-center py-8">
-            <svg class="animate-spin h-12 w-12 text-primary" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="!loadingCancelled && !hasCancelledSessions()" class="text-center py-8">
-            <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Cancelled Sessions</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any cancelled sessions.</p>
-          </div>
-
-          <!-- Sessions List -->
-          <div *ngIf="!loadingCancelled && hasCancelledSessions()" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <app-session-card *ngFor="let session of cancelledSessions; trackBy: trackBySessionId" 
-              [session]="session"
-              [userRole]="'mentee'" 
-              [showActions]="false">
-            </app-session-card>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Pending Cancel Confirmation Modal -->
   <div *ngIf="showPendingCancelConfirm" class="fixed inset-0 z-50 overflow-y-auto" (click)="closePendingCancelConfirm()">
