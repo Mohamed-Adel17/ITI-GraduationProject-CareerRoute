@@ -45,7 +45,7 @@ import { NotificationType } from '../../../shared/models/notification.model';
 })
 export class SessionsComponent implements OnInit, OnDestroy {
   // Tab state
-  activeTab: 'upcoming' | 'completed' = 'upcoming';
+  activeTab: 'upcoming' | 'completed' | 'cancelled' = 'upcoming';
 
   // Upcoming sessions state
   upcomingSessions: SessionSummary[] = [];
@@ -127,7 +127,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
   /**
    * Switch between tabs and load data if needed
    */
-  switchTab(tab: 'upcoming' | 'completed'): void {
+  switchTab(tab: 'upcoming' | 'completed' | 'cancelled'): void {
     if (this.activeTab === tab) return;
 
     this.activeTab = tab;
@@ -137,6 +137,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
       this.loadUpcomingSessions();
     } else if (tab === 'completed' && this.completedSessions.length === 0 && !this.loadingCompleted) {
       this.loadCompletedSessions();
+    } else if (tab === 'cancelled' && this.cancelledSessions.length === 0 && !this.loadingCancelled) {
+      this.loadCancelledSessions();
     }
   }
 
@@ -478,6 +480,26 @@ export class SessionsComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.loadUpcomingSessions();
     }, 2000);
+  }
+
+  /**
+   * Handle end meeting test action (for demo purposes)
+   */
+  onEndMeetingTest(sessionId: string): void {
+    const sub = this.sessionService.endMeetingTest(sessionId).subscribe({
+      next: () => {
+        this.notificationService.success(
+          'Meeting ended and session marked as completed',
+          'Session Completed'
+        );
+        this.loadUpcomingSessions();
+        this.loadCompletedSessions();
+      },
+      error: (err) => {
+        console.error('Error ending meeting:', err);
+      }
+    });
+    this.subscriptions.push(sub);
   }
 
   // ==========================================================================

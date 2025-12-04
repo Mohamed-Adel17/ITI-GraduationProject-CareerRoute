@@ -81,6 +81,10 @@ namespace CareerRoute.Core.Services.Interfaces
         /// </summary>
         Task<string> GetSessionSummaryAsync(string sessionId, string userId);
         /// <summary>
+        /// Generates AI preparation guide for mentor before session.
+        /// </summary>
+        Task<GeneratePreparationResponseDto> GeneratePreparationAsync(string sessionId, string userId);
+        /// <summary>
         /// Cancels a session and deletes the associated Zoom meeting.
         /// </summary>
         Task CancelSessionAsync(string sessionId, string cancellationReason);

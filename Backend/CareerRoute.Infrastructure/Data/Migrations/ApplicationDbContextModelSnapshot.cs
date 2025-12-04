@@ -525,6 +525,15 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
                     b.Property<string>("SessionId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -541,6 +550,12 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("AIPreparationGeneratedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AIPreparationGuide")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(500)
@@ -595,6 +610,9 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<string>("ReminderJobId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReviewRequestJobId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ScheduledEndTime")
                         .HasColumnType("datetime2");

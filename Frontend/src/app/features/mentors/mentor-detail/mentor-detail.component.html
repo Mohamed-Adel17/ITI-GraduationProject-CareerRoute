@@ -283,6 +283,24 @@
               View Available Slots
             </button>
 
+            <!-- Book Now (Test) Button - For Demo/Testing -->
+            <button
+              *ngIf="canBook"
+              (click)="bookTestSession()"
+              [disabled]="isBookingTest"
+              class="w-full px-6 py-3 mt-2 bg-amber-600 text-white font-semibold rounded-lg
+                     hover:bg-amber-700 transition-all shadow hover:shadow-lg
+                     flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg *ngIf="!isBookingTest" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              <svg *ngIf="isBookingTest" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ isBookingTest ? 'Creating...' : 'Book Now (Test)' }}
+            </button>
+
             <!-- Login Required Button - For Guests -->
             <button
               *ngIf="!isLoggedIn"
@@ -394,6 +412,99 @@
             (paymentCancelled)="handlePaymentCancel()">
           </app-paymob-wallet-payment>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Booking Form Modal -->
+  <div *ngIf="showTestBookingForm"
+       class="fixed inset-0 z-50 overflow-y-auto"
+       role="dialog"
+       aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" (click)="closeTestBookingForm()"></div>
+    <div class="flex min-h-screen items-center justify-center p-4">
+      <div class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6"
+           (click)="$event.stopPropagation()">
+        
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          Quick Book (Test)
+        </h3>
+
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Session starts in 5 minutes with {{ getMentorName() }}
+        </p>
+
+        <!-- Topic Field -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Session Topic <span class="text-gray-500">(Optional)</span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="testBookingTopic"
+            placeholder="e.g., Career guidance discussion"
+            maxlength="200"
+            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg
+                   focus:ring-2 focus:ring-primary focus:border-primary
+                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        </div>
+
+        <!-- Notes Field -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Additional Notes <span class="text-gray-500">(Optional)</span>
+          </label>
+          <textarea
+            [(ngModel)]="testBookingNotes"
+            rows="3"
+            placeholder="Any specific topics you'd like to discuss"
+            maxlength="1000"
+            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg
+                   focus:ring-2 focus:ring-primary focus:border-primary
+                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button
+            type="button"
+            (click)="closeTestBookingForm()"
+            class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300
+                   rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+            Cancel
+          </button>
+          <button
+            type="button"
+            (click)="submitTestBooking()"
+            class="flex-1 px-4 py-3 bg-amber-600 text-white font-bold rounded-lg
+                   hover:bg-amber-700 transition-colors">
+            Continue to Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Booking Payment Method Selection Modal -->
+  <div *ngIf="showTestPaymentMethodSelection && currentSession"
+       class="fixed inset-0 z-50 overflow-y-auto"
+       role="dialog"
+       aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
+    <div class="flex min-h-screen items-center justify-center p-4">
+      <div class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl"
+           (click)="$event.stopPropagation()">
+        <app-payment-method-selection
+          [isOpen]="true"
+          [sessionId]="currentSession.id"
+          [amount]="currentSession.price"
+          [mentorName]="getMentorName()"
+          (paymentMethodSelected)="onTestPaymentMethodSelected($event)"
+          (closeModal)="closeTestPaymentMethodSelection()">
+        </app-payment-method-selection>
       </div>
     </div>
   </div>

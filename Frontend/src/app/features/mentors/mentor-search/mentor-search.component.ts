@@ -68,7 +68,7 @@ export class MentorSearchComponent implements OnInit, OnDestroy {
   totalCount: number = 0;
   currentPage: number = 1;
   pageSize: number = 12;
-  loading: boolean = false;
+  loading: boolean = true;
   error: string | null = null;
   searchQuery: string = '';
   currentFilters: MentorSearchParams = {};

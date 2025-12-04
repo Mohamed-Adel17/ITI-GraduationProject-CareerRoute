@@ -23,7 +23,6 @@ namespace CareerRoute.Core.Domain.Interfaces
         Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize);
         Task<bool> IsMenteeAvailableAsync(string menteeId, DateTime newStart, int durationMinutes);
 
-
-
+        Task<Session?> GetByIdForPreparationAsync(string sessionId);
     }
 }
