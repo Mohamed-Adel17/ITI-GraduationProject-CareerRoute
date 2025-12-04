@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<ICancelSessionRepository, CancelSessionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
         // Infrastructure Service Registration

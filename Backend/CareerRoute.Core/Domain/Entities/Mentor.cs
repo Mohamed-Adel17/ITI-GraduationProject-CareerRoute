@@ -48,7 +48,7 @@ namespace CareerRoute.Core.Domain.Entities
         //================================================
         //TO-DO: Navigation Property
         //public virtual ICollection<Session> Sessions { get; set; }
-        //public virtual ICollection<Review> Reviews { get; set; }
+        //public virtual ICollection<ReviewSession> Reviews { get; set; }
         public virtual ICollection<MentorCategory> MentorCategories { get; set; } = new List<MentorCategory>();
         public virtual ICollection<TimeSlot> TimeSlots { get; set; } = new List<TimeSlot>();
     }

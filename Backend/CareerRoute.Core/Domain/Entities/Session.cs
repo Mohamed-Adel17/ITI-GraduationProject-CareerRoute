@@ -79,10 +79,11 @@ namespace CareerRoute.Core.Domain.Entities
         [MaxLength(100)]
         public string? ReminderJobId { get; set; }
 
+        public string? ReviewRequestJobId { get; set; }
+
         // AI Preparation for Mentor
         public string? AIPreparationGuide { get; set; }
         public DateTime? AIPreparationGeneratedAt { get; set; }
-
         // Navigation properties
         public virtual ApplicationUser Mentee { get; set; } = null!;
         public virtual Mentor Mentor { get; set; } = null!;

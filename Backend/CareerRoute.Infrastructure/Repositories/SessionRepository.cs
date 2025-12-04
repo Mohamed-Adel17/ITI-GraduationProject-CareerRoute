@@ -37,6 +37,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(s => s.Mentor) // Include first-level Mentor entity
                 .ThenInclude(m => m.User)   //  Include the User entity inside Mentor
                 .Include(s => s.Reschedule)
+                .Include(s=>s.Review)
                 .FirstOrDefaultAsync(s => s.Id == sessionId);
         }
         public async Task<List<Session>> GetSessionsStartingBetweenAsync(DateTime start, DateTime end) //For Background job 
@@ -96,6 +97,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(s => s.Mentee)
                 .Include(s => s.Mentor)
                 .ThenInclude(m => m.User)
+                .Include(s => s.Review)
                 .AsQueryable();
 
             // Filter by user role

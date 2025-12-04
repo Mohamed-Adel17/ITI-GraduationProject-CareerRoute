@@ -47,6 +47,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly ICalendarService _calendarService;
         private readonly IDeepgramService _deepgramService;
         private readonly IBlobStorageService _blobStorageService;
+        private readonly IReviewService _reviewService;
         private readonly IJobScheduler _jobScheduler;
         
         // Notification service for real-time notifications
@@ -83,6 +84,7 @@ namespace CareerRoute.Core.Services.Implementations
             IBlobStorageService blobStorageService,
             IJobScheduler jobScheduler,
             ISignalRNotificationService notificationService,
+            IReviewService reviewService,
             ISessionReminderJobService sessionReminderJobService,
             IAiClient aiClient)
         {
@@ -109,6 +111,7 @@ namespace CareerRoute.Core.Services.Implementations
             _jobScheduler = jobScheduler;
             _notificationService = notificationService;
             _sessionReminderJobService = sessionReminderJobService;
+            _reviewService = reviewService;
             _aiClient = aiClient;
         }
 
@@ -680,8 +683,7 @@ namespace CareerRoute.Core.Services.Implementations
                 session.Payment.PaymentReleaseDate = session.CompletedAt.Value.AddHours(72);
             }
 
-            _sessionRepository.Update(session);
-            await _sessionRepository.SaveChangesAsync();
+           
 
             _logger.LogInformation("[Session] Session {SessionId} completed successfully by {Role}", sessionId, role);
 
@@ -690,9 +692,25 @@ namespace CareerRoute.Core.Services.Implementations
                 await SendCompletionEmailAsync(session.Mentee.Email, session);
             }
 
-            //Trigger 72 - hour payment hold(release after 3 days if no disputes)
-            //Trigger review request email to mentee after 24 hours
             //Activate 3 - day chat window between mentor and mentee
+
+
+            // Schedule sending a review request email if no review added within 24 hours after the session ends
+            var jobId = BackgroundJob.Schedule<IReviewService>(
+                service => service.SendReviewRequestEmailAsync(session.Id), TimeSpan.FromHours(24));
+
+
+            session.ReviewRequestJobId = jobId;
+
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[Review Request] Scheduled review reminder email for mentee of session {SessionId}. JobId: {JobId}, Delay: 24 hours",
+                session.Id,
+                jobId
+            );
+
             var dto = _mapper.Map<CompleteSessionResponseDto>(session);
             return dto;
 
