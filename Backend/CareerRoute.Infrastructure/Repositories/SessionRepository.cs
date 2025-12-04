@@ -148,8 +148,15 @@ namespace CareerRoute.Infrastructure.Repositories
             return !hasConflict;
         }
 
-
-
-
+        public async Task<Session?> GetByIdForPreparationAsync(string sessionId)
+        {
+            return await dbContext.Sessions
+                .Include(s => s.Mentee)
+                    .ThenInclude(m => m.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                .Include(s => s.Mentor)
+                    .ThenInclude(m => m.User)
+                .FirstOrDefaultAsync(s => s.Id == sessionId);
+        }
     }
 }
