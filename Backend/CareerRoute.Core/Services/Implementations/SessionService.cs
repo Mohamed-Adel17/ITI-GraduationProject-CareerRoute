@@ -1283,7 +1283,7 @@ namespace CareerRoute.Core.Services.Implementations
         {
             _logger.LogInformation("[Session] Generating AI preparation for session {SessionId} by user {UserId}", sessionId, userId);
 
-            var session = await _sessionRepository.GetByIdWithRelationsAsync(sessionId);
+            var session = await _sessionRepository.GetByIdForPreparationAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
             // Only mentor can generate preparation
@@ -1333,6 +1333,10 @@ namespace CareerRoute.Core.Services.Implementations
         private static string BuildPreparationPrompt(Session session)
         {
             var menteeName = session.Mentee?.FullName ?? "the mentee";
+            var careerGoal = session.Mentee?.CareerGoal;
+            var careerInterests = session.Mentee?.UserSkills?.Any() == true
+                ? string.Join(", ", session.Mentee.UserSkills.Select(us => us.Skill?.Name).Where(n => n != null))
+                : null;
             var topic = session.Topic;
             var notes = session.Notes;
             var duration = session.Duration == DurationOptions.ThirtyMinutes ? "30" : "60";
@@ -1343,6 +1347,8 @@ namespace CareerRoute.Core.Services.Implementations
                 return $"""
                     **SESSION INFO:**
                     - Mentee: {menteeName}
+                    - Career Goal: {careerGoal ?? "Not specified"}
+                    - Career Interests: {careerInterests ?? "Not specified"}
                     - Duration: {duration} minutes
                     - Scheduled: {scheduledDate}
 
@@ -1354,6 +1360,8 @@ namespace CareerRoute.Core.Services.Implementations
             return $"""
                 **SESSION INFO:**
                 - Mentee: {menteeName}
+                - Career Goal: {careerGoal ?? "Not specified"}
+                - Career Interests: {careerInterests ?? "Not specified"}
                 - Duration: {duration} minutes
                 - Scheduled: {scheduledDate}
 
