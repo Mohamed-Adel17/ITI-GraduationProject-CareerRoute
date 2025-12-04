@@ -3,6 +3,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { mentorRoleGuard, adminRoleGuard } from './core/guards/role.guard';
 import { PaymentRedirectComponent } from './features/payment/payment-redirect/payment-redirect.component';
 import { RescheduleReviewComponent } from './features/sessions/reschedule-review/reschedule-review.component';
+import { SessionReviewComponent } from './features/sessions/session-review/session-review.component';
 
 export const routes: Routes = [
   {
@@ -17,6 +18,12 @@ export const routes: Routes = [
     path: 'sessions/reschedule/:rescheduleId',
     component: RescheduleReviewComponent,
     canActivate: [authGuard]
+  },
+  {
+    path: 'sessions/:sessionId/review',
+    component: SessionReviewComponent,
+    canActivate: [authGuard],
+    title: 'Leave a Review - CareerRoute'
   },
   {
     path: 'user',
