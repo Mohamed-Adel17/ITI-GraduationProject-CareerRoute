@@ -15,6 +15,7 @@ import { PaymobCardPaymentComponent } from '../../payment/paymob-card-payment/pa
 import { PaymobWalletPaymentComponent } from '../../payment/paymob-wallet-payment/paymob-wallet-payment.component';
 import { PaymentProvider, PaymobPaymentMethod } from '../../../shared/models/payment.model';
 import { PaymentMethodSelection } from '../../../shared/models/payment-flow.model';
+import { MentorReviewsSectionComponent } from './mentor-reviews-section/mentor-reviews-section';
 import {
   MentorDetail,
   getMentorFullName,
@@ -68,7 +69,7 @@ import { BookSessionRequest, BookingRules } from '../../../shared/models/booking
 @Component({
   selector: 'app-mentor-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent, StripePaymentComponent, PaymobCardPaymentComponent, PaymobWalletPaymentComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent, StripePaymentComponent, PaymobCardPaymentComponent, PaymobWalletPaymentComponent, MentorReviewsSectionComponent],
   templateUrl: './mentor-detail.component.html',
   styleUrls: ['./mentor-detail.component.css']
 })

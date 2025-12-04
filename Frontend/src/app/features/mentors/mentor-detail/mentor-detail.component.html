@@ -169,6 +169,14 @@
           <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ mentor.certifications }}</p>
         </div>
 
+        <!-- Reviews Section -->
+        <div class="mt-6">
+          <app-mentor-reviews-section
+            [mentorId]="mentor.id"
+            [totalReviews]="mentor.totalReviews"
+            [averageRating]="mentor.averageRating">
+          </app-mentor-reviews-section>
+        </div>
 
       </div>
 
