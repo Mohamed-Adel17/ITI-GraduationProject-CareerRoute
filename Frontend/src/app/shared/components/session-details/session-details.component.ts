@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
+import { ReviewService } from '../../../core/services/review.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { ReviewItem } from '../../models/review.model';
 import {
   SessionDetailResponse,
   SessionStatus,
@@ -36,6 +38,7 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly sessionService = inject(SessionService);
+  private readonly reviewService = inject(ReviewService);
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
 
@@ -58,6 +61,10 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
   // Reschedule state
   rescheduleDetails: RescheduleDetails | null = null;
   isProcessingReschedule = false;
+
+  // Review state
+  existingReview: ReviewItem | null = null;
+  isLoadingReview = false;
   
   private timerSubscription: Subscription | null = null;
   private readonly JOIN_WINDOW_MINUTES = 15;
@@ -100,6 +107,11 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
         if (session.status === SessionStatus.PendingReschedule && session.rescheduleId) {
           this.loadRescheduleDetails(session.rescheduleId);
         }
+
+        // Load existing review for completed sessions
+        if (session.status === SessionStatus.Completed) {
+          this.loadExistingReview(sessionId);
+        }
       },
       error: (error) => {
         this.isLoading = false;
@@ -112,6 +124,19 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
     this.sessionService.getRescheduleDetails(rescheduleId).subscribe({
       next: (details) => this.rescheduleDetails = details,
       error: () => {} // Silently fail - banner still shows without details
+    });
+  }
+
+  private loadExistingReview(sessionId: string): void {
+    this.isLoadingReview = true;
+    this.reviewService.getSessionReview(sessionId).subscribe({
+      next: (review) => {
+        this.existingReview = review;
+        this.isLoadingReview = false;
+      },
+      error: () => {
+        this.isLoadingReview = false;
+      }
     });
   }
 
@@ -238,6 +263,17 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
            this.session?.status === SessionStatus.InProgress;
   }
 
+  get canLeaveReview(): boolean {
+    return this.isCompleted && 
+           this.userRole === 'mentee' && 
+           !this.existingReview && 
+           !this.isLoadingReview;
+  }
+
+  get hasExistingReview(): boolean {
+    return !!this.existingReview;
+  }
+
   // === Actions ===
 
   joinSession(): void {
@@ -271,6 +307,12 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
 
   setActiveTab(tab: 'recording' | 'transcript'): void {
     this.activeTab = tab;
+  }
+
+  navigateToReview(): void {
+    if (this.session) {
+      this.router.navigate(['/sessions', this.session.id, 'review']);
+    }
   }
 
   // === Reschedule Getters ===
