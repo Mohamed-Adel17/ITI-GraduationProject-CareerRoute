@@ -6,7 +6,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-28 sm:pb-32 md:pb-40 flex flex-col md:flex-row items-center">
     
     <!-- Left Content -->
-    <div class="w-full md:w-1/2 z-10 md:pr-12 text-center md:text-left mb-12 md:mb-0">
+    <div class="w-full md:w-1/2 z-10 md:pr-12 text-center md:text-left mb-12 md:mb-0 animate-slide-up">
       <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
         Find Your Perfect <br class="hidden md:block" />
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-300">Career Mentor.</span>
@@ -49,7 +49,7 @@
     </div>
 
     <!-- Right Image -->
-    <div class="w-full md:w-1/2 relative z-10 h-[280px] sm:h-[350px] md:h-[450px]">
+    <div class="w-full md:w-1/2 relative z-10 h-[280px] sm:h-[350px] md:h-[450px] animate-slide-up">
       <div class="absolute inset-0 bg-primary rounded-3xl transform rotate-3 opacity-20 translate-x-4 translate-y-4"></div>
       <div class="relative h-full w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800/50">
         <img 
@@ -76,7 +76,7 @@
         </svg>
       </div>
       <div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ trustIndicators.mentors }}</div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ animatedMentors | number }}+</div>
         <div class="text-sm text-slate-500 dark:text-gray-400 font-medium">Expert Mentors</div>
       </div>
     </div>
@@ -89,7 +89,7 @@
         </svg>
       </div>
       <div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ trustIndicators.sessions }}</div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ animatedSessions | number }}+</div>
         <div class="text-sm text-slate-500 dark:text-gray-400 font-medium">Sessions Completed</div>
       </div>
     </div>
@@ -102,7 +102,7 @@
         </svg>
       </div>
       <div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ trustIndicators.rating }}</div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ animatedRating }}</div>
         <div class="text-sm text-slate-500 dark:text-gray-400 font-medium">Average Rating</div>
       </div>
     </div>
@@ -115,7 +115,7 @@
         </svg>
       </div>
       <div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ trustIndicators.specializations }}</div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ animatedSpecs }}+</div>
         <div class="text-sm text-slate-500 dark:text-gray-400 font-medium">Specializations</div>
       </div>
     </div>
@@ -125,7 +125,7 @@
 
 
 <!-- How It Works Section -->
-<section class="how-it-works-section py-20 bg-gray-50 dark:bg-gray-900">
+<section class="how-it-works-section py-20 bg-gray-50 dark:bg-gray-900 animate-on-scroll">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Section Header -->
     <div class="text-center mb-16">
@@ -262,7 +262,7 @@
 </section>
 
 <!-- Browse by Category Section -->
-<section class="browse-categories-section py-20 bg-white dark:bg-background-dark">
+<section class="browse-categories-section py-20 bg-white dark:bg-background-dark animate-on-scroll">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Section Header -->
     <div class="text-center mb-16">

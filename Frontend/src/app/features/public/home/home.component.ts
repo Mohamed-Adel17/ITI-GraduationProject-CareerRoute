@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, AfterViewInit, ElementRef } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil, filter } from 'rxjs';
@@ -42,14 +42,21 @@ import { UserRole } from '../../../shared/models/user.model';
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly router = inject(Router);
   private readonly categoryService = inject(CategoryService);
   private readonly mentorService = inject(MentorService);
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly el = inject(ElementRef);
   private destroy$ = new Subject<void>();
+
+  // Animated counter values
+  animatedMentors = 0;
+  animatedSessions = 0;
+  animatedRating = 0;
+  animatedSpecs = 0;
 
   /**
    * Trust indicators displayed in hero section
@@ -157,9 +164,50 @@ export class HomeComponent implements OnInit, OnDestroy {
       });
   }
 
+  ngAfterViewInit(): void {
+    this.setupScrollAnimations();
+    this.animateCounters();
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private setupScrollAnimations(): void {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    this.el.nativeElement.querySelectorAll('.animate-on-scroll').forEach((el: Element) => {
+      observer.observe(el);
+    });
+  }
+
+  private animateCounters(): void {
+    const duration = 2000;
+    const start = performance.now();
+    
+    const animate = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      
+      this.animatedMentors = Math.floor(1000 * eased);
+      this.animatedSessions = Math.floor(10000 * eased);
+      this.animatedRating = Math.round(48 * eased) / 10;
+      this.animatedSpecs = Math.floor(50 * eased);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
   }
 
   /**
