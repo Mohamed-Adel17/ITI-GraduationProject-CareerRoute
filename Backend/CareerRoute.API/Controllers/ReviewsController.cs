@@ -4,6 +4,7 @@ using CareerRoute.Core.DTOs.Reviews;
 using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Services.Interfaces;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -24,8 +25,8 @@ namespace CareerRoute.API.Controllers
             _logger = logger;
         }
 
-     
-      
+
+
 
     }
 

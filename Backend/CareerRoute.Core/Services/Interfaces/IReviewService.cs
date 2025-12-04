@@ -14,6 +14,7 @@ namespace CareerRoute.Core.Services.Interfaces
 
         Task<MentorReviewsDto> GetReviewsForMentorAsync(string mentorId, int page, int pageSize);
 
+        Task SendReviewRequestEmailAsync(string sessionId);
 
     }
 }

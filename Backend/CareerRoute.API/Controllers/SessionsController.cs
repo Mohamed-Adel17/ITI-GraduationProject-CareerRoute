@@ -505,6 +505,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="409">Session not in completable state (not started or already completed)</response>
         [HttpPatch("{id}/complete")]
         [Authorize(Policy = AppPolicies.RequireMentorOrAdminRole)]
+
         [ProducesResponseType(typeof(ApiResponse<CompleteSessionResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
@@ -517,6 +518,8 @@ namespace CareerRoute.API.Controllers
 
             if (string.IsNullOrEmpty(userId))
             {
+                _logger.LogInformation("UserId {userId} with Role {userRole} marks completed ", userId, userRole);
+
                 throw new UnauthenticatedException("Invalid authentication token");
             }
 
