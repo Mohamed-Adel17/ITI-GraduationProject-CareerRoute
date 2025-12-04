@@ -686,4 +686,47 @@ export class SessionService {
     // Can join 15 minutes before start and up to 15 minutes after end
     return minutesUntilStart <= 15 && minutesSinceEnd <= 15;
   }
+
+  // ==================== Test/Demo Endpoints ====================
+
+  /**
+   * Seed a test session for demo purposes (bypasses 24-hour rule)
+   * Creates a TimeSlot and Session with Pending status ready for payment.
+   *
+   * @param mentorId - Mentor ID
+   * @param menteeId - Mentee ID
+   * @param offsetMinutes - Minutes from now for session start (default: 2)
+   * @param durationMinutes - Session duration: 30 or 60 (default: 60)
+   * @returns Observable with seeded session details
+   */
+  seedTestSession(
+    mentorId: string,
+    menteeId: string,
+    offsetMinutes: number = 2,
+    durationMinutes: number = 60,
+    topic?: string,
+    notes?: string
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('mentorId', mentorId)
+      .set('menteeId', menteeId)
+      .set('offsetMinutes', offsetMinutes.toString())
+      .set('durationMinutes', durationMinutes.toString());
+
+    if (topic) params = params.set('topic', topic);
+    if (notes) params = params.set('notes', notes);
+
+    return this.http.post<any>(`${this.API_URL}/test/zoom/seed-session-pending-payment`, null, { params });
+  }
+
+  /**
+   * End a Zoom meeting for testing purposes.
+   * Marks session as Completed and ends the Zoom meeting.
+   *
+   * @param sessionId - Session ID to end
+   * @returns Observable with result
+   */
+  endMeetingTest(sessionId: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/test/zoom/end-meeting/${sessionId}`, null);
+  }
 }

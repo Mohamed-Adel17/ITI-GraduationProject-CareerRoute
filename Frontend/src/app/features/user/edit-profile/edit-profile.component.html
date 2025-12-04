@@ -62,8 +62,8 @@
                   type="text"
                   class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   [ngClass]="{
-                    'border-red-500 dark:border-red-500': hasError('firstName', 'required') || hasError('firstName', 'minlength'),
-                    'border-gray-300 dark:border-gray-600': !(hasError('firstName', 'required') || hasError('firstName', 'minlength'))
+                    'border-red-500 dark:border-red-500': hasError('firstName', 'required') || hasError('firstName', 'minlength') || hasError('firstName', 'maxlength'),
+                    'border-gray-300 dark:border-gray-600': !(hasError('firstName', 'required') || hasError('firstName', 'minlength') || hasError('firstName', 'maxlength'))
                   }"
                   id="firstName"
                   formControlName="firstName"
@@ -74,6 +74,9 @@
                 }
                 @if (hasError('firstName', 'minlength')) {
                   <p class="mt-1 text-sm text-red-600 dark:text-red-500">First name must be at least 2 characters</p>
+                }
+                @if (hasError('firstName', 'maxlength')) {
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-500">First name must not exceed 50 characters</p>
                 }
               </div>
 
@@ -86,8 +89,8 @@
                   type="text"
                   class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   [ngClass]="{
-                    'border-red-500 dark:border-red-500': hasError('lastName', 'required') || hasError('lastName', 'minlength'),
-                    'border-gray-300 dark:border-gray-600': !(hasError('lastName', 'required') || hasError('lastName', 'minlength'))
+                    'border-red-500 dark:border-red-500': hasError('lastName', 'required') || hasError('lastName', 'minlength') || hasError('lastName', 'maxlength'),
+                    'border-gray-300 dark:border-gray-600': !(hasError('lastName', 'required') || hasError('lastName', 'minlength') || hasError('lastName', 'maxlength'))
                   }"
                   id="lastName"
                   formControlName="lastName"
@@ -98,6 +101,9 @@
                 }
                 @if (hasError('lastName', 'minlength')) {
                   <p class="mt-1 text-sm text-red-600 dark:text-red-500">Last name must be at least 2 characters</p>
+                }
+                @if (hasError('lastName', 'maxlength')) {
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-500">Last name must not exceed 50 characters</p>
                 }
               </div>
 
@@ -115,12 +121,12 @@
                   }"
                   id="phoneNumber"
                   formControlName="phoneNumber"
-                  placeholder="+1 (234) 567-8900"
+                  placeholder="+201234567890"
                 />
                 @if (hasError('phoneNumber', 'pattern')) {
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-500">Please enter a valid phone number</p>
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-500">Phone number must be 10-15 digits (optional + prefix)</p>
                 }
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Optional</p>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Optional - 10-15 digits</p>
               </div>
 
               <!-- Profile Picture URL -->
@@ -132,17 +138,20 @@
                   type="url"
                   class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   [ngClass]="{
-                    'border-red-500 dark:border-red-500': hasError('profilePictureUrl', 'pattern'),
-                    'border-gray-300 dark:border-gray-600': !hasError('profilePictureUrl', 'pattern')
+                    'border-red-500 dark:border-red-500': hasError('profilePictureUrl', 'pattern') || hasError('profilePictureUrl', 'maxlength'),
+                    'border-gray-300 dark:border-gray-600': !(hasError('profilePictureUrl', 'pattern') || hasError('profilePictureUrl', 'maxlength'))
                   }"
                   id="profilePictureUrl"
                   formControlName="profilePictureUrl"
                   placeholder="https://example.com/avatar.jpg"
                 />
                 @if (hasError('profilePictureUrl', 'pattern')) {
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-500">Please enter a valid URL starting with http:// or https://</p>
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-500">URL must end with .jpg, .jpeg, or .png</p>
                 }
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Optional - Must be a valid URL</p>
+                @if (hasError('profilePictureUrl', 'maxlength')) {
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-500">URL must not exceed 200 characters</p>
+                }
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Optional - Must end with .jpg, .jpeg, or .png (max 200 chars)</p>
               </div>
             </div>
           </div>

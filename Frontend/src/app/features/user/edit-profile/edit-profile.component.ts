@@ -78,13 +78,14 @@ export class EditProfileComponent implements OnInit, OnDestroy {
 
   /**
    * Initialize the reactive form with validation rules
+   * Matches backend UpdateUserValidator rules
    */
   private initializeForm(): void {
     this.profileForm = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
-      phoneNumber: ['', [Validators.pattern(/^[\d\s\-\+\(\)]+$/)]],
-      profilePictureUrl: ['', [Validators.pattern(/^https?:\/\/.+/)]],
+      phoneNumber: ['', [Validators.pattern(/^\+?[0-9]{10,15}$/)]],
+      profilePictureUrl: ['', [Validators.maxLength(200), Validators.pattern(/\.(jpg|jpeg|png)$/i)]],
       careerGoals: ['', [Validators.maxLength(500)]]
     });
   }

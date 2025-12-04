@@ -10,11 +10,61 @@
  * - Mobile-first responsive design
  */
 
-/* Hero Section */
+/* CSS Custom Property for header height (h-20 = 5rem = 80px) */
+:host {
+  --header-height: 5rem;
+}
+
+/* Hero section full viewport height minus header */
 .hero-section {
-  /* Ensure full viewport height on mobile devices */
-  min-height: 100vh;
-  min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height)); /* Dynamic viewport height for mobile browsers */
+}
+
+/* Page Load Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.animate-slide-up {
+  opacity: 0;
+  animation: slide-up 0.7s ease-out forwards;
+}
+
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+
+/* Scroll-triggered animations */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.animate-on-scroll.animate-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Smooth animations for interactive elements */
@@ -36,14 +86,14 @@
 
 /* Accessibility: Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .animate-bounce {
+  .animate-bounce,
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-on-scroll,
+  .animate-pulse {
     animation: none;
-  }
-
-  .transform,
-  .transition-all {
-    transition: none !important;
-    transform: none !important;
+    opacity: 1;
+    transform: none;
   }
 }
 
