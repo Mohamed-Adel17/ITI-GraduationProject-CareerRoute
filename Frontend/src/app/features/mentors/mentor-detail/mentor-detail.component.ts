@@ -528,7 +528,14 @@ export class MentorDetailComponent implements OnInit, OnDestroy {
     this.isBookingTest = true;
     this.showTestBookingForm = false;
 
-    this.sessionService.seedTestSession(this.mentor.id, currentUser.id, 5, 60).subscribe({
+    this.sessionService.seedTestSession(
+      this.mentor.id,
+      currentUser.id,
+      5,
+      60,
+      this.testBookingTopic || undefined,
+      this.testBookingNotes || undefined
+    ).subscribe({
       next: (response) => {
         this.isBookingTest = false;
         this.currentSession = {

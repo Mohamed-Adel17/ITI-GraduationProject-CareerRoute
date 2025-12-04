@@ -703,13 +703,18 @@ export class SessionService {
     mentorId: string,
     menteeId: string,
     offsetMinutes: number = 2,
-    durationMinutes: number = 60
+    durationMinutes: number = 60,
+    topic?: string,
+    notes?: string
   ): Observable<any> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('mentorId', mentorId)
       .set('menteeId', menteeId)
       .set('offsetMinutes', offsetMinutes.toString())
       .set('durationMinutes', durationMinutes.toString());
+
+    if (topic) params = params.set('topic', topic);
+    if (notes) params = params.set('notes', notes);
 
     return this.http.post<any>(`${this.API_URL}/test/zoom/seed-session-pending-payment`, null, { params });
   }
