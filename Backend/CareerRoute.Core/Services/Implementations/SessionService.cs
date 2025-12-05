@@ -8,7 +8,7 @@ using CareerRoute.Core.DTOs;
 using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.DTOs.Zoom;
 using CareerRoute.Core.Exceptions;
-using CareerRoute.Core.Extentions;
+using CareerRoute.Core.Prompts;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
 using Hangfire;
@@ -46,6 +46,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly ICalendarService _calendarService;
         private readonly IDeepgramService _deepgramService;
         private readonly IBlobStorageService _blobStorageService;
+        private readonly IReviewService _reviewService;
         private readonly IJobScheduler _jobScheduler;
         
         // Notification service for real-time notifications
@@ -56,6 +57,8 @@ namespace CareerRoute.Core.Services.Implementations
 
         // Mentor balance service for handling payouts
         private readonly IMentorBalanceService _mentorBalanceService;
+        // AI client for generating preparation guides
+        private readonly IAiClient _aiClient;
 
         // Semaphore for sequential processing of reschedule requests
         private static readonly SemaphoreSlim _rescheduleLock = new SemaphoreSlim(1, 1);
@@ -84,6 +87,8 @@ namespace CareerRoute.Core.Services.Implementations
             ISignalRNotificationService notificationService,
             ISessionReminderJobService sessionReminderJobService,
             IMentorBalanceService mentorBalanceService)
+            IReviewService reviewService,
+            IAiClient aiClient)
         {
             _logger = logger;
             _mapper = mapper;
@@ -109,6 +114,8 @@ namespace CareerRoute.Core.Services.Implementations
             _notificationService = notificationService;
             _sessionReminderJobService = sessionReminderJobService;
             _mentorBalanceService = mentorBalanceService;
+            _reviewService = reviewService;
+            _aiClient = aiClient;
         }
 
 
@@ -228,6 +235,14 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 dto.RescheduleId = session.Reschedule.Id;
                 dto.RescheduleRequestedBy = session.Reschedule.RequestedBy;
+            }
+
+            // Include AI preparation fields only for mentor (not for mentees)
+            var isMentor = session.MentorId == userId;
+            if (!isMentor)
+            {
+                dto.AIPreparationGuide = null;
+                dto.AIPreparationGeneratedAt = null;
             }
 
             return dto;
@@ -672,8 +687,7 @@ namespace CareerRoute.Core.Services.Implementations
                 await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(sessionId);
             }
 
-            _sessionRepository.Update(session);
-            await _sessionRepository.SaveChangesAsync();
+           
 
             _logger.LogInformation("[Session] Session {SessionId} completed successfully by {Role}", sessionId, role);
 
@@ -682,9 +696,25 @@ namespace CareerRoute.Core.Services.Implementations
                 await SendCompletionEmailAsync(session.Mentee.Email, session);
             }
 
-            //Trigger 72 - hour payment hold(release after 3 days if no disputes)
-            //Trigger review request email to mentee after 24 hours
             //Activate 3 - day chat window between mentor and mentee
+
+
+            // Schedule sending a review request email if no review added within 24 hours after the session ends
+            var jobId = BackgroundJob.Schedule<IReviewService>(
+                service => service.SendReviewRequestEmailAsync(session.Id), TimeSpan.FromHours(24));
+
+
+            session.ReviewRequestJobId = jobId;
+
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[Review Request] Scheduled review reminder email for mentee of session {SessionId}. JobId: {JobId}, Delay: 24 hours",
+                session.Id,
+                jobId
+            );
+
             var dto = _mapper.Map<CompleteSessionResponseDto>(session);
             return dto;
 
@@ -1269,6 +1299,98 @@ namespace CareerRoute.Core.Services.Implementations
             }
 
             return session.Summary;
+        }
+
+        public async Task<GeneratePreparationResponseDto> GeneratePreparationAsync(string sessionId, string userId)
+        {
+            _logger.LogInformation("[Session] Generating AI preparation for session {SessionId} by user {UserId}", sessionId, userId);
+
+            var session = await _sessionRepository.GetByIdForPreparationAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            // Only mentor can generate preparation
+            if (session.MentorId != userId)
+                throw new UnauthorizedException("Only the session mentor can generate preparation guides.");
+
+            // Cannot generate for completed/cancelled sessions
+            var invalidStatuses = new[] { SessionStatusOptions.Completed, SessionStatusOptions.Cancelled, SessionStatusOptions.NoShow };
+            if (invalidStatuses.Contains(session.Status))
+                throw new BusinessException("Cannot generate preparation for completed, cancelled, or no-show sessions.");
+
+            // Return existing if already generated
+            if (!string.IsNullOrEmpty(session.AIPreparationGuide))
+            {
+                return new GeneratePreparationResponseDto
+                {
+                    SessionId = sessionId,
+                    PreparationGuide = session.AIPreparationGuide,
+                    GeneratedAt = session.AIPreparationGeneratedAt ?? DateTime.UtcNow,
+                    WasAlreadyGenerated = true
+                };
+            }
+
+            // Build user prompt with session context
+            var userPrompt = BuildPreparationPrompt(session);
+
+            var guide = await _aiClient.GetCompletionAsync(
+                SessionPreparationPrompt.SystemPrompt,
+                userPrompt);
+
+            session.AIPreparationGuide = guide;
+            session.AIPreparationGeneratedAt = DateTime.UtcNow;
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+            _logger.LogInformation("[Session] AI preparation generated for session {SessionId}", sessionId);
+
+            return new GeneratePreparationResponseDto
+            {
+                SessionId = sessionId,
+                PreparationGuide = guide,
+                GeneratedAt = session.AIPreparationGeneratedAt.Value,
+                WasAlreadyGenerated = false
+            };
+        }
+
+        private static string BuildPreparationPrompt(Session session)
+        {
+            var menteeName = session.Mentee?.FullName ?? "the mentee";
+            var careerGoal = session.Mentee?.CareerGoal;
+            var careerInterests = session.Mentee?.UserSkills?.Any() == true
+                ? string.Join(", ", session.Mentee.UserSkills.Select(us => us.Skill?.Name).Where(n => n != null))
+                : null;
+            var topic = session.Topic;
+            var notes = session.Notes;
+            var duration = session.Duration == DurationOptions.ThirtyMinutes ? "30" : "60";
+            var scheduledDate = session.ScheduledStartTime.ToString("MMMM dd, yyyy 'at' HH:mm 'UTC'");
+
+            if (string.IsNullOrWhiteSpace(topic) && string.IsNullOrWhiteSpace(notes))
+            {
+                return $"""
+                    **SESSION INFO:**
+                    - Mentee: {menteeName}
+                    - Career Goal: {careerGoal ?? "Not specified"}
+                    - Career Interests: {careerInterests ?? "Not specified"}
+                    - Duration: {duration} minutes
+                    - Scheduled: {scheduledDate}
+
+                    **NOTE:** The mentee has not provided a topic or notes for this session. 
+                    Please provide general preparation guidance and suggest questions to ask at the start of the session to understand their needs.
+                    """;
+            }
+
+            return $"""
+                **SESSION INFO:**
+                - Mentee: {menteeName}
+                - Career Goal: {careerGoal ?? "Not specified"}
+                - Career Interests: {careerInterests ?? "Not specified"}
+                - Duration: {duration} minutes
+                - Scheduled: {scheduledDate}
+
+                **TOPIC:** {topic ?? "Not specified"}
+
+                **MENTEE'S NOTES:** {notes ?? "No additional notes provided"}
+                """;
         }
 
         public async Task CancelSessionAsync(string sessionId, string cancellationReason)

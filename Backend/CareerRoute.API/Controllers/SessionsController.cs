@@ -2,6 +2,7 @@ using CareerRoute.API.Models;
 using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
+using CareerRoute.Core.DTOs.Reviews;
 using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.DTOs.Zoom;
 using CareerRoute.Core.Exceptions;
@@ -9,6 +10,7 @@ using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Stripe;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -22,11 +24,14 @@ namespace CareerRoute.API.Controllers
     public class SessionsController : ControllerBase
     {
         private readonly ISessionService _sessionService;
+        private readonly IReviewService _reviewService;
+
         private readonly ILogger<SessionsController> _logger;
 
-        public SessionsController(ISessionService sessionService, ILogger<SessionsController> logger)
+        public SessionsController(ISessionService sessionService,IReviewService reviewService ,ILogger<SessionsController> logger)
         {
             _sessionService = sessionService;
+            _reviewService = reviewService;
             _logger = logger;
         }
 
@@ -500,6 +505,7 @@ namespace CareerRoute.API.Controllers
         /// <response code="409">Session not in completable state (not started or already completed)</response>
         [HttpPatch("{id}/complete")]
         [Authorize(Policy = AppPolicies.RequireMentorOrAdminRole)]
+
         [ProducesResponseType(typeof(ApiResponse<CompleteSessionResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
@@ -512,6 +518,8 @@ namespace CareerRoute.API.Controllers
 
             if (string.IsNullOrEmpty(userId))
             {
+                _logger.LogInformation("UserId {userId} with Role {userRole} marks completed ", userId, userRole);
+
                 throw new UnauthenticatedException("Invalid authentication token");
             }
 
@@ -669,6 +677,57 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
+        /// Generate AI preparation guide for an upcoming session (mentor only).
+        /// </summary>
+        /// <remarks>
+        /// Generates an AI-powered preparation guide to help the mentor prepare for the session.
+        /// 
+        /// **What's Generated:**
+        /// - Key talking points based on session topic
+        /// - Suggested questions to ask the mentee
+        /// - Topics/resources to review beforehand
+        /// - Potential challenges the mentee might face
+        /// - Suggested session structure
+        /// 
+        /// **Behavior:**
+        /// - If already generated, returns existing guide (WasAlreadyGenerated=true)
+        /// - If topic/notes empty, provides general guidance with note to clarify with mentee
+        /// 
+        /// **Authorization:** Only the session mentor can generate preparation guides.
+        /// </remarks>
+        /// <param name="sessionId">The unique session identifier</param>
+        /// <returns>AI-generated preparation guide</returns>
+        /// <response code="200">Preparation guide generated or retrieved successfully</response>
+        /// <response code="400">Session is completed, cancelled, or no-show</response>
+        /// <response code="401">User not authenticated</response>
+        /// <response code="403">User is not the mentor for this session</response>
+        /// <response code="404">Session not found</response>
+        [HttpPost("{sessionId}/generate-preparation")]
+        [Authorize(Policy = AppPolicies.RequireMentorOrAdminRole)]
+        [ProducesResponseType(typeof(ApiResponse<GeneratePreparationResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GeneratePreparation(string sessionId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            _logger.LogInformation("Mentor {UserId} requesting AI preparation for session {SessionId}", userId, sessionId);
+
+            var result = await _sessionService.GeneratePreparationAsync(sessionId, userId);
+
+            var message = result.WasAlreadyGenerated
+                ? "Preparation guide retrieved successfully (previously generated)"
+                : "Preparation guide generated successfully";
+
+            return Ok(new ApiResponse<GeneratePreparationResponseDto>(result, message));
+        }
+
+        /// <summary>
         /// Ends an active session and its associated Zoom meeting (mentor only).
         /// </summary>
         /// <remarks>
@@ -717,5 +776,80 @@ namespace CareerRoute.API.Controllers
                 "Session ended successfully"
             ));
         }
+
+
+
+        /// <summary>
+        /// Add a review for a completed session (Mentee only).
+        /// </summary>
+        /// <remarks>
+        /// Allows the authenticated mentee to submit a review (rating &amp; comment) for a session
+        /// they attended. Only one review is allowed per session.
+        ///
+        /// <b>Rules:</b><br/>
+        /// - You must be the mentee who attended the session.<br/>
+        /// - Session must be completed.<br/>
+        /// - You cannot review the same session twice.<br/><br/>
+        ///
+        /// <b>Required fields:</b><br/>
+        /// - Rating: A numeric score (1–5)<br/>
+        /// - Comment: Optional written feedback<br/>
+        /// </remarks>
+        /// <param name="sessionId">ID of the session to review.</param>
+        /// <param name="dto">Review details including rating and comment.</param>
+        /// <returns>Created review details wrapped in ApiResponse.</returns>
+        /// <response code="201">Review created successfully.</response>
+        /// <response code="400">Invalid data or business rule violated.</response>
+        /// <response code="401">User not authenticated.</response>
+        /// <response code="403">User not allowed to review this session.</response>
+        /// <response code="404">Session not found.</response>
+        /// <response code="409">A review for this session already exists.</response>
+
+        [HttpPost("{sessionId}/reviews")]
+        [Authorize(Policy = AppPolicies.RequireUserRole)]
+        [ProducesResponseType(typeof(ApiResponse<CreateReviewResponseDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
+        public async Task<ActionResult> AddReview([FromRoute] string sessionId, [FromBody] CreateReviewRequestDto dto)
+        {
+            var menteeId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _logger.LogInformation("Mentee {MenteeId} requested to add review for session {SessionId}", menteeId, sessionId);
+
+            if (string.IsNullOrEmpty(menteeId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            var review = await _reviewService.AddReviewAsync(sessionId, menteeId, dto);
+
+            return Created(string.Empty, new ApiResponse<CreateReviewResponseDto>(
+                review,
+                "Review added successfully."
+            ));
+        }
+
+
+        /// <summary>
+        /// Get the review for a session (Mentee or Mentor only).
+        /// </summary>
+        [HttpGet("{sessionId}/review")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<ReviewDetailsItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetSessionReview([FromRoute] string sessionId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthenticatedException("Invalid authentication token");
+
+            var review = await _reviewService.GetSessionReviewAsync(sessionId, userId);
+
+            return Ok(new ApiResponse<ReviewDetailsItemDto?>(
+                review,
+                review != null ? "Review retrieved successfully." : "No review exists for this session."
+            ));
+        }
+
     }
 }

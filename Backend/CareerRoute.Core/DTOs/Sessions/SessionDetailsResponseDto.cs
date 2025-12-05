@@ -40,6 +40,10 @@
 
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+
+    // AI Preparation fields (mentor only - null for mentees)
+    public string? AIPreparationGuide { get; set; }
+    public DateTime? AIPreparationGeneratedAt { get; set; }
 }
 
 

@@ -1,6 +1,17 @@
 /* CategoryBrowseComponent Styles */
 /* Tailwind CSS classes with CareerRoute-MVP-Design specifications */
 
+/* CSS Custom Property for header height (h-20 = 5rem = 80px) */
+:host {
+  --header-height: 5rem;
+}
+
+/* Category browse section full viewport height minus header */
+.category-browse-section {
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height)); /* Dynamic viewport height for mobile browsers */
+}
+
 /* Line clamp utility for description truncation */
 .line-clamp-3 {
   display: -webkit-box;

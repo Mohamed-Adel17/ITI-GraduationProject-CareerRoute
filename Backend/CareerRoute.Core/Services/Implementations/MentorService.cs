@@ -128,15 +128,16 @@ namespace CareerRoute.Core.Services.Implementations
                     });
                 }
 
-                // Remove existing UserSkills for this mentor's UserId
-                var existingSkills = mentor.User.UserSkills.ToList();
-                foreach (var userSkill in existingSkills)
-                {
-                    mentor.User.UserSkills.Remove(userSkill);
-                }
+                var existingSkillIds = mentor.User.UserSkills.Select(us => us.SkillId).ToList();
+                var newSkillIds = updatedDto.ExpertiseTagIds.ToList();
 
-                // Add new UserSkills
-                foreach (var skillId in updatedDto.ExpertiseTagIds)
+                // Remove only skills not in new list
+                var skillsToRemove = mentor.User.UserSkills.Where(us => !newSkillIds.Contains(us.SkillId)).ToList();
+                foreach (var userSkill in skillsToRemove)
+                    mentor.User.UserSkills.Remove(userSkill);
+
+                // Add only skills not in existing list
+                foreach (var skillId in newSkillIds.Except(existingSkillIds))
                 {
                     mentor.User.UserSkills.Add(new UserSkill
                     {
@@ -177,15 +178,16 @@ namespace CareerRoute.Core.Services.Implementations
                     }
                 }
                 
-                // Remove existing categories
-                var existingCategories = mentor.MentorCategories.ToList();
-                foreach (var mentorCategory in existingCategories)
-                {
+                var existingCategoryIds = mentor.MentorCategories.Select(mc => mc.CategoryId).ToList();
+                var newCategoryIds = updatedDto.CategoryIds.ToList();
+
+                // Remove only categories not in new list
+                var categoriesToRemove = mentor.MentorCategories.Where(mc => !newCategoryIds.Contains(mc.CategoryId)).ToList();
+                foreach (var mentorCategory in categoriesToRemove)
                     mentor.MentorCategories.Remove(mentorCategory);
-                }
-                
-                // Add new categories
-                foreach (var categoryId in updatedDto.CategoryIds)
+
+                // Add only categories not in existing list
+                foreach (var categoryId in newCategoryIds.Except(existingCategoryIds))
                 {
                     mentor.MentorCategories.Add(new MentorCategory
                     {

@@ -66,11 +66,6 @@
             </span>
           </button>
         </nav>
-        <!-- View Cancelled Sessions Link -->
-        <button (click)="openCancelledModal()" 
-          class="text-sm text-gray-500 dark:text-gray-400 hover:text-primary transition-colors pb-4">
-          View cancelled sessions
-        </button>
       </div>
     </div>
 
@@ -121,7 +116,7 @@
         <app-session-card *ngFor="let session of upcomingSessions; trackBy: trackBySessionId" [session]="session"
           [userRole]="'mentor'" (joinSession)="onJoinSession($event)" (completeSession)="onCompleteSession($event)"
           (cancelSession)="onCancelSession($event)" (rescheduleSession)="onRescheduleSession($event)"
-          (viewDetails)="onViewDetails($event)">
+          (viewDetails)="onViewDetails($event)" (endMeetingTest)="onEndMeetingTest($event)">
         </app-session-card>
       </div>
 
@@ -213,54 +208,8 @@
       <!-- Loading More Indicator -->
       <div *ngIf="loadingCompleted && completedSessions.length > 0" class="mt-6 text-center">
         <div class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400">
-          <img src="/logo.png" alt="Loading" class="h-4 w-4 object-contain logo-spin" />
+          <svg class="animate-spin h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
           Loading...
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cancelled Sessions Modal -->
-  <div *ngIf="showCancelledModal" class="fixed inset-0 z-50 overflow-y-auto" (click)="closeCancelledModal()">
-    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-    <div class="flex min-h-full items-center justify-center p-4">
-      <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
-        (click)="$event.stopPropagation()">
-        <!-- Modal Header -->
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Cancelled Sessions</h2>
-          <button (click)="closeCancelledModal()" 
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Modal Body -->
-        <div class="p-6 overflow-y-auto max-h-[60vh]">
-          <!-- Loading State -->
-          <div *ngIf="loadingCancelled" class="flex justify-center py-8">
-            <img src="/logo.png" alt="Loading" class="h-12 w-12 object-contain logo-spin" />
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="!loadingCancelled && !hasCancelledSessions()" class="text-center py-8">
-            <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Cancelled Sessions</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any cancelled sessions.</p>
-          </div>
-
-          <!-- Sessions List -->
-          <div *ngIf="!loadingCancelled && hasCancelledSessions()" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <app-session-card *ngFor="let session of cancelledSessions; trackBy: trackBySessionId" 
-              [session]="session"
-              [userRole]="'mentor'" 
-              [showActions]="false">
-            </app-session-card>
-          </div>
         </div>
       </div>
     </div>
