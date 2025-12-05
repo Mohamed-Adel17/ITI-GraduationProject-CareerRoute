@@ -273,6 +273,8 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
 
   get hasExistingReview(): boolean {
     return !!this.existingReview;
+  }
+
   get isMentor(): boolean {
     return this.userRole === 'mentor';
   }
