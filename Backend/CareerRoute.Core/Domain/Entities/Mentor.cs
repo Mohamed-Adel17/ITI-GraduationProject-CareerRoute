@@ -51,5 +51,9 @@ namespace CareerRoute.Core.Domain.Entities
         //public virtual ICollection<ReviewSession> Reviews { get; set; }
         public virtual ICollection<MentorCategory> MentorCategories { get; set; } = new List<MentorCategory>();
         public virtual ICollection<TimeSlot> TimeSlots { get; set; } = new List<TimeSlot>();
+        
+        // Balance and Payout navigation properties
+        public virtual MentorBalance? Balance { get; set; }
+        public virtual ICollection<Payout> Payouts { get; set; } = new List<Payout>();
     }
 }
