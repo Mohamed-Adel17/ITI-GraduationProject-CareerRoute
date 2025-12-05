@@ -9,23 +9,35 @@ namespace CareerRoute.Infrastructure.BackgroundJobs
         private readonly ISessionRepository _sessionRepository;
         private readonly IPaymentRepository _paymentRepository;
         private readonly IMentorBalanceRepository _mentorBalanceRepository;
+        private readonly ISessionDisputeRepository _disputeRepository;
         private readonly ILogger<ReleasePaymentBackgroundJob> _logger;
 
         public ReleasePaymentBackgroundJob(
             ISessionRepository sessionRepository,
             IPaymentRepository paymentRepository,
             IMentorBalanceRepository mentorBalanceRepository,
+            ISessionDisputeRepository disputeRepository,
             ILogger<ReleasePaymentBackgroundJob> logger)
         {
             _sessionRepository = sessionRepository;
             _paymentRepository = paymentRepository;
             _mentorBalanceRepository = mentorBalanceRepository;
+            _disputeRepository = disputeRepository;
             _logger = logger;
         }
 
         public async Task ExecuteAsync(string sessionId)
         {
             _logger.LogInformation("Executing payment release for session {SessionId}", sessionId);
+
+            // Check for active dispute before releasing payment
+            if (await _disputeRepository.HasActiveDisputeAsync(sessionId))
+            {
+                _logger.LogWarning(
+                    "Payment release skipped for session {SessionId} - active dispute exists",
+                    sessionId);
+                return;
+            }
 
             await using var transaction = await _mentorBalanceRepository.BeginTransactionAsync();
             try
