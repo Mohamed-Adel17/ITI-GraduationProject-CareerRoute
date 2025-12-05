@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IMentorBalanceService, MentorBalanceService>();
         services.AddScoped<IPayoutService, PayoutService>();
         services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<ISessionDisputeService, SessionDisputeService>();
 
         services.AddAutoMapper(options =>
         {
@@ -46,6 +47,7 @@ public static class DependencyInjection
             options.AddProfile<NotificationProfile>();
             options.AddProfile<PayoutMappingProfile>();
             options.AddProfile<ReviewsProfile>();
+            options.AddProfile<DisputeMappingProfile>();
         });
 
         // ============ FLUENTVALIDATION ============
