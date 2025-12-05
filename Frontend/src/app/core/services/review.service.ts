@@ -138,37 +138,16 @@ export class ReviewService {
   }
 
   /**
-   * Map backend review response to ReviewItem, handling field name variations
-   * Backend may return different field names depending on the endpoint
+   * Map backend review response to ReviewItem
    */
   private mapReviewItem(data: any): ReviewItem {
-    // Parse menteeFullName if provided (backend returns "FirstName LastName")
-    let firstName = '';
-    let lastName = '';
-
-    if (data.menteeFullName || data.MenteeFullName) {
-      const fullName = data.menteeFullName || data.MenteeFullName;
-      const nameParts = fullName.trim().split(' ');
-      firstName = nameParts[0] || '';
-      lastName = nameParts.slice(1).join(' ') || '';
-    } else {
-      // Fallback to individual fields
-      firstName = data.menteeFirstName || data.MenteeFirstName ||
-                  data.reviewerFirstName || data.ReviewerFirstName ||
-                  data.firstName || data.FirstName || '';
-      lastName = data.menteeLastName || data.MenteeLastName ||
-                 data.reviewerLastName || data.ReviewerLastName ||
-                 data.reviewerLastNameInitial || data.ReviewerLastNameInitial ||
-                 data.lastName || data.LastName || '';
-    }
-
     return {
-      id: data.id || data.Id || '',
-      rating: data.rating ?? data.Rating ?? 0,
-      comment: data.comment || data.Comment || data.reviewText || data.ReviewText || undefined,
-      createdAt: data.createdAt || data.CreatedAt || data.sessionDate || data.SessionDate || '',
-      menteeFirstName: firstName,
-      menteeLastName: lastName
+      id: data.id ?? '',
+      rating: data.rating ?? 0,
+      comment: data.comment ?? undefined,
+      createdAt: data.createdAt ?? '',
+      menteeFirstName: data.menteeFirstName ?? '',
+      menteeLastName: data.menteeLastName ?? ''
     };
   }
 }

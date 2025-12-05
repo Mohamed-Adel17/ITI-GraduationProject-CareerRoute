@@ -70,7 +70,7 @@ import { BookSessionRequest, BookingRules } from '../../../shared/models/booking
 @Component({
   selector: 'app-mentor-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, RatingDisplay, BookingCalendarModalComponent, StripePaymentComponent, PaymobCardPaymentComponent, PaymobWalletPaymentComponent, MentorReviewsSectionComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, FormsModule, RatingDisplay, BookingCalendarModalComponent, StripePaymentComponent, PaymobCardPaymentComponent, PaymobWalletPaymentComponent, PaymentMethodSelectionComponent, MentorReviewsSectionComponent],
   templateUrl: './mentor-detail.component.html',
   styleUrls: ['./mentor-detail.component.css']
 })
