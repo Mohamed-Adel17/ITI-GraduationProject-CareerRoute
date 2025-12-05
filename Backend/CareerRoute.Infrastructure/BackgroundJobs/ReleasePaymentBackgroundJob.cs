@@ -1,8 +1,6 @@
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
 
 namespace CareerRoute.Infrastructure.BackgroundJobs
 {
@@ -52,6 +50,7 @@ namespace CareerRoute.Infrastructure.BackgroundJobs
                     return;
                 }
 
+                // Idempotency check - already released
                 if (payment.IsReleasedToMentor)
                 {
                     _logger.LogInformation("Payment {PaymentId} already released to mentor", payment.Id);
@@ -66,6 +65,15 @@ namespace CareerRoute.Infrastructure.BackgroundJobs
                 }
 
                 var transferAmount = session.Price * (1 - payment.PlatformCommission);
+
+                // Validate sufficient pending balance to prevent negative balance
+                if (balance.PendingBalance < transferAmount)
+                {
+                    _logger.LogError(
+                        "Insufficient pending balance for mentor {MentorId}. Required: {Required}, Available: {Available}",
+                        session.MentorId, transferAmount, balance.PendingBalance);
+                    return;
+                }
 
                 // Transfer from pending to available
                 balance.PendingBalance -= transferAmount;
