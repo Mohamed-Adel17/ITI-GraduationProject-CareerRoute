@@ -288,8 +288,7 @@ The Dispute endpoints allow mentees to report issues with completed sessions dur
 - `Other` - Other reason (description required)
 
 ### DisputeStatus
-- `Pending` - Dispute created, awaiting review
-- `UnderReview` - Admin is reviewing the dispute
+- `Pending` - Dispute created, awaiting admin review
 - `Resolved` - Dispute resolved with refund
 - `Rejected` - Dispute rejected, no refund
 
@@ -307,5 +306,5 @@ The Dispute endpoints allow mentees to report issues with completed sessions dur
 3. **Payment Hold:** If a dispute exists, payment release to mentor is paused
 4. **Refund Processing:** When resolved with refund, amount is deducted from mentor's balance
 5. **Status Transitions:**
-   - `Pending` → `UnderReview` → `Resolved` or `Rejected`
+   - `Pending` → `Resolved` (with refund) or `Rejected` (no refund)
    - Once resolved/rejected, status cannot change

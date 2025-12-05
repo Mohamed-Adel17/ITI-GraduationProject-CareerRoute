@@ -30,8 +30,7 @@ namespace CareerRoute.Infrastructure.Repositories
         public async Task<bool> HasActiveDisputeAsync(string sessionId)
         {
             return await dbContext.SessionDisputes
-                .AnyAsync(d => d.SessionId == sessionId &&
-                    (d.Status == DisputeStatus.Pending || d.Status == DisputeStatus.UnderReview));
+                .AnyAsync(d => d.SessionId == sessionId && d.Status == DisputeStatus.Pending);
         }
 
         public async Task<(IEnumerable<SessionDispute> Disputes, int TotalCount)> GetFilteredDisputesAsync(AdminDisputeFilterDto filter)
