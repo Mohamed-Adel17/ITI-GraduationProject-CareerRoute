@@ -1,11 +1,7 @@
-﻿using CareerRoute.Core.Domain.Enums;
-using System;
-using System.Collections.Generic;
+using CareerRoute.Core.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace CareerRoute.Core.Domain.Entities
 {
@@ -45,6 +41,13 @@ namespace CareerRoute.Core.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
         //================================================
         public bool IsAvailable { get; set; } = true;
+        //================================================
+        //CV Storage
+        [MaxLength(500)]
+        public string? CvStorageKey { get; set; }
+        [MaxLength(2000)]
+        public string? CvUrl { get; set; }
+        public DateTime? CvUrlExpiry { get; set; }
         //================================================
         //TO-DO: Navigation Property
         //public virtual ICollection<Session> Sessions { get; set; }

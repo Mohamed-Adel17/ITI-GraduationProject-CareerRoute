@@ -1,3 +1,4 @@
+using CareerRoute.Core.Domain.Enums;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -18,6 +19,8 @@ namespace CareerRoute.Core.Services.Interfaces
         /// <param name="knownLength">Optional known length of the stream (useful for non-seekable streams)</param>
         /// <returns>The storage key (file name)</returns>
         Task<string> UploadAsync(Stream stream, string fileName, string contentType, long? knownLength = null);
+        
+        Task<string> UploadAsync(Stream stream, string fileName, string contentType, FileType fileType, long? knownLength = null);
 
         /// <summary>
         /// Generates a temporary presigned URL for accessing the file
@@ -25,7 +28,7 @@ namespace CareerRoute.Core.Services.Interfaces
         /// <param name="fileName">The file name (key)</param>
         /// <param name="expiration">How long the URL should remain valid</param>
         /// <returns>The public or presigned URL</returns>
-        string GetPresignedUrl(string fileName, TimeSpan expiration, string? contentDisposition = null);
+        Task<string> GetPresignedUrlAsync(string fileName, TimeSpan? expiration = null, string? contentDisposition = null);
 
         /// <summary>
         /// Deletes a file from storage

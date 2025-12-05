@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace CareerRoute.Core.DTOs.Mentors
 {
@@ -13,5 +13,6 @@ namespace CareerRoute.Core.DTOs.Mentors
         public decimal Rate30Min { get; set; }
         public decimal Rate60Min { get; set; }
         public List<int> CategoryIds { get; set; } = new();
+        public IFormFile? Cv { get; set; }
     }
 }

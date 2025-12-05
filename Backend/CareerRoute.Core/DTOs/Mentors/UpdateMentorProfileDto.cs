@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace CareerRoute.Core.DTOs.Mentors
 {
@@ -13,7 +13,7 @@ namespace CareerRoute.Core.DTOs.Mentors
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? PhoneNumber { get; set; }
-        public string? ProfilePictureUrl { get; set; }
+        public IFormFile? ProfilePicture { get; set; }
         
         // Mentor-specific fields
         public string? Bio { get; set; }
@@ -24,5 +24,6 @@ namespace CareerRoute.Core.DTOs.Mentors
         public decimal? Rate60Min { get; set; }
         public bool? IsAvailable { get; set; }
         public List<int>? CategoryIds { get; set; }
+        public IFormFile? Cv { get; set; }
     }
 }

@@ -514,7 +514,7 @@ namespace CareerRoute.API.Controllers
                 await _sessionRepository.SaveChangesAsync();
 
                 // 2. Generate Presigned URL
-                var presignedUrl = _blobStorageService.GetPresignedUrl(key, TimeSpan.FromMinutes(60));
+                var presignedUrl =await _blobStorageService.GetPresignedUrlAsync(key, TimeSpan.FromMinutes(60));
 
                 // 3. Transcribe with Deepgram
                 var transcript = await _deepgramService.TranscribeAudioUrlAsync(presignedUrl);

@@ -1,4 +1,4 @@
-﻿using CareerRoute.API.Models;
+using CareerRoute.API.Models;
 using CareerRoute.Core.DTOs.Auth;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Constants;
@@ -30,11 +30,15 @@ namespace CareerRoute.API.Controllers
         /// <returns>Registration response with user ID and confirmation message</returns>
         /// <response code="200">Registration successful</response>
         /// <response code="400">Invalid input or user already exists</response>
+        /// <remarks>
+        /// Supports optional profile picture upload via multipart/form-data.
+        /// </remarks>
         [HttpPost("register")]
         [EnableRateLimiting(RateLimitingPolicies.Auth)]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<RegisterResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerRequest)
+        public async Task<IActionResult> Register([FromForm] RegisterRequestDto registerRequest)
         {
             var response = await _authenticationService.Register(registerRequest);
             return Ok(new ApiResponse<RegisterResponseDto>(response));
@@ -85,10 +89,8 @@ namespace CareerRoute.API.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto verifyRequest)
         {
-
             var response = await _authenticationService.VerifyEmail(verifyRequest);
             return Ok(new ApiResponse<AuthResponseDto>(response));
-
         }
 
         /// <summary>
@@ -121,9 +123,7 @@ namespace CareerRoute.API.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ForgotPassword([FromBody] EmailRequestDto emailRequest)
         {
-
             await _authenticationService.ForgotPassword(emailRequest);
-            // Always return success to prevent email enumeration
             return Ok(new ApiResponse { Message = "If an account exists with this email, a password reset link has been sent." });
         }
 
@@ -142,7 +142,6 @@ namespace CareerRoute.API.Controllers
         {
             var response = await _authenticationService.ResetPassword(resetPasswordRequest);
             return Ok(new ApiResponse<AuthResponseDto>(response));
-
         }
 
         /// <summary>
@@ -169,7 +168,6 @@ namespace CareerRoute.API.Controllers
 
             await _authenticationService.ChangePassword(userId, changePasswordRequest);
             return Ok(new ApiResponse { Message = "Password changed successfully. Please login again with your new password." });
-
         }
 
         /// <summary>
@@ -194,6 +192,5 @@ namespace CareerRoute.API.Controllers
             await _authenticationService.Logout(userId);
             return Ok(new ApiResponse { Message = "Logged out successfully" });
         }
-
     }
 }

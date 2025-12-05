@@ -77,7 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IJobScheduler, HangfireJobScheduler>();
         services.AddScoped<ISessionReminderJobService, SessionReminderJobService>();
         services.AddScoped<IReleasePaymentJob, ReleasePaymentBackgroundJob>();
-
+        services.AddScoped<PresignedUrlRefreshService>();
 
         // AI Client Registration
         services.AddHttpClient<OpenAiClient>(c => c.Timeout = TimeSpan.FromMinutes(5));

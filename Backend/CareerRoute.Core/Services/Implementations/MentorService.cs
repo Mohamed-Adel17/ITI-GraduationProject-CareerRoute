@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.Domain.Enums;
@@ -29,6 +29,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICacheService _cache;
         private readonly ISignalRNotificationService _notificationService;
+        private readonly IBlobStorageService _blobStorageService;
         private const string MentorsCacheKey = "Mentors";
         private const string MentorsVersionKey = "MentorsVersion";
 
@@ -45,7 +46,8 @@ namespace CareerRoute.Core.Services.Implementations
             UserManager<ApplicationUser> userManager,
             ICacheService cache,
             ISignalRNotificationService notificationService,
-            IMentorBalanceService mentorBalanceService)
+            IMentorBalanceService mentorBalanceService,
+            IBlobStorageService blobStorageService)
         {
             _mentorRepository = mentorRepository;
             _userRepository = userRepository;
@@ -59,9 +61,8 @@ namespace CareerRoute.Core.Services.Implementations
             _userManager = userManager;
             _cache = cache;
             _notificationService = notificationService;
-            _mentorBalanceService = mentorBalanceService;
         }
-
+        
         // Get mentor profile by ID
         public async Task<MentorProfileDto> GetMentorProfileAsync(string mentorId)
         {
@@ -72,10 +73,9 @@ namespace CareerRoute.Core.Services.Implementations
             }
             return _mapper.Map<MentorProfileDto>(mentor);
         }
-        // Get all approved mentors
+
         public async Task<IEnumerable<MentorProfileDto>> GetAllApprovedMentorsAsync()
         {
-            // Get or create version
             var version = await _cache.GetAsync<int>(MentorsVersionKey);
             if (version == 0)
             {
@@ -100,25 +100,23 @@ namespace CareerRoute.Core.Services.Implementations
 
             return mentorDtos;
         }
-        // Update mentor profile - only updates provided fields
+
         public async Task<MentorProfileDto> UpdateMentorProfileAsync(
             string mentorId,
             UpdateMentorProfileDto updatedDto)
         {
             await _updateValidator.ValidateAndThrowCustomAsync(updatedDto);
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
-            if(mentor == null)
+            if (mentor == null)
             {
                 throw new NotFoundException("Mentor", mentorId);
             }
-            // Update only provided fields
-            if(updatedDto.Bio != null)
+
+            if (updatedDto.Bio != null)
                 mentor.Bio = updatedDto.Bio;
-            
-            // Handle ExpertiseTagIds - Update UserSkills junction table
-            if(updatedDto.ExpertiseTagIds != null)
+
+            if (updatedDto.ExpertiseTagIds != null)
             {
-                // Validate skill IDs
                 var isValid = await _skillService.ValidateSkillIdsAsync(updatedDto.ExpertiseTagIds);
                 if (!isValid)
                 {
@@ -131,12 +129,10 @@ namespace CareerRoute.Core.Services.Implementations
                 var existingSkillIds = mentor.User.UserSkills.Select(us => us.SkillId).ToList();
                 var newSkillIds = updatedDto.ExpertiseTagIds.ToList();
 
-                // Remove only skills not in new list
                 var skillsToRemove = mentor.User.UserSkills.Where(us => !newSkillIds.Contains(us.SkillId)).ToList();
                 foreach (var userSkill in skillsToRemove)
                     mentor.User.UserSkills.Remove(userSkill);
 
-                // Add only skills not in existing list
                 foreach (var skillId in newSkillIds.Except(existingSkillIds))
                 {
                     mentor.User.UserSkills.Add(new UserSkill
@@ -147,28 +143,26 @@ namespace CareerRoute.Core.Services.Implementations
                     });
                 }
             }
-            
-            if(updatedDto.YearsOfExperience.HasValue)
+
+            if (updatedDto.YearsOfExperience.HasValue)
                 mentor.YearsOfExperience = updatedDto.YearsOfExperience;
-            if(updatedDto.Certifications != null)
+            if (updatedDto.Certifications != null)
                 mentor.Certifications = updatedDto.Certifications;
-            if(updatedDto.Rate30Min.HasValue)
+            if (updatedDto.Rate30Min.HasValue)
                 mentor.Rate30Min = updatedDto.Rate30Min.Value;
-            if(updatedDto.Rate60Min.HasValue)
+            if (updatedDto.Rate60Min.HasValue)
                 mentor.Rate60Min = updatedDto.Rate60Min.Value;
-            if(updatedDto.IsAvailable.HasValue)
+            if (updatedDto.IsAvailable.HasValue)
                 mentor.IsAvailable = updatedDto.IsAvailable.Value;
 
-            // Update mentor categories if provided
             if (updatedDto.CategoryIds != null)
             {
-                // Validate category IDs
                 if (updatedDto.CategoryIds.Any())
                 {
                     var validCategories = await _categoryRepository.GetAllActiveAsync();
                     var validCategoryIds = validCategories.Select(c => c.Id).ToList();
                     var invalidIds = updatedDto.CategoryIds.Except(validCategoryIds).ToList();
-                    
+
                     if (invalidIds.Any())
                     {
                         throw new Exceptions.ValidationException(new Dictionary<string, string[]>
@@ -177,16 +171,14 @@ namespace CareerRoute.Core.Services.Implementations
                         });
                     }
                 }
-                
+
                 var existingCategoryIds = mentor.MentorCategories.Select(mc => mc.CategoryId).ToList();
                 var newCategoryIds = updatedDto.CategoryIds.ToList();
 
-                // Remove only categories not in new list
                 var categoriesToRemove = mentor.MentorCategories.Where(mc => !newCategoryIds.Contains(mc.CategoryId)).ToList();
                 foreach (var mentorCategory in categoriesToRemove)
                     mentor.MentorCategories.Remove(mentorCategory);
 
-                // Add only categories not in existing list
                 foreach (var categoryId in newCategoryIds.Except(existingCategoryIds))
                 {
                     mentor.MentorCategories.Add(new MentorCategory
@@ -197,49 +189,80 @@ namespace CareerRoute.Core.Services.Implementations
                 }
             }
 
-            // Update User-related fields if provided
             if (updatedDto.FirstName != null)
                 mentor.User.FirstName = updatedDto.FirstName;
-                
+
             if (updatedDto.LastName != null)
                 mentor.User.LastName = updatedDto.LastName;
-                
+
             if (updatedDto.PhoneNumber != null)
                 mentor.User.PhoneNumber = updatedDto.PhoneNumber;
-                
-            if (updatedDto.ProfilePictureUrl != null)
-                mentor.User.ProfilePictureUrl = updatedDto.ProfilePictureUrl;
+
+            // Handle profile picture upload
+            if (updatedDto.ProfilePicture != null)
+            {
+                if (!string.IsNullOrEmpty(mentor.User.ProfilePictureUrl))
+                {
+                    try { await _blobStorageService.DeleteAsync(mentor.User.ProfilePictureUrl); }
+                    catch { /* Ignore deletion errors */ }
+                }
+
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(updatedDto.ProfilePicture.FileName)}";
+                using var stream = updatedDto.ProfilePicture.OpenReadStream();
+                var storageKey = await _blobStorageService.UploadAsync(
+                    stream, fileName, updatedDto.ProfilePicture.ContentType,
+                    FileType.ProfilePicture, updatedDto.ProfilePicture.Length);
+                mentor.User.ProfilePictureStorageKey = storageKey;
+                mentor.User.ProfilePictureUrl = await _blobStorageService.GetPresignedUrlAsync(storageKey);
+                mentor.User.ProfilePictureUrlExpiry = DateTime.UtcNow.AddDays(7);
+            }
+            
+            // Handle CV upload
+            if (updatedDto.Cv != null)
+            {
+                if (!string.IsNullOrEmpty(mentor.CvStorageKey))
+                {
+                    try { await _blobStorageService.DeleteAsync(mentor.CvStorageKey); }
+                    catch { /* Ignore deletion errors */ }
+                }
+
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(updatedDto.Cv.FileName)}";
+                using var stream = updatedDto.Cv.OpenReadStream();
+                var storageKey = await _blobStorageService.UploadAsync(
+                    stream, fileName, updatedDto.Cv.ContentType,
+                    FileType.CV, updatedDto.Cv.Length);
+                mentor.CvStorageKey = storageKey;
+                mentor.CvUrl = await _blobStorageService.GetPresignedUrlAsync(storageKey);
+                mentor.CvUrlExpiry = DateTime.UtcNow.AddDays(7);
+            }
 
             mentor.UpdatedAt = DateTime.UtcNow;
             _mentorRepository.Update(mentor);
             await _mentorRepository.SaveChangesAsync();
 
-            // Reload to get updated data with user info
             var updatedMentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
-            
+
             await InvalidateMentorsCacheAsync();
-            
+
             return _mapper.Map<MentorProfileDto>(updatedMentor!);
         }
+
         public async Task<MentorProfileDto> CreateMentorProfileAsync(
             string userId,
             CreateMentorProfileDto createdDto)
         {
             await _createValidator.ValidateAndThrowCustomAsync(createdDto);
-            var user = await _userRepository.GetByIdAsync(userId);    
-            if(user == null)
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
             {
                 throw new NotFoundException("User", userId);
             }
-            
-            // Check if user is already a mentor
-            // Note: Small race condition exists but mitigated by primary key constraint
+
             if (await _mentorRepository.IsMentorAsync(userId))
             {
                 throw new BusinessException("User has already applied to become a mentor");
             }
-            
-            // Validate skill IDs if provided (expertise can be added after approval)
+
             if (createdDto.ExpertiseTagIds != null && createdDto.ExpertiseTagIds.Any())
             {
                 var isValid = await _skillService.ValidateSkillIdsAsync(createdDto.ExpertiseTagIds);
@@ -252,7 +275,6 @@ namespace CareerRoute.Core.Services.Implementations
                 }
             }
 
-            // Set IsMentor flag if not already set
             if (!user.IsMentor)
             {
                 user.IsMentor = true;
@@ -267,27 +289,37 @@ namespace CareerRoute.Core.Services.Implementations
 
             var mentor = new Mentor
             {
-                Id = userId, // Same as User ID (one-to-one relationship)
+                Id = userId,
                 Bio = createdDto.Bio,
                 YearsOfExperience = createdDto.YearsOfExperience,
                 Certifications = createdDto.Certifications,
-                Rate30Min = createdDto.Rate30Min,  
-                Rate60Min = createdDto.Rate60Min, 
-
-                // Default values for new mentors
-                ApprovalStatus = MentorApprovalStatus.Pending, // Requires admin approval
+                Rate30Min = createdDto.Rate30Min,
+                Rate60Min = createdDto.Rate60Min,
+                ApprovalStatus = MentorApprovalStatus.Pending,
                 IsVerified = false,
-                IsAvailable = false,  
+                IsAvailable = false,
                 AverageRating = 0,
                 TotalReviews = 0,
                 TotalSessionsCompleted = 0,
                 CreatedAt = DateTime.UtcNow
             };
-            
+
+            // Handle CV upload
+            if (createdDto.Cv != null)
+            {
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(createdDto.Cv.FileName)}";
+                using var stream = createdDto.Cv.OpenReadStream();
+                var storageKey = await _blobStorageService.UploadAsync(
+                    stream, fileName, createdDto.Cv.ContentType,
+                    FileType.CV, createdDto.Cv.Length);
+                mentor.CvStorageKey = storageKey;
+                mentor.CvUrl = await _blobStorageService.GetPresignedUrlAsync(storageKey);
+                mentor.CvUrlExpiry = DateTime.UtcNow.AddDays(7);
+            }
+
             await _mentorRepository.AddAsync(mentor);
             await _mentorRepository.SaveChangesAsync();
 
-            // Add UserSkills for expertise tags if provided
             if (createdDto.ExpertiseTagIds != null && createdDto.ExpertiseTagIds.Any())
             {
                 foreach (var skillId in createdDto.ExpertiseTagIds)
@@ -302,14 +334,12 @@ namespace CareerRoute.Core.Services.Implementations
                 await _userRepository.SaveChangesAsync();
             }
 
-            // Assign categories to mentor if provided
             if (createdDto.CategoryIds != null && createdDto.CategoryIds.Any())
             {
-                // Validate category IDs
                 var validCategories = await _categoryRepository.GetAllActiveAsync();
                 var validCategoryIds = validCategories.Select(c => c.Id).ToList();
                 var invalidIds = createdDto.CategoryIds.Except(validCategoryIds).ToList();
-                
+
                 if (invalidIds.Any())
                 {
                     throw new Exceptions.ValidationException(new Dictionary<string, string[]>
@@ -317,7 +347,7 @@ namespace CareerRoute.Core.Services.Implementations
                         ["CategoryIds"] = new[] { $"One or more category IDs are invalid or inactive: {string.Join(", ", invalidIds)}" }
                     });
                 }
-                
+
                 foreach (var categoryId in createdDto.CategoryIds)
                 {
                     mentor.MentorCategories.Add(new MentorCategory
@@ -328,7 +358,7 @@ namespace CareerRoute.Core.Services.Implementations
                 }
                 await _mentorRepository.SaveChangesAsync();
             }
-            
+
             _logger.LogInformation("Mentor profile created successfully for user ID: {UserId}", userId);
 
             await _mentorBalanceService.InitializeMentorBalanceAsync(userId);
@@ -340,14 +370,12 @@ namespace CareerRoute.Core.Services.Implementations
             return _mapper.Map<MentorProfileDto>(createdMentor!);
         }
 
-        // Search mentors by keywords - simple search
         public async Task<IEnumerable<MentorProfileDto>> SearchMentorsAsync(string searchTerm)
         {
             var mentors = await _mentorRepository.SearchMentorsAsync(searchTerm);
             return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
         }
 
-        // Advanced search with filters, sorting, and pagination (US2)
         public async Task<MentorSearchResponseDto> SearchMentorsAsync(MentorSearchRequestDto request)
         {
             var mentors = await _mentorRepository.SearchMentorsWithFiltersAsync(request);
@@ -381,10 +409,8 @@ namespace CareerRoute.Core.Services.Implementations
             };
         }
 
-        // Get top-rated mentors
         public async Task<IEnumerable<MentorProfileDto>> GetTopRatedMentorsAsync(int count = 10)
         {
-            // Get or create version
             var version = await _cache.GetAsync<int>(MentorsVersionKey);
             if (version == 0)
             {
@@ -409,10 +435,8 @@ namespace CareerRoute.Core.Services.Implementations
             return mentorDtos;
         }
 
-        // Get mentors by category
         public async Task<IEnumerable<MentorProfileDto>> GetMentorsByCategoryAsync(int categoryId)
         {
-            // Get or create version
             var version = await _cache.GetAsync<int>(MentorsVersionKey);
             if (version == 0)
             {
@@ -437,15 +461,12 @@ namespace CareerRoute.Core.Services.Implementations
             return mentorDtos;
         }
 
-        // ============ ADMIN OPERATIONS ============
-        // Get pending mentor applications
         public async Task<IEnumerable<MentorProfileDto>> GetPendingMentorApplicationsAsync()
         {
             var mentors = await _mentorRepository.GetPendingMentorsAsync();
             return _mapper.Map<IEnumerable<MentorProfileDto>>(mentors);
         }
 
-        // Approve a mentor application
         public async Task ApproveMentorAsync(string mentorId)
         {
             var mentor = await _mentorRepository.GetMentorWithUserByIdAsync(mentorId);
@@ -453,27 +474,24 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 throw new NotFoundException("Mentor", mentorId);
             }
-            if(mentor.ApprovalStatus == MentorApprovalStatus.Approved)
+            if (mentor.ApprovalStatus == MentorApprovalStatus.Approved)
             {
                 throw new BusinessException("Mentor is already approved");
             }
-            
-            // Update mentor status
+
             mentor.ApprovalStatus = MentorApprovalStatus.Approved;
             mentor.IsVerified = true;
             mentor.IsAvailable = true;
             mentor.UpdatedAt = DateTime.UtcNow;
-            
-            // Promote user: Remove User role and assign Mentor role (single role per user)
+
             var user = mentor.User;
             if (!await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
             {
-                // Remove User role first (promotion to Mentor)
                 if (await _userManager.IsInRoleAsync(user, AppRoles.User))
                 {
                     await _userManager.RemoveFromRoleAsync(user, AppRoles.User);
                 }
-                
+
                 var roleResult = await _userManager.AddToRoleAsync(user, AppRoles.Mentor);
                 if (!roleResult.Succeeded)
                 {
@@ -482,7 +500,6 @@ namespace CareerRoute.Core.Services.Implementations
                 _logger.LogInformation("User {UserId} promoted from User to Mentor role", user.Id);
             }
 
-            // Ensure IsMentor flag is set (should already be true from registration or application)
             if (!user.IsMentor)
             {
                 user.IsMentor = true;
@@ -497,10 +514,9 @@ namespace CareerRoute.Core.Services.Implementations
 
             _mentorRepository.Update(mentor);
             await _mentorRepository.SaveChangesAsync();
-            
+
             _logger.LogInformation("Mentor {MentorId} approved successfully", mentorId);
 
-            // Send real-time notification to the mentor
             try
             {
                 await _notificationService.SendNotificationAsync(
@@ -509,21 +525,17 @@ namespace CareerRoute.Core.Services.Implementations
                     "Application Approved!",
                     "Congratulations! Your mentor application has been approved. You can now start accepting sessions.",
                     "/mentor/profile");
-                
+
                 _logger.LogInformation("[Mentor] Approval notification sent to mentor {MentorId}", mentorId);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Mentor] Failed to send approval notification to mentor {MentorId}", mentorId);
-                // Don't throw - notification failure shouldn't fail the approval
             }
 
-            // TODO: Send approval email to mentor
-            // await _emailService.SendMentorApprovalEmailAsync(mentor.User.Email, mentor.User.FirstName);
-            
             await InvalidateMentorsCacheAsync();
         }
-        // Reject a mentor application
+
         public async Task RejectMentorAsync(string mentorId, RejectMentorDto rejectDto)
         {
             await _rejectValidator.ValidateAndThrowCustomAsync(rejectDto);
@@ -535,8 +547,7 @@ namespace CareerRoute.Core.Services.Implementations
             }
 
             var user = mentor.User;
-            
-            // Remove Mentor role if user had it
+
             if (await _userManager.IsInRoleAsync(user, AppRoles.Mentor))
             {
                 var roleResult = await _userManager.RemoveFromRoleAsync(user, AppRoles.Mentor);
@@ -550,9 +561,6 @@ namespace CareerRoute.Core.Services.Implementations
                 }
             }
 
-            // Keep IsMentor flag as true to allow reapplication
-
-            // Send real-time notification to the applicant before deleting the record
             try
             {
                 await _notificationService.SendNotificationAsync(
@@ -561,38 +569,28 @@ namespace CareerRoute.Core.Services.Implementations
                     "Application Not Approved",
                     $"We're sorry, but your mentor application was not approved. Reason: {rejectDto.Reason}",
                     "/mentor/apply");
-                
+
                 _logger.LogInformation("[Mentor] Rejection notification sent to mentor {MentorId}", mentorId);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Mentor] Failed to send rejection notification to mentor {MentorId}", mentorId);
-                // Don't throw - notification failure shouldn't fail the rejection
             }
 
-            // Delete the mentor record
             _mentorRepository.Delete(mentor);
             await _mentorRepository.SaveChangesAsync();
 
             _logger.LogInformation("Mentor {MentorId} rejected and record deleted. Reason: {Reason}", mentorId, rejectDto.Reason);
 
-            // TODO: Send rejection email with reason
-            // await _emailService.SendMentorRejectionEmailAsync(
-            //     mentor.User.Email, 
-            //     mentor.User.FirstName, 
-            //     rejectDto.Reason);
-            
             await InvalidateMentorsCacheAsync();
         }
 
         private async Task InvalidateMentorsCacheAsync()
         {
-            // Increment version to invalidate all mentor-related keys
             var version = await _cache.GetAsync<int>(MentorsVersionKey);
             await _cache.SetAsync(MentorsVersionKey, version + 1);
         }
 
-        // Check if user is a mentor
         public async Task<bool> IsMentorAsync(string userId)
         {
             return await _mentorRepository.IsMentorAsync(userId);

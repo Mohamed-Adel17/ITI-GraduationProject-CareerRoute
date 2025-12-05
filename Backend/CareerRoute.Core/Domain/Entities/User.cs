@@ -10,8 +10,11 @@ namespace CareerRoute.Core.Domain.Entities
         [MaxLength(50), Required]
         public required string LastName { get; set; }
         public string FullName => $"{FirstName} {LastName}";
-        [MaxLength(200)]
+        [MaxLength(2000)]
         public string? ProfilePictureUrl { get; set; }
+        [MaxLength(500)]
+        public string? ProfilePictureStorageKey { get; set; }
+        public DateTime? ProfilePictureUrlExpiry { get; set; }
         public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
         public DateTime? LastLoginDate { get; set; }
         public bool IsActive { get; set; } = true;
