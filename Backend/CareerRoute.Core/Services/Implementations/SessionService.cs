@@ -8,6 +8,7 @@ using CareerRoute.Core.DTOs;
 using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.DTOs.Zoom;
 using CareerRoute.Core.Exceptions;
+using CareerRoute.Core.Extentions;
 using CareerRoute.Core.Prompts;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
@@ -86,7 +87,7 @@ namespace CareerRoute.Core.Services.Implementations
             IJobScheduler jobScheduler,
             ISignalRNotificationService notificationService,
             ISessionReminderJobService sessionReminderJobService,
-            IMentorBalanceService mentorBalanceService)
+            IMentorBalanceService mentorBalanceService,
             IReviewService reviewService,
             IAiClient aiClient)
         {
