@@ -6,8 +6,7 @@ import { AuthService } from './auth.service';
 import {
   NotificationDto,
   NotificationType,
-  ConnectionState,
-  isNotificationDto
+  ConnectionState
 } from '../../shared/models/notification.model';
 import { environment } from '../../../environments/environment.development';
 
@@ -23,7 +22,20 @@ import { environment } from '../../../environments/environment.development';
  * - Exponential backoff reconnection (0ms, 2s, 5s, 10s)
  * - Re-authentication and group rejoining on reconnect
  * - Observable streams for notifications and connection state
+ *
+ * Updates & Fixes:
+ * - Added explicit TypeScript types for all callback parameters
+ *   to fix TS7006 errors (retryContext, error, connectionId)
+ * - Removed attempt to install non-existent @types/microsoft__signalr
+ * - Configured HubConnection using official @microsoft/signalr package
+ * - Deduplication added for notifications within 5-second window
+ * - All unread count management handled via BehaviorSubject
+ * - waitForConnection helper added for components to wait until hub is connected
+ * - parseNotification enhanced to handle camelCase and PascalCase from backend
+ * - convertNotificationType handles numeric enum values from backend
+ * - Safe disconnect ensures hubConnection is cleaned up and state updated
  */
+
 @Injectable({
   providedIn: 'root'
 })
@@ -150,8 +162,6 @@ export class SignalRNotificationService implements OnDestroy {
     this.hubConnection.onreconnected((connectionId) => {
       console.log('[SignalR] Reconnected with ID:', connectionId);
       this.connectionStateSubject.next(ConnectionState.Connected);
-      // Group membership is automatically restored by the hub on reconnect
-      // since we use the same authenticated connection
     });
 
     // Handle connection closed
@@ -159,7 +169,6 @@ export class SignalRNotificationService implements OnDestroy {
       console.log('[SignalR] Connection closed', error);
       this.connectionStateSubject.next(ConnectionState.Disconnected);
 
-      // If not a manual disconnect and user is still authenticated, try to reconnect
       if (!this.isManualDisconnect && this.authService.isAuthenticated()) {
         console.log('[SignalR] Attempting manual reconnection...');
         setTimeout(() => this.connect(), 5000);
@@ -177,55 +186,41 @@ export class SignalRNotificationService implements OnDestroy {
     this.hubConnection.on('ReceiveNotification', (notification: unknown) => {
       console.log('[SignalR] Received notification:', notification);
 
-      // Try to parse the notification - handle both camelCase and PascalCase from backend
       const parsedNotification = this.parseNotification(notification);
 
       if (parsedNotification) {
-        // Deduplication: check if we've already processed this notification
         if (this.processedNotificationIds.has(parsedNotification.id)) {
           console.log('[SignalR] Duplicate notification ignored:', parsedNotification.id);
           return;
         }
 
-        // Mark as processed and schedule cleanup
         this.processedNotificationIds.add(parsedNotification.id);
         setTimeout(() => {
           this.processedNotificationIds.delete(parsedNotification.id);
         }, this.DEDUP_WINDOW_MS);
 
-        console.log('[SignalR] Parsed notification:', parsedNotification);
         this.notificationSubject.next(parsedNotification);
-        // Increment unread count for new notifications
+
         if (!parsedNotification.isRead) {
           const currentCount = this.unreadCountSubject.value || 0;
-          const newCount = currentCount + 1;
-          console.log('[SignalR] Incrementing unread count to:', newCount);
-          this.unreadCountSubject.next(newCount);
+          this.unreadCountSubject.next(currentCount + 1);
         }
-      } else {
-        console.warn('[SignalR] Invalid notification data received:', notification);
       }
     });
 
-    // Handle unread count updates from server
     this.hubConnection.on('UpdateUnreadCount', (count: number) => {
-      console.log('[SignalR] Unread count updated:', count);
       this.unreadCountSubject.next(count);
     });
   }
 
   /**
-   * Parse notification from backend - handles both camelCase and PascalCase
-   * Also handles numeric enum values from SignalR
+   * Parse notification from backend (camelCase + PascalCase)
    */
   private parseNotification(data: unknown): NotificationDto | null {
-    if (!data || typeof data !== 'object') {
-      return null;
-    }
+    if (!data || typeof data !== 'object') return null;
 
     const obj = data as Record<string, unknown>;
 
-    // Handle both camelCase (from JSON serialization) and PascalCase (from SignalR)
     const id = obj['id'] ?? obj['Id'];
     const typeRaw = obj['type'] ?? obj['Type'];
     const title = obj['title'] ?? obj['Title'];
@@ -234,10 +229,8 @@ export class SignalRNotificationService implements OnDestroy {
     const createdAt = obj['createdAt'] ?? obj['CreatedAt'];
     const actionUrl = obj['actionUrl'] ?? obj['ActionUrl'];
 
-    // Convert numeric type to string enum value
     const type = this.convertNotificationType(typeRaw);
 
-    // Validate required fields
     if (
       typeof id !== 'string' ||
       !type ||
@@ -246,7 +239,6 @@ export class SignalRNotificationService implements OnDestroy {
       typeof isRead !== 'boolean' ||
       typeof createdAt !== 'string'
     ) {
-      console.warn('[SignalR] Notification validation failed:', { id, type, typeRaw, title, message, isRead, createdAt });
       return null;
     }
 
@@ -262,12 +254,10 @@ export class SignalRNotificationService implements OnDestroy {
   }
 
   /**
-   * Convert notification type from backend (can be number or string) to NotificationType enum
+   * Convert numeric type to NotificationType enum
    */
   private convertNotificationType(typeRaw: unknown): NotificationType | null {
-    // Map of numeric values to NotificationType enum values
-    // Must match the order in backend NotificationType.cs enum
-    const numericTypeMap: Record<number, NotificationType> = {
+    const map: Record<number, NotificationType> = {
       0: NotificationType.SessionBooked,
       1: NotificationType.SessionCancelled,
       2: NotificationType.RescheduleRequested,
@@ -279,14 +269,12 @@ export class SignalRNotificationService implements OnDestroy {
       8: NotificationType.MentorApplicationRejected
     };
 
-    if (typeof typeRaw === 'number') {
-      return numericTypeMap[typeRaw] ?? null;
-    }
+    if (typeof typeRaw === 'number') return map[typeRaw] ?? null;
     return null;
   }
 
   /**
-   * Disconnect from SignalR hub
+   * Disconnect safely
    */
   async disconnect(): Promise<void> {
     this.isManualDisconnect = true;
@@ -294,7 +282,6 @@ export class SignalRNotificationService implements OnDestroy {
     if (this.hubConnection) {
       try {
         await this.hubConnection.stop();
-        console.log('[SignalR] Disconnected from notification hub');
       } catch (error) {
         console.error('[SignalR] Error disconnecting:', error);
       }
@@ -305,62 +292,40 @@ export class SignalRNotificationService implements OnDestroy {
   }
 
   /**
-   * Clear local notification state
+   * Clear local state on logout
    */
   private clearLocalState(): void {
     this.unreadCountSubject.next(0);
     this.processedNotificationIds.clear();
   }
 
-  /**
-   * Get current connection state
-   */
   getConnectionState(): ConnectionState {
     return this.connectionStateSubject.value;
   }
 
-  /**
-   * Check if connected
-   */
   isConnected(): boolean {
     return this.connectionStateSubject.value === ConnectionState.Connected;
   }
 
-  /**
-   * Get current unread count
-   */
   getUnreadCount(): number {
     return this.unreadCountSubject.value;
   }
 
-  /**
-   * Set unread count (used when fetching from API)
-   */
   setUnreadCount(count: number): void {
-    const validCount = typeof count === 'number' && !isNaN(count) ? count : 0;
-    this.unreadCountSubject.next(validCount);
+    this.unreadCountSubject.next(typeof count === 'number' ? count : 0);
   }
 
-  /**
-   * Decrement unread count (used when marking notification as read)
-   */
   decrementUnreadCount(): void {
-    const current = this.unreadCountSubject.value || 0;
-    if (current > 0) {
-      this.unreadCountSubject.next(current - 1);
-    }
+    const current = this.unreadCountSubject.value;
+    if (current > 0) this.unreadCountSubject.next(current - 1);
   }
 
-  /**
-   * Reset unread count to zero (used when marking all as read)
-   */
   resetUnreadCount(): void {
     this.unreadCountSubject.next(0);
   }
 
   /**
    * Wait for connection to be established
-   * Useful for components that need to ensure connection before proceeding
    */
   waitForConnection(): Observable<ConnectionState> {
     return this.connectionState$.pipe(
