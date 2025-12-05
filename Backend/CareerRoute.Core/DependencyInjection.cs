@@ -1,11 +1,6 @@
 using CareerRoute.Core.Mappings;
 using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
-using CareerRoute.Core.Validators.Mentors;
-using CareerRoute.Core.Validators.Payments;
-using CareerRoute.Core.Validators.Payouts;
-using CareerRoute.Core.Validators.Reviews;
-using CareerRoute.Core.Validators.Sessions;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<IMentorBalanceService, MentorBalanceService>();
         services.AddScoped<IPayoutService, PayoutService>();
         services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<ISessionDisputeService, SessionDisputeService>();
 
         services.AddAutoMapper(options =>
         {
@@ -46,16 +42,12 @@ public static class DependencyInjection
             options.AddProfile<NotificationProfile>();
             options.AddProfile<PayoutMappingProfile>();
             options.AddProfile<ReviewsProfile>();
+            options.AddProfile<DisputeMappingProfile>();
         });
 
-        // ============ FLUENTVALIDATION ============
-        services.AddValidatorsFromAssemblyContaining<UpdateMentorProfileValidator>();
-        services.AddValidatorsFromAssemblyContaining<PaymentIntentRequestValidator>();
-        services.AddValidatorsFromAssemblyContaining<PaymentConfirmRequestValidator>();
-        services.AddValidatorsFromAssemblyContaining<BookSessionRequestValidator>();
-        services.AddValidatorsFromAssemblyContaining<RescheduleSessionRequestValidator>();
-        services.AddValidatorsFromAssemblyContaining<CancelSessionRequestValidator>();
-        services.AddValidatorsFromAssemblyContaining<CreateReviewRequestValidator>();
+        // Register all FluentValidation validators from this assembly
+        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+
         return services;
     }
 }
