@@ -22,6 +22,7 @@ import {
   SessionRecordingResponse,
   SessionTranscriptResponse,
   SessionSummaryResponse,
+  AIPreparationResponse,
   UpcomingSessionsResponse,
   PastSessionsResponse
 } from '../../shared/models/session.model';
@@ -620,6 +621,45 @@ export class SessionService {
     return this.http
       .get(`${this.SESSIONS_URL}/${sessionId}/summary`, { responseType: 'text' })
       .pipe(map(text => ({ sessionId, summary: text, isAvailable: !!text })));
+  }
+
+  // ==================== Generate AI Preparation Guide ====================
+
+  /**
+   * Generate AI preparation guide for a session (Mentor only)
+   *
+   * @param sessionId - Session GUID
+   * @returns Observable of AIPreparationResponse
+   *
+   * @remarks
+   * - Endpoint: POST /api/sessions/{id}/generate-preparation
+   * - Requires authentication (mentor or admin)
+   * - Only the session's mentor can generate their own preparation
+   * - Returns cached guide if already generated (wasAlreadyGenerated = true)
+   * - Guide is markdown-formatted with:
+   *   - Key talking points based on topic
+   *   - Suggested questions to ask the mentee
+   *   - Topics/resources to review beforehand
+   *   - Potential challenges the mentee might face
+   *   - Suggested session structure
+   * - Returns 400 if session is Completed, Cancelled, or NoShow
+   * - Returns 403 if user is not the session's mentor
+   * - Returns 404 if session not found
+   *
+   * @example
+   * ```typescript
+   * this.sessionService.generatePreparation(sessionId).subscribe({
+   *   next: (response) => {
+   *     console.log('Guide:', response.preparationGuide);
+   *     console.log('Was cached:', response.wasAlreadyGenerated);
+   *   }
+   * });
+   * ```
+   */
+  generatePreparation(sessionId: string): Observable<AIPreparationResponse> {
+    return this.http
+      .post<ApiResponse<AIPreparationResponse>>(`${this.SESSIONS_URL}/${sessionId}/generate-preparation`, {})
+      .pipe(map(response => unwrapResponse(response)));
   }
 
   // ==================== Helper Methods ====================

@@ -293,6 +293,16 @@
           </p>
         </div>
       </div>
+    <!-- AI Preparation Guide Section (Mentor Only) -->
+    <div *ngIf="showAIPreparation" class="mb-6">
+      <app-ai-preparation-guide
+        [sessionId]="session.id"
+        [existingGuide]="session.aiPreparationGuide"
+        [generatedAt]="session.aiPreparationGeneratedAt"
+        [sessionStatus]="session.status"
+        [topic]="session.topic"
+        [notes]="session.notes">
+      </app-ai-preparation-guide>
     </div>
 
     <!-- Completed Session Section (Recording & Transcript) -->

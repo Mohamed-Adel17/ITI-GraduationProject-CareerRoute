@@ -18,6 +18,7 @@ import {
 } from '../../models/session.model';
 import { RecordingPlayerComponent } from '../recording-player/recording-player.component';
 import { SummaryViewerComponent } from '../summary-viewer/summary-viewer.component';
+import { AIPreparationGuideComponent } from '../ai-preparation-guide/ai-preparation-guide.component';
 
 /**
  * SessionDetailsComponent
@@ -30,7 +31,7 @@ import { SummaryViewerComponent } from '../summary-viewer/summary-viewer.compone
 @Component({
   selector: 'app-session-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, RecordingPlayerComponent, SummaryViewerComponent],
+  imports: [CommonModule, RouterModule, RecordingPlayerComponent, SummaryViewerComponent, AIPreparationGuideComponent],
   templateUrl: './session-details.component.html',
   styleUrl: './session-details.component.css'
 })
@@ -272,6 +273,20 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
 
   get hasExistingReview(): boolean {
     return !!this.existingReview;
+  get isMentor(): boolean {
+    return this.userRole === 'mentor';
+  }
+
+  get showAIPreparation(): boolean {
+    // Show AI preparation section for mentors on non-completed sessions
+    if (!this.isMentor || !this.session) return false;
+    const activeStatuses = [
+      SessionStatus.Pending,
+      SessionStatus.Confirmed,
+      SessionStatus.PendingReschedule,
+      SessionStatus.InProgress
+    ];
+    return activeStatuses.includes(this.session.status);
   }
 
   // === Actions ===

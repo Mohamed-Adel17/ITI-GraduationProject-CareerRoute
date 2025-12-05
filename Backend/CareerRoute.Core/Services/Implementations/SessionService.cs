@@ -56,6 +56,8 @@ namespace CareerRoute.Core.Services.Implementations
         // Session reminder job service for scheduling/cancelling reminders
         private readonly ISessionReminderJobService _sessionReminderJobService;
 
+        // Mentor balance service for handling payouts
+        private readonly IMentorBalanceService _mentorBalanceService;
         // AI client for generating preparation guides
         private readonly IAiClient _aiClient;
 
@@ -84,8 +86,9 @@ namespace CareerRoute.Core.Services.Implementations
             IBlobStorageService blobStorageService,
             IJobScheduler jobScheduler,
             ISignalRNotificationService notificationService,
-            IReviewService reviewService,
             ISessionReminderJobService sessionReminderJobService,
+            IMentorBalanceService mentorBalanceService,
+            IReviewService reviewService,
             IAiClient aiClient)
         {
             _logger = logger;
@@ -111,6 +114,7 @@ namespace CareerRoute.Core.Services.Implementations
             _jobScheduler = jobScheduler;
             _notificationService = notificationService;
             _sessionReminderJobService = sessionReminderJobService;
+            _mentorBalanceService = mentorBalanceService;
             _reviewService = reviewService;
             _aiClient = aiClient;
         }
@@ -678,9 +682,10 @@ namespace CareerRoute.Core.Services.Implementations
             session.Status = SessionStatusOptions.Completed;
             session.CompletedAt = DateTime.UtcNow;
 
-            if (session.Payment != null)
+            if (session.PaymentId != null)
             {
-                session.Payment.PaymentReleaseDate = session.CompletedAt.Value.AddHours(72);
+                // Delegate balance update and payment release scheduling to the balance service
+                await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(sessionId);
             }
 
            
