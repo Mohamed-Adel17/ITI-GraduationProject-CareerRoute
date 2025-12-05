@@ -28,6 +28,7 @@ namespace CareerRoute.Infrastructure.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<MentorBalance> MentorBalances { get; set; }
         public DbSet<Payout> Payouts { get; set; }
+        public DbSet<SessionDispute> SessionDisputes { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)
