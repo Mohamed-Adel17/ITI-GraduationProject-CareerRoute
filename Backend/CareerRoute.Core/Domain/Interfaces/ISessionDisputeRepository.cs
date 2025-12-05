@@ -1,5 +1,4 @@
 using CareerRoute.Core.Domain.Entities;
-using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.DTOs.Disputes;
 
 namespace CareerRoute.Core.Domain.Interfaces

@@ -152,40 +152,38 @@ namespace CareerRoute.Core.Services.Implementations
         private async Task ProcessRefundAsync(SessionDispute dispute, decimal refundAmount)
         {
             var session = dispute.Session;
-            var payment = await _paymentRepository.GetByIdAsync(session.PaymentId!);
             
+            if (refundAmount > session.Price)
+                throw new BusinessException($"Refund amount cannot exceed session price ({session.Price})");
+
+            var payment = await _paymentRepository.GetByIdAsync(session.PaymentId!);
             if (payment == null)
-            {
-                _logger.LogWarning("No payment found for session {SessionId}", session.Id);
-                return;
-            }
+                throw new BusinessException("Payment not found for this session");
 
             // If payment was already released to mentor, deduct from their balance
             if (payment.IsReleasedToMentor)
             {
                 var balance = await _balanceRepository.GetByMentorIdAsync(session.MentorId);
-                if (balance != null && balance.AvailableBalance >= refundAmount)
-                {
-                    balance.AvailableBalance -= refundAmount;
-                    balance.UpdatedAt = DateTime.UtcNow;
-                    _balanceRepository.Update(balance);
-                }
+                if (balance == null || balance.AvailableBalance < refundAmount)
+                    throw new BusinessException("Insufficient mentor balance for refund");
+
+                balance.AvailableBalance -= refundAmount;
+                balance.UpdatedAt = DateTime.UtcNow;
+                _balanceRepository.Update(balance);
             }
             else
             {
                 // Payment still in pending, deduct from pending balance
                 var balance = await _balanceRepository.GetByMentorIdAsync(session.MentorId);
-                if (balance != null)
-                {
-                    var mentorAmount = session.Price * (1 - payment.PlatformCommission);
-                    if (balance.PendingBalance >= mentorAmount)
-                    {
-                        balance.PendingBalance -= mentorAmount;
-                        balance.TotalEarnings -= mentorAmount;
-                        balance.UpdatedAt = DateTime.UtcNow;
-                        _balanceRepository.Update(balance);
-                    }
-                }
+                var mentorAmount = session.Price * (1 - payment.PlatformCommission);
+                
+                if (balance == null || balance.PendingBalance < mentorAmount)
+                    throw new BusinessException("Insufficient pending balance for refund");
+
+                balance.PendingBalance -= mentorAmount;
+                balance.TotalEarnings -= mentorAmount;
+                balance.UpdatedAt = DateTime.UtcNow;
+                _balanceRepository.Update(balance);
             }
 
             // Mark payment as refunded
