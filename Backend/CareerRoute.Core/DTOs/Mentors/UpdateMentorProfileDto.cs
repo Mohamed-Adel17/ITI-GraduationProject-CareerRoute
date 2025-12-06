@@ -2,20 +2,16 @@ using Microsoft.AspNetCore.Http;
 
 namespace CareerRoute.Core.DTOs.Mentors
 {
-    /// <summary>
-    /// DTO for updating an existing mentor profile
-    /// All fields are optional - only provided fields will be updated
-    /// Includes both User-related fields and Mentor-specific fields
-    /// </summary>
     public class UpdateMentorProfileDto
     {
-        // User-related fields (from ApplicationUser)
+        // User-related fields
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? PhoneNumber { get; set; }
         public IFormFile? ProfilePicture { get; set; }
         
         // Mentor-specific fields
+        public string? Headline { get; set; }
         public string? Bio { get; set; }
         public List<int>? ExpertiseTagIds { get; set; }
         public int? YearsOfExperience { get; set; }
@@ -25,5 +21,8 @@ namespace CareerRoute.Core.DTOs.Mentors
         public bool? IsAvailable { get; set; }
         public List<int>? CategoryIds { get; set; }
         public IFormFile? Cv { get; set; }
+        public string? LinkedInUrl { get; set; }
+        public string? GitHubUrl { get; set; }
+        public string? WebsiteUrl { get; set; }
     }
 }

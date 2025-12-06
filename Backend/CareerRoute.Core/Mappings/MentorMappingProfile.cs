@@ -1,13 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.DTOs.Categories;
 using CareerRoute.Core.DTOs.Mentors;
 using CareerRoute.Core.DTOs.Skills;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CareerRoute.Core.Mappings
 {
@@ -50,11 +45,14 @@ namespace CareerRoute.Core.Mappings
                         })
                         .ToList()))
                 .ForMember(dest => dest.ResponseTime,
-                    opt => opt.Ignore()) // Calculated separately if needed
+                    opt => opt.Ignore())
                 .ForMember(dest => dest.CompletionRate,
-                    opt => opt.Ignore()) // Calculated separately if needed
+                    opt => opt.Ignore())
                 .ForMember(dest => dest.IsAvailable,
                     opt => opt.MapFrom(src => src.IsAvailable));
+
+            CreateMap<PreviousWork, PreviousWorkDto>();
+            CreateMap<CreatePreviousWorkDto, PreviousWork>();
         }
     }
 }

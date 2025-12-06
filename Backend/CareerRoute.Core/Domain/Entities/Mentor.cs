@@ -16,6 +16,8 @@ namespace CareerRoute.Core.Domain.Entities
         public virtual ApplicationUser User { get; set; } = null!;
         //================================================
         //Profile Information
+        [MaxLength(200)]
+        public string? Headline { get; set; }
         [MaxLength(2000)]
         public string? Bio { get; set; }
         [MaxLength(500)]
@@ -49,11 +51,18 @@ namespace CareerRoute.Core.Domain.Entities
         public string? CvUrl { get; set; }
         public DateTime? CvUrlExpiry { get; set; }
         //================================================
-        //TO-DO: Navigation Property
-        //public virtual ICollection<Session> Sessions { get; set; }
-        //public virtual ICollection<ReviewSession> Reviews { get; set; }
+        //Social Links
+        [MaxLength(500)]
+        public string? LinkedInUrl { get; set; }
+        [MaxLength(500)]
+        public string? GitHubUrl { get; set; }
+        [MaxLength(500)]
+        public string? WebsiteUrl { get; set; }
+        //================================================
+        //Navigation Properties
         public virtual ICollection<MentorCategory> MentorCategories { get; set; } = new List<MentorCategory>();
         public virtual ICollection<TimeSlot> TimeSlots { get; set; } = new List<TimeSlot>();
+        public virtual ICollection<PreviousWork> PreviousWorks { get; set; } = new List<PreviousWork>();
         
         // Balance and Payout navigation properties
         public virtual MentorBalance? Balance { get; set; }

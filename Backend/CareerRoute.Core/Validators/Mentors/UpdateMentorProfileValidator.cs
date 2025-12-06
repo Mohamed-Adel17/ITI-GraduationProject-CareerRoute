@@ -9,6 +9,10 @@ namespace CareerRoute.Core.Validators.Mentors
         public UpdateMentorProfileValidator()
         {
             // ============ USER-RELATED FIELDS VALIDATION ============
+            RuleFor(x => x.Headline)
+                .MaximumLength(200).WithMessage("Headline cannot exceed 200 characters")
+                .When(x => !string.IsNullOrWhiteSpace(x.Headline));
+
             RuleFor(x => x.FirstName)
                 .MinimumLength(2)
                     .WithMessage("First name must be at least 2 characters")
@@ -45,8 +49,8 @@ namespace CareerRoute.Core.Validators.Mentors
             // ============ BIO VALIDATION ============
             // API Contract: Minimum 100 characters, maximum 2000
             RuleFor(x => x.Bio)
-                .MinimumLength(100)
-                    .WithMessage("Bio must be at least 100 characters")
+                .MinimumLength(50)
+                    .WithMessage("Bio must be at least 50 characters")
                 .MaximumLength(2000)
                     .WithMessage("Bio cannot exceed 2000 characters")
                 .When(x => !string.IsNullOrWhiteSpace(x.Bio));

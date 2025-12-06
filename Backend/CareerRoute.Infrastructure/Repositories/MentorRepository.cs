@@ -26,6 +26,9 @@ namespace CareerRoute.Infrastructure.Repositories
                     .ThenInclude(u => u.UserSkills)
                         .ThenInclude(us => us.Skill)
                             .ThenInclude(s => s.Category)
+                .Include(m => m.PreviousWorks)
+                .Include(m => m.MentorCategories)
+                    .ThenInclude(mc => mc.Category)
                 .FirstOrDefaultAsync(m => m.Id == id);
         }
 
@@ -47,6 +50,7 @@ namespace CareerRoute.Infrastructure.Repositories
                     .ThenInclude(u => u.UserSkills)
                         .ThenInclude(us => us.Skill)
                             .ThenInclude(s => s.Category)
+                .Include(m => m.PreviousWorks)
                 .Where(m => m.ApprovalStatus == MentorApprovalStatus.Pending)
                 .OrderBy(m => m.CreatedAt)
                 .ToListAsync();
@@ -177,6 +181,7 @@ namespace CareerRoute.Infrastructure.Repositories
                     .ThenInclude(u => u.UserSkills)
                         .ThenInclude(us => us.Skill)
                             .ThenInclude(s => s.Category)
+                .Include(m => m.PreviousWorks)
                 .Include(m => m.MentorCategories)
                     .ThenInclude(mc => mc.Category)
                 .AsNoTracking()

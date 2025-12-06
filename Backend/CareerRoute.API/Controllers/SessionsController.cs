@@ -145,7 +145,7 @@ namespace CareerRoute.API.Controllers
         public async Task<ActionResult> GetUpcomingSessions([FromQuery] PaginationRequestDto request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var userRole = User.FindFirstValue(ClaimTypes.Role)!;
 
             if (string.IsNullOrEmpty(userId))
             {

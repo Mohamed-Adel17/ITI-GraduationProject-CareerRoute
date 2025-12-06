@@ -122,9 +122,9 @@ namespace CareerRoute.Core.Services.Implementations
             if (uuDto.ProfilePicture != null)
             {
                 // Delete old picture if exists
-                if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                if (!string.IsNullOrEmpty(user.ProfilePictureStorageKey))
                 {
-                    try { await _blobStorageService.DeleteAsync(user.ProfilePictureUrl); }
+                    try { await _blobStorageService.DeleteAsync(user.ProfilePictureStorageKey); }
                     catch { /* Ignore deletion errors */ }
                 }
 

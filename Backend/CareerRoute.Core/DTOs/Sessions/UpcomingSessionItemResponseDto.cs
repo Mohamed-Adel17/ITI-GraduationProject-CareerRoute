@@ -7,11 +7,13 @@ namespace CareerRoute.Core.DTOs.Sessions
         public string MenteeId { get; set; } = null!;
         public string MenteeFirstName { get; set; } = null!;
         public string MenteeLastName { get; set; } = null!;
+        public string? MenteeProfilePictureUrl { get; set; }
 
         public string MentorId { get; set; } = null!;
         public string MentorFirstName { get; set; } = null!;
         public string MentorLastName { get; set; } = null!;
         public string? MentorProfilePictureUrl { get; set; }
+        public string? MentorHeadline { get; set; }
 
         public string SessionType { get; set; } = null!;
         public string Duration { get; set; } = null!;

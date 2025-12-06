@@ -4,6 +4,7 @@ using CareerRoute.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CareerRoute.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251206105138_AddMentorLinks")]
+    partial class AddMentorLinks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -262,10 +265,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<string>("GitHubUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Headline")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
@@ -576,45 +575,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasDatabaseName("IX_Payout_MentorId_Status");
 
                     b.ToTable("Payouts");
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.PreviousWork", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("JobTitle")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("MentorId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MentorId");
-
-                    b.ToTable("PreviousWorks");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
@@ -1244,17 +1204,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("Mentor");
                 });
 
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.PreviousWork", b =>
-                {
-                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
-                        .WithMany("PreviousWorks")
-                        .HasForeignKey("MentorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Mentor");
-                });
-
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "User")
@@ -1457,8 +1406,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("MentorCategories");
 
                     b.Navigation("Payouts");
-
-                    b.Navigation("PreviousWorks");
 
                     b.Navigation("TimeSlots");
                 });

@@ -61,8 +61,11 @@ namespace CareerRoute.Core.Services.Implementations
             _userManager = userManager;
             _cache = cache;
             _notificationService = notificationService;
+            _mentorBalanceService = mentorBalanceService;
+            _blobStorageService = blobStorageService;
+
         }
-        
+
         // Get mentor profile by ID
         public async Task<MentorProfileDto> GetMentorProfileAsync(string mentorId)
         {
@@ -112,6 +115,9 @@ namespace CareerRoute.Core.Services.Implementations
                 throw new NotFoundException("Mentor", mentorId);
             }
 
+            if (updatedDto.Headline != null)
+                mentor.Headline = updatedDto.Headline;
+
             if (updatedDto.Bio != null)
                 mentor.Bio = updatedDto.Bio;
 
@@ -154,6 +160,12 @@ namespace CareerRoute.Core.Services.Implementations
                 mentor.Rate60Min = updatedDto.Rate60Min.Value;
             if (updatedDto.IsAvailable.HasValue)
                 mentor.IsAvailable = updatedDto.IsAvailable.Value;
+            if (updatedDto.LinkedInUrl != null)
+                mentor.LinkedInUrl = updatedDto.LinkedInUrl;
+            if (updatedDto.GitHubUrl != null)
+                mentor.GitHubUrl = updatedDto.GitHubUrl;
+            if (updatedDto.WebsiteUrl != null)
+                mentor.WebsiteUrl = updatedDto.WebsiteUrl;
 
             if (updatedDto.CategoryIds != null)
             {
@@ -290,11 +302,15 @@ namespace CareerRoute.Core.Services.Implementations
             var mentor = new Mentor
             {
                 Id = userId,
+                Headline = createdDto.Headline,
                 Bio = createdDto.Bio,
                 YearsOfExperience = createdDto.YearsOfExperience,
                 Certifications = createdDto.Certifications,
                 Rate30Min = createdDto.Rate30Min,
                 Rate60Min = createdDto.Rate60Min,
+                LinkedInUrl = createdDto.LinkedInUrl,
+                GitHubUrl = createdDto.GitHubUrl,
+                WebsiteUrl = createdDto.WebsiteUrl,
                 ApprovalStatus = MentorApprovalStatus.Pending,
                 IsVerified = false,
                 IsAvailable = false,
@@ -320,6 +336,23 @@ namespace CareerRoute.Core.Services.Implementations
             await _mentorRepository.AddAsync(mentor);
             await _mentorRepository.SaveChangesAsync();
 
+
+            if (createdDto.PreviousWorks != null && createdDto.PreviousWorks.Any())
+            {
+                foreach (var pw in createdDto.PreviousWorks)
+                {
+                    mentor.PreviousWorks.Add(new PreviousWork
+                    {
+                        MentorId = userId,
+                        CompanyName = pw.CompanyName,
+                        JobTitle = pw.JobTitle,
+                        StartDate = pw.StartDate,
+                        EndDate = pw.EndDate,
+                        Description = pw.Description
+                    });
+                }
+                await _mentorRepository.SaveChangesAsync();
+            }
             if (createdDto.ExpertiseTagIds != null && createdDto.ExpertiseTagIds.Any())
             {
                 foreach (var skillId in createdDto.ExpertiseTagIds)
