@@ -1,4 +1,17 @@
 <div class="container mx-auto px-4 py-8">
+  <!-- Admin Nav Tabs -->
+  <nav class="flex gap-1 border-b border-gray-200 mb-8">
+    <a routerLink="/admin/mentor-approvals" class="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary flex items-center gap-2">
+      Mentor Approvals
+      <span *ngIf="applications.length > 0" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        {{ applications.length }}
+      </span>
+    </a>
+    <a routerLink="/admin/payouts" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300">
+      Payouts
+    </a>
+  </nav>
+
   <!-- Header Section -->
   <header class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">

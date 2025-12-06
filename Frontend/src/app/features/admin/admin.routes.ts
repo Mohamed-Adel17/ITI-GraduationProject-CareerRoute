@@ -31,6 +31,15 @@ export const ADMIN_ROUTES: Routes = [
       import('./mentor-approvals/mentor-approvals.component')
         .then(m => m.MentorApprovalsComponent),
     title: 'Mentor Approvals - Admin'
+  },
+
+  // Payout Management - Admin can process or cancel payout requests
+  {
+    path: 'payouts',
+    loadComponent: () =>
+      import('./payout-management/payout-management.component')
+        .then(m => m.PayoutManagementComponent),
+    title: 'Payout Management - Admin'
   }
 
   // TODO: Add more admin routes here as components are created
