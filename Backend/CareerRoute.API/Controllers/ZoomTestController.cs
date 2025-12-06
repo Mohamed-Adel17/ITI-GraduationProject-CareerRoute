@@ -32,6 +32,7 @@ namespace CareerRoute.API.Controllers
         private readonly ISessionService _sessionService;
         private readonly IBlobStorageService _blobStorageService;
         private readonly IDeepgramService _deepgramService;
+        private readonly IMentorBalanceService _mentorBalanceService;
         private readonly ILogger<ZoomTestController> _logger;
         private readonly IConfiguration _configuration;
 
@@ -45,6 +46,7 @@ namespace CareerRoute.API.Controllers
             IOptions<ZoomSettings> zoomSettings,
             IBlobStorageService blobStorageService,
             IDeepgramService deepgramService,
+            IMentorBalanceService mentorBalanceService,
             ILogger<ZoomTestController> logger,
             IConfiguration configuration)
         {
@@ -57,6 +59,7 @@ namespace CareerRoute.API.Controllers
             _sessionService = sessionService;
             _blobStorageService = blobStorageService;
             _deepgramService = deepgramService;
+            _mentorBalanceService = mentorBalanceService;
             _logger = logger;
             _configuration = configuration;
         }
@@ -365,6 +368,11 @@ namespace CareerRoute.API.Controllers
                     session.CompletedAt = DateTime.UtcNow;
                     _sessionRepository.Update(session);
                     await _sessionRepository.SaveChangesAsync();
+
+                    if (session.PaymentId != null)
+                    {
+                        await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(sessionId);
+                    }
 
                     return Ok(new
                     {

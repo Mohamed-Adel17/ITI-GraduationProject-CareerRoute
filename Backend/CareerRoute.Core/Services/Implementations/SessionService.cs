@@ -1570,6 +1570,11 @@ namespace CareerRoute.Core.Services.Implementations
                     _sessionRepository.Update(session);
                     await _sessionRepository.SaveChangesAsync();
 
+                    if (session.PaymentId != null)
+                    {
+                        await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(sessionId);
+                    }
+
                     _logger.LogInformation("[Session] Successfully auto-terminated session {SessionId}", sessionId);
                 }
                 else
@@ -1626,6 +1631,11 @@ namespace CareerRoute.Core.Services.Implementations
 
             _sessionRepository.Update(session);
             await _sessionRepository.SaveChangesAsync();
+
+            if (session.PaymentId != null)
+            {
+                await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(session.Id);
+            }
 
             _logger.LogInformation("[Session] Successfully processed recording completion for session {SessionId}. Status updated to Completed.", session.Id);
         }
