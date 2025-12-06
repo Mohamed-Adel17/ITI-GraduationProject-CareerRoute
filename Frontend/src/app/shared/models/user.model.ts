@@ -86,7 +86,7 @@ export interface UserSummary {
   firstName: string;
   lastName: string;
   email: string;
-  profilePictureUrl?: string;
+  profilePicture?: File;
   isMentor?: boolean;
 }
 
@@ -114,7 +114,7 @@ export interface UserProfileUpdate {
   phoneNumber?: string;
 
   /** Updated profile picture URL (optional) */
-  profilePictureUrl?: string;
+  profilePicture?: File;
 
   /** Updated career goals statement (optional) */
   careerGoals?: string;
@@ -138,7 +138,7 @@ export interface AuthenticatedUser {
   emailConfirmed: boolean;
   roles: UserRole[];
   isMentor: boolean;
-  profilePictureUrl?: string;
+  profilePicture?: File;
 }
 
 /**

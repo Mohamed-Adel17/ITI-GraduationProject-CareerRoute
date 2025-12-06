@@ -30,7 +30,7 @@
   <!-- Info Section -->
   <div class="p-3 flex-1 flex flex-col">
     <!-- Name + Rating Row -->
-    <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center justify-between mb-1">
       <div class="flex items-center gap-1.5 min-w-0">
         <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ mentorFullName }}</h3>
         @if (mentor.isVerified) {
@@ -46,6 +46,11 @@
         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ mentor.averageRating.toFixed(1) }}</span>
       </div>
     </div>
+
+    <!-- Headline -->
+    @if (mentor.headline) {
+      <p class="text-xs text-gray-500 dark:text-gray-400 truncate mb-2">{{ mentor.headline }}</p>
+    }
 
     <!-- Expertise Tags -->
     <div #tagsContainer class="flex gap-1.5 mb-3">

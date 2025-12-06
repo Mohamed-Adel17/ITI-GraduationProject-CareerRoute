@@ -47,8 +47,8 @@
         class="w-12 h-12 rounded-full object-cover"
       >
       <div class="flex-1 min-w-0">
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ participantLabel }}</p>
         <h3 class="font-semibold text-gray-900 dark:text-white truncate">{{ participantName }}</h3>
+        <p *ngIf="participantHeadline" class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ participantHeadline }}</p>
       </div>
     </div>
 

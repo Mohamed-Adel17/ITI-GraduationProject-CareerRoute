@@ -69,6 +69,7 @@ import { forkJoin } from 'rxjs';
           [mode]="'create'"
           [skills]="skills"
           [categories]="categories"
+          [isSubmitting]="isSubmitting"
           (formSubmit)="onSubmit($event)"
           (formCancel)="onCancel()">
         </app-mentor-profile-form>
@@ -89,6 +90,7 @@ export class MentorApplicationComponent implements OnInit {
 
   // Loading state
   isLoading = false;
+  isSubmitting = false;
   loadError: string | null = null;
 
   constructor(
@@ -178,6 +180,7 @@ export class MentorApplicationComponent implements OnInit {
     // In create mode, the form always emits MentorApplication
     // Type guard to ensure we have the right type
     if (this.isMentorApplication(data)) {
+      this.isSubmitting = true;
       this.mentorService.applyToBecomeMentor(data).subscribe({
         next: () => {
           this.notificationService.success(
@@ -192,6 +195,7 @@ export class MentorApplicationComponent implements OnInit {
           });
         },
         error: (error) => {
+          this.isSubmitting = false;
           if (error.status === 409) {
             this.notificationService.error(
               'You have a previous application. Please contact support to re-apply.',

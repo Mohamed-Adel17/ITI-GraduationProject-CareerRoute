@@ -53,6 +53,8 @@ export class EditProfileComponent implements OnInit, OnDestroy {
   loading: boolean = true;
   saving: boolean = false;
   error: string | null = null;
+  selectedFile: File | null = null;
+  imagePreview: string | null = null;
 
   private subscription?: Subscription;
 
@@ -164,7 +166,7 @@ export class EditProfileComponent implements OnInit, OnDestroy {
       firstName: user.firstName,
       lastName: user.lastName,
       phoneNumber: user.phoneNumber || '',
-      profilePictureUrl: user.profilePictureUrl || '',
+      // profilePicture is handled separately via file input
       careerGoals: user.careerGoals || ''
     });
   }
@@ -221,6 +223,19 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     return !!(field && field.hasError(errorType) && (field.dirty || field.touched));
   }
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.imagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(this.selectedFile);
+    }
+  }
+
   /**
    * Submit form and save profile updates
    *
@@ -252,8 +267,8 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     if (this.profileForm.value.phoneNumber) {
       updateData.phoneNumber = this.profileForm.value.phoneNumber;
     }
-    if (this.profileForm.value.profilePictureUrl) {
-      updateData.profilePictureUrl = this.profileForm.value.profilePictureUrl;
+    if (this.selectedFile) {
+      updateData.profilePicture = this.selectedFile;
     }
     if (this.profileForm.value.careerGoals) {
       updateData.careerGoals = this.profileForm.value.careerGoals;
@@ -293,6 +308,8 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     if (confirm('Are you sure you want to reset all changes?')) {
       if (this.user) {
         this.populateForm(this.user);
+        this.selectedFile = null;
+        this.imagePreview = null;
       }
     }
   }
