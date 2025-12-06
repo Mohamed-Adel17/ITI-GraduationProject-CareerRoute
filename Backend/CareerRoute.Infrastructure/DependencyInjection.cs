@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<IPayoutRepository, PayoutRepository>();
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<ISessionDisputeRepository, SessionDisputeRepository>();
+        services.AddScoped<IPreviousWorkRepository, PreviousWorkRepository>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(GenericRepository<>));
 
         // Infrastructure Service Registration
@@ -77,7 +78,7 @@ public static class DependencyInjection
         services.AddScoped<IJobScheduler, HangfireJobScheduler>();
         services.AddScoped<ISessionReminderJobService, SessionReminderJobService>();
         services.AddScoped<IReleasePaymentJob, ReleasePaymentBackgroundJob>();
-
+        services.AddScoped<PresignedUrlRefreshService>();
 
         // AI Client Registration
         services.AddHttpClient<OpenAiClient>(c => c.Timeout = TimeSpan.FromMinutes(5));

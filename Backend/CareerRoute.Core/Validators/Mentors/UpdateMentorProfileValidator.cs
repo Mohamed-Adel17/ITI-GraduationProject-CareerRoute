@@ -9,6 +9,10 @@ namespace CareerRoute.Core.Validators.Mentors
         public UpdateMentorProfileValidator()
         {
             // ============ USER-RELATED FIELDS VALIDATION ============
+            RuleFor(x => x.Headline)
+                .MaximumLength(200).WithMessage("Headline cannot exceed 200 characters")
+                .When(x => !string.IsNullOrWhiteSpace(x.Headline));
+
             RuleFor(x => x.FirstName)
                 .MinimumLength(2)
                     .WithMessage("First name must be at least 2 characters")
@@ -28,18 +32,25 @@ namespace CareerRoute.Core.Validators.Mentors
                     .WithMessage("Invalid phone number format")
                 .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
 
-            RuleFor(x => x.ProfilePictureUrl)
-                .MaximumLength(200)
-                    .WithMessage("Profile picture URL cannot exceed 200 characters")
-                .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _))
-                    .WithMessage("Profile picture URL must be a valid URL")
-                .When(x => !string.IsNullOrEmpty(x.ProfilePictureUrl));
+            RuleFor(x => x.ProfilePicture)
+                .Must(file =>
+                {
+                    if (file == null) return true;
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                    var extension = Path.GetExtension(file.FileName).ToLower();
+                    return allowedExtensions.Contains(extension);
+                })
+                .WithMessage("Only .jpg, .jpeg, or .png images are allowed")
+
+                .Must(file => file == null || file.Length <= 2 * 1024 * 1024) // 2 MB
+                .WithMessage("Profile picture must not exceed 2 MB");
+
 
             // ============ BIO VALIDATION ============
             // API Contract: Minimum 100 characters, maximum 2000
             RuleFor(x => x.Bio)
-                .MinimumLength(100)
-                    .WithMessage("Bio must be at least 100 characters")
+                .MinimumLength(50)
+                    .WithMessage("Bio must be at least 50 characters")
                 .MaximumLength(2000)
                     .WithMessage("Bio cannot exceed 2000 characters")
                 .When(x => !string.IsNullOrWhiteSpace(x.Bio));
@@ -67,6 +78,20 @@ namespace CareerRoute.Core.Validators.Mentors
                 .MaximumLength(1000)
                     .WithMessage("Certifications cannot exceed 1000 characters")
                 .When(x => !string.IsNullOrWhiteSpace(x.Certifications));
+
+            RuleFor(x => x.Cv)
+                .Must(file => file == null || file.Length > 0)
+                    .WithMessage("Profile picture is empty")
+                .Must(file =>
+                {
+                    if (file == null) return true;
+                    var allowedExtensions = new[] { ".pdf" };
+                    var extension = Path.GetExtension(file.FileName).ToLower();
+                    return allowedExtensions.Contains(extension);
+                })
+                    .WithMessage("Only .pdf is allowed")
+                .Must(file => file == null || file.Length <= 5 * 1024 * 1024) // 2 MB
+                    .WithMessage("CV must not exceed 5 MB");
 
             // ============ PRICING VALIDATION ============
             // API Contract: $5-$500 range for both rates

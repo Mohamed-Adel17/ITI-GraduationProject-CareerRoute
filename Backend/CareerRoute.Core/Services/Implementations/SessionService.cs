@@ -1236,7 +1236,7 @@ namespace CareerRoute.Core.Services.Implementations
             }
 
             // Generate R2 presigned URL with "inline" disposition for browser streaming
-            var presignedUrl = _blobStorageService.GetPresignedUrl(
+            var presignedUrl = await _blobStorageService.GetPresignedUrlAsync(
                 session.VideoStorageKey, 
                 TimeSpan.FromMinutes(60), 
                 "inline");
@@ -1681,7 +1681,7 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 _logger.LogInformation("[Session] Starting Deepgram transcription via R2 URL for session {SessionId}", session.Id);
 
-                var presignedUrl = _blobStorageService.GetPresignedUrl(session.VideoStorageKey, TimeSpan.FromMinutes(60));
+                var presignedUrl = await _blobStorageService.GetPresignedUrlAsync(session.VideoStorageKey, TimeSpan.FromMinutes(60));
 
                 var transcript = await _deepgramService.TranscribeAudioUrlAsync(presignedUrl);
 

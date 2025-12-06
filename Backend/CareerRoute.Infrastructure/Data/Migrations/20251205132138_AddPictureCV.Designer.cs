@@ -4,6 +4,7 @@ using CareerRoute.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CareerRoute.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251205132138_AddPictureCV")]
+    partial class AddPictureCV
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -259,23 +262,11 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("GitHubUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Headline")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
-
-                    b.Property<string>("LinkedInUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<decimal>("Rate30Min")
                         .HasColumnType("decimal(18,2)");
@@ -291,10 +282,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("WebsiteUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int?>("YearsOfExperience")
                         .HasColumnType("int");
@@ -320,44 +307,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
                             t.HasCheckConstraint("CK_Mentor_YearsOfExperience", "[YearsOfExperience] >= 0");
                         });
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorBalance", b =>
-                {
-                    b.Property<string>("MentorId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<decimal>("AvailableBalance")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("PendingBalance")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("TotalEarnings")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("MentorId");
-
-                    b.HasIndex("MentorId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_MentorBalance_MentorId");
-
-                    b.ToTable("MentorBalances");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorCategory", b =>
@@ -530,93 +479,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.ToTable("Payments");
                 });
 
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Payout", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("MentorId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("RequestedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MentorId")
-                        .HasDatabaseName("IX_Payout_MentorId");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("IX_Payout_Status");
-
-                    b.HasIndex("MentorId", "Status")
-                        .HasDatabaseName("IX_Payout_MentorId_Status");
-
-                    b.ToTable("Payouts");
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.PreviousWork", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("JobTitle")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("MentorId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MentorId");
-
-                    b.ToTable("PreviousWorks");
-                });
-
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<string>("Token")
@@ -684,15 +546,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("Comment")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
                     b.Property<string>("SessionId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -709,12 +562,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("AIPreparationGeneratedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("AIPreparationGuide")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(500)
@@ -769,9 +616,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Property<string>("ReminderJobId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ReviewRequestJobId")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ScheduledEndTime")
                         .HasColumnType("datetime2");
@@ -839,70 +683,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_Session_Price", "[Price] > 0");
                         });
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.SessionDispute", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("AdminNotes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("MenteeId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("RefundAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Resolution")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ResolvedById")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("SessionId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MenteeId")
-                        .HasDatabaseName("IX_SessionDispute_MenteeId");
-
-                    b.HasIndex("ResolvedById");
-
-                    b.HasIndex("SessionId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_SessionDispute_SessionId");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("IX_SessionDispute_Status");
-
-                    b.ToTable("SessionDisputes");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Skill", b =>
@@ -1173,17 +953,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorBalance", b =>
-                {
-                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
-                        .WithOne("Balance")
-                        .HasForeignKey("CareerRoute.Core.Domain.Entities.MentorBalance", "MentorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Mentor");
-                });
-
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.MentorCategory", b =>
                 {
                     b.HasOne("CareerRoute.Core.Domain.Entities.Category", "Category")
@@ -1231,28 +1000,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("Mentee");
 
                     b.Navigation("Session");
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Payout", b =>
-                {
-                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
-                        .WithMany("Payouts")
-                        .HasForeignKey("MentorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Mentor");
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.PreviousWork", b =>
-                {
-                    b.HasOne("CareerRoute.Core.Domain.Entities.Mentor", "Mentor")
-                        .WithMany("PreviousWorks")
-                        .HasForeignKey("MentorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Mentor");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.RefreshToken", b =>
@@ -1305,32 +1052,6 @@ namespace CareerRoute.Infrastructure.Data.Migrations
                     b.Navigation("Mentee");
 
                     b.Navigation("Mentor");
-                });
-
-            modelBuilder.Entity("CareerRoute.Core.Domain.Entities.SessionDispute", b =>
-                {
-                    b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "Mentee")
-                        .WithMany()
-                        .HasForeignKey("MenteeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CareerRoute.Core.Domain.Entities.ApplicationUser", "ResolvedBy")
-                        .WithMany()
-                        .HasForeignKey("ResolvedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("CareerRoute.Core.Domain.Entities.Session", "Session")
-                        .WithOne()
-                        .HasForeignKey("CareerRoute.Core.Domain.Entities.SessionDispute", "SessionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Mentee");
-
-                    b.Navigation("ResolvedBy");
-
-                    b.Navigation("Session");
                 });
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Skill", b =>
@@ -1452,13 +1173,7 @@ namespace CareerRoute.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("CareerRoute.Core.Domain.Entities.Mentor", b =>
                 {
-                    b.Navigation("Balance");
-
                     b.Navigation("MentorCategories");
-
-                    b.Navigation("Payouts");
-
-                    b.Navigation("PreviousWorks");
 
                     b.Navigation("TimeSlots");
                 });

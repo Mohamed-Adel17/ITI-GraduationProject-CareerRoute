@@ -1,7 +1,7 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Amazon.S3.Transfer;
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Services.Interfaces;
 using CareerRoute.Core.Settings;
 using Microsoft.Extensions.Logging;
@@ -17,6 +17,7 @@ namespace CareerRoute.Infrastructure.Services
         private readonly IAmazonS3 _s3Client;
         private readonly R2Settings _settings;
         private readonly ILogger<CloudflareR2Service> _logger;
+        private static readonly TimeSpan MaxPresignedExpiration = TimeSpan.FromDays(7);
 
         public CloudflareR2Service(
             IOptions<R2Settings> settings,
@@ -49,7 +50,7 @@ namespace CareerRoute.Infrastructure.Services
                     BucketName = _settings.BucketName,
                     ContentType = contentType,
                     DisablePayloadSigning = true,
-                    AutoCloseStream = false // Important: let the caller manage the stream lifecycle
+                    AutoCloseStream = false
                 };
 
                 if (knownLength.HasValue)
@@ -69,15 +70,41 @@ namespace CareerRoute.Infrastructure.Services
             }
         }
 
-        public string GetPresignedUrl(string fileName, TimeSpan expiration, string? contentDisposition = null)
+        public async Task<string> UploadAsync(Stream stream, string fileName, string contentType, FileType fileType, long? knownLength = null)
+        {
+            var folder = GetFolderForFileType(fileType);
+            var fullKey = $"{folder}/{fileName}";
+
+            await UploadAsync(stream, fullKey, contentType, knownLength);
+            return fullKey;
+        }
+
+        private string GetFolderForFileType(FileType fileType)
+        {
+            return fileType switch
+            {
+                FileType.Recording => _settings.RecordingsFolder,
+                FileType.CV => _settings.CvsFolder,
+                FileType.ProfilePicture => _settings.ProfilePicturesFolder,
+                _ => throw new ArgumentOutOfRangeException(nameof(fileType))
+            };
+        }
+
+
+        public async Task<string> GetPresignedUrlAsync(string fileName, TimeSpan? expiration = null, string? contentDisposition = null)
         {
             try
             {
+                // Cap expiration at 7 days (R2/S3 maximum)
+                var actualExpiration = expiration.HasValue 
+                    ? (expiration.Value > MaxPresignedExpiration ? MaxPresignedExpiration : expiration.Value)
+                    : MaxPresignedExpiration;
+
                 var request = new GetPreSignedUrlRequest
                 {
                     BucketName = _settings.BucketName,
                     Key = fileName,
-                    Expires = DateTime.UtcNow.Add(expiration),
+                    Expires = DateTime.UtcNow.Add(actualExpiration),
                     Verb = HttpVerb.GET
                 };
 
@@ -89,9 +116,9 @@ namespace CareerRoute.Infrastructure.Services
                     };
                 }
 
-                string url = _s3Client.GetPreSignedURL(request);
-                _logger.LogInformation("[R2] Generated presigned URL for file: {FileName}, Expires: {Expiration}, Disposition: {Disposition}", fileName, expiration, contentDisposition ?? "Default");
-                
+                string url = await _s3Client.GetPreSignedURLAsync(request);
+                _logger.LogInformation("[R2] Generated presigned URL for file: {FileName}, Expires: {Expiration}", fileName, actualExpiration);
+
                 return url;
             }
             catch (Exception ex)
@@ -106,7 +133,7 @@ namespace CareerRoute.Infrastructure.Services
             try
             {
                 _logger.LogInformation("[R2] Deleting file: {FileName}", fileName);
-                
+
                 var deleteRequest = new DeleteObjectRequest
                 {
                     BucketName = _settings.BucketName,
@@ -114,7 +141,7 @@ namespace CareerRoute.Infrastructure.Services
                 };
 
                 await _s3Client.DeleteObjectAsync(deleteRequest);
-                
+
                 _logger.LogInformation("[R2] Successfully deleted file: {FileName}", fileName);
             }
             catch (Exception ex)
