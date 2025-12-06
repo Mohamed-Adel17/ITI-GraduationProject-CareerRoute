@@ -196,6 +196,13 @@ export class SessionCard implements OnInit, OnDestroy {
   }
 
   /**
+   * Get participant headline (only for mentor)
+   */
+  get participantHeadline(): string | null {
+    return this.userRole === 'mentee' ? (this.session.mentorHeadline || null) : null;
+  }
+
+  /**
    * Get profile picture URL or generate default avatar
    */
   get participantAvatar(): string {

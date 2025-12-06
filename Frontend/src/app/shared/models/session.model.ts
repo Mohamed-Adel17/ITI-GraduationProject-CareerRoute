@@ -62,6 +62,7 @@ export interface Session {
   mentorFirstName: string;              // Mentor first name
   mentorLastName: string;               // Mentor last name
   mentorProfilePictureUrl?: string | null;  // Mentor profile picture
+  mentorHeadline?: string | null;           // Mentor headline
   timeSlotId?: string | null;           // Reference to TimeSlot
   sessionType: SessionType;             // OneOnOne or Group
   duration: SessionDuration;            // ThirtyMinutes or SixtyMinutes
@@ -99,6 +100,7 @@ export interface SessionSummary {
   mentorFirstName: string;
   mentorLastName: string;
   mentorProfilePictureUrl?: string | null;
+  mentorHeadline?: string | null;
   sessionType: SessionType;
   duration: SessionDuration;
   scheduledStartTime: string;
@@ -124,6 +126,7 @@ export interface PastSessionItem {
   mentorFirstName: string;
   mentorLastName: string;
   mentorProfilePictureUrl?: string | null;
+  mentorHeadline?: string | null;
   sessionType: SessionType;
   duration: SessionDuration;
   scheduledStartTime: string;

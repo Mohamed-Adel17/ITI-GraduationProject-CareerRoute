@@ -43,6 +43,8 @@ export interface RegisterRequest {
 
   /** Whether user wants to register as a mentor (if true, redirects to mentor application after registration) */
   registerAsMentor?: boolean;
+  /** Profile picture file for upload (optional) */
+  profilePicture?: File;
 }
 
 /**

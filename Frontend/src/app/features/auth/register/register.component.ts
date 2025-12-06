@@ -41,6 +41,8 @@ export class RegisterComponent implements OnInit {
   errorMessage: string | null = null;
   showPassword = false;
   showConfirmPassword = false;
+  selectedFile: File | null = null;
+  imagePreview: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -196,6 +198,18 @@ export class RegisterComponent implements OnInit {
     this.showConfirmPassword = !this.showConfirmPassword;
   }
 
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.imagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(this.selectedFile);
+    }
+  }
   /**
    * Handles form submission
    * Calls AuthService.register() and handles navigation based on verification requirements
@@ -231,7 +245,8 @@ export class RegisterComponent implements OnInit {
       firstName: this.registerForm.value.firstName,
       lastName: this.registerForm.value.lastName,
       phoneNumber: this.registerForm.value.phoneNumber || undefined, // Optional
-      registerAsMentor: this.registerForm.value.userType === 'mentor'
+      registerAsMentor: this.registerForm.value.userType === 'mentor',
+      profilePicture: this.selectedFile || undefined
     };
 
     // Call AuthService to register

@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MentorService } from '../../../core/services/mentor.service';
@@ -8,7 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { SkillService } from '../../../core/services/skill.service';
 import { CategoryService } from '../../../core/services/category.service';
-import { Mentor, MentorProfileUpdate } from '../../../shared/models/mentor.model';
+import { Mentor, MentorProfileUpdate, CreatePreviousWork, PreviousWork } from '../../../shared/models/mentor.model';
 import { Skill } from '../../../shared/models/skill.model';
 import { Category } from '../../../shared/models/category.model';
 
@@ -47,7 +47,7 @@ import { Category } from '../../../shared/models/category.model';
 @Component({
   selector: 'app-edit-mentor-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   templateUrl: './edit-mentor-profile.component.html',
   styleUrls: ['./edit-mentor-profile.component.css']
 })
@@ -61,6 +61,15 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
   loading: boolean = true;
   saving: boolean = false;
   error: string | null = null;
+  selectedProfilePicture: File | null = null;
+  selectedCv: File | null = null;
+  profileImagePreview: string | null = null;
+
+  // Previous work state
+  showAddWorkForm = false;
+  newWork: CreatePreviousWork = { companyName: '', jobTitle: '', startDate: '' };
+  editingWorkId: number | null = null;
+  editWork: CreatePreviousWork = { companyName: '', jobTitle: '', startDate: '' };
 
   private subscription?: Subscription;
 
@@ -98,12 +107,18 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
       profilePictureUrl: ['', [Validators.maxLength(200)]],
 
       // Mentor-specific fields
+      headline: ['', [Validators.maxLength(150)]],
       bio: ['', [Validators.required, Validators.minLength(100), Validators.maxLength(2000)]],
       yearsOfExperience: [1, [Validators.required, Validators.min(1), Validators.max(60)]],
       certifications: ['', [Validators.maxLength(1000)]],
       rate30Min: [50, [Validators.required, Validators.min(50), Validators.max(1000)]],
       rate60Min: [50, [Validators.required, Validators.min(50), Validators.max(1000)]],
-      isAvailable: [true]
+      isAvailable: [true],
+
+      // Professional links
+      linkedInUrl: ['', [Validators.pattern(/^https?:\/\/(www\.)?linkedin\.com\/.+/i)]],
+      gitHubUrl: ['', [Validators.pattern(/^https?:\/\/(www\.)?github\.com\/.+/i)]],
+      websiteUrl: ['', [Validators.pattern(/^https?:\/\/.+/)]]
     });
   }
 
@@ -206,16 +221,22 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
       // User-related fields
       firstName: mentor.firstName,
       lastName: mentor.lastName,
-      phoneNumber: mentor.email || '', // Note: email is not editable, using as placeholder
-      profilePictureUrl: mentor.profilePictureUrl || '',
+      // phoneNumber is not returned by API, user can fill if updating
+      // profilePicture and cv are handled via file inputs
 
       // Mentor-specific fields
+      headline: mentor.headline || '',
       bio: mentor.bio || '',
       yearsOfExperience: mentor.yearsOfExperience || 0,
       certifications: mentor.certifications || '',
       rate30Min: mentor.rate30Min || 0,
       rate60Min: mentor.rate60Min || 0,
-      isAvailable: mentor.isAvailable !== undefined ? mentor.isAvailable : true
+      isAvailable: mentor.isAvailable !== undefined ? mentor.isAvailable : true,
+
+      // Professional links
+      linkedInUrl: mentor.linkedInUrl || '',
+      gitHubUrl: mentor.gitHubUrl || '',
+      websiteUrl: mentor.websiteUrl || ''
     });
   }
 
@@ -303,6 +324,21 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
     return !!(field && field.hasError(errorType) && (field.dirty || field.touched));
   }
 
+  onFileSelected(event: Event, fieldName: string): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      if (fieldName === 'profilePicture') {
+        this.selectedProfilePicture = file;
+        const reader = new FileReader();
+        reader.onload = () => this.profileImagePreview = reader.result as string;
+        reader.readAsDataURL(file);
+      } else if (fieldName === 'cv') {
+        this.selectedCv = file;
+      }
+    }
+  }
+
   /**
    * Submit form and save mentor profile updates
    *
@@ -345,21 +381,30 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
       lastName: this.profileForm.value.lastName,
 
       // Mentor-specific fields
+      headline: this.profileForm.value.headline || undefined,
       bio: this.profileForm.value.bio,
       yearsOfExperience: this.profileForm.value.yearsOfExperience,
       rate30Min: this.profileForm.value.rate30Min,
       rate60Min: this.profileForm.value.rate60Min,
       isAvailable: this.profileForm.value.isAvailable,
       expertiseTagIds: this.selectedSkillIds, // Include expertise tag IDs
-      categoryIds: this.selectedCategoryIds // Include category IDs
+      categoryIds: this.selectedCategoryIds, // Include category IDs
+
+      // Professional links
+      linkedInUrl: this.profileForm.value.linkedInUrl || undefined,
+      gitHubUrl: this.profileForm.value.gitHubUrl || undefined,
+      websiteUrl: this.profileForm.value.websiteUrl || undefined
     };
 
     // Add optional fields only if they have values
     if (this.profileForm.value.phoneNumber) {
       updateData.phoneNumber = this.profileForm.value.phoneNumber;
     }
-    if (this.profileForm.value.profilePictureUrl) {
-      updateData.profilePictureUrl = this.profileForm.value.profilePictureUrl;
+    if (this.selectedProfilePicture) {
+      updateData.profilePicture = this.selectedProfilePicture;
+    }
+    if (this.selectedCv) {
+      updateData.cv = this.selectedCv;
     }
     if (this.profileForm.value.certifications) {
       updateData.certifications = this.profileForm.value.certifications;
@@ -402,7 +447,138 @@ export class EditMentorProfileComponent implements OnInit, OnDestroy {
         this.selectedCategoryIds = this.mentor.categories?.map(category => category.id) || [];
         this.populateForm(this.mentor);
         this.profileForm.markAsPristine();
+        this.selectedProfilePicture = null;
+        this.selectedCv = null;
+        this.profileImagePreview = null;
       }
     }
+  }
+
+  /**
+   * Add a new previous work entry
+   */
+  addPreviousWork(): void {
+    if (!this.newWork.jobTitle || !this.newWork.companyName || !this.newWork.startDate) {
+      this.notificationService.warning('Please fill in job title, company name, and start date');
+      return;
+    }
+    const today = this.today;
+    if (this.newWork.startDate < '1960-01-01' || this.newWork.startDate > today) {
+      this.notificationService.warning('Start date must be between 1960 and today');
+      return;
+    }
+    if (this.newWork.endDate && (this.newWork.endDate < this.newWork.startDate || this.newWork.endDate > today)) {
+      this.notificationService.warning('End date must be between start date and today');
+      return;
+    }
+    
+    // Call API to add previous work
+    this.mentorService.addPreviousWork(this.newWork).subscribe({
+      next: (work) => {
+        if (this.mentor) {
+          this.mentor.previousWorks = this.mentor.previousWorks || [];
+          this.mentor.previousWorks.push(work);
+          this.mentor.previousWorks.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+        }
+        this.newWork = { companyName: '', jobTitle: '', startDate: '' };
+        this.showAddWorkForm = false;
+        this.notificationService.success('Work experience added successfully');
+      },
+      error: (err) => {
+        this.notificationService.error('Failed to add work experience');
+        console.error('Error adding previous work:', err);
+      }
+    });
+  }
+
+  get today(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  /**
+   * Delete a previous work entry
+   */
+  deletePreviousWork(workId: number): void {
+    if (!confirm('Are you sure you want to delete this work experience?')) return;
+    
+    this.mentorService.deletePreviousWork(workId).subscribe({
+      next: () => {
+        if (this.mentor?.previousWorks) {
+          this.mentor.previousWorks = this.mentor.previousWorks.filter(w => w.id !== workId);
+        }
+        this.notificationService.success('Work experience deleted successfully');
+      },
+      error: (err) => {
+        this.notificationService.error('Failed to delete work experience');
+        console.error('Error deleting previous work:', err);
+      }
+    });
+  }
+
+  /**
+   * Cancel adding work
+   */
+  cancelAddWork(): void {
+    this.newWork = { companyName: '', jobTitle: '', startDate: '' };
+    this.showAddWorkForm = false;
+  }
+
+  /**
+   * Start editing a previous work entry
+   */
+  startEditWork(work: PreviousWork): void {
+    this.editingWorkId = work.id;
+    this.editWork = {
+      companyName: work.companyName,
+      jobTitle: work.jobTitle,
+      startDate: work.startDate.split('T')[0],
+      endDate: work.endDate ? work.endDate.split('T')[0] : undefined,
+      description: work.description || undefined
+    };
+  }
+
+  /**
+   * Save edited work
+   */
+  saveEditWork(): void {
+    if (!this.editingWorkId || !this.editWork.jobTitle || !this.editWork.companyName || !this.editWork.startDate) {
+      this.notificationService.warning('Please fill in required fields');
+      return;
+    }
+    const today = this.today;
+    if (this.editWork.startDate < '1960-01-01' || this.editWork.startDate > today) {
+      this.notificationService.warning('Start date must be between 1960 and today');
+      return;
+    }
+    if (this.editWork.endDate && (this.editWork.endDate < this.editWork.startDate || this.editWork.endDate > today)) {
+      this.notificationService.warning('End date must be between start date and today');
+      return;
+    }
+    
+    this.mentorService.updatePreviousWork(this.editingWorkId, this.editWork).subscribe({
+      next: (updatedWork) => {
+        if (this.mentor?.previousWorks) {
+          const index = this.mentor.previousWorks.findIndex(w => w.id === this.editingWorkId);
+          if (index !== -1) {
+            this.mentor.previousWorks[index] = updatedWork;
+            this.mentor.previousWorks.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+          }
+        }
+        this.cancelEditWork();
+        this.notificationService.success('Work experience updated successfully');
+      },
+      error: (err) => {
+        this.notificationService.error('Failed to update work experience');
+        console.error('Error updating previous work:', err);
+      }
+    });
+  }
+
+  /**
+   * Cancel editing work
+   */
+  cancelEditWork(): void {
+    this.editingWorkId = null;
+    this.editWork = { companyName: '', jobTitle: '', startDate: '' };
   }
 }

@@ -47,6 +47,29 @@ export interface MentorCategory {
 }
 
 /**
+ * Previous work experience (PreviousWorkDto)
+ */
+export interface PreviousWork {
+  id: number;
+  companyName: string;
+  jobTitle: string;
+  startDate: string;
+  endDate?: string | null;
+  description?: string | null;
+}
+
+/**
+ * Create previous work DTO
+ */
+export interface CreatePreviousWork {
+  companyName: string;
+  jobTitle: string;
+  startDate: string;
+  endDate?: string | null;
+  description?: string | null;
+}
+
+/**
  * Main Mentor interface representing a mentor profile (MentorProfileDto)
  * Based on Mentor-Endpoints.md contract
  */
@@ -69,6 +92,9 @@ export interface Mentor {
   /** Profile picture URL */
   profilePictureUrl?: string | null;
 
+  /** Professional headline (short tagline) */
+  headline?: string | null;
+
   /** Professional biography / introduction */
   bio: string | null;
 
@@ -80,6 +106,17 @@ export interface Mentor {
 
   /** Certifications or credentials */
   certifications?: string | null;
+  /** CV URL (presigned, expires in 7 days) */
+  cvUrl?: string | null;
+  
+  /** LinkedIn profile URL */
+  linkedInUrl?: string | null;
+
+  /** GitHub profile URL */
+  gitHubUrl?: string | null;
+
+  /** Personal website URL */
+  websiteUrl?: string | null;
 
   /** Rate for 30-minute session (in USD) */
   rate30Min: number;
@@ -111,6 +148,9 @@ export interface Mentor {
   /** Categories/specializations the mentor belongs to */
   categories?: MentorCategory[];
 
+  /** Previous work experience */
+  previousWorks?: PreviousWork[];
+
   /** Response time estimate (e.g., "within 2 hours") */
   responseTime?: string | null;
 
@@ -131,10 +171,15 @@ export interface MentorListItem {
   fullName: string;
   email: string;
   profilePictureUrl?: string | null;
+  headline?: string | null;
   bio: string;
   expertiseTags: Skill[];
   yearsOfExperience: number;
   certifications?: string | null;
+  cvUrl?: string | null;
+  linkedInUrl?: string | null;
+  gitHubUrl?: string | null;
+  websiteUrl?: string | null;
   rate30Min: number;
   rate60Min: number;
   averageRating: number;
@@ -145,6 +190,7 @@ export interface MentorListItem {
   createdAt: string;
   updatedAt: string | null;
   categories?: MentorCategory[];
+  previousWorks?: PreviousWork[];
   responseTime?: string | null;
   completionRate?: number | null;
   isAvailable: boolean;
@@ -182,10 +228,15 @@ export interface MentorDetail {
   fullName: string;
   email: string;
   profilePictureUrl?: string | null;
+  headline?: string | null;
   bio: string;
   expertiseTags: Skill[];
   yearsOfExperience: number;
   certifications?: string | null;
+  cvUrl?: string | null;
+  linkedInUrl?: string | null;
+  gitHubUrl?: string | null;
+  websiteUrl?: string | null;
   rate30Min: number;
   rate60Min: number;
   averageRating: number;
@@ -196,6 +247,7 @@ export interface MentorDetail {
   createdAt: string;
   updatedAt: string | null;
   categories: MentorCategory[];
+  previousWorks?: PreviousWork[];
   responseTime: string | null;
   completionRate: number | null;
   isAvailable: boolean;
@@ -218,9 +270,10 @@ export interface MentorProfileUpdate {
   firstName?: string; // Min 2 chars, max 50 chars
   lastName?: string; // Min 2 chars, max 50 chars
   phoneNumber?: string; // Valid phone number format
-  profilePictureUrl?: string; // Valid URL format, max 200 chars
+  profilePicture?: File; // Profile picture file for upload
 
   // Mentor-specific fields
+  headline?: string; // Professional headline/tagline
   bio?: string; // Min 50 chars, max 1000 chars
   yearsOfExperience?: number; // Min 0, integer
   certifications?: string; // Max 500 chars
@@ -229,6 +282,10 @@ export interface MentorProfileUpdate {
   isAvailable?: boolean; // Availability status
   expertiseTagIds?: number[]; // Array of skill IDs, empty array [] clears all
   categoryIds?: number[]; // Array of category IDs, 1-5 categories
+  linkedInUrl?: string; // LinkedIn profile URL
+  gitHubUrl?: string; // GitHub profile URL
+  websiteUrl?: string; // Personal website URL
+  cv?: File; // CV file for upload (PDF only, max 5MB)
 }
 
 /**
@@ -242,6 +299,7 @@ export interface MentorProfileUpdate {
  * - Both arrays are required in the application
  */
 export interface MentorApplication {
+  headline?: string; // Optional: Professional headline/tagline
   bio: string; // Required: Min 50, max 1000 chars
   expertiseTagIds: number[]; // Required: Array of skill IDs
   yearsOfExperience: number; // Required: Min 0, integer
@@ -249,6 +307,11 @@ export interface MentorApplication {
   rate30Min: number; // Required: Min 0, max 10000
   rate60Min: number; // Required: Min 0, max 10000
   categoryIds: number[]; // Required: Array of category IDs
+  linkedInUrl?: string; // LinkedIn profile URL
+  gitHubUrl?: string; // GitHub profile URL
+  websiteUrl?: string; // Personal website URL
+  cv?: File; // CV file for upload (PDF only, max 5MB)
+  previousWorks?: CreatePreviousWork[]; // Optional: Previous work experience
 }
 
 /**
