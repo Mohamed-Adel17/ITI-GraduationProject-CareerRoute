@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -35,7 +35,7 @@ import { Mentor, MentorApprovalStatus } from '../../../shared/models/mentor.mode
 @Component({
   selector: 'app-application-pending',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './application-pending.component.html',
   styleUrls: ['./application-pending.css']
 })

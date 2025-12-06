@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PaymentService } from '../../../core/services/payment.service';
-import { HeaderComponent } from '../../../shared/components/header/header.component';
 import {
   ConfirmPaymentRequest,
   PaymentConfirmationResponse,
@@ -66,7 +65,7 @@ export interface PaymentDetailsResponse {
 @Component({
   selector: 'app-payment-redirect',
   standalone: true,
-  imports: [CommonModule, HeaderComponent],
+  imports: [CommonModule],
   templateUrl: './payment-redirect.component.html',
   styleUrls: ['./payment-redirect.component.css']
 })

@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MentorListItem, RejectMentorRequest } from '../../../shared/models/mentor.model';
@@ -46,6 +47,7 @@ import { RejectMentorDialogComponent } from '../components/reject-mentor-dialog/
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     MentorApplicationCardComponent,
     RejectMentorDialogComponent
   ],

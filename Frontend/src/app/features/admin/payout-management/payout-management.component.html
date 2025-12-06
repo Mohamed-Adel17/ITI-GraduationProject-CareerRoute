@@ -1,0 +1,184 @@
+<div class="payout-admin max-w-7xl mx-auto px-4 py-6 space-y-6">
+  <!-- Admin Nav Tabs -->
+  <nav class="flex gap-1 border-b border-gray-200">
+    <a routerLink="/admin/mentor-approvals" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 flex items-center gap-2">
+      Mentor Approvals
+      <span *ngIf="pendingMentorCount > 0" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        {{ pendingMentorCount }}
+      </span>
+    </a>
+    <a routerLink="/admin/payouts" class="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary">
+      Payouts
+    </a>
+  </nav>
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold">Payout Management</h1>
+      <p class="text-sm text-gray-500">Process or cancel mentor payout requests.</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="loadPayouts()" [disabled]="loading">
+      {{ loading ? 'Refreshing...' : 'Refresh' }}
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-4 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold">Filters</h2>
+      <div class="flex gap-2">
+        <button class="btn btn-secondary" type="button" (click)="clearFilters()">Clear</button>
+        <button class="btn btn-primary" type="button" (click)="applyFilters()">Apply</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="label">Mentor Name</label>
+        <input class="input" type="text" [(ngModel)]="filters.mentorName" placeholder="Search by name" />
+      </div>
+      <div>
+        <label class="label">Mentor Email</label>
+        <input class="input" type="text" [(ngModel)]="filters.mentorEmail" placeholder="Search by email" />
+      </div>
+      <div>
+        <label class="label">Status</label>
+        <select class="input" [(ngModel)]="filters.status">
+          <option value="">All</option>
+          <option *ngFor="let s of statuses" [ngValue]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Min Amount</label>
+        <input class="input" type="number" min="0" step="0.01" [(ngModel)]="filters.minAmount" />
+      </div>
+      <div>
+        <label class="label">Max Amount</label>
+        <input class="input" type="number" min="0" step="0.01" [(ngModel)]="filters.maxAmount" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="label">Start Date</label>
+          <input class="input" type="date" [(ngModel)]="filters.startDate" />
+        </div>
+        <div>
+          <label class="label">End Date</label>
+          <input class="input" type="date" [(ngModel)]="filters.endDate" />
+        </div>
+      </div>
+      <div>
+        <label class="label">Sort By</label>
+        <select class="input" [(ngModel)]="filters.sortBy">
+          <option [ngValue]="'requestedAt'">Requested At</option>
+          <option [ngValue]="'amount'">Amount</option>
+          <option [ngValue]="'status'">Status</option>
+          <option [ngValue]="'mentor'">Mentor</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Sort Direction</label>
+        <select class="input" [(ngModel)]="filters.sortDescending">
+          <option [ngValue]="true">Descending</option>
+          <option [ngValue]="false">Ascending</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Payout Requests</h2>
+      <div class="text-sm text-gray-500" *ngIf="pagination">
+        {{ pagination.totalCount }} total
+      </div>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div *ngIf="loading" class="space-y-3">
+      <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+      <div class="h-12 bg-gray-100 rounded animate-pulse"></div>
+      <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+      <div class="h-12 bg-gray-100 rounded animate-pulse"></div>
+    </div>
+
+    <div *ngIf="!loading && payouts.length === 0" class="text-center py-8 text-gray-500">No payouts found.</div>
+
+    <div class="overflow-x-auto" *ngIf="!loading && payouts.length > 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Mentor</th>
+            <th>Email</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Requested</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let payout of payouts; trackBy: trackByPayout">
+            <td>{{ payout.mentorFirstName }} {{ payout.mentorLastName }}</td>
+            <td class="text-sm text-gray-600">{{ payout.mentorEmail || '—' }}</td>
+            <td class="font-semibold">{{ formatAmount(payout.amount) }}</td>
+            <td>
+              <span class="badge" [ngClass]="'badge-' + statusColor(payout.status)">{{ statusText(payout.status) }}</span>
+            </td>
+            <td>{{ payout.requestedAt | date:'mediumDate' }}</td>
+            <td class="flex gap-2">
+              <button
+                class="btn btn-success btn-sm"
+                type="button"
+                (click)="openProcessDialog(payout)"
+                [disabled]="!isPayoutProcessable(payout.status) || processingId === payout.id"
+              >
+                {{ processingId === payout.id ? '...' : 'Process' }}
+              </button>
+              <button
+                class="btn btn-danger btn-sm"
+                type="button"
+                (click)="openCancelDialog(payout)"
+                [disabled]="!isPayoutCancellable(payout.status) || cancellingId === payout.id"
+              >
+                {{ cancellingId === payout.id ? '...' : 'Cancel' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex items-center justify-between mt-4" *ngIf="pagination && pagination.totalPages > 1">
+      <button class="btn btn-secondary" type="button" (click)="changePage((filters.page || 1) - 1)" [disabled]="(filters.page || 1) <= 1">Previous</button>
+      <div class="text-sm text-gray-600">Page {{ filters.page || 1 }} of {{ pagination.totalPages }}</div>
+      <button class="btn btn-secondary" type="button" (click)="changePage((filters.page || 1) + 1)" [disabled]="!pagination.hasNextPage">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Dialog -->
+<div *ngIf="showConfirmDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+    <h3 class="text-lg font-semibold mb-2">
+      {{ confirmAction === 'process' ? 'Process Payout' : 'Cancel Payout' }}
+    </h3>
+    <p class="text-gray-600 mb-4">
+      <ng-container *ngIf="confirmAction === 'process'">
+        Process payout of <strong>{{ formatAmount(confirmPayout?.amount || 0) }}</strong> for {{ confirmPayout?.mentorFirstName }} {{ confirmPayout?.mentorLastName }}?
+      </ng-container>
+      <ng-container *ngIf="confirmAction === 'cancel'">
+        Cancel payout of <strong>{{ formatAmount(confirmPayout?.amount || 0) }}</strong>? The amount will be returned to the mentor's available balance.
+      </ng-container>
+    </p>
+    <div class="flex gap-3 justify-end">
+      <button type="button" class="btn btn-secondary" (click)="closeConfirmDialog()">No, go back</button>
+      <button
+        type="button"
+        [class]="confirmAction === 'process' ? 'btn btn-success' : 'btn btn-danger'"
+        (click)="confirmDialogAction()"
+      >
+        {{ confirmAction === 'process' ? 'Yes, process' : 'Yes, cancel' }}
+      </button>
+    </div>
+  </div>
+</div>
