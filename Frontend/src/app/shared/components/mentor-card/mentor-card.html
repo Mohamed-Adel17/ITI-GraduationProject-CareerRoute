@@ -53,14 +53,14 @@
     }
 
     <!-- Expertise Tags -->
-    <div #tagsContainer class="flex gap-1.5 mb-3">
+    <div #tagsContainer class="flex gap-1.5 mb-3 min-w-0">
       @for (tag of expertiseTags; track tag) {
-        <span class="tag px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap flex-shrink-0">
+        <span class="tag px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap">
           {{ tag }}
         </span>
       }
       @if (hiddenCount > 0) {
-        <span class="tag-counter flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 text-gray-500 dark:bg-gray-600 dark:text-gray-400">
+        <span class="tag-counter ml-auto flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 text-gray-500 dark:bg-gray-600 dark:text-gray-400 whitespace-nowrap">
           +{{ hiddenCount }}
         </span>
       }

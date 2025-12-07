@@ -31,25 +31,28 @@ export class MentorCard implements AfterViewInit {
     if (!container) return;
 
     const tags = container.querySelectorAll('.tag');
-    const counterEl = container.querySelector('.tag-counter') as HTMLElement;
     const containerWidth = container.offsetWidth;
-    const counterWidth = 45; // reserve space for +N
-    
-    // First pass: show all, measure
-    tags.forEach((tag: Element) => {
-      (tag as HTMLElement).style.display = 'inline-flex';
-    });
-
-    let usedWidth = 0;
-    let count = 0;
+    const counterWidth = 45;
     const totalTags = this.expertiseTags.length;
 
-    tags.forEach((tag: Element, i: number) => {
+    // First pass: show all, measure total width needed
+    let totalWidth = 0;
+    tags.forEach((tag: Element) => {
       const tagEl = tag as HTMLElement;
-      const tagWidth = tagEl.offsetWidth + 6; // include gap
-      const needsCounter = (i < totalTags - 1);
-      const availableWidth = containerWidth - (needsCounter ? counterWidth : 0);
-      
+      tagEl.style.display = 'inline-flex';
+      totalWidth += tagEl.offsetWidth + 6;
+    });
+
+    // Determine if we need counter space
+    const needsCounter = totalWidth > containerWidth;
+    const availableWidth = containerWidth - (needsCounter ? counterWidth : 0);
+
+    // Second pass: hide tags that don't fit
+    let usedWidth = 0;
+    let count = 0;
+    tags.forEach((tag: Element) => {
+      const tagEl = tag as HTMLElement;
+      const tagWidth = tagEl.offsetWidth + 6;
       if (usedWidth + tagWidth <= availableWidth) {
         usedWidth += tagWidth;
         count++;
