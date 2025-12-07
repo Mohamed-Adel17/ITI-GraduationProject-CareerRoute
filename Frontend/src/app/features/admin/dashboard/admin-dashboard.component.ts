@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { AdminNavComponent } from '../../../shared/components/admin-nav/admin-nav.component';
 import { MentorService } from '../../../core/services/mentor.service';
 import { PayoutService } from '../../../core/services/payout.service';
 import { DisputeService } from '../../../core/services/dispute.service';
@@ -12,7 +13,7 @@ import { DisputeStatus } from '../../../shared/models/dispute.model';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AdminNavComponent],
   templateUrl: './admin-dashboard.component.html'
 })
 export class AdminDashboardComponent implements OnInit {

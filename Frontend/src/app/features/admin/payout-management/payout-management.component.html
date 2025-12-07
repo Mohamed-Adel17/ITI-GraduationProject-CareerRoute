@@ -1,19 +1,5 @@
 <div class="payout-admin max-w-7xl mx-auto px-4 py-6 space-y-6">
-  <!-- Admin Nav Tabs -->
-  <nav class="flex gap-1 border-b border-gray-200">
-    <a routerLink="/admin/mentor-approvals" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 flex items-center gap-2">
-      Mentor Approvals
-      <span *ngIf="pendingMentorCount > 0" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-        {{ pendingMentorCount }}
-      </span>
-    </a>
-    <a routerLink="/admin/payouts" class="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary">
-      Payouts
-    </a>
-    <a routerLink="/admin/disputes" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300">
-      Disputes
-    </a>
-  </nav>
+  <app-admin-nav activeTab="payouts" [pendingMentorCount]="pendingMentorCount"></app-admin-nav>
 
   <div class="flex items-center justify-between">
     <div>

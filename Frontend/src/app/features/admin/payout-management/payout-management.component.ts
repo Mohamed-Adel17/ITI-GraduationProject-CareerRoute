@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { AdminNavComponent } from '../../../shared/components/admin-nav/admin-nav.component';
 import { PayoutService } from '../../../core/services/payout.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MentorService } from '../../../core/services/mentor.service';
@@ -21,7 +21,7 @@ import { formatCurrency } from '../../../shared/models/balance.model';
 @Component({
   selector: 'app-payout-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, AdminNavComponent],
   templateUrl: './payout-management.component.html',
   styleUrl: './payout-management.component.css'
 })

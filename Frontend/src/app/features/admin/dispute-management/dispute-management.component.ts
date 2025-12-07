@@ -2,6 +2,7 @@ import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AdminNavComponent } from '../../../shared/components/admin-nav/admin-nav.component';
 import { DisputeService } from '../../../core/services/dispute.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MentorService } from '../../../core/services/mentor.service';
@@ -24,7 +25,7 @@ import {
 @Component({
   selector: 'app-dispute-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, AdminNavComponent],
   templateUrl: './dispute-management.component.html',
   styleUrl: './dispute-management.component.css'
 })
