@@ -1203,14 +1203,14 @@ namespace CareerRoute.Core.Services.Implementations
             throw new BusinessException("Failed to create Zoom meeting after multiple attempts.");
         }
 
-        public async Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId)
+        public async Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching recording for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this recording.");
             }
@@ -1257,14 +1257,14 @@ namespace CareerRoute.Core.Services.Implementations
             };
         }
 
-        public async Task<string> GetSessionTranscriptAsync(string sessionId, string userId)
+        public async Task<string> GetSessionTranscriptAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching transcript for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this transcript.");
             }
@@ -1277,14 +1277,14 @@ namespace CareerRoute.Core.Services.Implementations
             return session.Transcript;
         }
 
-        public async Task<string> GetSessionSummaryAsync(string sessionId, string userId)
+        public async Task<string> GetSessionSummaryAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching summary for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this summary.");
             }

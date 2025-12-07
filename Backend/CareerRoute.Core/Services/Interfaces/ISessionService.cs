@@ -70,16 +70,16 @@ namespace CareerRoute.Core.Services.Interfaces
         /// <summary>
         /// Retrieves session recording info for an authorized user.
         /// </summary>
-        Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId);
+        Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId, string userRole);
         /// <summary>
         /// Retrieves transcript content for an authorized user.
         /// </summary>
-        Task<string> GetSessionTranscriptAsync(string sessionId, string userId);
+        Task<string> GetSessionTranscriptAsync(string sessionId, string userId, string userRole);
 
         /// <summary>
         /// Retrieves AI-generated summary for an authorized user.
         /// </summary>
-        Task<string> GetSessionSummaryAsync(string sessionId, string userId);
+        Task<string> GetSessionSummaryAsync(string sessionId, string userId, string userRole);
         /// <summary>
         /// Generates AI preparation guide for mentor before session.
         /// </summary>
