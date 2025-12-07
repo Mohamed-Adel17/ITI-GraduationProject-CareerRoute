@@ -370,6 +370,7 @@ namespace CareerRoute.Core.Services.Implementations
             rescheduleSession.OriginalStartTime = session.ScheduledStartTime;
             rescheduleSession.RequestedBy = role;
             rescheduleSession.Status = SessionRescheduleOptions.Pending;
+            rescheduleSession.NewTimeSlotId = dto.SlotId;
 
             session.Status = SessionStatusOptions.PendingReschedule;
             _sessionRepository.Update(session);
@@ -812,9 +813,8 @@ namespace CareerRoute.Core.Services.Implementations
                 session.ScheduledEndTime = reschedule.NewScheduledStartTime.AddMinutes((int)session.Duration);
                 session.Status = SessionStatusOptions.Confirmed; // Restore status after approval
                 session.UpdatedAt = DateTime.UtcNow;
-                _sessionRepository.Update(session);
-                await _sessionRepository.SaveChangesAsync();
 
+                // Release old time slot
                 if (!string.IsNullOrEmpty(oldTimeSlotId))
                 {
                     var oldTimeSlot = await _timeSlotRepository.GetByIdAsync(oldTimeSlotId);
@@ -823,9 +823,25 @@ namespace CareerRoute.Core.Services.Implementations
                         oldTimeSlot.IsBooked = false;
                         oldTimeSlot.SessionId = null;
                         _timeSlotRepository.Update(oldTimeSlot);
-                        await _timeSlotRepository.SaveChangesAsync();
                     }
                 }
+
+                // Book new time slot if specified
+                if (!string.IsNullOrEmpty(reschedule.NewTimeSlotId))
+                {
+                    var newTimeSlot = await _timeSlotRepository.GetByIdAsync(reschedule.NewTimeSlotId);
+                    if (newTimeSlot != null && !newTimeSlot.IsBooked)
+                    {
+                        newTimeSlot.IsBooked = true;
+                        newTimeSlot.SessionId = session.Id;
+                        session.TimeSlotId = newTimeSlot.Id;
+                        _timeSlotRepository.Update(newTimeSlot);
+                    }
+                }
+
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+                await _timeSlotRepository.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
@@ -1203,14 +1219,14 @@ namespace CareerRoute.Core.Services.Implementations
             throw new BusinessException("Failed to create Zoom meeting after multiple attempts.");
         }
 
-        public async Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId)
+        public async Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching recording for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this recording.");
             }
@@ -1257,14 +1273,14 @@ namespace CareerRoute.Core.Services.Implementations
             };
         }
 
-        public async Task<string> GetSessionTranscriptAsync(string sessionId, string userId)
+        public async Task<string> GetSessionTranscriptAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching transcript for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this transcript.");
             }
@@ -1277,14 +1293,14 @@ namespace CareerRoute.Core.Services.Implementations
             return session.Transcript;
         }
 
-        public async Task<string> GetSessionSummaryAsync(string sessionId, string userId)
+        public async Task<string> GetSessionSummaryAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching summary for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this summary.");
             }

@@ -534,7 +534,7 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
-        /// Get session recording (participants only).
+        /// Get session recording (participants or admin).
         /// </summary>
         /// <remarks>
         /// Retrieves the Zoom cloud recording for a completed session.
@@ -549,7 +549,7 @@ namespace CareerRoute.API.Controllers
         /// - Audio-only recording URL
         /// - Recording duration and file size
         /// 
-        /// **Authorization:** Only session participants can access recordings.
+        /// **Authorization:** Session participants or admin can access recordings.
         /// </remarks>
         /// <param name="sessionId">The unique session identifier</param>
         /// <returns>Recording URLs and metadata</returns>
@@ -566,6 +566,7 @@ namespace CareerRoute.API.Controllers
         public async Task<IActionResult> GetSessionRecording(string sessionId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -574,7 +575,7 @@ namespace CareerRoute.API.Controllers
 
             _logger.LogInformation("User {UserId} requesting recording for session {SessionId}", userId, sessionId);
 
-            var recording = await _sessionService.GetSessionRecordingAsync(sessionId, userId);
+            var recording = await _sessionService.GetSessionRecordingAsync(sessionId, userId, userRole);
 
             return Ok(new ApiResponse<SessionRecordingDto>(
                 recording,
@@ -583,7 +584,7 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
-        /// Get session transcript (participants only).
+        /// Get session transcript (participants or admin).
         /// </summary>
         /// <remarks>
         /// Retrieves the auto-generated transcript for a completed session.
@@ -598,7 +599,7 @@ namespace CareerRoute.API.Controllers
         /// - Includes speaker labels when available
         /// - Timestamps may be included
         /// 
-        /// **Authorization:** Only session participants can access transcripts.
+        /// **Authorization:** Session participants or admin can access transcripts.
         /// </remarks>
         /// <param name="sessionId">The unique session identifier</param>
         /// <returns>Session transcript text</returns>
@@ -615,6 +616,7 @@ namespace CareerRoute.API.Controllers
         public async Task<IActionResult> GetSessionTranscript(string sessionId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -623,7 +625,7 @@ namespace CareerRoute.API.Controllers
 
             _logger.LogInformation("User {UserId} requesting transcript for session {SessionId}", userId, sessionId);
 
-            var transcript = await _sessionService.GetSessionTranscriptAsync(sessionId, userId);
+            var transcript = await _sessionService.GetSessionTranscriptAsync(sessionId, userId, userRole);
 
             return Ok(new ApiResponse<string>(
                 transcript,
@@ -632,7 +634,7 @@ namespace CareerRoute.API.Controllers
         }
 
         /// <summary>
-        /// Get AI-generated summary for a completed session (participants only).
+        /// Get AI-generated summary for a completed session (participants or admin).
         /// </summary>
         /// <remarks>
         /// Retrieves the AI-generated summary for a completed session.
@@ -645,7 +647,7 @@ namespace CareerRoute.API.Controllers
         /// - Returns markdown-formatted summary
         /// - Includes session overview, key advice, action items, and takeaways
         /// 
-        /// **Authorization:** Only session participants can access summaries.
+        /// **Authorization:** Session participants or admin can access summaries.
         /// </remarks>
         /// <param name="sessionId">The unique session identifier</param>
         /// <returns>AI-generated session summary in markdown format</returns>
@@ -663,6 +665,7 @@ namespace CareerRoute.API.Controllers
         public async Task<IActionResult> GetSessionSummary(string sessionId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -671,7 +674,7 @@ namespace CareerRoute.API.Controllers
 
             _logger.LogInformation("User {UserId} requesting summary for session {SessionId}", userId, sessionId);
 
-            var summary = await _sessionService.GetSessionSummaryAsync(sessionId, userId);
+            var summary = await _sessionService.GetSessionSummaryAsync(sessionId, userId, userRole);
 
             return Content(summary, "text/plain");
         }
@@ -792,7 +795,7 @@ namespace CareerRoute.API.Controllers
         /// - You cannot review the same session twice.<br/><br/>
         ///
         /// <b>Required fields:</b><br/>
-        /// - Rating: A numeric score (1–5)<br/>
+        /// - Rating: A numeric score (1Â–5)<br/>
         /// - Comment: Optional written feedback<br/>
         /// </remarks>
         /// <param name="sessionId">ID of the session to review.</param>
