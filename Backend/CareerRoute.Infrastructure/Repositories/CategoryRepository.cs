@@ -31,6 +31,13 @@ namespace CareerRoute.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Category>> GetAllAsync()
+        {
+            return await dbContext.Categories
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        }
+
         public async Task<Category?> GetByIdWithSkillsAsync(int id)
         {
             return await dbContext.Categories

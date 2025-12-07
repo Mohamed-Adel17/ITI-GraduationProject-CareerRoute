@@ -36,17 +36,23 @@ namespace CareerRoute.Core.Services.Implementations
             _cache = cache;
         }
 
-        public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()
+        public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync(bool includeInactive = false)
         {
-            var cachedCategories = await _cache.GetAsync<IEnumerable<CategoryDto>>(CategoriesCacheKey);
-            if (cachedCategories != null)
+            // Only use cache for active-only queries
+            if (!includeInactive)
             {
-                _logger.LogInformation("Fetching categories from cache");
-                return cachedCategories;
+                var cachedCategories = await _cache.GetAsync<IEnumerable<CategoryDto>>(CategoriesCacheKey);
+                if (cachedCategories != null)
+                {
+                    _logger.LogInformation("Fetching categories from cache");
+                    return cachedCategories;
+                }
             }
 
-            _logger.LogInformation("Fetching categories from database");
-            var categories = await _categoryRepository.GetAllActiveAsync();
+            _logger.LogInformation("Fetching categories from database (includeInactive: {IncludeInactive})", includeInactive);
+            var categories = includeInactive 
+                ? await _categoryRepository.GetAllAsync()
+                : await _categoryRepository.GetAllActiveAsync();
             var categoryDtos = _mapper.Map<IEnumerable<CategoryDto>>(categories).ToList();
             
             // Get mentor counts for all categories
@@ -58,7 +64,11 @@ namespace CareerRoute.Core.Services.Implementations
                 categoryDto.MentorCount = mentorCounts.TryGetValue(categoryDto.Id, out var count) ? count : 0;
             }
 
-            await _cache.SetAsync(CategoriesCacheKey, categoryDtos, TimeSpan.FromMinutes(30), TimeSpan.FromHours(2));
+            // Only cache active-only results
+            if (!includeInactive)
+            {
+                await _cache.SetAsync(CategoriesCacheKey, categoryDtos, TimeSpan.FromMinutes(30), TimeSpan.FromHours(2));
+            }
             
             return categoryDtos;
         }
