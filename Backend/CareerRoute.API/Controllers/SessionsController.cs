@@ -174,8 +174,10 @@ namespace CareerRoute.API.Controllers
         /// 
         /// Sessions are ordered by scheduled time (most recent first).
         /// Includes session recordings and transcripts if available.
+        /// 
+        /// **Optional status filter:** Use `status=Completed` or `status=Cancelled` to filter results.
         /// </remarks>
-        /// <param name="request">Pagination parameters (page number and page size)</param>
+        /// <param name="request">Query parameters including pagination and optional status filter</param>
         /// <returns>Paginated list of past sessions</returns>
         /// <response code="200">Past sessions retrieved successfully</response>
         /// <response code="401">User not authenticated</response>
@@ -185,7 +187,7 @@ namespace CareerRoute.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<PastSessionsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> GetPastSessions([FromQuery] PaginationRequestDto request)
+        public async Task<ActionResult> GetPastSessions([FromQuery] PastSessionsQueryDto request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -195,9 +197,9 @@ namespace CareerRoute.API.Controllers
                 throw new UnauthenticatedException("Invalid authentication token");
             }
 
-            _logger.LogInformation("UserId {userId} with Role {userRole} requested past sessions", userId, userRole);
+            _logger.LogInformation("UserId {userId} with Role {userRole} requested past sessions with status filter {Status}", userId, userRole, request.Status);
 
-            var response = await _sessionService.GetPastSessionsAsync(userId, userRole, request.Page, request.PageSize);
+            var response = await _sessionService.GetPastSessionsAsync(userId, userRole, request.Page, request.PageSize, request.Status);
 
             if (!response.Sessions.Any())
                 return NotFound(ApiResponse.Error("No past sessions found", 404));
@@ -795,7 +797,7 @@ namespace CareerRoute.API.Controllers
         /// - You cannot review the same session twice.<br/><br/>
         ///
         /// <b>Required fields:</b><br/>
-        /// - Rating: A numeric score (15)<br/>
+        /// - Rating: A numeric score (1Â5)<br/>
         /// - Comment: Optional written feedback<br/>
         /// </remarks>
         /// <param name="sessionId">ID of the session to review.</param>
