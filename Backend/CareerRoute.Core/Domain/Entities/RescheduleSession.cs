@@ -16,10 +16,12 @@ namespace CareerRoute.Core.Domain.Entities
         public SessionRescheduleOptions Status {get; set;}
         public DateTime OriginalStartTime { get; set; }
         public DateTime NewScheduledStartTime { get; set; }
+        public string? NewTimeSlotId { get; set; }
         public string RequestedBy { get; set; } = null!;
         public string RescheduleReason { get; set; } = null!;
         public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
         public string SessionId { get; set; } = null!;
         public Session Session { get; set; } = null!;
+        public TimeSlot? NewTimeSlot { get; set; }
     }
 }

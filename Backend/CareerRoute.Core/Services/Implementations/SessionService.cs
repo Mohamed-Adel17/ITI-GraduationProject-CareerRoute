@@ -370,6 +370,7 @@ namespace CareerRoute.Core.Services.Implementations
             rescheduleSession.OriginalStartTime = session.ScheduledStartTime;
             rescheduleSession.RequestedBy = role;
             rescheduleSession.Status = SessionRescheduleOptions.Pending;
+            rescheduleSession.NewTimeSlotId = dto.SlotId;
 
             session.Status = SessionStatusOptions.PendingReschedule;
             _sessionRepository.Update(session);
@@ -812,9 +813,8 @@ namespace CareerRoute.Core.Services.Implementations
                 session.ScheduledEndTime = reschedule.NewScheduledStartTime.AddMinutes((int)session.Duration);
                 session.Status = SessionStatusOptions.Confirmed; // Restore status after approval
                 session.UpdatedAt = DateTime.UtcNow;
-                _sessionRepository.Update(session);
-                await _sessionRepository.SaveChangesAsync();
 
+                // Release old time slot
                 if (!string.IsNullOrEmpty(oldTimeSlotId))
                 {
                     var oldTimeSlot = await _timeSlotRepository.GetByIdAsync(oldTimeSlotId);
@@ -823,9 +823,25 @@ namespace CareerRoute.Core.Services.Implementations
                         oldTimeSlot.IsBooked = false;
                         oldTimeSlot.SessionId = null;
                         _timeSlotRepository.Update(oldTimeSlot);
-                        await _timeSlotRepository.SaveChangesAsync();
                     }
                 }
+
+                // Book new time slot if specified
+                if (!string.IsNullOrEmpty(reschedule.NewTimeSlotId))
+                {
+                    var newTimeSlot = await _timeSlotRepository.GetByIdAsync(reschedule.NewTimeSlotId);
+                    if (newTimeSlot != null && !newTimeSlot.IsBooked)
+                    {
+                        newTimeSlot.IsBooked = true;
+                        newTimeSlot.SessionId = session.Id;
+                        session.TimeSlotId = newTimeSlot.Id;
+                        _timeSlotRepository.Update(newTimeSlot);
+                    }
+                }
+
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+                await _timeSlotRepository.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 

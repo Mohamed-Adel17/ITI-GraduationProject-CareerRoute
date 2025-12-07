@@ -51,6 +51,10 @@ namespace CareerRoute.Infrastructure.Data.Configurations
                    .HasForeignKey<RescheduleSession>(r => r.SessionId)
                    .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasOne(r => r.NewTimeSlot)
+                   .WithMany()
+                   .HasForeignKey(r => r.NewTimeSlotId)
+                   .OnDelete(DeleteBehavior.SetNull);
      
         }
     }
