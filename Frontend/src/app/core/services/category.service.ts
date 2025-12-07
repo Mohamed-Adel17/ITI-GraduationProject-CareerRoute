@@ -306,4 +306,48 @@ export class CategoryService {
     return this.categoriesLoaded;
   }
 
+  // ==================== Admin CRUD Operations ====================
+
+  /**
+   * Get all categories including inactive (Admin only)
+   * Note: Requires backend to support ?includeInactive=true parameter
+   */
+  getAllCategoriesForAdmin(): Observable<Category[]> {
+    return this.http.get<ApiResponse<Category[]>>(
+      `${this.CATEGORIES_URL}?includeInactive=true`
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Create a new category (Admin only)
+   */
+  createCategory(data: { name: string; description?: string; iconUrl?: string }): Observable<Category> {
+    return this.http.post<ApiResponse<Category>>(this.CATEGORIES_URL, data).pipe(
+      map(response => unwrapResponse(response)),
+      tap(() => this.refreshCategories())
+    );
+  }
+
+  /**
+   * Update a category (Admin only)
+   */
+  updateCategory(id: number, data: { name?: string; description?: string; iconUrl?: string; isActive?: boolean }): Observable<Category> {
+    return this.http.put<ApiResponse<Category>>(`${this.CATEGORIES_URL}/${id}`, data).pipe(
+      map(response => unwrapResponse(response)),
+      tap(() => this.refreshCategories())
+    );
+  }
+
+  /**
+   * Delete a category (Admin only)
+   */
+  deleteCategory(id: number): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.CATEGORIES_URL}/${id}`).pipe(
+      map(response => unwrapResponse(response)),
+      tap(() => this.refreshCategories())
+    );
+  }
+
 }

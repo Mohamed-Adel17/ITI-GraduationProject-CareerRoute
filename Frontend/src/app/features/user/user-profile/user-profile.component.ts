@@ -1,10 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { SessionService } from '../../../core/services/session.service';
 import { User, getUserFullName, getUserInitials, formatRegistrationDate, getCareerInterestNames } from '../../../shared/models/user.model';
 
 /**
@@ -45,15 +47,22 @@ export class UserProfileComponent implements OnInit, OnDestroy {
   loading: boolean = true;
   error: string | null = null;
 
+  // Session stats (not applicable for admins)
+  upcomingSessionsCount: number = 0;
+  completedSessionsCount: number = 0;
+  isAdmin: boolean = false;
+
   private subscription?: Subscription;
 
   constructor(
     private userService: UserService,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private sessionService: SessionService
   ) {}
 
   ngOnInit(): void {
+    this.isAdmin = this.authService.isAdmin();
     this.loadUserProfile();
   }
 
@@ -74,9 +83,32 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    this.subscription = this.userService.getCurrentUserProfile().subscribe({
-      next: (user) => {
-        this.user = user;
+    // Admins don't have sessions, only load user profile
+    if (this.isAdmin) {
+      this.userService.getCurrentUserProfile().subscribe({
+        next: (user) => {
+          this.user = user;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to load profile';
+          this.loading = false;
+          this.notificationService.error('Could not load your profile. Please try again.', 'Error');
+          console.error('Error loading user profile:', err);
+        }
+      });
+      return;
+    }
+
+    this.subscription = forkJoin({
+      user: this.userService.getCurrentUserProfile(),
+      upcoming: this.sessionService.getUpcomingSessions(1, 1).pipe(catchError(() => of({ sessions: [], pagination: null }))),
+      completed: this.sessionService.getPastSessions(1, 1, 'Completed').pipe(catchError(() => of({ sessions: [], pagination: null })))
+    }).subscribe({
+      next: (result) => {
+        this.user = result.user;
+        this.upcomingSessionsCount = result.upcoming.pagination?.totalCount || 0;
+        this.completedSessionsCount = result.completed.pagination?.totalCount || 0;
         this.loading = false;
       },
       error: (err) => {

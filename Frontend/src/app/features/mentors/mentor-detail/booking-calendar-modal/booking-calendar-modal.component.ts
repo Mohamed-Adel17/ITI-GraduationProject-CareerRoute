@@ -100,6 +100,7 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
   // Week view state
   currentWeekStart: Date = new Date();
   weekDays: WeekDay[] = [];
+  selectedDayIndex: number = 0;
 
   // Selection and form state
   selectedSlot: AvailableSlot | null = null;
@@ -146,6 +147,7 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['availableSlots'] && this.availableSlots) {
       this.generateWeekView();
+      this.autoSelectDay();
     }
     if (changes['isOpen'] && this.isOpen) {
       // Reset state when modal opens
@@ -153,7 +155,23 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
       this.showBookingForm = false;
       this.bookingForm.reset();
       this.initializeWeek();
+      this.autoSelectDay();
     }
+  }
+
+  /**
+   * Auto-select today or first day with slots
+   */
+  private autoSelectDay(): void {
+    // Try to select today first
+    const todayIndex = this.weekDays.findIndex(d => d.isToday);
+    if (todayIndex >= 0 && this.weekDays[todayIndex].slots.length > 0) {
+      this.selectedDayIndex = todayIndex;
+      return;
+    }
+    // Otherwise select first day with slots
+    const firstWithSlots = this.weekDays.findIndex(d => d.slots.length > 0);
+    this.selectedDayIndex = firstWithSlots >= 0 ? firstWithSlots : 0;
   }
 
   /**
@@ -280,6 +298,20 @@ export class BookingCalendarModalComponent implements OnInit, OnChanges {
   selectSlot(slot: AvailableSlot): void {
     this.selectedSlot = slot;
     this.showBookingForm = true;
+  }
+
+  /**
+   * Select a day to view its slots
+   */
+  selectDay(index: number): void {
+    this.selectedDayIndex = index;
+  }
+
+  /**
+   * Get the currently selected day
+   */
+  get selectedDay(): WeekDay | null {
+    return this.weekDays[this.selectedDayIndex] || null;
   }
 
   /**

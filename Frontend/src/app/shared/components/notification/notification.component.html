@@ -1,7 +1,7 @@
 <!-- Notification Container - Tailwind CSS -->
 <!-- Render notifications grouped by position -->
 @for (entry of getNotificationsByPosition() | keyvalue; track entry.key) {
-  <div [ngClass]="getPositionClass(entry.key)" class="fixed z-[9999] flex flex-col gap-3 max-w-md p-4 pointer-events-none">
+  <div [ngClass]="getPositionClass(entry.key)" class="fixed z-40 flex flex-col gap-3 max-w-md p-4 pointer-events-none">
     @for (notification of entry.value; track notification.id) {
       <div
         [@notificationAnimation]

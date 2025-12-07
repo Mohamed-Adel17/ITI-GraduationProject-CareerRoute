@@ -265,10 +265,14 @@ export class SessionService {
    * });
    * ```
    */
-  getPastSessions(page: number = 1, pageSize: number = 10): Observable<PastSessionsResponse> {
+  getPastSessions(page: number = 1, pageSize: number = 10, status?: 'Completed' | 'Cancelled'): Observable<PastSessionsResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
+
+    if (status) {
+      params = params.set('status', status);
+    }
 
     return this.http
       .get<ApiResponse<PastSessionsResponse>>(`${this.SESSIONS_URL}/past`, { params })

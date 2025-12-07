@@ -171,6 +171,7 @@ export interface SessionDetailResponse {
   hoursUntilSession?: number | null;
   createdAt: string;
   updatedAt: string;
+  completedAt?: string | null;            // ISO 8601 datetime (when marked complete)
   // AI Preparation fields (mentor only)
   aiPreparationGuide?: string | null;         // Markdown-formatted AI guide
   aiPreparationGeneratedAt?: string | null;   // ISO 8601 datetime when generated

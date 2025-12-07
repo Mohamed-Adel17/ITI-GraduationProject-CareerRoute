@@ -1,6 +1,3 @@
-/* MentorApprovalsComponent Styles */
-
-/* All styling is handled by Tailwind CSS utility classes in the template */
-/* This file is kept minimal as per CLAUDE.md guidelines */
-
-/* Custom animations can be added here if needed in the future */
+.mentor-approvals {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 35%);
+}
