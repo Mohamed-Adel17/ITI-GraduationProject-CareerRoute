@@ -1,0 +1,68 @@
+.skills-admin {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 35%);
+}
+
+.card {
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table th {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+}
+
+.table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.badge-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-gray {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.btn-warning {
+  background-color: #fbbf24;
+  color: #78350f;
+}
+
+.btn-warning:hover {
+  background-color: #f59e0b;
+}
+
+.btn-success {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+}

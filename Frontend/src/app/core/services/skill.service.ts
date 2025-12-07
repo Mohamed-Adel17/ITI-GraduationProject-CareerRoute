@@ -234,4 +234,50 @@ export class SkillService {
 
     return grouped;
   }
+
+  // ==================== Admin CRUD Operations ====================
+
+  /**
+   * Get all skills including inactive (Admin only)
+   */
+  getAllSkillsForAdmin(categoryId?: number): Observable<Skill[]> {
+    let params = new HttpParams().set('isActive', 'false'); // Returns ALL skills
+    if (categoryId !== undefined) {
+      params = params.set('categoryId', categoryId.toString());
+    }
+
+    return this.http.get<ApiResponse<Skill[]>>(this.SKILLS_URL, { params }).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Create a new skill (Admin only)
+   */
+  createSkill(data: { name: string; categoryId: number }): Observable<Skill> {
+    return this.http.post<ApiResponse<Skill>>(this.SKILLS_URL, data).pipe(
+      map(response => unwrapResponse(response)),
+      tap(() => this.clearCache())
+    );
+  }
+
+  /**
+   * Update a skill (Admin only)
+   */
+  updateSkill(id: number, data: { name?: string; categoryId?: number; isActive?: boolean }): Observable<Skill> {
+    return this.http.patch<ApiResponse<Skill>>(`${this.SKILLS_URL}/${id}`, data).pipe(
+      map(response => unwrapResponse(response)),
+      tap(() => this.clearCache())
+    );
+  }
+
+  /**
+   * Delete a skill (Admin only)
+   */
+  deleteSkill(id: number): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.SKILLS_URL}/${id}`).pipe(
+      map(response => unwrapResponse(response)),
+      tap(() => this.clearCache())
+    );
+  }
 }
