@@ -40,6 +40,15 @@ export const ADMIN_ROUTES: Routes = [
       import('./payout-management/payout-management.component')
         .then(m => m.PayoutManagementComponent),
     title: 'Payout Management - Admin'
+  },
+
+  // Dispute Management - Review and resolve session disputes
+  {
+    path: 'disputes',
+    loadComponent: () =>
+      import('./dispute-management/dispute-management.component')
+        .then(m => m.DisputeManagementComponent),
+    title: 'Dispute Management - Admin'
   }
 
   // TODO: Add more admin routes here as components are created
