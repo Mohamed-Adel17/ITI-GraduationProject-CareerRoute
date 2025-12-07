@@ -1,0 +1,67 @@
+<div
+  *ngIf="isOpen"
+  class="modal-backdrop"
+  (click)="onBackdropClick($event)"
+  (keydown.escape)="close()"
+  tabindex="0"
+>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Report an Issue</h2>
+      <button type="button" class="close-btn" (click)="close()" [disabled]="isSubmitting">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="disputeForm" (ngSubmit)="onSubmit()">
+      <div class="modal-body">
+        <p class="info-text">
+          If you experienced an issue with this session, please let us know. Our team will review your report and take appropriate action.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">What went wrong?</label>
+          <select formControlName="reason" class="form-select">
+            <option *ngFor="let reason of reasons" [value]="reason">
+              {{ getReasonText(reason) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Description
+            <span *ngIf="isOtherReason" class="required-indicator">*</span>
+          </label>
+          <textarea
+            formControlName="description"
+            class="form-textarea"
+            rows="4"
+            [placeholder]="isOtherReason ? 'Please describe the issue (required)' : 'Provide additional details (optional)'"
+            maxlength="1000"
+          ></textarea>
+          <div class="char-count">
+            {{ disputeForm.get('description')?.value?.length || 0 }} / 1000
+          </div>
+          <div *ngIf="hasError('description', 'required')" class="error-message">
+            Description is required when selecting "Other"
+          </div>
+        </div>
+
+        <div class="info-box">
+          <i class="bi bi-info-circle"></i>
+          <span>Disputes are reviewed within 24-48 hours. If approved, you may receive a full or partial refund.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="close()" [disabled]="isSubmitting">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-danger" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Submitting...' : 'Submit Report' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

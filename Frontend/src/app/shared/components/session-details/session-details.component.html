@@ -295,6 +295,81 @@
       </div>
     </div>
 
+    <!-- Dispute Section (Completed Sessions - Mentee Only) -->
+    <div *ngIf="isCompleted && userRole === 'mentee'" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Report an Issue</h3>
+
+      <!-- Loading Dispute -->
+      <div *ngIf="isLoadingDispute" class="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+        <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-solid border-primary border-r-transparent"></div>
+        <span>Checking dispute status...</span>
+      </div>
+
+      <!-- Can Create Dispute -->
+      <div *ngIf="!isLoadingDispute && canCreateDispute" class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div class="flex-grow">
+          <p class="text-gray-600 dark:text-gray-400">
+            Had an issue with this session? You can report it within {{ daysLeftToDispute }} day{{ daysLeftToDispute !== 1 ? 's' : '' }}.
+          </p>
+        </div>
+        <button
+          (click)="openDisputeModal()"
+          class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          Report Issue
+        </button>
+      </div>
+
+      <!-- Existing Dispute -->
+      <div *ngIf="!isLoadingDispute && hasExistingDispute && existingDispute" class="space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-gray-700 dark:text-gray-300 font-medium">Dispute Status:</span>
+          <app-dispute-status-badge
+            [status]="existingDispute.status"
+            [resolution]="existingDispute.resolution"
+            [refundAmount]="existingDispute.refundAmount">
+          </app-dispute-status-badge>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
+          <p class="text-sm">
+            <span class="font-medium text-gray-700 dark:text-gray-300">Reason:</span>
+            <span class="text-gray-600 dark:text-gray-400 ml-2">{{ getDisputeReasonText(existingDispute.reason) }}</span>
+          </p>
+          <p *ngIf="existingDispute.description" class="text-sm">
+            <span class="font-medium text-gray-700 dark:text-gray-300">Description:</span>
+            <span class="text-gray-600 dark:text-gray-400 ml-2">{{ existingDispute.description }}</span>
+          </p>
+          <p class="text-sm">
+            <span class="font-medium text-gray-700 dark:text-gray-300">Submitted:</span>
+            <span class="text-gray-600 dark:text-gray-400 ml-2">{{ existingDispute.createdAt | date:'medium' }}</span>
+          </p>
+          <p *ngIf="existingDispute.adminNotes" class="text-sm">
+            <span class="font-medium text-gray-700 dark:text-gray-300">Admin Notes:</span>
+            <span class="text-gray-600 dark:text-gray-400 ml-2">{{ existingDispute.adminNotes }}</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Dispute Window Expired -->
+      <div *ngIf="!isLoadingDispute && !canCreateDispute && !hasExistingDispute && !isWithinDisputeWindow">
+        <p class="text-gray-500 dark:text-gray-400">
+          The dispute window (3 days after session completion) has expired.
+        </p>
+      </div>
+    </div>
+
+    <!-- Dispute Modal -->
+    <app-create-dispute-modal
+      *ngIf="session"
+      [sessionId]="session.id"
+      [sessionPrice]="session.price"
+      [isOpen]="showDisputeModal"
+      (onClose)="closeDisputeModal()"
+      (onDisputeCreated)="onDisputeCreated($event)">
+    </app-create-dispute-modal>
+
     <!-- AI Preparation Guide Section (Mentor Only) -->
     <div *ngIf="showAIPreparation" class="mb-6">
       <app-ai-preparation-guide

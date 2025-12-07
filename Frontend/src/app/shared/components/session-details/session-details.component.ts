@@ -6,6 +6,7 @@ import { SessionService } from '../../../core/services/session.service';
 import { ReviewService } from '../../../core/services/review.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { DisputeService } from '../../../core/services/dispute.service';
 import { ReviewItem } from '../../models/review.model';
 import {
   SessionDetailResponse,
@@ -16,9 +17,12 @@ import {
   formatSessionDateTime,
   RescheduleDetails
 } from '../../models/session.model';
+import { DisputeDto, getDisputeReasonText } from '../../models/dispute.model';
 import { RecordingPlayerComponent } from '../recording-player/recording-player.component';
 import { SummaryViewerComponent } from '../summary-viewer/summary-viewer.component';
 import { AIPreparationGuideComponent } from '../ai-preparation-guide/ai-preparation-guide.component';
+import { CreateDisputeModalComponent } from '../create-dispute-modal/create-dispute-modal.component';
+import { DisputeStatusBadgeComponent } from '../dispute-status-badge/dispute-status-badge.component';
 
 /**
  * SessionDetailsComponent
@@ -31,7 +35,7 @@ import { AIPreparationGuideComponent } from '../ai-preparation-guide/ai-preparat
 @Component({
   selector: 'app-session-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, RecordingPlayerComponent, SummaryViewerComponent, AIPreparationGuideComponent],
+  imports: [CommonModule, RouterModule, RecordingPlayerComponent, SummaryViewerComponent, AIPreparationGuideComponent, CreateDisputeModalComponent, DisputeStatusBadgeComponent],
   templateUrl: './session-details.component.html',
   styleUrl: './session-details.component.css'
 })
@@ -42,6 +46,7 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
   private readonly reviewService = inject(ReviewService);
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+  private readonly disputeService = inject(DisputeService);
 
   session: SessionDetailResponse | null = null;
   isLoading = true;
@@ -66,6 +71,12 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
   // Review state
   existingReview: ReviewItem | null = null;
   isLoadingReview = false;
+
+  // Dispute state
+  existingDispute: DisputeDto | null = null;
+  isLoadingDispute = false;
+  showDisputeModal = false;
+  readonly DISPUTE_WINDOW_DAYS = 3;
   
   private timerSubscription: Subscription | null = null;
   private readonly JOIN_WINDOW_MINUTES = 15;
@@ -112,6 +123,7 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
         // Load existing review for completed sessions
         if (session.status === SessionStatus.Completed) {
           this.loadExistingReview(sessionId);
+          this.loadExistingDispute(sessionId);
         }
       },
       error: (error) => {
@@ -137,6 +149,19 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.isLoadingReview = false;
+      }
+    });
+  }
+
+  private loadExistingDispute(sessionId: string): void {
+    this.isLoadingDispute = true;
+    this.disputeService.getDisputeBySession(sessionId).subscribe({
+      next: (dispute) => {
+        this.existingDispute = dispute;
+        this.isLoadingDispute = false;
+      },
+      error: () => {
+        this.isLoadingDispute = false;
       }
     });
   }
@@ -289,6 +314,60 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
       SessionStatus.InProgress
     ];
     return activeStatuses.includes(this.session.status);
+  }
+
+  // === Dispute Getters ===
+
+  get canCreateDispute(): boolean {
+    if (!this.isCompleted || this.userRole !== 'mentee' || this.existingDispute || this.isLoadingDispute) {
+      return false;
+    }
+    return this.isWithinDisputeWindow;
+  }
+
+  get isWithinDisputeWindow(): boolean {
+    if (!this.session) return false;
+    const completionTime = this.session.completedAt || this.session.scheduledEndTime;
+    if (!completionTime) return false;
+    const completedAt = new Date(completionTime);
+    const now = new Date();
+    const daysSinceCompletion = (now.getTime() - completedAt.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceCompletion <= this.DISPUTE_WINDOW_DAYS;
+  }
+
+  get daysLeftToDispute(): number {
+    if (!this.session) return 0;
+    const completionTime = this.session.completedAt || this.session.scheduledEndTime;
+    if (!completionTime) return 0;
+    const completedAt = new Date(completionTime);
+    const now = new Date();
+    const daysSinceCompletion = (now.getTime() - completedAt.getTime()) / (1000 * 60 * 60 * 24);
+    return Math.max(0, Math.ceil(this.DISPUTE_WINDOW_DAYS - daysSinceCompletion));
+  }
+
+  get hasExistingDispute(): boolean {
+    return !!this.existingDispute;
+  }
+
+  getDisputeReasonText(reason: string): string {
+    return getDisputeReasonText(reason as any);
+  }
+
+  // === Dispute Actions ===
+
+  openDisputeModal(): void {
+    if (this.canCreateDispute) {
+      this.showDisputeModal = true;
+    }
+  }
+
+  closeDisputeModal(): void {
+    this.showDisputeModal = false;
+  }
+
+  onDisputeCreated(dispute: DisputeDto): void {
+    this.existingDispute = dispute;
+    this.showDisputeModal = false;
   }
 
   // === Actions ===
