@@ -42,9 +42,9 @@
     </div>
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <div class="flex items-center justify-between">
-        <nav class="flex gap-8" aria-label="Sessions tabs">
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div class="flex items-center justify-between min-w-max">
+        <nav class="flex gap-4 sm:gap-8" aria-label="Sessions tabs">
           <button (click)="switchTab('upcoming')" [class]="activeTab === 'upcoming'
               ? 'border-b-2 border-primary text-primary font-semibold'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
