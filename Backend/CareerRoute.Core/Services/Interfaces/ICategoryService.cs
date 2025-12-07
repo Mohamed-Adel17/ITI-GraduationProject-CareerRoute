@@ -4,7 +4,7 @@ namespace CareerRoute.Core.Services.Interfaces
 {
     public interface ICategoryService
     {
-        Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync();
+        Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync(bool includeInactive = false);
         Task<CategoryDto> GetCategoryByIdAsync(int id);
         Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto);
         Task<CategoryDto> UpdateCategoryAsync(int id, UpdateCategoryDto dto);

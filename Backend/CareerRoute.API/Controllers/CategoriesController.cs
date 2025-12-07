@@ -32,13 +32,14 @@ namespace CareerRoute.API.Controllers
         /// <summary>
         /// Get all categories (Public)
         /// </summary>
-        /// <returns>List of all active categories</returns>
+        /// <param name="includeInactive">Include inactive categories (for admin use)</param>
+        /// <returns>List of categories</returns>
         /// <response code="200">Returns list of categories</response>
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<CategoryDto>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult> GetAllCategories()
+        public async Task<ActionResult> GetAllCategories([FromQuery] bool includeInactive = false)
         {
-            var categories = await _categoryService.GetAllCategoriesAsync();
+            var categories = await _categoryService.GetAllCategoriesAsync(includeInactive);
             return Ok(new ApiResponse<IEnumerable<CategoryDto>>(categories, "Categories retrieved successfully"));
         }
 
