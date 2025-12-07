@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
@@ -42,6 +42,7 @@ import { DisputeStatusBadgeComponent } from '../dispute-status-badge/dispute-sta
 export class SessionDetailsComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly sessionService = inject(SessionService);
   private readonly reviewService = inject(ReviewService);
   private readonly authService = inject(AuthService);
@@ -398,7 +399,7 @@ export class SessionDetailsComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['..'], { relativeTo: this.route });
+    this.location.back();
   }
 
   setActiveTab(tab: 'recording' | 'transcript'): void {

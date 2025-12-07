@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -83,12 +83,25 @@ export class SessionsComponent implements OnInit, OnDestroy {
     private sessionService: SessionService,
     private notificationService: NotificationService,
     private signalRNotificationService: SignalRNotificationService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
+    // Read tab from query params
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab === 'completed' || tab === 'cancelled') {
+      this.activeTab = tab;
+    }
+
     // Load initial data for the active tab
-    this.loadUpcomingSessions();
+    if (this.activeTab === 'upcoming') {
+      this.loadUpcomingSessions();
+    } else if (this.activeTab === 'completed') {
+      this.loadCompletedSessions();
+    } else {
+      this.loadCancelledSessions();
+    }
 
     // Subscribe to session-related notifications to auto-refresh
     this.subscribeToSessionNotifications();
@@ -131,6 +144,14 @@ export class SessionsComponent implements OnInit, OnDestroy {
     if (this.activeTab === tab) return;
 
     this.activeTab = tab;
+
+    // Update URL query param without navigation
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'upcoming' ? null : tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
 
     // Load data for the tab if not already loaded
     if (tab === 'upcoming' && this.upcomingSessions.length === 0 && !this.loadingUpcoming) {

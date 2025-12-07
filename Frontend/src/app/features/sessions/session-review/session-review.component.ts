@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { SessionService } from '../../../core/services/session.service';
@@ -41,6 +41,7 @@ export class SessionReviewComponent implements OnInit {
   private readonly reviewService = inject(ReviewService);
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+  private readonly location = inject(Location);
 
   session: SessionDetailResponse | null = null;
   existingReview: ReviewItem | null = null;
@@ -211,10 +212,6 @@ export class SessionReviewComponent implements OnInit {
   }
 
   goBack(): void {
-    if (this.session) {
-      this.router.navigate(['/user/sessions', this.session.id]);
-    } else {
-      this.router.navigate(['/user/sessions']);
-    }
+    this.location.back();
   }
 }
