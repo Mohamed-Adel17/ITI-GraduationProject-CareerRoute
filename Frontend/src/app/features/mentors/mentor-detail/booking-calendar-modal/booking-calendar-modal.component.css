@@ -50,6 +50,17 @@ button {
   }
 }
 
+/* Responsive adjustments for smaller laptops */
+@media (max-height: 800px) {
+  .min-h-\[280px\] {
+    min-height: 180px;
+  }
+
+  .max-h-\[400px\] {
+    max-height: 220px;
+  }
+}
+
 /* Responsive adjustments for mobile */
 @media (max-width: 768px) {
   /* Make week view horizontally scrollable on mobile */
@@ -80,7 +91,7 @@ button {
 /* Ensure modal doesn't overflow on small screens */
 @media (max-height: 700px) {
   .max-h-\[400px\] {
-    max-height: 250px;
+    max-height: 200px;
   }
 }
 

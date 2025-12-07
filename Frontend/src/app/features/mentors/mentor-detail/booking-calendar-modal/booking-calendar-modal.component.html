@@ -9,8 +9,8 @@
   <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
 
   <!-- Modal content -->
-  <div class="flex min-h-screen items-center justify-center p-4">
-    <div class="relative w-full max-w-6xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl transform transition-all">
+  <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-2xl transform transition-all my-auto">
 
       <!-- Modal Header -->
       <div class="bg-primary px-6 py-4 rounded-t-xl">
@@ -38,13 +38,13 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-6">
+      <div class="p-4">
 
         <!-- Calendar View (when no slot selected) -->
         <div *ngIf="!showBookingForm">
 
           <!-- Week Navigation -->
-          <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <button
                 (click)="previousWeek()"
@@ -109,7 +109,7 @@
 
             <!-- Day Columns with Slots -->
             <div *ngFor="let day of weekDays"
-                 class="min-h-[280px] max-h-[400px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-b-lg p-2"
+                 class="min-h-[180px] max-h-[250px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-b-lg p-2"
                  [ngClass]="{
                    'bg-gray-50/50 dark:bg-gray-800/50': day.isPast,
                    'ring-2 ring-primary ring-offset-2 dark:ring-offset-gray-800': day.isToday
