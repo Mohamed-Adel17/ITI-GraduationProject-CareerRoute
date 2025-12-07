@@ -282,9 +282,9 @@ namespace CareerRoute.Core.Services.Implementations
         }
 
 
-        public async Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize)
+        public async Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize, SessionStatusOptions? status = null)
         {
-            var (allPastSessions, totalCount) = await _sessionRepository.GetPastSessionsAsync(userId, userRole, page, pageSize);
+            var (allPastSessions, totalCount) = await _sessionRepository.GetPastSessionsAsync(userId, userRole, page, pageSize, status);
 
             if (allPastSessions.Count == 0)
 

@@ -1,4 +1,5 @@
 ﻿using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace CareerRoute.Core.Domain.Interfaces
 
         Task<(List<Session> Items, int TotalCount)> GetUpcomingSessionsAsync(string userId, string userRole, int page, int pageSize);
 
-        Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize);
+        Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize, SessionStatusOptions? status = null);
         Task<bool> IsMenteeAvailableAsync(string menteeId, DateTime newStart, int durationMinutes);
 
         Task<Session?> GetByIdForPreparationAsync(string sessionId);

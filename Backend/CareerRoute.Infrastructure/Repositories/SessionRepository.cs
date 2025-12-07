@@ -89,10 +89,8 @@ namespace CareerRoute.Infrastructure.Repositories
         }
 
 
-        public async Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize)
+        public async Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize, SessionStatusOptions? status = null)
         {
-            var now = DateTime.UtcNow;
-
             var query = dbContext.Sessions
                 .Include(s => s.Mentee)
                 .Include(s => s.Mentor)
@@ -107,10 +105,17 @@ namespace CareerRoute.Infrastructure.Repositories
                 query = query.Where(s => s.MentorId == userId);
             // Admin can see all sessions
 
-            // Filter by past status: Completed or Cancelled
-            query = query.Where(s => s.Status == SessionStatusOptions.Completed
-                                     || s.Status == SessionStatusOptions.Cancelled);
-
+            // Filter by status
+            if (status.HasValue)
+            {
+                query = query.Where(s => s.Status == status.Value);
+            }
+            else
+            {
+                // Default: both Completed and Cancelled
+                query = query.Where(s => s.Status == SessionStatusOptions.Completed
+                                         || s.Status == SessionStatusOptions.Cancelled);
+            }
 
             query = query.OrderByDescending(s => s.ScheduledStartTime);
 
