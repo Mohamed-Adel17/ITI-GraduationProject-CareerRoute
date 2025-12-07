@@ -1,6 +1,6 @@
-<div class="container mx-auto px-4 py-8">
+<div class="mentor-approvals max-w-7xl mx-auto px-4 py-6 space-y-6">
   <!-- Admin Nav Tabs -->
-  <nav class="flex gap-1 border-b border-gray-200 mb-8">
+  <nav class="flex gap-1 border-b border-gray-200">
     <a routerLink="/admin/mentor-approvals" class="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary flex items-center gap-2">
       Mentor Approvals
       <span *ngIf="applications.length > 0" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -16,14 +16,12 @@
   </nav>
 
   <!-- Header Section -->
-  <header class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-      Pending Mentor Applications
-    </h1>
-    <p class="text-gray-600 dark:text-gray-400">
-      Review and approve or reject mentor applications from users.
-    </p>
-  </header>
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold">Pending Mentor Applications</h1>
+      <p class="text-sm text-gray-500">Review and approve or reject mentor applications from users.</p>
+    </div>
+  </div>
 
   <!-- Loading State -->
   <div *ngIf="loading" class="flex flex-col items-center justify-center py-16">

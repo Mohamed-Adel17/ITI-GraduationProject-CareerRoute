@@ -1,0 +1,92 @@
+<div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-1">Overview of pending actions</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Pending Approvals -->
+    <a routerLink="/admin/mentor-approvals" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Approvals</p>
+          <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+            <ng-container *ngIf="!loading">{{ pendingApprovals }}</ng-container>
+            <span *ngIf="loading" class="inline-block w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span>
+          </p>
+        </div>
+        <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+          <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+          </svg>
+        </div>
+      </div>
+      <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Mentor applications awaiting review</p>
+    </a>
+
+    <!-- Pending Payouts -->
+    <a routerLink="/admin/payouts" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Payouts</p>
+          <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+            <ng-container *ngIf="!loading">{{ pendingPayouts }}</ng-container>
+            <span *ngIf="loading" class="inline-block w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span>
+          </p>
+        </div>
+        <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+          <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+      </div>
+      <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Payout requests to process</p>
+    </a>
+
+    <!-- Open Disputes -->
+    <a routerLink="/admin/disputes" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Open Disputes</p>
+          <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+            <ng-container *ngIf="!loading">{{ openDisputes }}</ng-container>
+            <span *ngIf="loading" class="inline-block w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span>
+          </p>
+        </div>
+        <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+          <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+      </div>
+      <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Disputes requiring resolution</p>
+    </a>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <a routerLink="/admin/mentor-approvals" class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Review Applications</span>
+      </a>
+      <a routerLink="/admin/payouts" class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Process Payouts</span>
+      </a>
+      <a routerLink="/admin/disputes" class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+        </svg>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Resolve Disputes</span>
+      </a>
+    </div>
+  </div>
+</div>

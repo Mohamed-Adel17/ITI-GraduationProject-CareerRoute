@@ -4,24 +4,26 @@ import { Routes } from '@angular/router';
  * Admin routes - Protected by adminRoleGuard at parent level in app.routes.ts
  *
  * Current routes:
+ * - dashboard: Admin dashboard with stats overview
  * - mentor-approvals: Review and approve/reject pending mentor applications
- *
- * Future routes to implement:
- * - dashboard: Admin dashboard
- * - users: User management
- * - mentors: Mentor management (full CRUD)
- * - sessions: Session monitoring
- * - categories: Category management
- * - payments: Payment tracking
- * - reports: Analytics/reporting
- * - settings: Platform settings
+ * - payouts: Process or cancel payout requests
+ * - disputes: Review and resolve session disputes
  */
 export const ADMIN_ROUTES: Routes = [
-  // Default redirect to mentor-approvals
+  // Default redirect to dashboard
   {
     path: '',
-    redirectTo: 'mentor-approvals',
+    redirectTo: 'dashboard',
     pathMatch: 'full'
+  },
+
+  // Dashboard - Overview with stats and quick actions
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./dashboard/admin-dashboard.component')
+        .then(m => m.AdminDashboardComponent),
+    title: 'Admin Dashboard'
   },
 
   // Mentor Approvals - Review and approve/reject pending applications
@@ -50,6 +52,4 @@ export const ADMIN_ROUTES: Routes = [
         .then(m => m.DisputeManagementComponent),
     title: 'Dispute Management - Admin'
   }
-
-  // TODO: Add more admin routes here as components are created
 ];
