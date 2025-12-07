@@ -199,10 +199,9 @@ export class SessionsComponent implements OnInit, OnDestroy {
   loadCompletedSessions(): void {
     this.loadingCompleted = true;
 
-    const sub = this.sessionService.getPastSessions(this.completedPage, this.pageSize).subscribe({
+    const sub = this.sessionService.getPastSessions(this.completedPage, this.pageSize, 'Completed').subscribe({
       next: (response) => {
-        // Filter to only show Completed sessions (not Cancelled)
-        this.completedSessions = response.sessions.filter(s => s.status === SessionStatus.Completed);
+        this.completedSessions = response.sessions;
         this.completedPagination = response.pagination;
         this.loadingCompleted = false;
       },
@@ -225,10 +224,9 @@ export class SessionsComponent implements OnInit, OnDestroy {
   loadCancelledSessions(): void {
     this.loadingCancelled = true;
 
-    const sub = this.sessionService.getPastSessions(this.cancelledPage, this.pageSize).subscribe({
+    const sub = this.sessionService.getPastSessions(this.cancelledPage, this.pageSize, 'Cancelled').subscribe({
       next: (response) => {
-        // Filter to only show Cancelled sessions
-        this.cancelledSessions = response.sessions.filter(s => s.status === SessionStatus.Cancelled);
+        this.cancelledSessions = response.sessions;
         this.cancelledPagination = response.pagination;
         this.loadingCancelled = false;
       },
