@@ -134,7 +134,7 @@ export class FiltersPanelComponent implements OnInit, OnDestroy {
       minRating: [null],
       availableOnly: [false],
       verifiedOnly: [false],
-      sortBy: ['rating']
+      sortBy: ['popularity']
     });
   }
 
