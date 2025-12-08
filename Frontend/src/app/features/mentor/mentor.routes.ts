@@ -50,6 +50,12 @@ export const MENTOR_ROUTES: Routes = [
     title: 'Manage Availability - CareerRoute'
   },
   {
+    path: 'payouts',
+    loadComponent: () => import('./payout/payout.component').then(m => m.MentorPayoutComponent),
+    canActivate: [approvedMentorGuard],
+    title: 'Earnings & Payouts - CareerRoute'
+  },
+  {
     path: 'sessions',
     loadComponent: () => import('./sessions/sessions.component').then(m => m.MentorSessionsComponent),
     canActivate: [approvedMentorGuard],

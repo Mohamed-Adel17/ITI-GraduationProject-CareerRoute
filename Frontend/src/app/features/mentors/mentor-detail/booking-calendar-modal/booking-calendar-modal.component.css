@@ -1,6 +1,16 @@
 /* Booking Calendar Modal Component Styles */
 
-/* Custom scrollbar for day columns */
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar for slots list */
 .overflow-y-auto::-webkit-scrollbar {
   width: 4px;
 }
@@ -14,79 +24,7 @@
   border-radius: 2px;
 }
 
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.7);
-}
-
 /* Dark mode scrollbar */
 .dark .overflow-y-auto::-webkit-scrollbar-thumb {
   background: rgba(75, 85, 99, 0.5);
-}
-
-.dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.7);
-}
-
-/* Slot card hover animation */
-button:not(:disabled):hover {
-  transform: translateY(-1px);
-}
-
-button {
-  transition: all 0.15s ease-in-out;
-}
-
-/* Modal animation */
-.modal-backdrop {
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Responsive adjustments for mobile */
-@media (max-width: 768px) {
-  /* Make week view horizontally scrollable on mobile */
-  .grid-cols-7 {
-    display: flex;
-    overflow-x: auto;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-    scroll-snap-type: x mandatory;
-  }
-
-  .grid-cols-7 > * {
-    min-width: 120px;
-    flex-shrink: 0;
-    scroll-snap-align: start;
-  }
-
-  /* Smaller day columns on mobile */
-  .min-h-\[280px\] {
-    min-height: 200px;
-  }
-
-  .max-h-\[400px\] {
-    max-height: 280px;
-  }
-}
-
-/* Ensure modal doesn't overflow on small screens */
-@media (max-height: 700px) {
-  .max-h-\[400px\] {
-    max-height: 250px;
-  }
-}
-
-/* Print styles */
-@media print {
-  .modal-backdrop {
-    display: none;
-  }
 }

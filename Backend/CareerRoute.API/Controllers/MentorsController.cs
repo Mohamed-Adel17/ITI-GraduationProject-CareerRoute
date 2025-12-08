@@ -1,5 +1,7 @@
 using CareerRoute.API.Models;
+using CareerRoute.Core.Domain.Entities;
 using CareerRoute.Core.DTOs.Mentors;
+using CareerRoute.Core.DTOs.Reviews;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +20,16 @@ namespace CareerRoute.API.Controllers
     public class MentorsController : ControllerBase
     {
         private readonly IMentorService _mentorService;
+        private readonly IReviewService _reviewService;
         private readonly ILogger<MentorsController> _logger;
 
         public MentorsController(
             IMentorService mentorService,
+            IReviewService reviewService,
             ILogger<MentorsController> logger)
         {
             _mentorService = mentorService;
+            _reviewService = reviewService;
             _logger = logger;
         }
 
@@ -169,6 +174,54 @@ namespace CareerRoute.API.Controllers
             return Ok(new ApiResponse<IEnumerable<MentorProfileDto>>(mentors));
         }
 
+
+        /// <summary>
+        /// Retrieve paginated reviews for a specific mentor (public).
+        /// Returns a list of reviews submitted for the mentor, including rating, comment, creation date, and mentee info.
+        /// Supports pagination via query parameters.
+        /// </summary>
+        /// <param name="mentorId">The unique identifier of the mentor whose reviews are being requested.</param>
+        /// <param name="page">Page number (optional, default = 1).</param>
+        /// <param name="pageSize">Number of reviews per page (optional, default = 10).</param>
+        /// <response code="200">Mentor exists. Returns paginated reviews (can be empty).</response>
+        /// <response code="400">Invalid query parameters (mentorId empty, page <= 0, pageSize <= 0).</response>
+        /// <response code="404">Mentor not found.</response>
+        [HttpGet("{mentorId}/reviews")]
+        [ProducesResponseType(typeof(ApiResponse<MentorReviewsDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetReviewsForMentor(
+            string mentorId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            // Validate query parameters
+            if (string.IsNullOrWhiteSpace(mentorId))
+                return BadRequest(ApiResponse.Error("Mentor ID is required.", StatusCodes.Status400BadRequest));
+
+            if (page <= 0 || pageSize <= 0)
+                return BadRequest(ApiResponse.Error("Page and pageSize must be greater than zero.", StatusCodes.Status400BadRequest));
+
+            _logger.LogInformation("[Review] Getting reviews for mentor {MentorId}, Page {Page}, PageSize {PageSize}", mentorId, page, pageSize);
+
+            // Call service to get paginated reviews
+            var result = await _reviewService.GetReviewsForMentorAsync(mentorId, page, pageSize);
+
+            if (result == null)
+                return NotFound(ApiResponse.Error("Mentor not found.", StatusCodes.Status404NotFound));
+
+            // Return reviews wrapped in ApiResponse
+            return Ok(new ApiResponse<MentorReviewsDto>(result, "Reviews retrieved successfully."));
+        }
+
+
+
+
+
+
+
+
+
         // ============ AUTHENTICATED ENDPOINTS ============
 
         /// <summary>
@@ -218,15 +271,16 @@ namespace CareerRoute.API.Controllers
         /// <response code="400">Invalid application data or user already has mentor profile</response>
         /// <response code="401">User not authenticated</response>
         /// <remarks>
+        /// Supports CV upload via multipart/form-data.
         /// Users can only have one mentor profile. Application will be reviewed by admins.
         /// </remarks>
         [HttpPost]
         [Authorize]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<MentorProfileDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult> ApplyAsMentor(
-            [FromBody] CreateMentorProfileDto createDto) 
+        public async Task<ActionResult> ApplyAsMentor([FromForm] CreateMentorProfileDto createDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -259,6 +313,8 @@ namespace CareerRoute.API.Controllers
         /// <response code="401">User not authenticated</response>
         /// <response code="404">Mentor not found</response>
         /// <remarks>
+        /// Supports CV and profile picture upload via multipart/form-data.
+        /// All fields are optional - only provided fields will be updated.
         /// **Authorization:** Requires authenticated user who has registered or applied as a mentor (IsMentor = true).
         /// 
         /// **Note:** Does NOT require Mentor role - users can update their mentor profile even while pending approval.
@@ -283,11 +339,12 @@ namespace CareerRoute.API.Controllers
         /// </remarks>
         [HttpPatch("me")]
         [Authorize]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<MentorProfileDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> UpdateMyMentorProfile([FromBody] UpdateMentorProfileDto updateDto)
+        public async Task<ActionResult> UpdateMyMentorProfile([FromForm] UpdateMentorProfileDto updateDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -346,10 +403,8 @@ namespace CareerRoute.API.Controllers
         public async Task<ActionResult> ApproveMentor(string id)
         {
             await _mentorService.ApproveMentorAsync(id);
-
             return Ok(new ApiResponse { Message = "Mentor approved successfully" });
         }
-        
 
         /// <summary>
         /// Reject a mentor application (Admin only)
@@ -374,8 +429,69 @@ namespace CareerRoute.API.Controllers
             [FromBody] RejectMentorDto rejectDto)
         {
             await _mentorService.RejectMentorAsync(id, rejectDto);
-
             return Ok(new ApiResponse { Message = "Mentor application rejected" });
+        }
+
+        // ============ PREVIOUS WORK ENDPOINTS ============
+
+        /// <summary>
+        /// Get all previous work experiences for a mentor
+        /// </summary>
+        [HttpGet("{mentorId}/previous-works")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<PreviousWorkDto>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetPreviousWorks(string mentorId, [FromServices] IPreviousWorkService previousWorkService)
+        {
+            var works = await previousWorkService.GetByMentorIdAsync(mentorId);
+            return Ok(new ApiResponse<IEnumerable<PreviousWorkDto>>(works));
+        }
+
+        /// <summary>
+        /// Add a new previous work experience (Mentor only)
+        /// </summary>
+        [HttpPost("me/previous-works")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<PreviousWorkDto>), StatusCodes.Status201Created)]
+        public async Task<ActionResult> AddPreviousWork([FromBody] CreatePreviousWorkDto dto, [FromServices] IPreviousWorkService previousWorkService)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+
+            var work = await previousWorkService.AddAsync(userId, dto);
+            return CreatedAtAction(nameof(GetPreviousWorks), new { mentorId = userId },
+                new ApiResponse<PreviousWorkDto>(work, "Previous work added successfully"));
+        }
+
+        /// <summary>
+        /// Update a previous work experience (Mentor only)
+        /// </summary>
+        [HttpPatch("me/previous-works/{id}")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<PreviousWorkDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> UpdatePreviousWork(int id, [FromBody] UpdatePreviousWorkDto dto, [FromServices] IPreviousWorkService previousWorkService)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+
+            var work = await previousWorkService.UpdateAsync(userId, id, dto);
+            return Ok(new ApiResponse<PreviousWorkDto>(work, "Previous work updated successfully"));
+        }
+
+        /// <summary>
+        /// Delete a previous work experience (Mentor only)
+        /// </summary>
+        [HttpDelete("me/previous-works/{id}")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+        public async Task<ActionResult> DeletePreviousWork(int id, [FromServices] IPreviousWorkService previousWorkService)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("Invalid authentication token", 401));
+
+            await previousWorkService.DeleteAsync(userId, id);
+            return Ok(new ApiResponse { Message = "Previous work deleted successfully" });
         }
     }
 }

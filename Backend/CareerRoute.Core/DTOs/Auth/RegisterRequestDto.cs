@@ -1,10 +1,4 @@
-﻿using CareerRoute.Core.Constants;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace CareerRoute.Core.DTOs.Auth
 {
@@ -17,7 +11,6 @@ namespace CareerRoute.Core.DTOs.Auth
         public string LastName { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public bool RegisterAsMentor { get; set; } = false;
-
-
+        public IFormFile? ProfilePicture { get; set; }
     }
 }

@@ -1,6 +1,5 @@
 /* Mentor Card Component Styles */
 
-/* Card hover lift effect */
 .mentor-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -9,58 +8,12 @@
   transform: translateY(-4px);
 }
 
-/* Avatar ring animation on hover */
-.mentor-card:hover img {
-  ring-color: theme('colors.primary.DEFAULT');
-}
-
-/* Expertise tag hover effect */
-.mentor-card span[class*="bg-blue-50"]:hover {
-  transform: scale(1.05);
-  transition: transform 0.2s ease;
-}
-
-/* Bio text fade effect */
-.mentor-card p[class*="line-clamp"] {
-  position: relative;
-}
-
-/* Price highlight animation */
-.mentor-card p[class*="text-primary"] {
-  transition: transform 0.2s ease;
-}
-
-.mentor-card:hover p[class*="text-primary"] {
-  transform: scale(1.05);
-}
-
-/* Focus visible styles for accessibility */
 .mentor-card:focus-visible {
-  outline: 2px solid theme('colors.primary.DEFAULT');
+  outline: 2px solid theme('colors.indigo.500');
   outline-offset: 2px;
 }
 
-/* Verified badge pulse animation */
-.mentor-card svg[class*="text-blue-500"] {
-  animation: subtle-pulse 2s ease-in-out infinite;
-}
-
-@keyframes subtle-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-/* Rating stars shimmer on hover */
-.mentor-card:hover app-rating-display {
-  filter: brightness(1.1);
-  transition: filter 0.2s ease;
-}
-
-/* Line clamp utilities */
+/* Line clamp */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -68,32 +21,9 @@
   overflow: hidden;
 }
 
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .mentor-card {
-    padding: 1rem;
-  }
-}
-
-/* Dark mode enhancements */
+/* Dark mode shadow */
 @media (prefers-color-scheme: dark) {
   .mentor-card:hover {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-  }
-}
-
-/* Print styles */
-@media print {
-  .mentor-card {
-    break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
   }
 }

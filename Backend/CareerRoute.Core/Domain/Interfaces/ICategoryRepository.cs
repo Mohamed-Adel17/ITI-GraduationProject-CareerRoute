@@ -6,6 +6,7 @@ namespace CareerRoute.Core.Domain.Interfaces
     {
         Task<Category?> GetByNameAsync(string name);
         Task<IEnumerable<Category>> GetAllActiveAsync();
+        Task<IEnumerable<Category>> GetAllAsync();
         Task<Category?> GetByIdWithSkillsAsync(int id);
         Task<bool> ExistsAsync(string name);
         Task<Category?> GetByIdAsync(int id);

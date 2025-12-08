@@ -80,4 +80,31 @@ export const PUBLIC_ROUTES: Routes = [
     loadComponent: () => import('../auth/send-email-verification/send-email-verification.component').then(m => m.SendEmailVerificationComponent),
     title: 'Send Email Verification - CareerRoute'
   },
+
+  // Info Pages
+  {
+    path: 'about',
+    loadComponent: () => import('./info/about.component').then(m => m.AboutComponent),
+    title: 'About Us - CareerRoute'
+  },
+  {
+    path: 'contact',
+    loadComponent: () => import('./info/contact.component').then(m => m.ContactComponent),
+    title: 'Contact Us - CareerRoute'
+  },
+  {
+    path: 'terms',
+    loadComponent: () => import('./info/terms.component').then(m => m.TermsComponent),
+    title: 'Terms of Service - CareerRoute'
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./info/privacy.component').then(m => m.PrivacyComponent),
+    title: 'Privacy Policy - CareerRoute'
+  },
+  {
+    path: 'help',
+    loadComponent: () => import('./info/help.component').then(m => m.HelpComponent),
+    title: 'Help Center - CareerRoute'
+  },
 ];

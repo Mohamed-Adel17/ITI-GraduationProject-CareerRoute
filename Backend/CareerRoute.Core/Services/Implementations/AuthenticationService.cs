@@ -1,6 +1,7 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CareerRoute.Core.Constants;
 using CareerRoute.Core.Domain.Entities;
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.Domain.Interfaces;
 using CareerRoute.Core.DTOs.Auth;
 using CareerRoute.Core.DTOs.Users;
@@ -24,6 +25,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly ITokenService _tokenService;
         private readonly ITokenRepository _tokenRepository;
         private readonly IEmailService _emailService;
+        private readonly IBlobStorageService _blobStorageService;
         private readonly IMapper _mapper;
         private readonly JwtSettings _jwtSettings;
         private readonly string _frontendUrl;
@@ -41,6 +43,7 @@ namespace CareerRoute.Core.Services.Implementations
             ITokenService tokenService,
             ITokenRepository tokenRepository,
             IEmailService emailService,
+            IBlobStorageService blobStorageService,
             IOptions<JwtSettings> jwtSettings,
             IMapper mapper,
             IConfiguration configuration,
@@ -57,6 +60,7 @@ namespace CareerRoute.Core.Services.Implementations
             _tokenService = tokenService;
             _tokenRepository = tokenRepository;
             _emailService = emailService;
+            _blobStorageService = blobStorageService;
             _mapper = mapper;
             _jwtSettings = jwtSettings.Value;
             _frontendUrl = configuration["FrontendUrl"] ?? "http://localhost:4200";
@@ -76,6 +80,23 @@ namespace CareerRoute.Core.Services.Implementations
             await EnsureUserDoesNotExist(registerRequest.Email);
 
             var user = CreateUserFromRequest(registerRequest);
+
+            // Handle profile picture upload
+            if (registerRequest.ProfilePicture != null)
+            {
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(registerRequest.ProfilePicture.FileName)}";
+                using var stream = registerRequest.ProfilePicture.OpenReadStream();
+                var storageKey = await _blobStorageService.UploadAsync(
+                    stream,
+                    fileName,
+                    registerRequest.ProfilePicture.ContentType,
+                    FileType.ProfilePicture,
+                    registerRequest.ProfilePicture.Length);
+                user.ProfilePictureStorageKey = storageKey;
+                user.ProfilePictureUrl = await _blobStorageService.GetPresignedUrlAsync(storageKey);
+                user.ProfilePictureUrlExpiry = DateTime.UtcNow.AddDays(7);
+            }
+
             await CreateUserWithRole(user, registerRequest.Password, registerRequest.RegisterAsMentor);
 
             await SendEmailVerification(user);

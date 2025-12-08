@@ -37,6 +37,7 @@ namespace CareerRoute.Infrastructure.Repositories
                 .Include(s => s.Mentor) // Include first-level Mentor entity
                 .ThenInclude(m => m.User)   //  Include the User entity inside Mentor
                 .Include(s => s.Reschedule)
+                .Include(s=>s.Review)
                 .FirstOrDefaultAsync(s => s.Id == sessionId);
         }
         public async Task<List<Session>> GetSessionsStartingBetweenAsync(DateTime start, DateTime end) //For Background job 
@@ -88,14 +89,13 @@ namespace CareerRoute.Infrastructure.Repositories
         }
 
 
-        public async Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize)
+        public async Task<(List<Session> Items, int TotalCount)> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize, SessionStatusOptions? status = null)
         {
-            var now = DateTime.UtcNow;
-
             var query = dbContext.Sessions
                 .Include(s => s.Mentee)
                 .Include(s => s.Mentor)
                 .ThenInclude(m => m.User)
+                .Include(s => s.Review)
                 .AsQueryable();
 
             // Filter by user role
@@ -105,10 +105,17 @@ namespace CareerRoute.Infrastructure.Repositories
                 query = query.Where(s => s.MentorId == userId);
             // Admin can see all sessions
 
-            // Filter by past status: Completed or Cancelled
-            query = query.Where(s => s.Status == SessionStatusOptions.Completed
-                                     || s.Status == SessionStatusOptions.Cancelled);
-
+            // Filter by status
+            if (status.HasValue)
+            {
+                query = query.Where(s => s.Status == status.Value);
+            }
+            else
+            {
+                // Default: both Completed and Cancelled
+                query = query.Where(s => s.Status == SessionStatusOptions.Completed
+                                         || s.Status == SessionStatusOptions.Cancelled);
+            }
 
             query = query.OrderByDescending(s => s.ScheduledStartTime);
 
@@ -148,8 +155,15 @@ namespace CareerRoute.Infrastructure.Repositories
             return !hasConflict;
         }
 
-
-
-
+        public async Task<Session?> GetByIdForPreparationAsync(string sessionId)
+        {
+            return await dbContext.Sessions
+                .Include(s => s.Mentee)
+                    .ThenInclude(m => m.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                .Include(s => s.Mentor)
+                    .ThenInclude(m => m.User)
+                .FirstOrDefaultAsync(s => s.Id == sessionId);
+        }
     }
 }

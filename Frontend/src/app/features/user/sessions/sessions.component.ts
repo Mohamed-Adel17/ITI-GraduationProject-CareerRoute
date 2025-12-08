@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -45,7 +45,7 @@ import { NotificationType } from '../../../shared/models/notification.model';
 })
 export class SessionsComponent implements OnInit, OnDestroy {
   // Tab state
-  activeTab: 'upcoming' | 'completed' = 'upcoming';
+  activeTab: 'upcoming' | 'completed' | 'cancelled' = 'upcoming';
 
   // Upcoming sessions state
   upcomingSessions: SessionSummary[] = [];
@@ -83,12 +83,25 @@ export class SessionsComponent implements OnInit, OnDestroy {
     private sessionService: SessionService,
     private notificationService: NotificationService,
     private signalRNotificationService: SignalRNotificationService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
+    // Read tab from query params
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab === 'completed' || tab === 'cancelled') {
+      this.activeTab = tab;
+    }
+
     // Load initial data for the active tab
-    this.loadUpcomingSessions();
+    if (this.activeTab === 'upcoming') {
+      this.loadUpcomingSessions();
+    } else if (this.activeTab === 'completed') {
+      this.loadCompletedSessions();
+    } else {
+      this.loadCancelledSessions();
+    }
 
     // Subscribe to session-related notifications to auto-refresh
     this.subscribeToSessionNotifications();
@@ -127,16 +140,26 @@ export class SessionsComponent implements OnInit, OnDestroy {
   /**
    * Switch between tabs and load data if needed
    */
-  switchTab(tab: 'upcoming' | 'completed'): void {
+  switchTab(tab: 'upcoming' | 'completed' | 'cancelled'): void {
     if (this.activeTab === tab) return;
 
     this.activeTab = tab;
+
+    // Update URL query param without navigation
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'upcoming' ? null : tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
 
     // Load data for the tab if not already loaded
     if (tab === 'upcoming' && this.upcomingSessions.length === 0 && !this.loadingUpcoming) {
       this.loadUpcomingSessions();
     } else if (tab === 'completed' && this.completedSessions.length === 0 && !this.loadingCompleted) {
       this.loadCompletedSessions();
+    } else if (tab === 'cancelled' && this.cancelledSessions.length === 0 && !this.loadingCancelled) {
+      this.loadCancelledSessions();
     }
   }
 
@@ -176,10 +199,9 @@ export class SessionsComponent implements OnInit, OnDestroy {
   loadCompletedSessions(): void {
     this.loadingCompleted = true;
 
-    const sub = this.sessionService.getPastSessions(this.completedPage, this.pageSize).subscribe({
+    const sub = this.sessionService.getPastSessions(this.completedPage, this.pageSize, 'Completed').subscribe({
       next: (response) => {
-        // Filter to only show Completed sessions (not Cancelled)
-        this.completedSessions = response.sessions.filter(s => s.status === SessionStatus.Completed);
+        this.completedSessions = response.sessions;
         this.completedPagination = response.pagination;
         this.loadingCompleted = false;
       },
@@ -202,10 +224,9 @@ export class SessionsComponent implements OnInit, OnDestroy {
   loadCancelledSessions(): void {
     this.loadingCancelled = true;
 
-    const sub = this.sessionService.getPastSessions(this.cancelledPage, this.pageSize).subscribe({
+    const sub = this.sessionService.getPastSessions(this.cancelledPage, this.pageSize, 'Cancelled').subscribe({
       next: (response) => {
-        // Filter to only show Cancelled sessions
-        this.cancelledSessions = response.sessions.filter(s => s.status === SessionStatus.Cancelled);
+        this.cancelledSessions = response.sessions;
         this.cancelledPagination = response.pagination;
         this.loadingCancelled = false;
       },
@@ -478,6 +499,26 @@ export class SessionsComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.loadUpcomingSessions();
     }, 2000);
+  }
+
+  /**
+   * Handle end meeting test action (for demo purposes)
+   */
+  onEndMeetingTest(sessionId: string): void {
+    const sub = this.sessionService.endMeetingTest(sessionId).subscribe({
+      next: () => {
+        this.notificationService.success(
+          'Meeting ended and session marked as completed',
+          'Session Completed'
+        );
+        this.loadUpcomingSessions();
+        this.loadCompletedSessions();
+      },
+      error: (err) => {
+        console.error('Error ending meeting:', err);
+      }
+    });
+    this.subscriptions.push(sub);
   }
 
   // ==========================================================================

@@ -1,0 +1,218 @@
+<div class="dispute-admin max-w-7xl mx-auto px-4 py-6 space-y-6">
+  <app-admin-nav activeTab="disputes" [pendingMentorCount]="pendingMentorCount"></app-admin-nav>
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold">Dispute Management</h1>
+      <p class="text-sm text-gray-500">Review and resolve session disputes.</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="loadDisputes()" [disabled]="loading">
+      {{ loading ? 'Refreshing...' : 'Refresh' }}
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-4 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold">Filters</h2>
+      <div class="flex gap-2">
+        <button class="btn btn-secondary" type="button" (click)="clearFilters()">Clear</button>
+        <button class="btn btn-primary" type="button" (click)="applyFilters()">Apply</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="label">Status</label>
+        <select class="input" [(ngModel)]="filters.status">
+          <option value="">All</option>
+          <option *ngFor="let s of statuses" [ngValue]="s">{{ statusText(s) }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Reason</label>
+        <select class="input" [(ngModel)]="filters.reason">
+          <option value="">All</option>
+          <option *ngFor="let r of reasons" [ngValue]="r">{{ reasonText(r) }}</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="label">Start Date</label>
+          <input class="input" type="date" [(ngModel)]="filters.startDate" />
+        </div>
+        <div>
+          <label class="label">End Date</label>
+          <input class="input" type="date" [(ngModel)]="filters.endDate" />
+        </div>
+      </div>
+      <div>
+        <label class="label">Sort By</label>
+        <select class="input" [(ngModel)]="filters.sortBy">
+          <option value="createdAt">Created At</option>
+          <option value="status">Status</option>
+          <option value="reason">Reason</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Sort Direction</label>
+        <select class="input" [(ngModel)]="filters.sortDescending">
+          <option [ngValue]="true">Newest First</option>
+          <option [ngValue]="false">Oldest First</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Disputes</h2>
+      <div class="text-sm text-gray-500" *ngIf="pagination">
+        {{ pagination.totalCount }} total
+      </div>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div *ngIf="loading" class="space-y-3">
+      <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+      <div class="h-12 bg-gray-100 rounded animate-pulse"></div>
+      <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+    </div>
+
+    <div *ngIf="!loading && disputes.length === 0" class="text-center py-8 text-gray-500">No disputes found.</div>
+
+    <div class="overflow-x-auto" *ngIf="!loading && disputes.length > 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Mentee</th>
+            <th>Mentor</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Session Price</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let dispute of disputes; trackBy: trackByDispute">
+            <td>
+              <div>{{ dispute.menteeFirstName }} {{ dispute.menteeLastName }}</div>
+              <div class="text-xs text-gray-500">{{ dispute.menteeEmail }}</div>
+            </td>
+            <td>{{ dispute.mentorFirstName }} {{ dispute.mentorLastName }}</td>
+            <td>
+              <span class="text-sm">{{ reasonText(dispute.reason) }}</span>
+              <div *ngIf="dispute.description" class="text-xs text-gray-500 max-w-xs truncate" [title]="dispute.description">
+                {{ dispute.description }}
+              </div>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="statusColor(dispute.status)">{{ statusText(dispute.status) }}</span>
+              <div *ngIf="dispute.resolution" class="text-xs text-gray-500 mt-1">
+                {{ resolutionText(dispute.resolution) }}
+                <span *ngIf="dispute.refundAmount"> - {{ formatCurrency(dispute.refundAmount) }}</span>
+              </div>
+            </td>
+            <td class="font-semibold">{{ formatCurrency(dispute.sessionPrice) }}</td>
+            <td>{{ dispute.createdAt | date:'mediumDate' }}</td>
+            <td class="flex gap-2">
+              <a
+                [routerLink]="['/user/sessions', dispute.sessionId]"
+                class="btn btn-secondary btn-sm"
+              >
+                View Session
+              </a>
+              <button
+                *ngIf="canResolveDispute(dispute.status)"
+                class="btn btn-primary btn-sm"
+                type="button"
+                (click)="openResolveModal(dispute)"
+                [disabled]="resolvingId === dispute.id"
+              >
+                {{ resolvingId === dispute.id ? '...' : 'Resolve' }}
+              </button>
+              <span *ngIf="!canResolveDispute(dispute.status)" class="text-sm text-gray-500 italic">
+                {{ dispute.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between mt-4" *ngIf="pagination && pagination.totalPages > 1">
+      <button class="btn btn-secondary" type="button" (click)="changePage((filters.page || 1) - 1)" [disabled]="(filters.page || 1) <= 1">Previous</button>
+      <div class="text-sm text-gray-600">Page {{ filters.page || 1 }} of {{ pagination.totalPages }}</div>
+      <button class="btn btn-secondary" type="button" (click)="changePage((filters.page || 1) + 1)" [disabled]="!pagination.hasNextPage">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Resolve Modal -->
+<div *ngIf="showResolveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl">
+    <h3 class="text-lg font-semibold mb-4">Resolve Dispute</h3>
+
+    <div class="space-y-4" *ngIf="selectedDispute">
+      <!-- Dispute Info -->
+      <div class="bg-gray-50 p-3 rounded text-sm space-y-1">
+        <div><strong>Mentee:</strong> {{ selectedDispute.menteeFirstName }} {{ selectedDispute.menteeLastName }}</div>
+        <div><strong>Mentor:</strong> {{ selectedDispute.mentorFirstName }} {{ selectedDispute.mentorLastName }}</div>
+        <div><strong>Reason:</strong> {{ reasonText(selectedDispute.reason) }}</div>
+        <div *ngIf="selectedDispute.description"><strong>Description:</strong> {{ selectedDispute.description }}</div>
+        <div><strong>Session Price:</strong> {{ formatCurrency(selectedDispute.sessionPrice) }}</div>
+      </div>
+
+      <!-- Resolution Form -->
+      <div>
+        <label class="label">Resolution Type</label>
+        <select class="input" [(ngModel)]="resolveForm.resolution">
+          <option *ngFor="let r of resolutions" [ngValue]="r">{{ resolutionText(r) }}</option>
+        </select>
+      </div>
+
+      <div *ngIf="resolveForm.resolution !== 'NoRefund'">
+        <label class="label">Refund Amount</label>
+        <div class="flex gap-2">
+          <input
+            class="input flex-1"
+            type="number"
+            min="0"
+            [max]="selectedDispute.sessionPrice"
+            step="0.01"
+            [(ngModel)]="resolveForm.refundAmount"
+            placeholder="Enter refund amount"
+          />
+          <button type="button" class="btn btn-secondary" (click)="setFullRefund()">Full</button>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Max: {{ formatCurrency(selectedDispute.sessionPrice) }}</p>
+      </div>
+
+      <div>
+        <label class="label">Admin Notes (Optional)</label>
+        <textarea
+          class="input"
+          rows="3"
+          [(ngModel)]="resolveForm.adminNotes"
+          placeholder="Add notes about this resolution..."
+          maxlength="1000"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="flex gap-3 justify-end mt-6">
+      <button type="button" class="btn btn-secondary" (click)="closeResolveModal()">Cancel</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="submitResolve()"
+        [disabled]="resolvingId !== null"
+      >
+        {{ resolvingId ? 'Resolving...' : 'Resolve Dispute' }}
+      </button>
+    </div>
+  </div>
+</div>

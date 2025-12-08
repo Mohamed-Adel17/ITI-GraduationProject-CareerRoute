@@ -6,6 +6,7 @@ using CareerRoute.Core.Setting;
 using CareerRoute.Infrastructure;
 using CareerRoute.Infrastructure.Data;
 using CareerRoute.Infrastructure.Data.SeedData;
+using CareerRoute.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -215,6 +216,12 @@ var hangfireDashboardOptions = new DashboardOptions
 };
 
 app.UseHangfireDashboard("/hangfire", hangfireDashboardOptions);
+
+// Schedule recurring job to refresh presigned URLs daily
+RecurringJob.AddOrUpdate<PresignedUrlRefreshService>(
+    "refresh-presigned-urls",
+    service => service.RefreshExpiringUrlsAsync(),
+    Cron.Daily);
 app.MapHub<PaymentHub>("hub/payment");
 app.MapHub<NotificationHub>("/hub/notification");
 
@@ -291,6 +298,24 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Error happened while seeding skills");
+    }
+}
+
+//seed mentor balances on application startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
+
+        await MentorBalanceSeeder.SeedMentorBalancesAsync(context, logger);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error happened while seeding mentor balances");
     }
 }
 

@@ -1,3 +1,4 @@
+using CareerRoute.Core.Domain.Enums;
 using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.DTOs.Zoom;
 using System;
@@ -25,9 +26,9 @@ namespace CareerRoute.Core.Services.Interfaces
         /// </summary>
         Task<UpcomingSessionsResponse> GetUpcomingSessionsAsync(string userId, string userRole, int page, int pageSize);
         /// <summary>
-        /// Retrieves past sessions for the user with pagination.
+        /// Retrieves past sessions for the user with pagination and optional status filter.
         /// </summary>
-        Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize);
+        Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize, SessionStatusOptions? status = null);
         /// <summary>
         /// Requests a reschedule for a session.
         /// </summary>
@@ -70,16 +71,20 @@ namespace CareerRoute.Core.Services.Interfaces
         /// <summary>
         /// Retrieves session recording info for an authorized user.
         /// </summary>
-        Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId);
+        Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId, string userRole);
         /// <summary>
         /// Retrieves transcript content for an authorized user.
         /// </summary>
-        Task<string> GetSessionTranscriptAsync(string sessionId, string userId);
+        Task<string> GetSessionTranscriptAsync(string sessionId, string userId, string userRole);
 
         /// <summary>
         /// Retrieves AI-generated summary for an authorized user.
         /// </summary>
-        Task<string> GetSessionSummaryAsync(string sessionId, string userId);
+        Task<string> GetSessionSummaryAsync(string sessionId, string userId, string userRole);
+        /// <summary>
+        /// Generates AI preparation guide for mentor before session.
+        /// </summary>
+        Task<GeneratePreparationResponseDto> GeneratePreparationAsync(string sessionId, string userId);
         /// <summary>
         /// Cancels a session and deletes the associated Zoom meeting.
         /// </summary>

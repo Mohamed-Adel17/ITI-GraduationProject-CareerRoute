@@ -53,6 +53,8 @@ export class EditProfileComponent implements OnInit, OnDestroy {
   loading: boolean = true;
   saving: boolean = false;
   error: string | null = null;
+  selectedFile: File | null = null;
+  imagePreview: string | null = null;
 
   private subscription?: Subscription;
 
@@ -78,13 +80,14 @@ export class EditProfileComponent implements OnInit, OnDestroy {
 
   /**
    * Initialize the reactive form with validation rules
+   * Matches backend UpdateUserValidator rules
    */
   private initializeForm(): void {
     this.profileForm = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
-      phoneNumber: ['', [Validators.pattern(/^[\d\s\-\+\(\)]+$/)]],
-      profilePictureUrl: ['', [Validators.pattern(/^https?:\/\/.+/)]],
+      phoneNumber: ['', [Validators.pattern(/^\+?[0-9]{10,15}$/)]],
+      profilePictureUrl: ['', [Validators.maxLength(200), Validators.pattern(/\.(jpg|jpeg|png)$/i)]],
       careerGoals: ['', [Validators.maxLength(500)]]
     });
   }
@@ -163,7 +166,7 @@ export class EditProfileComponent implements OnInit, OnDestroy {
       firstName: user.firstName,
       lastName: user.lastName,
       phoneNumber: user.phoneNumber || '',
-      profilePictureUrl: user.profilePictureUrl || '',
+      // profilePicture is handled separately via file input
       careerGoals: user.careerGoals || ''
     });
   }
@@ -220,6 +223,19 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     return !!(field && field.hasError(errorType) && (field.dirty || field.touched));
   }
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.imagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(this.selectedFile);
+    }
+  }
+
   /**
    * Submit form and save profile updates
    *
@@ -251,8 +267,8 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     if (this.profileForm.value.phoneNumber) {
       updateData.phoneNumber = this.profileForm.value.phoneNumber;
     }
-    if (this.profileForm.value.profilePictureUrl) {
-      updateData.profilePictureUrl = this.profileForm.value.profilePictureUrl;
+    if (this.selectedFile) {
+      updateData.profilePicture = this.selectedFile;
     }
     if (this.profileForm.value.careerGoals) {
       updateData.careerGoals = this.profileForm.value.careerGoals;
@@ -292,6 +308,8 @@ export class EditProfileComponent implements OnInit, OnDestroy {
     if (confirm('Are you sure you want to reset all changes?')) {
       if (this.user) {
         this.populateForm(this.user);
+        this.selectedFile = null;
+        this.imagePreview = null;
       }
     }
   }

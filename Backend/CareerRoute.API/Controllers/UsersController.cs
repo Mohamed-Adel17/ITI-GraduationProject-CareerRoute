@@ -1,13 +1,10 @@
-﻿using CareerRoute.API.Filters;
 using CareerRoute.API.Models;
 using CareerRoute.Core.Constants;
 using CareerRoute.Core.DTOs.Users;
-using CareerRoute.Core.Services.Implementations;
 using CareerRoute.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace CareerRoute.API.Controllers
@@ -23,14 +20,11 @@ namespace CareerRoute.API.Controllers
         private readonly IUserService userService;
         private readonly ILogger<UsersController> logger;
 
-
         public UsersController(IUserService userService, ILogger<UsersController> logger)
         {
             this.userService = userService;
             this.logger = logger;
         }
-
-
 
         /// <summary>
         /// Get current authenticated user's profile
@@ -61,9 +55,6 @@ namespace CareerRoute.API.Controllers
             ));
         }
 
-
-
-
         /// <summary>
         /// Update current authenticated user's profile
         /// </summary>
@@ -75,13 +66,14 @@ namespace CareerRoute.API.Controllers
         /// <response code="404">User not found</response>
         /// <remarks>
         /// All fields are optional - only provided fields will be updated.
+        /// Supports profile picture upload via multipart/form-data.
         /// 
         /// **Field Requirements:**
         /// - `firstName`: Min 2 chars, max 50 chars
         /// - `lastName`: Min 2 chars, max 50 chars
         /// - `phoneNumber`: Valid phone number format
         /// - `careerGoals`: Max 500 characters
-        /// - `profilePictureUrl`: Valid URL format, max 200 chars
+        /// - `profilePicture`: Image file (optional)
         /// - `careerInterestIds`: Array of skill IDs (all must be valid and active)
         /// 
         /// **Note:** 
@@ -91,11 +83,12 @@ namespace CareerRoute.API.Controllers
         /// </remarks>
         [HttpPatch("me")]
         [Authorize]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<RetrieveUserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateMe([FromBody] UpdateUserDto uuDto)
+        public async Task<IActionResult> UpdateMe([FromForm] UpdateUserDto uuDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -111,9 +104,6 @@ namespace CareerRoute.API.Controllers
                 "User profile updated successfully"
             ));
         }
-
-
-
 
         /// <summary>
         /// Delete current authenticated user's account
@@ -143,7 +133,6 @@ namespace CareerRoute.API.Controllers
 
             return Ok(new ApiResponse { Message = "User profile deleted successfully" });
         }
-
 
         /// <summary>
         /// Get all users (Admin and Mentor only)
@@ -186,7 +175,6 @@ namespace CareerRoute.API.Controllers
                 "All users retrieved successfully"
             ));
         }
-
 
         /// <summary>
         /// Get user by ID (Admin and Mentor only)
@@ -251,12 +239,13 @@ namespace CareerRoute.API.Controllers
         /// </remarks>
         [HttpPatch("{id}")]
         [Authorize(Roles = AppRoles.Admin)]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<RetrieveUserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateUserByAdmin(string id, [FromBody] UpdateUserDto dto)
+        public async Task<IActionResult> UpdateUserByAdmin(string id, [FromForm] UpdateUserDto dto)
         {
             var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -272,8 +261,5 @@ namespace CareerRoute.API.Controllers
                 $"User profile with Id {id} updated successfully."
             ));
         }
-
-
-
     }
 }

@@ -1,137 +1,102 @@
 <!-- Hero Section -->
-<section class="hero-section relative min-h-screen flex items-center justify-center overflow-hidden">
-  <!-- Background Image with Overlay -->
-  <div class="absolute inset-0 z-0">
-    <img
-      src="/9.png"
-      alt="CareerRoute - Professional mentorship consultation"
-      class="w-full h-full object-cover"
-      loading="eager"
-    />
-    <!-- Dark overlay for text readability -->
-    <div class="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/50"></div>
-  </div>
+<section class="hero-section relative bg-slate-900 overflow-hidden flex flex-col">
+  <!-- Simple background decoration -->
+  <div class="absolute top-0 right-0 w-1/2 h-full bg-primary/10 skew-x-12 transform origin-top-right"></div>
+  
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 lg:py-20 flex flex-col-reverse md:flex-row items-center justify-center gap-8 md:gap-12 flex-1">
+    
+    <!-- Left Content -->
+    <div class="w-full md:w-1/2 z-10 md:pr-8 lg:pr-12 text-center md:text-left animate-slide-up">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 sm:mb-6">
+        Find Your Perfect <br class="hidden md:block" />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-300">Career Mentor.</span>
+      </h1>
+      <p class="text-slate-300 text-base sm:text-lg md:text-xl mb-6 sm:mb-8 leading-relaxed max-w-xl mx-auto md:mx-0">
+        Connect with experienced professionals for personalized 1-on-1 mentorship. 
+        Get career advice, interview prep, and skill development guidance.
+      </p>
+      
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3 sm:gap-4 mb-8 md:mb-10">
+        <button 
+          (click)="browseMentors()"
+          class="px-6 sm:px-8 py-3 sm:py-4 bg-primary hover:bg-primary/90 text-white text-base sm:text-lg font-semibold rounded-full transition-all shadow-lg hover:shadow-primary/30 w-full sm:w-auto"
+        >
+          Browse Mentors
+        </button>
+        
+        <button
+          *ngIf="showBecomeAMentorButton"
+          (click)="becomeMentor()"
+          class="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white text-base sm:text-lg font-medium rounded-full transition-all w-full sm:w-auto"
+        >
+          Become a Mentor
+        </button>
 
-  <!-- Hero Content -->
-  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-    <!-- Main Headline -->
-    <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white mb-6 leading-tight">
-      Find Your Perfect<br class="hidden sm:block" />
-      <span class="text-primary">Career Mentor</span>
-    </h1>
-
-    <!-- Subheadline -->
-    <p class="text-lg sm:text-xl lg:text-2xl text-gray-100 mb-10 max-w-3xl mx-auto leading-relaxed">
-      Connect with experienced professionals for 1-on-1 mentorship sessions.
-      Get personalized career advice, interview preparation, and skill development guidance.
-    </p>
-
-    <!-- Call-to-Action Buttons -->
-    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-      <!-- Primary CTA -->
-      <button
-        (click)="browseMentors()"
-        class="w-full sm:w-auto px-8 py-4 text-lg font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-        aria-label="Browse all mentors"
-      >
-        Browse Mentors
-      </button>
-
-      <!-- Become a Mentor CTA (Conditional - only for pending mentors) -->
-      <button
-        *ngIf="showBecomeAMentorButton"
-        (click)="becomeMentor()"
-        class="w-full sm:w-auto px-8 py-4 text-lg font-bold text-white bg-transparent border-2 border-white rounded-lg hover:bg-white hover:text-primary transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-        aria-label="Complete mentor application"
-      >
-        Become a Mentor
-      </button>
-
-      <!-- Check Approval Status Button (for pending mentors who already applied) -->
-      <button
-        *ngIf="showCheckApprovalButton"
-        (click)="checkApprovalStatus()"
-        [disabled]="checkingApprovalStatus"
-        class="w-full sm:w-auto px-8 py-4 text-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 disabled:cursor-not-allowed rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
-        aria-label="Check if your mentor application has been approved"
-      >
-        <!-- Loading Spinner -->
-        <svg *ngIf="checkingApprovalStatus" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <span>{{ checkingApprovalStatus ? 'Checking...' : 'Check Approval Status' }}</span>
-      </button>
-    </div>
-
-    <!-- Trust Indicators -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-      <!-- Expert Mentors -->
-      <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1">
-          {{ trustIndicators.mentors }}
-        </div>
-        <div class="text-sm sm:text-base text-gray-200 font-medium">
-          Expert Mentors
-        </div>
+        <button
+          *ngIf="showCheckApprovalButton"
+          (click)="checkApprovalStatus()"
+          [disabled]="checkingApprovalStatus"
+          class="px-6 sm:px-8 py-3 sm:py-4 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 disabled:cursor-not-allowed text-white text-base sm:text-lg font-semibold rounded-full transition-all w-full sm:w-auto flex items-center justify-center gap-2"
+        >
+          <svg *ngIf="checkingApprovalStatus" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ checkingApprovalStatus ? 'Checking...' : 'Check Approval Status' }}</span>
+        </button>
       </div>
 
-      <!-- Sessions Completed -->
-      <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1">
-          {{ trustIndicators.sessions }}
+      <!-- Stats - Inline -->
+      <div class="flex flex-wrap justify-center md:justify-start gap-8 sm:gap-10">
+        <div class="flex items-center gap-3">
+          <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <div>
+            <div class="text-2xl sm:text-3xl font-bold text-white">{{ animatedMentors | number }}+</div>
+            <div class="text-sm text-slate-400">Mentors</div>
+          </div>
         </div>
-        <div class="text-sm sm:text-base text-gray-200 font-medium">
-          Sessions Completed
+        <div class="flex items-center gap-3">
+          <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div>
+            <div class="text-2xl sm:text-3xl font-bold text-white">{{ animatedSessions | number }}+</div>
+            <div class="text-sm text-slate-400">Sessions</div>
+          </div>
         </div>
-      </div>
-
-      <!-- Average Rating -->
-      <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-          {{ trustIndicators.rating }}
-          <span class="text-yellow-400">★</span>
-        </div>
-        <div class="text-sm sm:text-base text-gray-200 font-medium">
-          Average Rating
-        </div>
-      </div>
-
-      <!-- Specializations -->
-      <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-white mb-1">
-          {{ trustIndicators.specializations }}
-        </div>
-        <div class="text-sm sm:text-base text-gray-200 font-medium">
-          Specializations
+        <div class="flex items-center gap-3">
+          <svg class="w-7 h-7 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+          </svg>
+          <div>
+            <div class="text-2xl sm:text-3xl font-bold text-white">{{ animatedRating }}</div>
+            <div class="text-sm text-slate-400">Rating</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Scroll Down Indicator (Optional) -->
-    <div class="mt-16 animate-bounce hidden md:block">
-      <svg
-        class="w-6 h-6 mx-auto text-white/70"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 14l-7 7m0 0l-7-7m7 7V3"
+    <!-- Right Image -->
+    <div class="w-full md:w-1/2 relative z-10 h-[200px] sm:h-[280px] md:h-[400px] lg:h-[450px] xl:h-[500px] animate-slide-up">
+      <div class="absolute inset-0 bg-primary rounded-3xl transform rotate-3 opacity-20 translate-x-4 translate-y-4"></div>
+      <div class="relative h-full w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800/50">
+        <img 
+          src="/9.png" 
+          alt="Professional mentorship session" 
+          class="object-cover w-full h-full"
+          loading="eager"
         />
-      </svg>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+      </div>
     </div>
   </div>
 </section>
 
-
-
 <!-- How It Works Section -->
-<section class="how-it-works-section py-20 bg-gray-50 dark:bg-gray-900">
+<section class="how-it-works-section py-20 bg-gray-50 dark:bg-gray-900 animate-on-scroll">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Section Header -->
     <div class="text-center mb-16">
@@ -249,7 +214,7 @@
 
         <!-- Description -->
         <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
-          Join video session at scheduled time. Get guidance, resources, and 3-day follow-up chat access. Achieve your career goals faster.
+          Join video session at scheduled time. Get personalized guidance, and access session recordings with AI-generated transcripts and summaries.
         </p>
       </div>
     </div>
@@ -268,7 +233,7 @@
 </section>
 
 <!-- Browse by Category Section -->
-<section class="browse-categories-section py-20 bg-white dark:bg-background-dark">
+<section class="browse-categories-section py-20 bg-white dark:bg-background-dark animate-on-scroll">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Section Header -->
     <div class="text-center mb-16">

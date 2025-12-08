@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MentorListItem } from '../../../../shared/models/mentor.model';
 
@@ -56,19 +56,22 @@ export class MentorApplicationCardComponent {
   @Output() reject = new EventEmitter<string>();
 
   /**
-   * Bio expansion state
+   * Modal visibility state
    */
-  isBioExpanded = false;
+  showDetails = false;
 
   /**
-   * Maximum bio length to show before truncation
+   * Close modal on Escape key
    */
-  readonly MAX_BIO_LENGTH = 150;
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showDetails) {
+      this.showDetails = false;
+    }
+  }
 
   /**
    * Handle approve button click
-   *
-   * Emits approve event with mentor ID to parent component
    */
   onApproveClick(): void {
     this.approve.emit(this.application.id);
@@ -84,42 +87,7 @@ export class MentorApplicationCardComponent {
   }
 
   /**
-   * Toggle bio expansion
-   */
-  toggleBio(): void {
-    this.isBioExpanded = !this.isBioExpanded;
-  }
-
-  /**
-   * Get truncated bio text
-   *
-   * @returns Truncated bio if exceeds MAX_BIO_LENGTH, otherwise full bio
-   */
-  get truncatedBio(): string {
-    if (!this.application.bio) {
-      return '';
-    }
-
-    if (this.application.bio.length <= this.MAX_BIO_LENGTH) {
-      return this.application.bio;
-    }
-
-    return this.application.bio.substring(0, this.MAX_BIO_LENGTH) + '...';
-  }
-
-  /**
-   * Check if bio needs truncation
-   *
-   * @returns True if bio exceeds MAX_BIO_LENGTH
-   */
-  get shouldTruncateBio(): boolean {
-    return !!this.application.bio && this.application.bio.length > this.MAX_BIO_LENGTH;
-  }
-
-  /**
    * Check if profile picture exists
-   *
-   * @returns True if profilePictureUrl is available
    */
   get hasProfilePicture(): boolean {
     return !!this.application.profilePictureUrl;

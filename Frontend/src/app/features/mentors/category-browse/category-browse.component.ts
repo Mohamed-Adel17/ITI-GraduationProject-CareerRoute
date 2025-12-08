@@ -89,7 +89,7 @@ export class CategoryBrowseComponent implements OnInit, OnDestroy {
   private subscribeToDataStreams(): void {
     this.categories$.pipe(takeUntil(this.destroy$)).subscribe({
       next: (categories) => {
-        this.categories = categories;
+        this.categories = categories.filter(c => (c.mentorCount ?? 0) > 0);
       }
     });
 

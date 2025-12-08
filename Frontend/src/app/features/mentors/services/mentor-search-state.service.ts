@@ -122,7 +122,7 @@ export class MentorSearchStateService implements OnDestroy {
   private filtersSubject$ = new BehaviorSubject<MentorSearchParams>({});
   private pageSubject$ = new BehaviorSubject<number>(1);
   private pageSizeSubject$ = new BehaviorSubject<number>(12);
-  private loadingSubject$ = new BehaviorSubject<boolean>(false);
+  private loadingSubject$ = new BehaviorSubject<boolean>(true);
   private errorSubject$ = new BehaviorSubject<string | null>(null);
 
   // Results subjects (private)

@@ -62,6 +62,7 @@ export interface Session {
   mentorFirstName: string;              // Mentor first name
   mentorLastName: string;               // Mentor last name
   mentorProfilePictureUrl?: string | null;  // Mentor profile picture
+  mentorHeadline?: string | null;           // Mentor headline
   timeSlotId?: string | null;           // Reference to TimeSlot
   sessionType: SessionType;             // OneOnOne or Group
   duration: SessionDuration;            // ThirtyMinutes or SixtyMinutes
@@ -99,6 +100,7 @@ export interface SessionSummary {
   mentorFirstName: string;
   mentorLastName: string;
   mentorProfilePictureUrl?: string | null;
+  mentorHeadline?: string | null;
   sessionType: SessionType;
   duration: SessionDuration;
   scheduledStartTime: string;
@@ -124,6 +126,7 @@ export interface PastSessionItem {
   mentorFirstName: string;
   mentorLastName: string;
   mentorProfilePictureUrl?: string | null;
+  mentorHeadline?: string | null;
   sessionType: SessionType;
   duration: SessionDuration;
   scheduledStartTime: string;
@@ -168,6 +171,10 @@ export interface SessionDetailResponse {
   hoursUntilSession?: number | null;
   createdAt: string;
   updatedAt: string;
+  completedAt?: string | null;            // ISO 8601 datetime (when marked complete)
+  // AI Preparation fields (mentor only)
+  aiPreparationGuide?: string | null;         // Markdown-formatted AI guide
+  aiPreparationGeneratedAt?: string | null;   // ISO 8601 datetime when generated
 }
 
 // ===========================
@@ -374,6 +381,17 @@ export interface SessionSummaryResponse {
   sessionId: string;
   summary: string;                    // AI-generated summary (markdown/plain text)
   isAvailable: boolean;               // True if summary is ready
+}
+
+/**
+ * AI Preparation Guide Response
+ * Response for POST /api/sessions/{id}/generate-preparation
+ */
+export interface AIPreparationResponse {
+  sessionId: string;
+  preparationGuide: string;           // Markdown-formatted AI-generated guide
+  generatedAt: string;                // ISO 8601 datetime
+  wasAlreadyGenerated: boolean;       // True if returning cached result
 }
 // ===========================
 // Paginated Responses

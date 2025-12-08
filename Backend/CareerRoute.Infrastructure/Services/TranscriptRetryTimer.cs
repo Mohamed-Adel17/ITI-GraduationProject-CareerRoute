@@ -142,7 +142,7 @@ namespace CareerRoute.Infrastructure.Services
                             session.Id, session.VideoStorageKey);
 
                         // Generate presigned URL from R2
-                        var presignedUrl = blobStorageService.GetPresignedUrl(session.VideoStorageKey, TimeSpan.FromMinutes(60));
+                        var presignedUrl = await blobStorageService.GetPresignedUrlAsync(session.VideoStorageKey, TimeSpan.FromMinutes(60));
                         
                         // Transcribe using the URL
                         var transcript = await deepgramService.TranscribeAudioUrlAsync(presignedUrl);

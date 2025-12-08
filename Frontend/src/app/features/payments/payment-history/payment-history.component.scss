@@ -1,0 +1,64 @@
+// PaymentHistoryComponent Styles
+// Using TailwindCSS - minimal custom styles needed
+
+:host {
+  display: block;
+}
+
+// Smooth transitions for table rows
+table tbody tr {
+  transition: background-color 0.2s ease-in-out;
+}
+
+// Custom scrollbar for table on mobile
+.overflow-x-auto {
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(156, 163, 175, 0.7);
+    }
+  }
+}
+
+// Loading spinner animation
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+// Pagination button hover states
+button {
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(17, 147, 212, 0.3);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  table {
+    font-size: 0.875rem;
+  }
+
+  .p-4 {
+    padding: 0.75rem;
+  }
+}

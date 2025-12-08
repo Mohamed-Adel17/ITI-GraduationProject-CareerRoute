@@ -3,3 +3,8 @@
 .idea/
 .claude/
 CLAUDE.md
+
+
+# Backend secrets
+Backend/CareerRoute.API/appsettings.json
+Backend/CareerRoute.API/appsettings.Development.json

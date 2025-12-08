@@ -185,6 +185,39 @@
           </div>
         </div>
 
+        <!-- Profile Picture (Optional) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Profile Picture <span class="text-gray-500 text-xs">(Optional)</span>
+          </label>
+          <div class="flex items-center gap-4">
+            <div class="relative">
+              <ng-container *ngIf="imagePreview; else defaultAvatar">
+                <img [src]="imagePreview" alt="Profile preview" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"/>
+              </ng-container>
+              <ng-template #defaultAvatar>
+                <div class="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-600 border-2 border-gray-300 dark:border-gray-500 flex items-center justify-center">
+                  <svg class="w-8 h-8 text-gray-400 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+              </ng-template>
+              <span *ngIf="selectedFile" class="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">✓</span>
+            </div>
+            <div class="flex-1">
+              <label for="profilePicture" class="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                {{ selectedFile ? 'Change' : 'Upload' }}
+              </label>
+              <input type="file" accept=".jpg,.jpeg,.png" class="hidden" id="profilePicture" (change)="onFileSelected($event)" />
+              <p *ngIf="selectedFile" class="mt-1 text-xs text-green-600 dark:text-green-400">{{ selectedFile.name }}</p>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">JPG, PNG (max 2MB)</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Password Field -->
         <div>
           <label
@@ -213,49 +246,26 @@
               class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
             >
-              <!-- Eye Icon (Show) -->
+              <!-- Eye Icon (Show password - when hidden) -->
               <svg
                 *ngIf="!showPassword"
                 class="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              <!-- Eye Off Icon (Hide) -->
+              <!-- Eye Off Icon (Hide password - when visible) -->
               <svg
                 *ngIf="showPassword"
                 class="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
               </svg>
             </button>
           </div>
@@ -316,49 +326,26 @@
               class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               [attr.aria-label]="showConfirmPassword ? 'Hide password' : 'Show password'"
             >
-              <!-- Eye Icon (Show) -->
+              <!-- Eye Icon (Show password - when hidden) -->
               <svg
                 *ngIf="!showConfirmPassword"
                 class="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              <!-- Eye Off Icon (Hide) -->
+              <!-- Eye Off Icon (Hide password - when visible) -->
               <svg
                 *ngIf="showConfirmPassword"
                 class="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
               </svg>
             </button>
           </div>
@@ -481,7 +468,7 @@
       </h2>
 
       <div class="space-y-4">
-        <!-- Feature 1: Group Sessions -->
+        <!-- Feature 1: 1-on-1 Mentorship -->
         <div
           class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
         >
@@ -491,25 +478,24 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
             >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M12 4.354a4 4 0 110 8.646 4 4 0 010-8.646M9 9H5m14 0h-4m0 0v5m0-5v-3m-4 16v-3m0 3h4m0 0h4m-13-3v3m0-3H9"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
               />
             </svg>
           </div>
           <div>
-            <h3 class="font-bold text-gray-900 dark:text-white">Group Sessions</h3>
+            <h3 class="font-bold text-gray-900 dark:text-white">1-on-1 Mentorship</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              Collaborate and learn with peers.
+              Personalized sessions with verified experts
             </p>
           </div>
         </div>
 
-        <!-- Feature 2: Recorded Sessions Library -->
+        <!-- Feature 2: HD Video Sessions -->
         <div
           class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
         >
@@ -519,7 +505,33 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">HD Video Sessions</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Seamless Zoom integration with calendar invites
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 3: Session Recordings -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
               <path
                 stroke-linecap="round"
@@ -536,14 +548,14 @@
             </svg>
           </div>
           <div>
-            <h3 class="font-bold text-gray-900 dark:text-white">Recorded Sessions Library</h3>
+            <h3 class="font-bold text-gray-900 dark:text-white">Session Recordings</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              Access expert advice anytime.
+              Access your session recordings anytime
             </p>
           </div>
         </div>
 
-        <!-- Feature 3: Interview Preparation Sessions -->
+        <!-- Feature 4: AI Transcripts & Summaries -->
         <div
           class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
         >
@@ -553,7 +565,60 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">AI Transcripts & Summaries</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Get AI-generated insights from every session
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 5: Flexible Payments -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white">Flexible Payments</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Cards, Vodafone Cash, Orange Money & more
+            </p>
+          </div>
+        </div>
+
+        <!-- Feature 6: Interview Preparation -->
+        <div
+          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div class="flex-shrink-0">
+            <svg
+              class="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
               <path
                 stroke-linecap="round"
@@ -566,35 +631,7 @@
           <div>
             <h3 class="font-bold text-gray-900 dark:text-white">Interview Preparation</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              Ace your next interview with expert coaching.
-            </p>
-          </div>
-        </div>
-
-        <!-- Feature 4: Session Follow-up Chat -->
-        <div
-          class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-        >
-          <div class="flex-shrink-0">
-            <svg
-              class="w-10 h-10 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 12h.01M12 12h.01M16 12h.01M8 16h8a2 2 0 002-2V8a2 2 0 00-2-2H8a2 2 0 00-2 2v8a2 2 0 002 2z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-gray-900 dark:text-white">Session Follow-up Chat</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Stay connected with your mentor after sessions.
+              Ace your next interview with expert coaching
             </p>
           </div>
         </div>

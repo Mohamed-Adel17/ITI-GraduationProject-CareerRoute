@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from './auth.service';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
@@ -61,6 +62,7 @@ import { ApiResponse, unwrapResponse, unwrapVoidResponse } from '../../shared/mo
 })
 export class UserService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
 
   // API endpoints
   private readonly API_URL = environment.apiUrl;
@@ -141,6 +143,12 @@ export class UserService {
         // Cache the user profile using the user ID from the response
         this.userProfilesCache.set(user.id, user);
         this.currentUserProfileSubject.next(user);
+        // Update auth state so header reflects changes
+        this.authService.updateCurrentUserInfo({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profilePictureUrl: user.profilePictureUrl
+        });
       })
     );
   }
@@ -257,17 +265,31 @@ export class UserService {
    * @note careerInterests can now be updated directly via this endpoint using careerInterestIds field
    */
   updateCurrentUserProfile(profileUpdate: UserProfileUpdate): Observable<User> {
+    const formData = new FormData();
+    
+    if (profileUpdate.firstName) formData.append('firstName', profileUpdate.firstName);
+    if (profileUpdate.lastName) formData.append('lastName', profileUpdate.lastName);
+    if (profileUpdate.phoneNumber) formData.append('phoneNumber', profileUpdate.phoneNumber);
+    if (profileUpdate.careerGoals) formData.append('careerGoals', profileUpdate.careerGoals);
+    if (profileUpdate.profilePicture) formData.append('profilePicture', profileUpdate.profilePicture);
+    if (profileUpdate.careerInterestIds) {
+      profileUpdate.careerInterestIds.forEach(id => formData.append('careerInterestIds', id.toString()));
+    }
+
     return this.http.patch<ApiResponse<User>>(
       `${this.USERS_URL}/me`,
-      profileUpdate
+      formData
     ).pipe(
       map(response => unwrapResponse(response)),
       tap(user => {
-        // Update cache using user ID from response
         this.userProfilesCache.set(user.id, user);
-
-        // Update current user profile observable
         this.currentUserProfileSubject.next(user);
+        // Update auth state so header reflects changes
+        this.authService.updateCurrentUserInfo({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profilePictureUrl: user.profilePictureUrl
+        });
       })
     );
   }
@@ -318,6 +340,12 @@ export class UserService {
         // Update current user profile observable if updating the currently cached user
         if (this.currentUserProfileSubject.value?.id === userId) {
           this.currentUserProfileSubject.next(user);
+        // Update auth state so header reflects changes
+        this.authService.updateCurrentUserInfo({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profilePictureUrl: user.profilePictureUrl
+        });
         }
       })
     );

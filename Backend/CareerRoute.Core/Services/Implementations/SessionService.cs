@@ -9,6 +9,7 @@ using CareerRoute.Core.DTOs.Sessions;
 using CareerRoute.Core.DTOs.Zoom;
 using CareerRoute.Core.Exceptions;
 using CareerRoute.Core.Extentions;
+using CareerRoute.Core.Prompts;
 using CareerRoute.Core.Services.Interfaces;
 using FluentValidation;
 using Hangfire;
@@ -46,6 +47,7 @@ namespace CareerRoute.Core.Services.Implementations
         private readonly ICalendarService _calendarService;
         private readonly IDeepgramService _deepgramService;
         private readonly IBlobStorageService _blobStorageService;
+        private readonly IReviewService _reviewService;
         private readonly IJobScheduler _jobScheduler;
         
         // Notification service for real-time notifications
@@ -53,6 +55,11 @@ namespace CareerRoute.Core.Services.Implementations
         
         // Session reminder job service for scheduling/cancelling reminders
         private readonly ISessionReminderJobService _sessionReminderJobService;
+
+        // Mentor balance service for handling payouts
+        private readonly IMentorBalanceService _mentorBalanceService;
+        // AI client for generating preparation guides
+        private readonly IAiClient _aiClient;
 
         // Semaphore for sequential processing of reschedule requests
         private static readonly SemaphoreSlim _rescheduleLock = new SemaphoreSlim(1, 1);
@@ -79,7 +86,10 @@ namespace CareerRoute.Core.Services.Implementations
             IBlobStorageService blobStorageService,
             IJobScheduler jobScheduler,
             ISignalRNotificationService notificationService,
-            ISessionReminderJobService sessionReminderJobService)
+            ISessionReminderJobService sessionReminderJobService,
+            IMentorBalanceService mentorBalanceService,
+            IReviewService reviewService,
+            IAiClient aiClient)
         {
             _logger = logger;
             _mapper = mapper;
@@ -104,6 +114,9 @@ namespace CareerRoute.Core.Services.Implementations
             _jobScheduler = jobScheduler;
             _notificationService = notificationService;
             _sessionReminderJobService = sessionReminderJobService;
+            _mentorBalanceService = mentorBalanceService;
+            _reviewService = reviewService;
+            _aiClient = aiClient;
         }
 
 
@@ -225,6 +238,14 @@ namespace CareerRoute.Core.Services.Implementations
                 dto.RescheduleRequestedBy = session.Reschedule.RequestedBy;
             }
 
+            // Include AI preparation fields only for mentor (not for mentees)
+            var isMentor = session.MentorId == userId;
+            if (!isMentor)
+            {
+                dto.AIPreparationGuide = null;
+                dto.AIPreparationGeneratedAt = null;
+            }
+
             return dto;
         }
 
@@ -261,9 +282,9 @@ namespace CareerRoute.Core.Services.Implementations
         }
 
 
-        public async Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize)
+        public async Task<PastSessionsResponse> GetPastSessionsAsync(string userId, string userRole, int page, int pageSize, SessionStatusOptions? status = null)
         {
-            var (allPastSessions, totalCount) = await _sessionRepository.GetPastSessionsAsync(userId, userRole, page, pageSize);
+            var (allPastSessions, totalCount) = await _sessionRepository.GetPastSessionsAsync(userId, userRole, page, pageSize, status);
 
             if (allPastSessions.Count == 0)
 
@@ -349,6 +370,7 @@ namespace CareerRoute.Core.Services.Implementations
             rescheduleSession.OriginalStartTime = session.ScheduledStartTime;
             rescheduleSession.RequestedBy = role;
             rescheduleSession.Status = SessionRescheduleOptions.Pending;
+            rescheduleSession.NewTimeSlotId = dto.SlotId;
 
             session.Status = SessionStatusOptions.PendingReschedule;
             _sessionRepository.Update(session);
@@ -661,13 +683,13 @@ namespace CareerRoute.Core.Services.Implementations
             session.Status = SessionStatusOptions.Completed;
             session.CompletedAt = DateTime.UtcNow;
 
-            if (session.Payment != null)
+            if (session.PaymentId != null)
             {
-                session.Payment.PaymentReleaseDate = session.CompletedAt.Value.AddHours(72);
+                // Delegate balance update and payment release scheduling to the balance service
+                await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(sessionId);
             }
 
-            _sessionRepository.Update(session);
-            await _sessionRepository.SaveChangesAsync();
+           
 
             _logger.LogInformation("[Session] Session {SessionId} completed successfully by {Role}", sessionId, role);
 
@@ -676,9 +698,25 @@ namespace CareerRoute.Core.Services.Implementations
                 await SendCompletionEmailAsync(session.Mentee.Email, session);
             }
 
-            //Trigger 72 - hour payment hold(release after 3 days if no disputes)
-            //Trigger review request email to mentee after 24 hours
             //Activate 3 - day chat window between mentor and mentee
+
+
+            // Schedule sending a review request email if no review added within 24 hours after the session ends
+            var jobId = BackgroundJob.Schedule<IReviewService>(
+                service => service.SendReviewRequestEmailAsync(session.Id), TimeSpan.FromHours(24));
+
+
+            session.ReviewRequestJobId = jobId;
+
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[Review Request] Scheduled review reminder email for mentee of session {SessionId}. JobId: {JobId}, Delay: 24 hours",
+                session.Id,
+                jobId
+            );
+
             var dto = _mapper.Map<CompleteSessionResponseDto>(session);
             return dto;
 
@@ -775,9 +813,8 @@ namespace CareerRoute.Core.Services.Implementations
                 session.ScheduledEndTime = reschedule.NewScheduledStartTime.AddMinutes((int)session.Duration);
                 session.Status = SessionStatusOptions.Confirmed; // Restore status after approval
                 session.UpdatedAt = DateTime.UtcNow;
-                _sessionRepository.Update(session);
-                await _sessionRepository.SaveChangesAsync();
 
+                // Release old time slot
                 if (!string.IsNullOrEmpty(oldTimeSlotId))
                 {
                     var oldTimeSlot = await _timeSlotRepository.GetByIdAsync(oldTimeSlotId);
@@ -786,9 +823,25 @@ namespace CareerRoute.Core.Services.Implementations
                         oldTimeSlot.IsBooked = false;
                         oldTimeSlot.SessionId = null;
                         _timeSlotRepository.Update(oldTimeSlot);
-                        await _timeSlotRepository.SaveChangesAsync();
                     }
                 }
+
+                // Book new time slot if specified
+                if (!string.IsNullOrEmpty(reschedule.NewTimeSlotId))
+                {
+                    var newTimeSlot = await _timeSlotRepository.GetByIdAsync(reschedule.NewTimeSlotId);
+                    if (newTimeSlot != null && !newTimeSlot.IsBooked)
+                    {
+                        newTimeSlot.IsBooked = true;
+                        newTimeSlot.SessionId = session.Id;
+                        session.TimeSlotId = newTimeSlot.Id;
+                        _timeSlotRepository.Update(newTimeSlot);
+                    }
+                }
+
+                _sessionRepository.Update(session);
+                await _sessionRepository.SaveChangesAsync();
+                await _timeSlotRepository.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
@@ -1166,14 +1219,14 @@ namespace CareerRoute.Core.Services.Implementations
             throw new BusinessException("Failed to create Zoom meeting after multiple attempts.");
         }
 
-        public async Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId)
+        public async Task<SessionRecordingDto> GetSessionRecordingAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching recording for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this recording.");
             }
@@ -1199,7 +1252,7 @@ namespace CareerRoute.Core.Services.Implementations
             }
 
             // Generate R2 presigned URL with "inline" disposition for browser streaming
-            var presignedUrl = _blobStorageService.GetPresignedUrl(
+            var presignedUrl = await _blobStorageService.GetPresignedUrlAsync(
                 session.VideoStorageKey, 
                 TimeSpan.FromMinutes(60), 
                 "inline");
@@ -1220,14 +1273,14 @@ namespace CareerRoute.Core.Services.Implementations
             };
         }
 
-        public async Task<string> GetSessionTranscriptAsync(string sessionId, string userId)
+        public async Task<string> GetSessionTranscriptAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching transcript for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this transcript.");
             }
@@ -1240,14 +1293,14 @@ namespace CareerRoute.Core.Services.Implementations
             return session.Transcript;
         }
 
-        public async Task<string> GetSessionSummaryAsync(string sessionId, string userId)
+        public async Task<string> GetSessionSummaryAsync(string sessionId, string userId, string userRole)
         {
             _logger.LogInformation("[Session] Fetching summary for session {SessionId} by user {UserId}", sessionId, userId);
 
             var session = await _sessionRepository.GetByIdAsync(sessionId);
             if (session == null) throw new NotFoundException("Session", sessionId);
 
-            if (session.MentorId != userId && session.MenteeId != userId)
+            if (userRole != "Admin" && session.MentorId != userId && session.MenteeId != userId)
             {
                 throw new UnauthorizedException("You are not authorized to view this summary.");
             }
@@ -1263,6 +1316,98 @@ namespace CareerRoute.Core.Services.Implementations
             }
 
             return session.Summary;
+        }
+
+        public async Task<GeneratePreparationResponseDto> GeneratePreparationAsync(string sessionId, string userId)
+        {
+            _logger.LogInformation("[Session] Generating AI preparation for session {SessionId} by user {UserId}", sessionId, userId);
+
+            var session = await _sessionRepository.GetByIdForPreparationAsync(sessionId);
+            if (session == null) throw new NotFoundException("Session", sessionId);
+
+            // Only mentor can generate preparation
+            if (session.MentorId != userId)
+                throw new UnauthorizedException("Only the session mentor can generate preparation guides.");
+
+            // Cannot generate for completed/cancelled sessions
+            var invalidStatuses = new[] { SessionStatusOptions.Completed, SessionStatusOptions.Cancelled, SessionStatusOptions.NoShow };
+            if (invalidStatuses.Contains(session.Status))
+                throw new BusinessException("Cannot generate preparation for completed, cancelled, or no-show sessions.");
+
+            // Return existing if already generated
+            if (!string.IsNullOrEmpty(session.AIPreparationGuide))
+            {
+                return new GeneratePreparationResponseDto
+                {
+                    SessionId = sessionId,
+                    PreparationGuide = session.AIPreparationGuide,
+                    GeneratedAt = session.AIPreparationGeneratedAt ?? DateTime.UtcNow,
+                    WasAlreadyGenerated = true
+                };
+            }
+
+            // Build user prompt with session context
+            var userPrompt = BuildPreparationPrompt(session);
+
+            var guide = await _aiClient.GetCompletionAsync(
+                SessionPreparationPrompt.SystemPrompt,
+                userPrompt);
+
+            session.AIPreparationGuide = guide;
+            session.AIPreparationGeneratedAt = DateTime.UtcNow;
+            _sessionRepository.Update(session);
+            await _sessionRepository.SaveChangesAsync();
+
+            _logger.LogInformation("[Session] AI preparation generated for session {SessionId}", sessionId);
+
+            return new GeneratePreparationResponseDto
+            {
+                SessionId = sessionId,
+                PreparationGuide = guide,
+                GeneratedAt = session.AIPreparationGeneratedAt.Value,
+                WasAlreadyGenerated = false
+            };
+        }
+
+        private static string BuildPreparationPrompt(Session session)
+        {
+            var menteeName = session.Mentee?.FullName ?? "the mentee";
+            var careerGoal = session.Mentee?.CareerGoal;
+            var careerInterests = session.Mentee?.UserSkills?.Any() == true
+                ? string.Join(", ", session.Mentee.UserSkills.Select(us => us.Skill?.Name).Where(n => n != null))
+                : null;
+            var topic = session.Topic;
+            var notes = session.Notes;
+            var duration = session.Duration == DurationOptions.ThirtyMinutes ? "30" : "60";
+            var scheduledDate = session.ScheduledStartTime.ToString("MMMM dd, yyyy 'at' HH:mm 'UTC'");
+
+            if (string.IsNullOrWhiteSpace(topic) && string.IsNullOrWhiteSpace(notes))
+            {
+                return $"""
+                    **SESSION INFO:**
+                    - Mentee: {menteeName}
+                    - Career Goal: {careerGoal ?? "Not specified"}
+                    - Career Interests: {careerInterests ?? "Not specified"}
+                    - Duration: {duration} minutes
+                    - Scheduled: {scheduledDate}
+
+                    **NOTE:** The mentee has not provided a topic or notes for this session. 
+                    Please provide general preparation guidance and suggest questions to ask at the start of the session to understand their needs.
+                    """;
+            }
+
+            return $"""
+                **SESSION INFO:**
+                - Mentee: {menteeName}
+                - Career Goal: {careerGoal ?? "Not specified"}
+                - Career Interests: {careerInterests ?? "Not specified"}
+                - Duration: {duration} minutes
+                - Scheduled: {scheduledDate}
+
+                **TOPIC:** {topic ?? "Not specified"}
+
+                **MENTEE'S NOTES:** {notes ?? "No additional notes provided"}
+                """;
         }
 
         public async Task CancelSessionAsync(string sessionId, string cancellationReason)
@@ -1441,6 +1586,11 @@ namespace CareerRoute.Core.Services.Implementations
                     _sessionRepository.Update(session);
                     await _sessionRepository.SaveChangesAsync();
 
+                    if (session.PaymentId != null)
+                    {
+                        await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(sessionId);
+                    }
+
                     _logger.LogInformation("[Session] Successfully auto-terminated session {SessionId}", sessionId);
                 }
                 else
@@ -1498,6 +1648,11 @@ namespace CareerRoute.Core.Services.Implementations
             _sessionRepository.Update(session);
             await _sessionRepository.SaveChangesAsync();
 
+            if (session.PaymentId != null)
+            {
+                await _mentorBalanceService.UpdateBalanceOnSessionCompletionAsync(session.Id);
+            }
+
             _logger.LogInformation("[Session] Successfully processed recording completion for session {SessionId}. Status updated to Completed.", session.Id);
         }
 
@@ -1542,7 +1697,7 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 _logger.LogInformation("[Session] Starting Deepgram transcription via R2 URL for session {SessionId}", session.Id);
 
-                var presignedUrl = _blobStorageService.GetPresignedUrl(session.VideoStorageKey, TimeSpan.FromMinutes(60));
+                var presignedUrl = await _blobStorageService.GetPresignedUrlAsync(session.VideoStorageKey, TimeSpan.FromMinutes(60));
 
                 var transcript = await _deepgramService.TranscribeAudioUrlAsync(presignedUrl);
 

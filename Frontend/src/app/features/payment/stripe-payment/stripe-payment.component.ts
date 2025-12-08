@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { loadStripe, Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { environment } from '../../../../environments/environment.development';
 import { PaymentService } from '../../../core/services/payment.service';
 import {
@@ -79,9 +79,9 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
   @Output() paymentCancelled = new EventEmitter<void>();
 
   // Stripe instances
-  private stripe: Stripe | null = null;
-  private elements: StripeElements | null = null;
-  private cardElement: StripeCardElement | null = null;
+  private stripe: any = null;
+  private elements: any = null;
+  private cardElement: any = null;
 
   // Payment state
   paymentIntentId: string | null = null;
@@ -229,7 +229,7 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
         this.cardElement.mount('#card-element');
         
         // Listen for card element changes
-        this.cardElement.on('change', (event) => {
+        this.cardElement.on('change', (event: any) => {
           if (event.error) {
             this.errorMessage = event.error.message;
           } else {
@@ -339,7 +339,14 @@ export class StripePaymentComponent implements OnInit, OnDestroy {
    */
   retryPayment(): void {
     this.errorMessage = null;
+    // Destroy existing card element before creating new one
+    if (this.cardElement) {
+      this.cardElement.destroy();
+      this.cardElement = null;
+    }
     this.currentStatus = PaymentFlowStatus.ProcessingPayment;
+    // Wait for DOM to render before creating new card element
+    setTimeout(() => this.createCardElement(), 0);
   }
 
   /**

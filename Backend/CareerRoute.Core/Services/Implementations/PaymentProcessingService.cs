@@ -425,7 +425,8 @@ namespace CareerRoute.Core.Services.Implementations
             {
                 // Update payment status
                 payment.UpdatedAt = DateTime.UtcNow;
-                payment.PaymentReleaseDate = DateTime.UtcNow.AddHours(72); // Release after 72 hours
+                // Note: PaymentReleaseDate is set in MentorBalanceService.UpdateBalanceOnSessionCompletionAsync
+                // when the session is actually completed, not during payment confirmation
                 _paymentRepository.Update(payment);
 
                 // Update session status

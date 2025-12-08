@@ -42,7 +42,7 @@ namespace CareerRoute.API.Controllers
                 
                 using var stream = file.OpenReadStream();
                 var uploadedKey = await _blobStorageService.UploadAsync(stream, key, file.ContentType);
-                var url = _blobStorageService.GetPresignedUrl(uploadedKey, TimeSpan.FromMinutes(10));
+                var url =await _blobStorageService.GetPresignedUrlAsync(uploadedKey, TimeSpan.FromMinutes(10));
 
                 return Ok(new { Key = uploadedKey, PresignedUrl = url });
             }
@@ -68,7 +68,7 @@ namespace CareerRoute.API.Controllers
                 _logger.LogInformation("Uploaded test file to R2: {Key}", key);
 
                 // 2. Generate Presigned URL
-                var presignedUrl = _blobStorageService.GetPresignedUrl(key, TimeSpan.FromMinutes(60));
+                var presignedUrl =await _blobStorageService.GetPresignedUrlAsync(key, TimeSpan.FromMinutes(60));
                 _logger.LogInformation("Generated R2 Presigned URL");
 
                 // 3. Send URL to Deepgram

@@ -167,11 +167,19 @@ export class AuthService {
   register(data: RegisterRequest): Observable<RegisterResponse> {
     this.setLoading(true);
 
-    return this.http.post<ApiResponse<RegisterResponse>>(`${this.AUTH_URL}/register`, data).pipe(
+    const formData = new FormData();
+    formData.append('email', data.email);
+    formData.append('password', data.password);
+    formData.append('confirmPassword', data.confirmPassword);
+    if (data.firstName) formData.append('firstName', data.firstName);
+    if (data.lastName) formData.append('lastName', data.lastName);
+    if (data.phoneNumber) formData.append('phoneNumber', data.phoneNumber);
+    if (data.registerAsMentor !== undefined) formData.append('registerAsMentor', data.registerAsMentor.toString());
+    if (data.profilePicture) formData.append('profilePicture', data.profilePicture);
+
+    return this.http.post<ApiResponse<RegisterResponse>>(`${this.AUTH_URL}/register`, formData).pipe(
       map(response => unwrapResponse(response)),
       tap(registerResponse => {
-        // Response was successfully unwrapped, update loading state
-        // Component handles notifications and navigation
         this.authStateSubject.next({
           ...this.authStateSubject.value,
           loading: false,
@@ -179,8 +187,6 @@ export class AuthService {
         });
       }),
       catchError(error => {
-        // Error interceptor has already processed the error
-        // Component will handle error display and notifications
         const currentState = this.authStateSubject.value;
         this.authStateSubject.next({
           ...currentState,
@@ -262,6 +268,24 @@ export class AuthService {
    * Logout current user
    * @param showNotification Whether to show logout notification (default: true)
    */
+
+  /**
+   * Update current user info in auth state (called after profile update)
+   */
+  updateCurrentUserInfo(updates: { firstName?: string; lastName?: string; profilePictureUrl?: string | null }): void {
+    const currentState = this.authStateSubject.value;
+    if (currentState.user) {
+      this.authStateSubject.next({
+        ...currentState,
+        user: {
+          ...currentState.user,
+          firstName: updates.firstName ?? currentState.user.firstName,
+          lastName: updates.lastName ?? currentState.user.lastName,
+          profilePictureUrl: updates.profilePictureUrl ?? undefined
+        }
+      });
+    }
+  }
   logout(showNotification: boolean = true): void {
     // Stop token refresh timer
     this.stopTokenRefreshTimer();

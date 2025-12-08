@@ -22,6 +22,7 @@ import {
   SessionRecordingResponse,
   SessionTranscriptResponse,
   SessionSummaryResponse,
+  AIPreparationResponse,
   UpcomingSessionsResponse,
   PastSessionsResponse
 } from '../../shared/models/session.model';
@@ -264,10 +265,14 @@ export class SessionService {
    * });
    * ```
    */
-  getPastSessions(page: number = 1, pageSize: number = 10): Observable<PastSessionsResponse> {
+  getPastSessions(page: number = 1, pageSize: number = 10, status?: 'Completed' | 'Cancelled'): Observable<PastSessionsResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
+
+    if (status) {
+      params = params.set('status', status);
+    }
 
     return this.http
       .get<ApiResponse<PastSessionsResponse>>(`${this.SESSIONS_URL}/past`, { params })
@@ -622,6 +627,45 @@ export class SessionService {
       .pipe(map(text => ({ sessionId, summary: text, isAvailable: !!text })));
   }
 
+  // ==================== Generate AI Preparation Guide ====================
+
+  /**
+   * Generate AI preparation guide for a session (Mentor only)
+   *
+   * @param sessionId - Session GUID
+   * @returns Observable of AIPreparationResponse
+   *
+   * @remarks
+   * - Endpoint: POST /api/sessions/{id}/generate-preparation
+   * - Requires authentication (mentor or admin)
+   * - Only the session's mentor can generate their own preparation
+   * - Returns cached guide if already generated (wasAlreadyGenerated = true)
+   * - Guide is markdown-formatted with:
+   *   - Key talking points based on topic
+   *   - Suggested questions to ask the mentee
+   *   - Topics/resources to review beforehand
+   *   - Potential challenges the mentee might face
+   *   - Suggested session structure
+   * - Returns 400 if session is Completed, Cancelled, or NoShow
+   * - Returns 403 if user is not the session's mentor
+   * - Returns 404 if session not found
+   *
+   * @example
+   * ```typescript
+   * this.sessionService.generatePreparation(sessionId).subscribe({
+   *   next: (response) => {
+   *     console.log('Guide:', response.preparationGuide);
+   *     console.log('Was cached:', response.wasAlreadyGenerated);
+   *   }
+   * });
+   * ```
+   */
+  generatePreparation(sessionId: string): Observable<AIPreparationResponse> {
+    return this.http
+      .post<ApiResponse<AIPreparationResponse>>(`${this.SESSIONS_URL}/${sessionId}/generate-preparation`, {})
+      .pipe(map(response => unwrapResponse(response)));
+  }
+
   // ==================== Helper Methods ====================
 
   /**
@@ -685,5 +729,48 @@ export class SessionService {
 
     // Can join 15 minutes before start and up to 15 minutes after end
     return minutesUntilStart <= 15 && minutesSinceEnd <= 15;
+  }
+
+  // ==================== Test/Demo Endpoints ====================
+
+  /**
+   * Seed a test session for demo purposes (bypasses 24-hour rule)
+   * Creates a TimeSlot and Session with Pending status ready for payment.
+   *
+   * @param mentorId - Mentor ID
+   * @param menteeId - Mentee ID
+   * @param offsetMinutes - Minutes from now for session start (default: 2)
+   * @param durationMinutes - Session duration: 30 or 60 (default: 60)
+   * @returns Observable with seeded session details
+   */
+  seedTestSession(
+    mentorId: string,
+    menteeId: string,
+    offsetMinutes: number = 2,
+    durationMinutes: number = 60,
+    topic?: string,
+    notes?: string
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('mentorId', mentorId)
+      .set('menteeId', menteeId)
+      .set('offsetMinutes', offsetMinutes.toString())
+      .set('durationMinutes', durationMinutes.toString());
+
+    if (topic) params = params.set('topic', topic);
+    if (notes) params = params.set('notes', notes);
+
+    return this.http.post<any>(`${this.API_URL}/test/zoom/seed-session-pending-payment`, null, { params });
+  }
+
+  /**
+   * End a Zoom meeting for testing purposes.
+   * Marks session as Completed and ends the Zoom meeting.
+   *
+   * @param sessionId - Session ID to end
+   * @returns Observable with result
+   */
+  endMeetingTest(sessionId: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/test/zoom/end-meeting/${sessionId}`, null);
   }
 }

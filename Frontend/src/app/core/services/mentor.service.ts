@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { AuthService } from './auth.service';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment.development';
 import { ApiResponse, unwrapResponse } from '../../shared/models/api-response.model';
 import {
@@ -12,7 +13,9 @@ import {
   MentorSearchResponse,
   MentorApplication,
   MentorProfileUpdate,
-  RejectMentorRequest
+  RejectMentorRequest,
+  PreviousWork,
+  CreatePreviousWork
 } from '../../shared/models/mentor.model';
 
 /**
@@ -101,12 +104,43 @@ import {
   providedIn: 'root'
 })
 export class MentorService {
+  private readonly authService = inject(AuthService);
   private readonly http = inject(HttpClient);
 
   // API endpoints
   private readonly API_URL = environment.apiUrl;
   private readonly MENTORS_URL = `${this.API_URL}/mentors`;
 
+
+  // ==================== Helper Methods ====================
+
+  private toFormData(data: MentorProfileUpdate | MentorApplication): FormData {
+    const formData = new FormData();
+    
+    if ('firstName' in data && data.firstName) formData.append('firstName', data.firstName);
+    if ('lastName' in data && data.lastName) formData.append('lastName', data.lastName);
+    if ('phoneNumber' in data && data.phoneNumber) formData.append('phoneNumber', data.phoneNumber);
+    if (data.headline) formData.append('headline', data.headline);
+    if (data.bio) formData.append('bio', data.bio);
+    if (data.yearsOfExperience !== undefined) formData.append('yearsOfExperience', data.yearsOfExperience.toString());
+    if (data.certifications) formData.append('certifications', data.certifications);
+    if (data.rate30Min !== undefined) formData.append('rate30Min', data.rate30Min.toString());
+    if (data.rate60Min !== undefined) formData.append('rate60Min', data.rate60Min.toString());
+    if ('isAvailable' in data && data.isAvailable !== undefined) formData.append('isAvailable', data.isAvailable.toString());
+    if ('profilePicture' in data && data.profilePicture) formData.append('profilePicture', data.profilePicture);
+    if (data.cv) formData.append('cv', data.cv);
+    if (data.linkedInUrl) formData.append('linkedInUrl', data.linkedInUrl);
+    if (data.gitHubUrl) formData.append('gitHubUrl', data.gitHubUrl);
+    if (data.websiteUrl) formData.append('websiteUrl', data.websiteUrl);
+    if ('expertiseTagIds' in data && data.expertiseTagIds) {
+      data.expertiseTagIds.forEach(id => formData.append('expertiseTagIds', id.toString()));
+    }
+    if (data.categoryIds) {
+      data.categoryIds.forEach(id => formData.append('categoryIds', id.toString()));
+    }
+    
+    return formData;
+  }
   // ==================== Public Endpoints ====================
 
   /**
@@ -390,9 +424,56 @@ export class MentorService {
    * ```
    */
   applyToBecomeMentor(application: MentorApplication): Observable<Mentor> {
+    const formData = new FormData();
+    formData.append('bio', application.bio);
+    formData.append('yearsOfExperience', application.yearsOfExperience.toString());
+    formData.append('rate30Min', application.rate30Min.toString());
+    formData.append('rate60Min', application.rate60Min.toString());
+    
+    if (application.headline) {
+      formData.append('headline', application.headline);
+    }
+    
+    if (application.certifications) {
+      formData.append('certifications', application.certifications);
+    }
+    
+    if (application.linkedInUrl) {
+      formData.append('linkedInUrl', application.linkedInUrl);
+    }
+    
+    if (application.gitHubUrl) {
+      formData.append('gitHubUrl', application.gitHubUrl);
+    }
+    
+    if (application.websiteUrl) {
+      formData.append('websiteUrl', application.websiteUrl);
+    }
+    
+    application.expertiseTagIds.forEach(id => formData.append('expertiseTagIds', id.toString()));
+    application.categoryIds.forEach(id => formData.append('categoryIds', id.toString()));
+    
+    if (application.cv) {
+      formData.append('cv', application.cv);
+    }
+    
+    if (application.previousWorks && application.previousWorks.length > 0) {
+      application.previousWorks.forEach((work, index) => {
+        formData.append(`previousWorks[${index}].companyName`, work.companyName);
+        formData.append(`previousWorks[${index}].jobTitle`, work.jobTitle);
+        formData.append(`previousWorks[${index}].startDate`, work.startDate);
+        if (work.endDate) {
+          formData.append(`previousWorks[${index}].endDate`, work.endDate);
+        }
+        if (work.description) {
+          formData.append(`previousWorks[${index}].description`, work.description);
+        }
+      });
+    }
+
     return this.http.post<ApiResponse<Mentor>>(
       this.MENTORS_URL,
-      application
+      formData
     ).pipe(
       map(response => unwrapResponse(response))
     );
@@ -480,9 +561,17 @@ export class MentorService {
   updateCurrentMentorProfile(profileUpdate: MentorProfileUpdate): Observable<Mentor> {
     return this.http.patch<ApiResponse<Mentor>>(
       `${this.MENTORS_URL}/me`,
-      profileUpdate
+      this.toFormData(profileUpdate)
     ).pipe(
-      map(response => unwrapResponse(response))
+      map(response => unwrapResponse(response)),
+      tap(mentor => {
+        // Update auth state so header reflects changes
+        this.authService.updateCurrentUserInfo({
+          firstName: mentor.firstName,
+          lastName: mentor.lastName,
+          profilePictureUrl: mentor.profilePictureUrl
+        });
+      })
     );
   }
 
@@ -553,7 +642,7 @@ export class MentorService {
   updateMentorProfile(mentorId: string, profileUpdate: MentorProfileUpdate): Observable<Mentor> {
     return this.http.patch<ApiResponse<Mentor>>(
       `${this.MENTORS_URL}/${mentorId}`,
-      profileUpdate
+      this.toFormData(profileUpdate)
     ).pipe(
       map(response => unwrapResponse(response))
     );
@@ -736,5 +825,52 @@ export class MentorService {
     }
 
     return httpParams;
+  }
+
+  // ==================== Previous Work Methods ====================
+
+  /**
+   * Add a previous work entry for the current mentor
+   * 
+   * @param work - Previous work data to add
+   * @returns Observable<PreviousWork> - The created previous work entry
+   */
+  addPreviousWork(work: CreatePreviousWork): Observable<PreviousWork> {
+    return this.http.post<ApiResponse<PreviousWork>>(
+      `${this.MENTORS_URL}/me/previous-works`,
+      work
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Update a previous work entry
+   * 
+   * @param workId - ID of the previous work to update
+   * @param work - Updated work data
+   * @returns Observable<PreviousWork> - The updated previous work entry
+   */
+  updatePreviousWork(workId: number, work: Partial<CreatePreviousWork>): Observable<PreviousWork> {
+    return this.http.patch<ApiResponse<PreviousWork>>(
+      `${this.MENTORS_URL}/me/previous-works/${workId}`,
+      work
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
+  }
+
+  /**
+   * Delete a previous work entry
+   * 
+   * @param workId - ID of the previous work to delete
+   * @returns Observable<void>
+   */
+  deletePreviousWork(workId: number): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(
+      `${this.MENTORS_URL}/me/previous-works/${workId}`
+    ).pipe(
+      map(response => unwrapResponse(response))
+    );
   }
 }

@@ -3,13 +3,16 @@
   <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
 
   <!-- Modal Container -->
-  <div class="flex min-h-full items-center justify-center p-4">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+  <div class="flex min-h-full items-center justify-center p-4 pt-24">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[calc(100vh-7rem)] overflow-y-auto"
       (click)="$event.stopPropagation()">
 
       <!-- Loading State -->
       <div *ngIf="isLoading" class="p-8 text-center">
-        <img src="/logo.png" alt="Loading" class="inline-block h-12 w-12 object-contain logo-spin mb-4" />
+        <svg class="animate-spin h-12 w-12 text-primary mx-auto mb-4" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
         <p class="text-gray-600 dark:text-gray-400">Loading payment information...</p>
       </div>
 

@@ -43,16 +43,34 @@
   outline: none;
 }
 
+/* Date input text color fix */
+input[type="date"] {
+  color: inherit;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  color: inherit;
+}
+
+:host-context(.light) input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 /* Textarea Resize */
 .mentor-profile-form textarea {
   resize: vertical;
   min-height: 150px;
 }
 
-/* Number Input Arrows */
+/* Number Input Arrows - Hide spinners */
 .mentor-profile-form input[type="number"]::-webkit-inner-spin-button,
 .mentor-profile-form input[type="number"]::-webkit-outer-spin-button {
-  opacity: 1;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.mentor-profile-form input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 /* Category Cards Hover Effect */
@@ -218,10 +236,10 @@
 }
 
 /* Dark Mode Adjustments */
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   .mentor-profile-form input,
   .mentor-profile-form textarea {
-    color-scheme: dark;
+    color-scheme: light ;
   }
 
   .mentor-profile-form input:focus,

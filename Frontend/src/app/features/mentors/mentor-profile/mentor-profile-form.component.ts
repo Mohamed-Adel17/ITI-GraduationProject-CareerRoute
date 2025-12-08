@@ -1,12 +1,13 @@
 import { Component, OnInit, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, FormsModule } from '@angular/forms';
 import { MentorService } from '../../../core/services/mentor.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import {
   Mentor,
   MentorProfileUpdate,
   MentorApplication,
+  CreatePreviousWork,
   validatePricing
 } from '../../../shared/models/mentor.model';
 import { Skill } from '../../../shared/models/skill.model';
@@ -42,7 +43,7 @@ import { Category } from '../../../shared/models/category.model';
 @Component({
   selector: 'app-mentor-profile-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './mentor-profile-form.component.html',
   styleUrls: ['./mentor-profile-form.component.css']
 })
@@ -63,6 +64,9 @@ export class MentorProfileFormComponent implements OnInit {
   // Input: Form mode (create or edit)
   @Input() mode: 'create' | 'edit' = 'create';
 
+  // Input: Submitting state (controlled by parent)
+  @Input() isSubmitting = false;
+
   // Output: Form submission event
   @Output() formSubmit = new EventEmitter<MentorProfileUpdate | MentorApplication>();
 
@@ -73,16 +77,21 @@ export class MentorProfileFormComponent implements OnInit {
   mentorForm!: FormGroup;
 
   // Component state
-  isSubmitting = false;
   showPricingHelp = false;
+  selectedCv: File | null = null;
+
+  // Previous work state
+  previousWorks: CreatePreviousWork[] = [];
+  showAddWorkForm = false;
+  newWork: CreatePreviousWork = { companyName: '', jobTitle: '', startDate: '' };
 
   // Pricing constraints (from API contract)
   readonly MIN_PRICE = 50; // Minimum session rate
   readonly MAX_PRICE = 10000;
   readonly MIN_BIO_LENGTH = 50; // API: min 50, max 1000
   readonly MAX_BIO_LENGTH = 1000;
-  readonly MIN_EXPERIENCE = 0;
-  readonly MAX_EXPERIENCE = 50;
+  readonly MIN_EXPERIENCE = 1;
+  readonly MAX_EXPERIENCE = 60;
 
   ngOnInit(): void {
     this.initializeForm();
@@ -96,6 +105,7 @@ export class MentorProfileFormComponent implements OnInit {
    */
   private initializeForm(): void {
     const formConfig: any = {
+      headline: ['', [Validators.maxLength(150)]],
       bio: [
         '',
         [
@@ -104,12 +114,15 @@ export class MentorProfileFormComponent implements OnInit {
           Validators.maxLength(this.MAX_BIO_LENGTH)
         ]
       ],
+      linkedInUrl: ['', [this.linkedInValidator]],
+      gitHubUrl: ['', [this.gitHubValidator]],
+      websiteUrl: ['', [Validators.pattern(/^https?:\/\/.+/)]],
       expertiseTagIds: [
         [],
         [Validators.required] // Required in both create and edit modes
       ],
       yearsOfExperience: [
-        0,
+        1,
         [
           Validators.required,
           Validators.min(this.MIN_EXPERIENCE),
@@ -154,7 +167,11 @@ export class MentorProfileFormComponent implements OnInit {
    */
   private populateForm(mentor: Mentor): void {
     const formData: any = {
+      headline: mentor.headline || '',
       bio: mentor.bio,
+      linkedInUrl: mentor.linkedInUrl || '',
+      gitHubUrl: mentor.gitHubUrl || '',
+      websiteUrl: mentor.websiteUrl || '',
       expertiseTagIds: mentor.expertiseTags ? mentor.expertiseTags.map(skill => skill.id) : [],
       yearsOfExperience: mentor.yearsOfExperience,
       certifications: mentor.certifications || '',
@@ -181,6 +198,42 @@ export class MentorProfileFormComponent implements OnInit {
       return { pricingInvalid: { errors: validation.errors } };
     }
 
+    return null;
+  }
+
+  /**
+   * Custom validator for LinkedIn URL
+   */
+  private linkedInValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) return null;
+    
+    const url = control.value.toLowerCase();
+    if (!url.includes('linkedin.com')) {
+      return { invalidLinkedIn: { message: 'Must be a valid LinkedIn URL (linkedin.com)' } };
+    }
+    
+    if (!url.match(/^https?:\/\//)) {
+      return { invalidUrl: { message: 'URL must start with http:// or https://' } };
+    }
+    
+    return null;
+  }
+
+  /**
+   * Custom validator for GitHub URL
+   */
+  private gitHubValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) return null;
+    
+    const url = control.value.toLowerCase();
+    if (!url.includes('github.com')) {
+      return { invalidGitHub: { message: 'Must be a valid GitHub URL (github.com)' } };
+    }
+    
+    if (!url.match(/^https?:\/\//)) {
+      return { invalidUrl: { message: 'URL must start with http:// or https://' } };
+    }
+    
     return null;
   }
 
@@ -262,6 +315,25 @@ export class MentorProfileFormComponent implements OnInit {
   applySuggestedRate(): void {
     const suggested = this.getSuggestedRate60Min();
     this.mentorForm.patchValue({ rate60Min: suggested });
+  }
+
+  /**
+   * Handle CV file selection
+   */
+  onCvSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      if (file.type !== 'application/pdf') {
+        this.notificationService.error('Please select a PDF file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        this.notificationService.error('CV file must be less than 5MB');
+        return;
+      }
+      this.selectedCv = file;
+    }
   }
 
   /**
@@ -348,6 +420,23 @@ export class MentorProfileFormComponent implements OnInit {
       if (errors['max']) return `Maximum rate is $${this.MAX_PRICE}`;
     }
 
+    // LinkedIn URL errors
+    if (fieldName === 'linkedInUrl') {
+      if (errors['invalidLinkedIn']) return errors['invalidLinkedIn'].message;
+      if (errors['invalidUrl']) return errors['invalidUrl'].message;
+    }
+
+    // GitHub URL errors
+    if (fieldName === 'gitHubUrl') {
+      if (errors['invalidGitHub']) return errors['invalidGitHub'].message;
+      if (errors['invalidUrl']) return errors['invalidUrl'].message;
+    }
+
+    // Website URL errors
+    if (fieldName === 'websiteUrl') {
+      if (errors['pattern']) return 'Must be a valid URL starting with http:// or https://';
+    }
+
     return 'Invalid value';
   }
 
@@ -372,31 +461,39 @@ export class MentorProfileFormComponent implements OnInit {
       return;
     }
 
-    this.isSubmitting = true;
-
     const formValue = this.mentorForm.value;
 
     if (this.mode === 'create') {
       // Create mode: MentorApplication (now includes expertise tags and categories)
       const data: MentorApplication = {
+        headline: formValue.headline || undefined,
         bio: formValue.bio,
         expertiseTagIds: formValue.expertiseTagIds,
         yearsOfExperience: formValue.yearsOfExperience,
         certifications: formValue.certifications || undefined,
         rate30Min: formValue.rate30Min,
         rate60Min: formValue.rate60Min,
-        categoryIds: formValue.categoryIds
+        categoryIds: formValue.categoryIds,
+        linkedInUrl: formValue.linkedInUrl || undefined,
+        gitHubUrl: formValue.gitHubUrl || undefined,
+        websiteUrl: formValue.websiteUrl || undefined,
+        cv: this.selectedCv || undefined,
+        previousWorks: this.previousWorks.length > 0 ? this.previousWorks : undefined
       };
       this.formSubmit.emit(data);
     } else {
       // Edit mode: MentorProfileUpdate (with optional expertise tags)
       const data: MentorProfileUpdate = {
+        headline: formValue.headline || undefined,
         bio: formValue.bio,
         yearsOfExperience: formValue.yearsOfExperience,
         certifications: formValue.certifications || undefined,
         rate30Min: formValue.rate30Min,
         rate60Min: formValue.rate60Min,
-        expertiseTagIds: formValue.expertiseTagIds
+        expertiseTagIds: formValue.expertiseTagIds,
+        linkedInUrl: formValue.linkedInUrl || undefined,
+        gitHubUrl: formValue.gitHubUrl || undefined,
+        websiteUrl: formValue.websiteUrl || undefined
       };
       this.formSubmit.emit(data);
     }
@@ -414,9 +511,10 @@ export class MentorProfileFormComponent implements OnInit {
    */
   resetForm(): void {
     const resetData: any = {
+      headline: '',
       bio: '',
       expertiseTagIds: [],
-      yearsOfExperience: 0,
+      yearsOfExperience: 1,
       certifications: '',
       rate30Min: 50,
       rate60Min: 90,
@@ -424,6 +522,7 @@ export class MentorProfileFormComponent implements OnInit {
     };
 
     this.mentorForm.reset(resetData);
+    this.previousWorks = [];
     this.isSubmitting = false;
   }
 
@@ -432,5 +531,47 @@ export class MentorProfileFormComponent implements OnInit {
    */
   setSubmitting(submitting: boolean): void {
     this.isSubmitting = submitting;
+  }
+
+  /**
+   * Add a previous work entry
+   */
+  addPreviousWork(): void {
+    if (!this.newWork.jobTitle || !this.newWork.companyName || !this.newWork.startDate) {
+      this.notificationService.warning('Please fill in job title, company name, and start date');
+      return;
+    }
+    const today = this.today;
+    if (this.newWork.startDate < '1960-01-01' || this.newWork.startDate > today) {
+      this.notificationService.warning('Start date must be between 1960 and today');
+      return;
+    }
+    if (this.newWork.endDate && (this.newWork.endDate < this.newWork.startDate || this.newWork.endDate > today)) {
+      this.notificationService.warning('End date must be between start date and today');
+      return;
+    }
+    this.previousWorks.push({ ...this.newWork });
+    this.previousWorks.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    this.newWork = { companyName: '', jobTitle: '', startDate: '' };
+    this.showAddWorkForm = false;
+  }
+
+  get today(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  /**
+   * Remove a previous work entry
+   */
+  removePreviousWork(index: number): void {
+    this.previousWorks.splice(index, 1);
+  }
+
+  /**
+   * Cancel adding work
+   */
+  cancelAddWork(): void {
+    this.newWork = { companyName: '', jobTitle: '', startDate: '' };
+    this.showAddWorkForm = false;
   }
 }

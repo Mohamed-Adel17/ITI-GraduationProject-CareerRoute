@@ -7,5 +7,10 @@ namespace CareerRoute.Core.Settings
         public string SecretKey { get; set; } = string.Empty;
         public string BucketName { get; set; } = string.Empty;
         public string PublicUrl { get; set; } = string.Empty;
+        
+        // Folder paths for different file types
+        public string RecordingsFolder { get; set; } = "recordings";
+        public string CvsFolder { get; set; } = "cvs";
+        public string ProfilePicturesFolder { get; set; } = "profile-pictures";
     }
 }

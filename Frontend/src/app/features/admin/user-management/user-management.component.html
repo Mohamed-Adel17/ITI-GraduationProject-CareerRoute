@@ -1,0 +1,117 @@
+<div class="users-admin max-w-7xl mx-auto px-4 py-6 space-y-6">
+  <app-admin-nav activeTab="users" [pendingMentorCount]="pendingMentorCount"></app-admin-nav>
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold">User Management</h1>
+      <p class="text-sm text-gray-500">View platform users.</p>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="card p-4">
+    <div class="flex items-center gap-4">
+      <label class="label mb-0">Search:</label>
+      <input class="input w-64" type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilter()" placeholder="Name or email..." />
+      <span class="text-sm text-gray-500" *ngIf="!loading">{{ filteredUsers.length }} users</span>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="space-y-3">
+    <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+    <div class="h-12 bg-gray-100 rounded animate-pulse"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="card p-4" *ngIf="!loading">
+    <table class="table" *ngIf="filteredUsers.length > 0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Verified</th>
+          <th>Registered</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <td class="font-medium">{{ getFullName(user) }}</td>
+          <td class="text-sm">{{ user.email }}</td>
+          <td>
+            <span class="badge" [class.badge-success]="user.emailConfirmed" [class.badge-gray]="!user.emailConfirmed">
+              {{ user.emailConfirmed ? 'Yes' : 'No' }}
+            </span>
+          </td>
+          <td class="text-sm text-gray-500">{{ user.registrationDate | date:'mediumDate' }}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" type="button" (click)="viewDetails(user)">View</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="filteredUsers.length === 0" class="text-center py-8 text-gray-500">No users found.</div>
+  </div>
+</div>
+
+<!-- View Details Modal -->
+<div *ngIf="selectedUser" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl max-h-[80vh] overflow-y-auto">
+    <div class="flex justify-between items-start mb-4">
+      <h3 class="text-lg font-semibold">User Details</h3>
+      <button class="text-gray-400 hover:text-gray-600" type="button" (click)="closeModal()">✕</button>
+    </div>
+    
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-xs text-gray-500 uppercase">Name</div>
+          <div class="font-medium">{{ getFullName(selectedUser) }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase">Email</div>
+          <div>{{ selectedUser.email }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase">Phone</div>
+          <div>{{ selectedUser.phoneNumber || '—' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase">Email Verified</div>
+          <div>
+            <span class="badge" [class.badge-success]="selectedUser.emailConfirmed" [class.badge-gray]="!selectedUser.emailConfirmed">
+              {{ selectedUser.emailConfirmed ? 'Yes' : 'No' }}
+            </span>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase">Registered</div>
+          <div>{{ selectedUser.registrationDate | date:'medium' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase">Last Login</div>
+          <div>{{ selectedUser.lastLoginDate ? (selectedUser.lastLoginDate | date:'medium') : '—' }}</div>
+        </div>
+      </div>
+
+      <div *ngIf="selectedUser.careerGoals">
+        <div class="text-xs text-gray-500 uppercase mb-1">Career Goals</div>
+        <div class="text-sm bg-gray-50 p-2 rounded">{{ selectedUser.careerGoals }}</div>
+      </div>
+
+      <div *ngIf="getCareerInterestNames(selectedUser).length > 0">
+        <div class="text-xs text-gray-500 uppercase mb-1">Career Interests</div>
+        <div class="flex flex-wrap gap-1">
+          <span *ngFor="let interest of getCareerInterestNames(selectedUser)" class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+            {{ interest }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end mt-6">
+      <button class="btn btn-secondary" type="button" (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
