@@ -494,7 +494,6 @@ namespace CareerRoute.Core.Services.Implementations
                 _sessionRepository.Update(session);
                 await _sessionRepository.SaveChangesAsync();
 
-
                 if (!string.IsNullOrEmpty(timeSlotId))
                 {
                     var timeSlot = await _timeSlotRepository.GetByIdAsync(timeSlotId);
@@ -525,8 +524,22 @@ namespace CareerRoute.Core.Services.Implementations
                 throw;
             }
 
-            // Process Refund if applicable
-            if (refundAmount > 0 && !string.IsNullOrEmpty(session.PaymentId))
+            // Cancel pending payment if exists (no refund needed for pending payments)
+            if (!string.IsNullOrEmpty(session.PaymentId) && session.Payment?.Status == PaymentStatusOptions.Pending)
+            {
+                try
+                {
+                    _logger.LogInformation("[Session] Cancelling pending payment for session {SessionId}", sessionId);
+                    await _paymentProcessingService.CheckAndCancelPaymentAsync(session.PaymentId);
+                    _logger.LogInformation("[Session] Pending payment cancelled for session {SessionId}", sessionId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[Session] Failed to cancel pending payment for session {SessionId}", sessionId);
+                }
+            }
+            // Process Refund if applicable (for captured payments)
+            else if (refundAmount > 0 && !string.IsNullOrEmpty(session.PaymentId))
             {
                 try
                 {
