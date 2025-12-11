@@ -138,6 +138,74 @@ npm start
 
 ---
 
+## 📸 Screenshots
+
+<details open>
+<summary><b>🏠 Landing & Authentication</b></summary>
+
+| Home | Login | Register |
+|:---:|:---:|:---:|
+| ![Home](./screenshots/home.jpg) | ![Login](./screenshots/login.jpg) | ![Register](./screenshots/register.jpg) |
+
+| Email Verification | Email Verified |
+|:---:|:---:|
+| ![Mail Verify](./screenshots/mail%20verify.jpg) | ![Mail Verified](./screenshots/mail%20verified.jpg) |
+
+</details>
+
+<details>
+<summary><b>🔍 Mentor Discovery</b></summary>
+
+| Categories | Search Results |
+|:---:|:---:|
+| ![Category](./screenshots/category.jpg) | ![Search](./screenshots/search.jpg) |
+
+| Mentor Profile | Mentor Reviews |
+|:---:|:---:|
+| ![Mentor Profile 1](./screenshots/mentor%20profile%201.jpg) | ![Mentor Profile 2](./screenshots/mentor%20profile%202.jpg) |
+
+</details>
+
+<details>
+<summary><b>📅 Sessions & Scheduling</b></summary>
+
+| Manage Slots | Add Slot |
+|:---:|:---:|
+| ![Manage Slots](./screenshots/Manage%20slots.jpg) | ![Add Slot](./screenshots/add%20slot.jpg) |
+
+| Upcoming Sessions | Session Details |
+|:---:|:---:|
+| ![Upcoming Sessions](./screenshots/upcoming%20%20session.jpg) | ![Session Details 1](./screenshots/session%20details%201.jpg) |
+
+| Session AI Summary | Notifications |
+|:---:|:---:|
+| ![Session Details 2](./screenshots/session%20details%202.jpg) | ![Notifications](./screenshots/notifications.jpg) |
+
+</details>
+
+<details>
+<summary><b>⚙️ Admin Dashboard</b></summary>
+
+| Dashboard | Users Management |
+|:---:|:---:|
+| ![Admin Dashboard](./screenshots/admin%20dashboard.jpg) | ![Admin Users](./screenshots/admin%20users.jpg) |
+
+| Mentor Approvals | Categories |
+|:---:|:---:|
+| ![Mentor Approve](./screenshots/admin%20mentor%20approve.jpg) | ![Categories](./screenshots/admin%20categories.jpg) |
+
+| Skills | Disputes |
+|:---:|:---:|
+| ![Skills](./screenshots/admin%20skills.jpg) | ![Disputes](./screenshots/admin%20diputes.jpg) |
+
+| Payouts |
+|:---:|
+| ![Payouts](./screenshots/admin%20payouts.jpg) |
+
+</details>
+
+---
+
 ## 📁 Project Structure
 
 ```
