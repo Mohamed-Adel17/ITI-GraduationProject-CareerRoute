@@ -145,11 +145,11 @@ npm start
 
 | Home | Login | Register |
 |:---:|:---:|:---:|
-| ![Home](./screenshots/home.jpg) | ![Login](./screenshots/login.jpg) | ![Register](./screenshots/register.jpg) |
+| ![Home](./Screenshots/home.jpg) | ![Login](./Screenshots/login.jpg) | ![Register](./Screenshots/register.jpg) |
 
 | Email Verification | Email Verified |
 |:---:|:---:|
-| ![Mail Verify](./screenshots/mail%20verify.jpg) | ![Mail Verified](./screenshots/mail%20verified.jpg) |
+| ![Mail Verify](./Screenshots/mail%20verify.jpg) | ![Mail Verified](./Screenshots/mail%20verified.jpg) |
 
 </details>
 
@@ -158,11 +158,11 @@ npm start
 
 | Categories | Search Results |
 |:---:|:---:|
-| ![Category](./screenshots/category.jpg) | ![Search](./screenshots/search.jpg) |
+| ![Category](./Screenshots/category.jpg) | ![Search](./Screenshots/search.jpg) |
 
 | Mentor Profile | Mentor Reviews |
 |:---:|:---:|
-| ![Mentor Profile 1](./screenshots/mentor%20profile%201.jpg) | ![Mentor Profile 2](./screenshots/mentor%20profile%202.jpg) |
+| ![Mentor Profile 1](./Screenshots/mentor%20profile%201.jpg) | ![Mentor Profile 2](./Screenshots/mentor%20profile%202.jpg) |
 
 </details>
 
@@ -171,15 +171,15 @@ npm start
 
 | Manage Slots | Add Slot |
 |:---:|:---:|
-| ![Manage Slots](./screenshots/Manage%20slots.jpg) | ![Add Slot](./screenshots/add%20slot.jpg) |
+| ![Manage Slots](./Screenshots/Manage%20slots.jpg) | ![Add Slot](./Screenshots/add%20slot.jpg) |
 
 | Upcoming Sessions | Session Details |
 |:---:|:---:|
-| ![Upcoming Sessions](./screenshots/upcoming%20%20session.jpg) | ![Session Details 1](./screenshots/session%20details%201.jpg) |
+| ![Upcoming Sessions](./Screenshots/upcoming%20%20session.jpg) | ![Session Details 1](./Screenshots/session%20details%201.jpg) |
 
 | Session AI Summary | Notifications |
 |:---:|:---:|
-| ![Session Details 2](./screenshots/session%20details%202.jpg) | ![Notifications](./screenshots/notifications.jpg) |
+| ![Session Details 2](./Screenshots/session%20details%202.jpg) | ![Notifications](./Screenshots/notifications.jpg) |
 
 </details>
 
@@ -188,19 +188,19 @@ npm start
 
 | Dashboard | Users Management |
 |:---:|:---:|
-| ![Admin Dashboard](./screenshots/admin%20dashboard.jpg) | ![Admin Users](./screenshots/admin%20users.jpg) |
+| ![Admin Dashboard](./Screenshots/admin%20dashboard.jpg) | ![Admin Users](./Screenshots/admin%20users.jpg) |
 
 | Mentor Approvals | Categories |
 |:---:|:---:|
-| ![Mentor Approve](./screenshots/admin%20mentor%20approve.jpg) | ![Categories](./screenshots/admin%20categories.jpg) |
+| ![Mentor Approve](./Screenshots/admin%20mentor%20approve.jpg) | ![Categories](./Screenshots/admin%20categories.jpg) |
 
 | Skills | Disputes |
 |:---:|:---:|
-| ![Skills](./screenshots/admin%20skills.jpg) | ![Disputes](./screenshots/admin%20diputes.jpg) |
+| ![Skills](./Screenshots/admin%20skills.jpg) | ![Disputes](./Screenshots/admin%20diputes.jpg) |
 
 | Payouts |
 |:---:|
-| ![Payouts](./screenshots/admin%20payouts.jpg) |
+| ![Payouts](./Screenshots/admin%20payouts.jpg) |
 
 </details>
 
